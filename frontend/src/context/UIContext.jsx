@@ -22,6 +22,7 @@ export const UIProvider = ({ children }) => {
   const [inboxTarget,    setInboxTarget]    = useState(null);
   const [entityModal,    setEntityModal]    = useState(null);
   const [waitlistModal,  setWaitlistModal]  = useState(null);
+  const [authModal,      setAuthModal]      = useState(null);
   const [searchQuery,    setSearchQuery]    = useState('');
 
   const addNotification = useCallback((type, text, icon, handle) => {
@@ -113,6 +114,7 @@ export const UIProvider = ({ children }) => {
       submitOpen, setSubmitOpen,
       entityModal, setEntityModal,
       waitlistModal, setWaitlistModal,
+      authModal, setAuthModal,
       searchQuery, setSearchQuery,
     }}>
       {children}

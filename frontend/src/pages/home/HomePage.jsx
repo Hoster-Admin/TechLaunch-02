@@ -33,7 +33,7 @@ const STATS = [
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setSubmitOpen } = useUI();
+  const { setSubmitOpen, setAuthModal } = useUI();
   const [products, setProducts]       = useState(MOCK_PRODUCTS);
   const [loading,  setLoading]        = useState(false);
   const [feedType, setFeedType]       = useState('all');
@@ -62,15 +62,12 @@ export default function HomePage() {
 
   const handleSubmitProduct = () => {
     if (user) setSubmitOpen(true);
-    else navigate('/register');
+    else setAuthModal('signup');
   };
 
   return (
     <>
-      <Navbar
-        onSignIn={() => navigate('/login')}
-        onSignUp={() => navigate('/register')}
-      />
+      <Navbar/>
 
       <div className="page active" style={{ paddingTop: 'var(--nav-h)' }}>
 

@@ -28,6 +28,7 @@ import SubmitProductModal from './components/home/SubmitProductModal';
 import InboxModal         from './components/home/InboxModal';
 import EntityProfileModal from './components/home/EntityProfileModal';
 import WaitlistModal      from './components/home/WaitlistModal';
+import AuthModal          from './components/home/AuthModal';
 
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
@@ -67,6 +68,7 @@ function GlobalModals() {
   const { submitOpen, setSubmitOpen, waitlistModal, setWaitlistModal } = useUI();
   return (
     <>
+      <AuthModal/>
       <SubmitProductModal open={submitOpen} onClose={() => setSubmitOpen(false)}/>
       <InboxModal/>
       <EntityProfileModal/>
@@ -75,13 +77,11 @@ function GlobalModals() {
   );
 }
 
-// Wrapper to inject auth nav callbacks
+// Wrapper to inject auth gate callback into pages
 function WithAuthCallbacks({ Component, ...props }) {
-  const navigate = useNavigate();
-  const { user } = useAuth();
-  const { setSubmitOpen } = useUI();
-  const onSignIn  = () => navigate('/login');
-  const onSignUp  = () => navigate('/register');
+  const { setAuthModal } = useUI();
+  const onSignIn = () => setAuthModal('gate');
+  const onSignUp = () => setAuthModal('signup');
   return <Component {...props} onSignIn={onSignIn} onSignUp={onSignUp}/>;
 }
 
