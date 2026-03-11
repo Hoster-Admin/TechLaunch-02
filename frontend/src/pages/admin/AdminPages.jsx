@@ -400,7 +400,7 @@ const MOCK_FEATURED = [
 
 export function AdminFeatured() {
   const [featured, setFeatured] = useState(MOCK_FEATURED);
-  const [banner, setBanner] = useState('🌟 MENA's #1 Tech Discovery Platform — Now featuring 340K+ monthly visitors!');
+  const [banner, setBanner] = useState("🌟 MENA's #1 Tech Discovery Platform — Now featuring 340K+ monthly visitors!");
   const [editorNote, setEditorNote] = useState("This week's picks are tackling MENA's biggest infrastructure gaps.");
 
   return (
