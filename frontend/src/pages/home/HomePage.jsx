@@ -75,7 +75,7 @@ export default function HomePage() {
         <div className="hero">
           <div className="hero-badge">🌍 MENA's #1 Product Discovery Platform</div>
           <h1>Discover the <span>Next Big Thing</span><br/>from the MENA Region</h1>
-          <div className="hero-ar">اكتشف أفضل منتجات منطقة الشرق الأوسط</div>
+
           <p>The home for MENA startups, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
           <div className="hero-actions">
             <button className="btn-hero-primary" onClick={handleSubmitProduct}>🚀 Submit Your Product</button>
@@ -196,9 +196,9 @@ export default function HomePage() {
                 onKeyDown={e => e.key === 'Enter' && e.target.value && navigate(`/products?q=${encodeURIComponent(e.target.value)}`)}/>
             </div>
 
-            {/* Top Upvoted Today */}
+            {/* From the Community */}
             <div className="sidebar-card">
-              <div className="sidebar-title">🔥 Top Upvoted Today</div>
+              <div className="sidebar-title">✍️ From the Community</div>
               {[...products].sort((a,b) => (b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5).map((p) => (
                 <div key={p.id} className="sidebar-item" onClick={() => navigate(`/products/${p.id}`)}>
                   <div className="sidebar-item-icon" style={{ background: 'var(--gray-100)' }}>{p.logo_emoji}</div>
