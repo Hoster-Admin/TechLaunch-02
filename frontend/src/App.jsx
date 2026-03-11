@@ -15,6 +15,7 @@ import AcceleratorsPage from './pages/home/AcceleratorsPage';
 import ListingPage      from './pages/home/ListingPages';
 import BookmarksPage    from './pages/home/BookmarksPage';
 import UserProfilePage  from './pages/home/UserProfilePage';
+import SettingsPage     from './pages/home/SettingsPage';
 import { LoginPage, RegisterPage } from './pages/home/AuthPages';
 
 import AdminDashboard   from './pages/admin/AdminDashboard';
@@ -115,6 +116,7 @@ function AppRoutes() {
         <Route path="/list/:type"   element={<WithAuthCallbacks Component={ListingPage}/>}/>
         <Route path="/bookmarks"    element={<WithAuthCallbacks Component={BookmarksPage}/>}/>
         <Route path="/u/:handle"    element={<WithAuthCallbacks Component={UserProfilePage}/>}/>
+        <Route path="/settings"     element={<RequireAuth><SettingsPage/></RequireAuth>}/>
         <Route path="/submit"       element={<Navigate to="/" replace/>}/>
         <Route path="*"             element={<NotFound/>}/>
       </Routes>

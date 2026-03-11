@@ -184,10 +184,6 @@ export default function AuthModal() {
             <div className="modal-title" style={{ marginTop:4 }}>Welcome back</div>
             <div className="modal-sub">Sign in to your Tech Launch account</div>
             {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
-            {/* Demo hint */}
-            <div style={{ background:'#f0fdf4', border:'1px solid #bbf7d0', borderRadius:10, padding:'10px 14px', marginBottom:16, fontSize:12, color:'#15803d', lineHeight:1.5 }}>
-              <strong>Demo:</strong> admin@techlaunch.io / admin123 &nbsp;·&nbsp; sara@example.com / password123
-            </div>
             <div className="form-group">
               <label className="form-label">Email</label>
               <input className="form-input" type="email" value={lEmail} onChange={e => setLEmail(e.target.value)} placeholder="your@email.com" autoComplete="email"
@@ -222,7 +218,7 @@ export default function AuthModal() {
           <div>
             <LogoIcon/>
             <div className="modal-title">Sign in to continue</div>
-            <div className="modal-sub">Create a free account to <span>upvote, bookmark, and connect</span> with MENA's best products.</div>
+            <div className="modal-sub">Create a free account to <span>upvote products</span> and support MENA tech.</div>
             <button className="btn-full" onClick={() => { setStep('persona'); setError(''); setSelectedPersona(null); }} style={{ marginBottom:10 }}>
               Create Free Account 🚀
             </button>
