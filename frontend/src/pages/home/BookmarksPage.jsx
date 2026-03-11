@@ -16,7 +16,7 @@ const MOCK_PRODUCTS = [
   { id:7,  name:'Trella',       tagline:'Digital freight marketplace in MENA',   logo_emoji:'🚛', industry:'Logistics',   country:'Egypt',         status:'live', upvotes_count:154, badge:null  },
   { id:8,  name:'Foodics',      tagline:'Restaurant management system for F&B',  logo_emoji:'🍽️', industry:'Foodtech',    country:'Saudi Arabia',  status:'live', upvotes_count:143, badge:null  },
   { id:9,  name:'Waffarha',     tagline:'Discount coupons and deals platform',   logo_emoji:'🎟️', industry:'E-Commerce',  country:'Egypt',         status:'live', upvotes_count:128, badge:null  },
-  { id:10, name:'Cura',         tagline:'Arabic mental health therapy online',   logo_emoji:'🧠', industry:'Healthtech',  country:'Saudi Arabia',  status:'soon', upvotes_count:0,   badge:'soon'},
+  { id:10, name:'Cura',         tagline:'Mental health therapy online for MENA', logo_emoji:'🧠', industry:'Healthtech',  country:'Saudi Arabia',  status:'soon', upvotes_count:0,   badge:'soon'},
 ];
 
 export default function BookmarksPage({ onSignIn, onSignUp }) {
@@ -45,19 +45,17 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
+
         {/* Header */}
-        <div style={{ background:'#fff', borderBottom:'1px solid #e8e8e8', padding:'32px 32px 28px' }}>
-          <div style={{ maxWidth:1100, margin:'0 auto', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-            <div>
-              <h1 style={{ fontSize:26, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>🔖 Bookmarks</h1>
-              <p style={{ fontSize:14, color:'#888' }}>Products you've saved for later</p>
-            </div>
-            <div style={{ fontSize:12, fontWeight:700, color:'#aaa', fontFamily:'DM Mono,monospace' }}>{bookmarkedProducts.length} saved</div>
+        <div className="page-header-section">
+          <div className="page-header-inner">
+            <h2>🔖 Your Bookmarks</h2>
+            <p>Products you've saved for later.</p>
           </div>
         </div>
 
-        <div style={{ maxWidth:1100, margin:'0 auto', padding:'28px 32px 80px', display:'grid', gridTemplateColumns:'1fr 280px', gap:28 }} className="bookmarks-layout">
-          {/* List */}
+        {/* Content */}
+        <div className="main-layout">
           <div>
             {!bookmarkedProducts.length ? (
               <div style={{ textAlign:'center', padding:'80px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
@@ -96,43 +94,10 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
               );
             })}
           </div>
-
-          {/* Sidebar */}
-          <div>
-            {/* Stats */}
-            <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:24, marginBottom:16 }}>
-              <div style={{ fontSize:13, fontWeight:800, marginBottom:16 }}>Your Stats</div>
-              {[
-                ['🔖', 'Bookmarks',  bookmarks.size],
-                ['▲',  'Upvotes',    votes.size],
-              ].map(([icon,label,count]) => (
-                <div key={label} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'10px 0', borderBottom:'1px solid #f8f8f8' }}>
-                  <span style={{ fontSize:13, color:'#666' }}>{icon} {label}</span>
-                  <span style={{ fontSize:14, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{count}</span>
-                </div>
-              ))}
-            </div>
-
-            {/* Industries breakdown */}
-            {bookmarkedProducts.length > 0 && (
-              <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:24 }}>
-                <div style={{ fontSize:13, fontWeight:800, marginBottom:14 }}>Industries</div>
-                {[...new Set(bookmarkedProducts.map(p => p.industry))].map(ind => {
-                  const count = bookmarkedProducts.filter(p => p.industry === ind).length;
-                  return (
-                    <div key={ind} style={{ display:'flex', alignItems:'center', justifyContent:'space-between', padding:'8px 0', borderBottom:'1px solid #f8f8f8' }}>
-                      <span style={{ fontSize:12, color:'#555', fontWeight:600 }}>{ind}</span>
-                      <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'var(--orange-light)', color:'var(--orange)' }}>{count}</span>
-                    </div>
-                  );
-                })}
-              </div>
-            )}
-          </div>
+          <div></div>
         </div>
       </div>
       <Footer/>
-      <style>{`@media(max-width:768px){.bookmarks-layout{grid-template-columns:1fr !important;}}`}</style>
     </>
   );
 }

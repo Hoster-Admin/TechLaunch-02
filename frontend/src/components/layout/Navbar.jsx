@@ -102,8 +102,6 @@ export default function Navbar() {
               <div className={`dropdown-menu ${listOpen ? 'open' : ''}`}>
                 {[
                   { icon:'🔍', label:'All Products',            desc:'Search every product on the platform',   path:'/products' },
-                  { icon:'🌍', label:'Directory',               desc:'Browse by industry or country',          path:'/directory' },
-                  { icon:'🏢', label:'Accelerators',            desc:'Find accelerators and programs',         path:'/accelerators' },
                   null,
                   { icon:'🚀', label:'Startup',                 desc:'Submit and showcase your product',       path:'/list/startup' },
                   { icon:'🏢', label:'Accelerator / Incubator', desc:'List your program and find startups',    path:'/list/accelerator' },
