@@ -1,6 +1,9 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
+import NotificationsPanel from '../home/NotificationsPanel';
+import SearchDropdown from '../home/SearchDropdown';
 import toast from 'react-hot-toast';
 
 const PERSONA_ICONS = {
@@ -17,20 +20,25 @@ const PERSONA_MAP = {
 
 export default function Navbar({ onSignIn, onSignUp }) {
   const { user, logout } = useAuth();
+  const { unreadCount, setSubmitOpen, setInboxOpen, searchQuery, setSearchQuery } = useUI();
   const navigate = useNavigate();
-  const [listOpen,  setListOpen]  = useState(false);
-  const [userOpen,  setUserOpen]  = useState(false);
-  const [searchVal, setSearchVal] = useState('');
-  const [copied,    setCopied]    = useState(false);
+  const [listOpen,    setListOpen]    = useState(false);
+  const [userOpen,    setUserOpen]    = useState(false);
+  const [notifOpen,   setNotifOpen]   = useState(false);
+  const [searchFocus, setSearchFocus] = useState(false);
+  const [copied,      setCopied]      = useState(false);
   const listRef    = useRef(null);
   const userRef    = useRef(null);
   const avatarRef  = useRef(null);
+  const searchRef  = useRef(null);
+  const searchWrap = useRef(null);
 
   useEffect(() => {
     const handler = (e) => {
       if (listRef.current && !listRef.current.contains(e.target)) setListOpen(false);
       if (userRef.current && !userRef.current.contains(e.target) &&
           avatarRef.current && !avatarRef.current.contains(e.target)) setUserOpen(false);
+      if (searchWrap.current && !searchWrap.current.contains(e.target)) setSearchFocus(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
@@ -57,11 +65,16 @@ export default function Navbar({ onSignIn, onSignUp }) {
   const personaIcon  = PERSONA_ICONS[personaLabel] || '⭐';
   const handle = (user?.handle || '').replace('@', '');
 
+  const handleBellClick = () => {
+    if (!user) { onSignIn?.(); return; }
+    setNotifOpen(o => !o);
+    setUserOpen(false);
+  };
+
   return (
     <>
       <nav>
         <div className="nav-left">
-          {/* Logo */}
           <Link to="/" className="logo">
             <span className="logo-icon">
               <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -77,21 +90,22 @@ export default function Navbar({ onSignIn, onSignUp }) {
           </Link>
 
           <div className="nav-links">
-            <Link to="/" className="nav-link active">Home</Link>
+            <Link to="/" className="nav-link">Home</Link>
 
-            {/* List dropdown */}
             <div className="nav-dropdown" ref={listRef}>
               <button className="nav-link dropdown-trigger" onClick={() => setListOpen(v => !v)}>
                 List <span style={{ fontSize: 10, marginLeft: 2 }}>▼</span>
               </button>
               <div className={`dropdown-menu ${listOpen ? 'open' : ''}`}>
                 {[
-                  { icon: '🔍', label: 'All Products',        desc: 'Search every product on the platform',  path: '/products' },
+                  { icon: '🔍', label: 'All Products',            desc: 'Search every product on the platform',   path: '/products' },
+                  { icon: '🌍', label: 'Directory',               desc: 'Browse by industry or country',          path: '/directory' },
+                  { icon: '🏢', label: 'Accelerators',            desc: 'Find accelerators and programs',         path: '/accelerators' },
                   null,
-                  { icon: '🚀', label: 'Startup',             desc: 'Submit and showcase your product',       path: '/list/startup' },
-                  { icon: '🏢', label: 'Accelerator / Incubator', desc: 'List your program and find startups', path: '/list/accelerator' },
-                  { icon: '💰', label: 'Investment Firm',     desc: 'Discover MENA deals and founders',      path: '/list/investor' },
-                  { icon: '🎯', label: 'Venture Studio',      desc: 'Build and co-found startups',           path: '/list/venture' },
+                  { icon: '🚀', label: 'Startup',                 desc: 'Submit and showcase your product',       path: '/list/startup' },
+                  { icon: '🏢', label: 'Accelerator / Incubator', desc: 'List your program and find startups',    path: '/list/accelerator' },
+                  { icon: '💰', label: 'Investment Firm',         desc: 'Discover MENA deals and founders',       path: '/list/investor' },
+                  { icon: '🎯', label: 'Venture Studio',          desc: 'Build and co-found startups',            path: '/list/venture' },
                 ].map((item, i) => item === null
                   ? <div key={i} style={{ height: 1, background: '#f0f0f0', margin: '4px 0' }}/>
                   : (
@@ -109,22 +123,32 @@ export default function Navbar({ onSignIn, onSignUp }) {
           </div>
         </div>
 
-        {/* Search — centred */}
-        <div style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 16px', maxWidth: 420, margin: '0 auto' }}>
+        {/* Search */}
+        <div ref={searchWrap} style={{ flex: 1, display: 'flex', justifyContent: 'center', padding: '0 16px', maxWidth: 420, margin: '0 auto', position: 'relative' }}>
           <div style={{ position: 'relative', width: '100%' }}>
             <svg style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', pointerEvents: 'none', zIndex: 1 }}
               width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2.2">
               <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
             </svg>
-            <input type="text" placeholder="Search products, people…" value={searchVal}
-              onChange={e => setSearchVal(e.target.value)}
-              onKeyDown={e => e.key === 'Escape' && setSearchVal('')}
-              style={{ width: '100%', padding: '9px 36px', borderRadius: 20, border: '1.5px solid #ebebeb', fontSize: 13, fontFamily: 'Inter,sans-serif', outline: 'none', background: '#f8f8f8', color: '#0a0a0a', transition: 'border-color .15s' }}
-              onFocus={e => { e.target.style.borderColor = 'var(--orange)'; e.target.style.background = '#fff'; }}
-              onBlur={e => { e.target.style.borderColor = '#ebebeb'; e.target.style.background = '#f8f8f8'; }}
+            <input
+              ref={searchRef}
+              type="text"
+              placeholder="Search products, people…"
+              value={searchQuery}
+              onChange={e => setSearchQuery(e.target.value)}
+              onFocus={() => setSearchFocus(true)}
+              onKeyDown={e => {
+                if (e.key === 'Escape') { setSearchQuery(''); setSearchFocus(false); searchRef.current?.blur(); }
+                if (e.key === 'Enter' && searchQuery.trim()) navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+              }}
+              style={{ width: '100%', padding: '9px 36px', borderRadius: 20, border: `1.5px solid ${searchFocus ? 'var(--orange)' : '#ebebeb'}`, fontSize: 13, fontFamily: 'Inter,sans-serif', outline: 'none', background: searchFocus ? '#fff' : '#f8f8f8', color: '#0a0a0a', transition: 'all .15s' }}
             />
-            {searchVal && (
-              <span onClick={() => setSearchVal('')} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: 14, color: '#aaa', zIndex: 1 }}>✕</span>
+            {searchQuery && (
+              <span onClick={() => { setSearchQuery(''); setSearchFocus(false); }} style={{ position: 'absolute', right: 12, top: '50%', transform: 'translateY(-50%)', cursor: 'pointer', fontSize: 14, color: '#aaa', zIndex: 1 }}>✕</span>
+            )}
+            {/* Live search dropdown */}
+            {searchFocus && searchQuery.trim().length > 0 && (
+              <SearchDropdown query={searchQuery} onClose={() => { setSearchFocus(false); setSearchQuery(''); }}/>
             )}
           </div>
         </div>
@@ -133,14 +157,23 @@ export default function Navbar({ onSignIn, onSignUp }) {
         <div className="nav-right">
           {user ? (
             <>
-              {/* Submit Product btn */}
-              <button className="btn-nav-primary" onClick={() => navigate('/submit')}>+ Submit Product</button>
+              <button className="btn-nav-primary" onClick={() => setSubmitOpen(true)}>+ Submit Product</button>
 
               {/* Bell */}
-              <div className="nav-bell-wrap">
+              <div className="nav-bell-wrap" onClick={handleBellClick} style={{ opacity: 1 }}>
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
                   <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+                {unreadCount > 0 && (
+                  <span className="notif-dot">{unreadCount > 9 ? '9+' : unreadCount}</span>
+                )}
+              </div>
+
+              {/* Inbox */}
+              <div className="nav-bell-wrap" onClick={() => { if (!user) { onSignIn?.(); return; } setInboxOpen(true); }} title="Messages">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
                 </svg>
               </div>
 
@@ -151,10 +184,8 @@ export default function Navbar({ onSignIn, onSignUp }) {
                 {initials}
               </div>
 
-              {/* User menu — exact match to HTML prototype */}
               {userOpen && (
                 <div ref={userRef} className="user-menu open" style={{ minWidth: 260 }}>
-                  {/* Header: avatar + name + handle + Copy btn */}
                   <div style={{ padding: '14px 14px 12px', borderBottom: '1px solid #f0f0f0' }}>
                     <div style={{ display: 'flex', alignItems: 'center', gap: 11, marginBottom: 10 }}>
                       <div style={{ width: 44, height: 44, borderRadius: '50%', background: user.avatar_color || 'var(--orange)', color: '#fff', fontSize: 16, fontWeight: 900, display: 'grid', placeItems: 'center', flexShrink: 0 }}>
@@ -168,57 +199,30 @@ export default function Navbar({ onSignIn, onSignUp }) {
                           <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--orange)' }}>@{handle || '—'}</span>
                           <button onClick={handleCopy}
                             style={{ padding: '2px 7px', borderRadius: 5, background: '#fceee9', border: 'none', cursor: 'pointer', fontSize: 10, fontWeight: 700, color: 'var(--orange)', display: 'flex', alignItems: 'center', gap: 3 }}>
-                            {copied ? '✓ Copied!' : (
-                              <>
-                                <svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
-                                  <rect x="9" y="9" width="13" height="13" rx="2"/>
-                                  <path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/>
-                                </svg>
-                                Copy
-                              </>
-                            )}
+                            {copied ? '✓ Copied!' : (<><svg width="10" height="10" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5"><rect x="9" y="9" width="13" height="13" rx="2"/><path d="M5 15H4a2 2 0 01-2-2V4a2 2 0 012-2h9a2 2 0 012 2v1"/></svg>Copy</>)}
                           </button>
                         </div>
                       </div>
                     </div>
-                    {/* Persona badge */}
                     <div style={{ display: 'inline-flex', alignItems: 'center', gap: 5, background: '#fceee9', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, color: 'var(--orange)' }}>
                       {personaIcon} {personaLabel}
                     </div>
                   </div>
-
-                  {/* Menu items */}
                   <div style={{ padding: '6px 6px 4px' }}>
-                    <div className="user-menu-item" onClick={() => { navigate('/profile'); setUserOpen(false); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/>
-                      </svg>
-                      Public Profile
-                    </div>
-                    <div className="user-menu-item" onClick={() => { navigate('/bookmarks'); setUserOpen(false); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/>
-                      </svg>
-                      Bookmarks
-                    </div>
-                    <div className="user-menu-item" onClick={() => { navigate('/settings'); setUserOpen(false); }}
-                      style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <circle cx="12" cy="12" r="3"/>
-                        <path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/>
-                      </svg>
-                      Settings
-                    </div>
+                    {[
+                      { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>, label:'Public Profile', action:() => { navigate(`/u/${handle}`); setUserOpen(false); } },
+                      { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>, label:'Bookmarks', action:() => { navigate('/bookmarks'); setUserOpen(false); } },
+                      { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>, label:'Messages', action:() => { setInboxOpen(true); setUserOpen(false); } },
+                    ].map(item => (
+                      <div key={item.label} className="user-menu-item" onClick={item.action}
+                        style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+                        {item.icon} {item.label}
+                      </div>
+                    ))}
                     <div style={{ height: 1, background: '#f0f0f0', margin: '4px 0' }}/>
                     <div className="user-menu-item danger" onClick={handleLogout}
                       style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                        <path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/>
-                        <polyline points="16 17 21 12 16 7"/>
-                        <line x1="21" y1="12" x2="9" y2="12"/>
-                      </svg>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M9 21H5a2 2 0 01-2-2V5a2 2 0 012-2h4"/><polyline points="16 17 21 12 16 7"/><line x1="21" y1="12" x2="9" y2="12"/></svg>
                       Sign Out
                     </div>
                   </div>
@@ -233,6 +237,9 @@ export default function Navbar({ onSignIn, onSignUp }) {
           )}
         </div>
       </nav>
+
+      {/* Notifications panel */}
+      <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)}/>
     </>
   );
 }

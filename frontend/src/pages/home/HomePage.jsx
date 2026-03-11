@@ -2,6 +2,9 @@ import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/home/ProductCard';
+import Footer from '../../components/home/Footer';
+import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
 
@@ -27,8 +30,10 @@ const STATS = [
   { num: '42',     label: 'Accelerators' },
 ];
 
-export default function HomePage({ onSignIn, onSignUp }) {
+export default function HomePage() {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const { setSubmitOpen } = useUI();
   const [products, setProducts]       = useState(MOCK_PRODUCTS);
   const [loading,  setLoading]        = useState(false);
   const [feedType, setFeedType]       = useState('all');
@@ -36,8 +41,6 @@ export default function HomePage({ onSignIn, onSignUp }) {
   const [industryDDOpen, setIndDD]    = useState(false);
   const [selectedCountries, setCountries] = useState([]);
   const [selectedIndustries, setIndustries] = useState([]);
-  const [loginOpen, setLoginOpen]     = useState(false);
-  const [signupOpen, setSignupOpen]   = useState(false);
 
   useEffect(() => {
     productsAPI.list({ status: 'live', sort: 'top', limit: 20 })
@@ -57,20 +60,28 @@ export default function HomePage({ onSignIn, onSignUp }) {
 
   const feedTitles = { all: "Today's Top Products", new: 'Just Launched', soon: 'Coming Soon', top: 'Top Voted' };
 
+  const handleSubmitProduct = () => {
+    if (user) setSubmitOpen(true);
+    else navigate('/register');
+  };
+
   return (
     <>
-      <Navbar onSignIn={onSignIn || (() => setLoginOpen(true))} onSignUp={onSignUp || (() => setSignupOpen(true))}/>
+      <Navbar
+        onSignIn={() => navigate('/login')}
+        onSignUp={() => navigate('/register')}
+      />
 
       <div className="page active" style={{ paddingTop: 'var(--nav-h)' }}>
 
-        {/* HERO — exact match */}
+        {/* HERO */}
         <div className="hero">
           <div className="hero-badge">🌍 MENA's #1 Product Discovery Platform</div>
           <h1>Discover the <span>Next Big Thing</span><br/>from the MENA Region</h1>
           <div className="hero-ar">اكتشف أفضل منتجات منطقة الشرق الأوسط</div>
           <p>The home for MENA startups, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
           <div className="hero-actions">
-            <button className="btn-hero-primary" onClick={() => setSignupOpen(true)}>🚀 Submit Your Product</button>
+            <button className="btn-hero-primary" onClick={handleSubmitProduct}>🚀 Submit Your Product</button>
             <button className="btn-hero-ghost" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
               Browse Products ↓
             </button>
@@ -85,7 +96,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
           </div>
         </div>
 
-        {/* FILTER BAR — exact match */}
+        {/* FILTER BAR */}
         <div className="filter-section">
           <div className="filter-inner">
 
@@ -142,7 +153,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
             </div>
 
             <div className="filter-divider"/>
-            {['all','new','soon','top'].map((type, i) => (
+            {['all','new','soon','top'].map((type) => (
               <button key={type} className={`filter-tab ${feedType === type ? 'active' : ''}`}
                 onClick={() => { setFeedType(type); setCountryDD(false); setIndDD(false); }}>
                 {type === 'all' ? 'All Products' : type === 'new' ? '🆕 Just Launched' : type === 'soon' ? '⏳ Coming Soon' : '🎉 Top Voted'}
@@ -151,7 +162,7 @@ export default function HomePage({ onSignIn, onSignUp }) {
           </div>
         </div>
 
-        {/* MAIN LAYOUT — exact grid */}
+        {/* MAIN LAYOUT */}
         <div className="main-layout" id="products-section">
           {/* Feed */}
           <div>
@@ -177,21 +188,22 @@ export default function HomePage({ onSignIn, onSignUp }) {
             }
           </div>
 
-          {/* Sidebar — exact from HTML */}
+          {/* Sidebar */}
           <div className="sidebar" style={{ display: 'block' }}>
             {/* Search */}
             <div className="sidebar-search-wrap">
               <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2">
                 <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
               </svg>
-              <input className="sidebar-search-input" type="text" placeholder="Search products…"/>
+              <input className="sidebar-search-input" type="text" placeholder="Search products…"
+                onKeyDown={e => e.key === 'Enter' && e.target.value && navigate(`/products?q=${encodeURIComponent(e.target.value)}`)}/>
             </div>
 
             {/* Top Upvoted Today */}
             <div className="sidebar-card">
               <div className="sidebar-title">🔥 Top Upvoted Today</div>
-              {products.sort((a,b) => (b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5).map((p, i) => (
-                <div key={p.id} className="sidebar-item">
+              {[...products].sort((a,b) => (b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5).map((p) => (
+                <div key={p.id} className="sidebar-item" onClick={() => navigate(`/products/${p.id}`)}>
                   <div className="sidebar-item-icon" style={{ background: 'var(--gray-100)' }}>{p.logo_emoji}</div>
                   <div>
                     <div className="sidebar-item-name">{p.name}</div>
@@ -205,11 +217,11 @@ export default function HomePage({ onSignIn, onSignUp }) {
             {/* Top Industries */}
             <div className="sidebar-card">
               <div className="sidebar-title">🏭 Top Industries</div>
-              {['Fintech','Edtech','AI & ML','Healthtech','E-Commerce'].map((ind, i) => {
+              {['Fintech','Edtech','AI & ML','Healthtech','E-Commerce'].map((ind) => {
                 const count = products.filter(p => p.industry === ind).length;
                 const icons = { 'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥','E-Commerce':'🛒' };
                 return (
-                  <div key={ind} className="sidebar-item">
+                  <div key={ind} className="sidebar-item" onClick={() => navigate(`/products?industry=${encodeURIComponent(ind)}`)}>
                     <div className="sidebar-item-icon" style={{ background: 'var(--gray-100)' }}>{icons[ind]}</div>
                     <div>
                       <div className="sidebar-item-name">{ind}</div>
@@ -233,6 +245,22 @@ export default function HomePage({ onSignIn, onSignUp }) {
                 </button>
               </div>
             </div>
+
+            {/* Community CTAs */}
+            <div className="sidebar-card">
+              <div className="sidebar-title">🌍 Explore Ecosystem</div>
+              {[
+                { icon:'🏢', label:'Accelerators', path:'/accelerators' },
+                { icon:'💰', label:'Investors', path:'/list/investor' },
+                { icon:'🗺️', label:'Directory', path:'/directory' },
+              ].map(item => (
+                <div key={item.label} className="sidebar-item" onClick={() => navigate(item.path)}>
+                  <div className="sidebar-item-icon" style={{ background:'var(--orange-light)', color:'var(--orange)' }}>{item.icon}</div>
+                  <div className="sidebar-item-name">{item.label}</div>
+                  <div className="sidebar-item-right">→</div>
+                </div>
+              ))}
+            </div>
           </div>
         </div>
       </div>
@@ -241,6 +269,8 @@ export default function HomePage({ onSignIn, onSignUp }) {
       {(countryDDOpen || industryDDOpen) && (
         <div style={{ position: 'fixed', inset: 0, zIndex: 8999 }} onClick={() => { setCountryDD(false); setIndDD(false); }}/>
       )}
+
+      <Footer/>
     </>
   );
 }

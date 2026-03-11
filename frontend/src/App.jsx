@@ -1,26 +1,34 @@
 import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
+import { UIProvider, useUI } from './context/UIContext';
 import { LoadingPage } from './components/ui';
 
-// Layouts
-import Navbar       from './components/layout/Navbar';
 import AdminLayout  from './components/admin/AdminLayout';
 
-// Home pages
-import HomePage            from './pages/home/HomePage';
+import HomePage         from './pages/home/HomePage';
+import ProductDetailPage from './pages/home/ProductDetailPage';
+import AllProductsPage  from './pages/home/AllProductsPage';
+import DirectoryPage    from './pages/home/DirectoryPage';
+import AcceleratorsPage from './pages/home/AcceleratorsPage';
+import ListingPage      from './pages/home/ListingPages';
+import BookmarksPage    from './pages/home/BookmarksPage';
+import UserProfilePage  from './pages/home/UserProfilePage';
 import { LoginPage, RegisterPage } from './pages/home/AuthPages';
 
-// Admin pages
-import AdminDashboard      from './pages/admin/AdminDashboard';
-import AdminProducts       from './pages/admin/AdminProducts';
+import AdminDashboard   from './pages/admin/AdminDashboard';
+import AdminProducts    from './pages/admin/AdminProducts';
 import {
   AdminUsers, AdminEntities, AdminApplications,
   AdminFeatured, AdminReports, AdminSettings, AdminProfile
 } from './pages/admin/AdminPages';
 
-// ── Protected routes
+import SubmitProductModal from './components/home/SubmitProductModal';
+import InboxModal         from './components/home/InboxModal';
+import EntityProfileModal from './components/home/EntityProfileModal';
+import WaitlistModal      from './components/home/WaitlistModal';
+
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
   if (loading) return <LoadingPage/>;
@@ -44,71 +52,74 @@ const GuestOnly = ({ children }) => {
   return children;
 };
 
-// ── Home layout wrapper
-function HomeLayout() {
-  return (
-    <div className="min-h-screen bg-gray-50">
-      <Navbar/>
-      <Routes>
-        <Route index element={<HomePage/>}/>
-        <Route path="products"          element={<HomePage/>}/>
-        <Route path="entities"          element={<ComingSoon title="Entities"/>}/>
-        <Route path="products/:id"      element={<ComingSoon title="Product Detail"/>}/>
-        <Route path="u/:handle"         element={<ComingSoon title="User Profile"/>}/>
-        <Route path="submit"            element={<RequireAuth><ComingSoon title="Submit Product"/></RequireAuth>}/>
-        <Route path="bookmarks"         element={<RequireAuth><ComingSoon title="Bookmarks"/></RequireAuth>}/>
-        <Route path="notifications"     element={<RequireAuth><ComingSoon title="Notifications"/></RequireAuth>}/>
-        <Route path="*"                 element={<NotFound/>}/>
-      </Routes>
-    </div>
-  );
-}
-
-// ── Placeholder for pages in progress
-function ComingSoon({ title }) {
-  return (
-    <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-      <div className="text-5xl mb-4">🚧</div>
-      <h2 className="text-2xl font-bold text-ink mb-2">{title}</h2>
-      <p className="text-gray-500">This page is ready in the full version. The backend API is fully wired.</p>
-    </div>
-  );
-}
-
 function NotFound() {
   return (
-    <div className="max-w-2xl mx-auto px-4 py-20 text-center">
-      <div className="text-6xl mb-4">404</div>
-      <h2 className="text-2xl font-bold text-ink mb-2">Page not found</h2>
-      <a href="/" className="btn btn-primary mt-4 inline-flex">Go Home</a>
+    <div style={{ maxWidth:600, margin:'120px auto 80px', textAlign:'center', padding:'0 20px' }}>
+      <div style={{ fontSize:64, marginBottom:16 }}>404</div>
+      <h2 style={{ fontSize:28, fontWeight:800, marginBottom:8 }}>Page not found</h2>
+      <p style={{ color:'#888', marginBottom:24 }}>The page you're looking for doesn't exist.</p>
+      <a href="/" style={{ padding:'12px 28px', borderRadius:12, background:'var(--orange)', color:'#fff', fontSize:14, fontWeight:700, textDecoration:'none', display:'inline-block' }}>Go Home</a>
     </div>
   );
 }
 
-// ── Root App
+function GlobalModals() {
+  const { submitOpen, setSubmitOpen, waitlistModal, setWaitlistModal } = useUI();
+  return (
+    <>
+      <SubmitProductModal open={submitOpen} onClose={() => setSubmitOpen(false)}/>
+      <InboxModal/>
+      <EntityProfileModal/>
+      <WaitlistModal product={waitlistModal} onClose={() => setWaitlistModal(null)}/>
+    </>
+  );
+}
+
+// Wrapper to inject auth nav callbacks
+function WithAuthCallbacks({ Component, ...props }) {
+  const navigate = useNavigate();
+  const { user } = useAuth();
+  const { setSubmitOpen } = useUI();
+  const onSignIn  = () => navigate('/login');
+  const onSignUp  = () => navigate('/register');
+  return <Component {...props} onSignIn={onSignIn} onSignUp={onSignUp}/>;
+}
+
 function AppRoutes() {
   return (
-    <Routes>
-      {/* Auth */}
-      <Route path="/login"    element={<GuestOnly><LoginPage/></GuestOnly>}/>
-      <Route path="/register" element={<GuestOnly><RegisterPage/></GuestOnly>}/>
+    <>
+      <Routes>
+        {/* Auth */}
+        <Route path="/login"    element={<GuestOnly><LoginPage/></GuestOnly>}/>
+        <Route path="/register" element={<GuestOnly><RegisterPage/></GuestOnly>}/>
 
-      {/* Admin panel */}
-      <Route path="/admin" element={<RequireAdmin><AdminLayout/></RequireAdmin>}>
-        <Route index                 element={<AdminDashboard/>}/>
-        <Route path="products"       element={<AdminProducts/>}/>
-        <Route path="users"          element={<AdminUsers/>}/>
-        <Route path="entities"       element={<AdminEntities/>}/>
-        <Route path="applications"   element={<AdminApplications/>}/>
-        <Route path="featured"       element={<AdminFeatured/>}/>
-        <Route path="reports"        element={<AdminReports/>}/>
-        <Route path="settings"       element={<AdminSettings/>}/>
-        <Route path="profile"        element={<AdminProfile/>}/>
-      </Route>
+        {/* Admin panel */}
+        <Route path="/admin" element={<RequireAdmin><AdminLayout/></RequireAdmin>}>
+          <Route index                 element={<AdminDashboard/>}/>
+          <Route path="products"       element={<AdminProducts/>}/>
+          <Route path="users"          element={<AdminUsers/>}/>
+          <Route path="entities"       element={<AdminEntities/>}/>
+          <Route path="applications"   element={<AdminApplications/>}/>
+          <Route path="featured"       element={<AdminFeatured/>}/>
+          <Route path="reports"        element={<AdminReports/>}/>
+          <Route path="settings"       element={<AdminSettings/>}/>
+          <Route path="profile"        element={<AdminProfile/>}/>
+        </Route>
 
-      {/* Home site */}
-      <Route path="/*" element={<HomeLayout/>}/>
-    </Routes>
+        {/* Public site — all wrapped with auth callbacks */}
+        <Route path="/"             element={<WithAuthCallbacks Component={HomePage}/>}/>
+        <Route path="/products"     element={<WithAuthCallbacks Component={AllProductsPage}/>}/>
+        <Route path="/products/:id" element={<WithAuthCallbacks Component={ProductDetailPage}/>}/>
+        <Route path="/directory"    element={<WithAuthCallbacks Component={DirectoryPage}/>}/>
+        <Route path="/accelerators" element={<WithAuthCallbacks Component={AcceleratorsPage}/>}/>
+        <Route path="/list/:type"   element={<WithAuthCallbacks Component={ListingPage}/>}/>
+        <Route path="/bookmarks"    element={<WithAuthCallbacks Component={BookmarksPage}/>}/>
+        <Route path="/u/:handle"    element={<WithAuthCallbacks Component={UserProfilePage}/>}/>
+        <Route path="/submit"       element={<Navigate to="/" replace/>}/>
+        <Route path="*"             element={<NotFound/>}/>
+      </Routes>
+      <GlobalModals/>
+    </>
   );
 }
 
@@ -116,15 +127,17 @@ export default function App() {
   return (
     <BrowserRouter>
       <AuthProvider>
-        <AppRoutes/>
-        <Toaster
-          position="bottom-right"
-          toastOptions={{
-            duration: 3000,
-            style: { borderRadius:'12px', fontSize:'14px', fontWeight:500 },
-            success: { iconTheme: { primary:'#E15033', secondary:'#fff' } },
-          }}
-        />
+        <UIProvider>
+          <AppRoutes/>
+          <Toaster
+            position="bottom-right"
+            toastOptions={{
+              duration: 3000,
+              style: { borderRadius:'12px', fontSize:'14px', fontWeight:500 },
+              success: { iconTheme: { primary:'#E15033', secondary:'#fff' } },
+            }}
+          />
+        </UIProvider>
       </AuthProvider>
     </BrowserRouter>
   );
