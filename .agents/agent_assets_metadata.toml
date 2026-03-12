@@ -1,0 +1,8 @@
+uploads = []
+generated = []
+
+[[outputs]]
+id = "Uoz0p3E9OBoHyFJtHwBHI"
+uri = "file://frontend/public/tlmena-logo.svg"
+type = "image"
+title = "Tech Launch MENA — Logo SVG"
