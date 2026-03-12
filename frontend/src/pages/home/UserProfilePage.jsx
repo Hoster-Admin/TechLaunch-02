@@ -29,7 +29,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { following, toggleFollow, followingIds, toggleFollowId, openDM } = useUI();
-  const [activeTab, setActiveTab] = useState('products');
+  const [activeTab, setActiveTab] = useState('activity');
   const [profile, setProfile]       = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [followLoading, setFollowLoading]   = useState(false);
@@ -58,6 +58,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             id: user.id,
             handle: '@' + (user.handle || '').replace('@',''),
             name: user.name || 'Unknown',
+            avatar_url: user.avatar_url || null,
             persona: PERSONA_MAP[(user.persona||'enthusiast').toLowerCase()] || 'Enthusiast',
             headline: user.headline || '',
             bio: user.bio || '',
@@ -78,6 +79,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             id: u.id,
             handle: '@' + (u.handle || handle),
             name: u.name || u.full_name || handle,
+            avatar_url: u.avatar_url || null,
             persona: PERSONA_MAP[(u.persona||'enthusiast').toLowerCase()] || u.persona || 'Enthusiast',
             headline: u.headline || '',
             bio: u.bio || '',
@@ -184,8 +186,11 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             <div style={{ padding:'0 28px 24px', position:'relative' }}>
 
               {/* Avatar */}
-              <div style={{ width:80, height:80, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:24, fontWeight:900, border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)' }}>
-                {initials}
+              <div style={{ width:80, height:80, borderRadius:'50%', border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)', overflow:'hidden', flexShrink:0 }}>
+                {profile.avatar_url
+                  ? <img src={profile.avatar_url} alt={profile.name} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
+                  : <div style={{ width:'100%', height:'100%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:24, fontWeight:900 }}>{initials}</div>
+                }
               </div>
 
               {/* Action buttons */}
@@ -228,9 +233,9 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                     {hasAbout ? (
                       <button
                         onClick={() => setAboutOpen(o => !o)}
-                        style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
-                        <span style={{ fontSize:13, color:'#555', fontWeight:500 }}>{profile.headline || 'View details'}</span>
-                        <span style={{ fontSize:11, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)' }}>▼</span>
+                        style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
+                        <span style={{ fontSize:13, color:'#555', fontWeight:500, textDecoration:'underline', textUnderlineOffset:3 }}>{profile.headline || 'View details'}</span>
+                        <span style={{ fontSize:10, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)' }}>▼</span>
                       </button>
                     ) : (
                       profile.headline && <div style={{ fontSize:13, color:'#555' }}>{profile.headline}</div>
@@ -282,7 +287,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
 
           {/* ── Tabs ── */}
           <div style={{ display:'flex', marginBottom:16, background:'#fff', borderRadius:12, border:'1px solid #e8e8e8', overflow:'hidden' }}>
-            {[['products','🚀 Products'],['interests','✨ Interests'],['activity','📝 Activity']].map(([t,label]) => (
+            {[['activity','📝 Activity'],['products','🚀 Products'],['interests','✨ Interests']].map(([t,label]) => (
               <button key={t} onClick={() => setActiveTab(t)}
                 style={{ flex:1, padding:'13px 16px', border:'none', background:activeTab===t?'var(--orange-light)':'transparent', fontSize:13, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
                 {label}
