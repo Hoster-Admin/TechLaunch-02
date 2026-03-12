@@ -43,7 +43,6 @@ export default function HomePage() {
   const { user } = useAuth();
   const { setSubmitOpen, setAuthModal, following } = useUI();
   const [products, setProducts]       = useState(MOCK_PRODUCTS);
-  const [trendingProducts, setTrending] = useState([]);
   const [followingProducts, setFollowingProducts] = useState([]);
   const [loading,  setLoading]        = useState(false);
   const [feedType, setFeedType]       = useState('all');
@@ -57,14 +56,9 @@ export default function HomePage() {
       .then(({ data }) => {
         if (data.data?.length) {
           setProducts(data.data);
-          setTrending([...data.data].sort((a,b) => (b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5));
-        } else {
-          setTrending([...MOCK_PRODUCTS].sort((a,b)=>(b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5));
         }
       })
-      .catch(() => {
-        setTrending([...MOCK_PRODUCTS].sort((a,b)=>(b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5));
-      });
+      .catch(() => {});
   }, []);
 
   useEffect(() => {
@@ -242,26 +236,6 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <div className="sidebar" style={{ display: 'block' }}>
-            {/* Trending this week */}
-            {trendingProducts.length > 0 && (
-              <div className="sidebar-card">
-                <div className="sidebar-title">🔥 Trending This Week</div>
-                {trendingProducts.map((p, i) => (
-                  <div key={p.id} className="sidebar-item" onClick={() => navigate(`/products/${p.id}`)}
-                    style={{ cursor:'pointer', padding:'10px 0', borderBottom: i < trendingProducts.length-1 ? '1px solid #f4f4f4':'none' }}>
-                    <div style={{ width:28, height:28, borderRadius:8, background:'var(--orange-light)', display:'grid', placeItems:'center', fontSize:14, flexShrink:0 }}>
-                      {p.logo_emoji || '🚀'}
-                    </div>
-                    <div style={{ flex:1, minWidth:0 }}>
-                      <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p.name}</div>
-                      <div style={{ fontSize:11, color:'#aaa' }}>▲ {p.upvotes_count || 0} votes</div>
-                    </div>
-                    <div style={{ fontSize:11, fontWeight:800, color:'rgba(232,98,26,.6)', minWidth:20, textAlign:'right' }}>#{i+1}</div>
-                  </div>
-                ))}
-              </div>
-            )}
-
             {/* From the Community */}
             <div className="sidebar-card">
               <div className="sidebar-title">✍️ From the Community</div>
