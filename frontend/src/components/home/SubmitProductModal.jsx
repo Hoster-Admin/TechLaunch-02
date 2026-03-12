@@ -168,12 +168,14 @@ export default function SubmitProductModal({ open, onClose }) {
               <input ref={logoInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleLogoUpload}/>
               <div style={{ flex:1 }}>
                 <button type="button" onClick={() => logoInputRef.current?.click()}
-                  style={{ display:'block', width:'100%', marginBottom:8, padding:'8px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fafafa', fontSize:13, fontWeight:600, cursor:'pointer', color:'#555', textAlign:'left' }}>
-                  📤 Upload image
+                  style={{ display:'block', width:'100%', padding:'10px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fafafa', fontSize:13, fontWeight:600, cursor:'pointer', color:'#555', textAlign:'left' }}>
+                  📤 Upload logo image
                 </button>
-                <div style={{ fontSize:11, color:'#bbb', marginBottom:6 }}>or use an emoji:</div>
-                <input type="text" value={form.logoEmoji} placeholder="" maxLength={4} onChange={e => setForm(f=>({...f,logoEmoji:e.target.value}))}
-                  style={{ ...inp, padding:'7px 12px', fontSize:22, width:'100%' }} onFocus={fo} onBlur={bl}/>
+                <div style={{ fontSize:11, color:'#bbb', marginTop:8, lineHeight:1.5 }}>PNG, JPG or SVG · Recommended 200×200 px</div>
+                {logoFile && (
+                  <button type="button" onClick={() => setLogoFile(null)}
+                    style={{ marginTop:8, fontSize:11, color:'#aaa', background:'none', border:'none', cursor:'pointer', padding:0, textDecoration:'underline' }}>Remove</button>
+                )}
               </div>
             </div>
           </div>
@@ -264,10 +266,26 @@ export default function SubmitProductModal({ open, onClose }) {
         </>}
 
         {/* ── Step 3: Media */}
-        {step === 3 && <>
+        {step === 3 && (()=>{
+          const filled = screenshots.filter(Boolean).length;
+          const hasVideo = form.videoUrl.trim().length > 0;
+          const mediaOk = filled === 4 || hasVideo;
+          return <>
           <Prog step={3}/>
-          <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:6 }}>Add screenshots</div>
-          <div style={{ fontSize:14, color:'#666', marginBottom:24 }}>Upload up to 4 screenshots to show off your product.</div>
+          <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>Add media</div>
+          <div style={{ fontSize:14, color:'#666', marginBottom:16 }}>Upload <strong>4 screenshots</strong> — or add a <strong>demo video</strong> instead.</div>
+
+          {/* Progress bar */}
+          <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, padding:'10px 14px', borderRadius:12, background: mediaOk ? '#f0fdf4' : '#fafafa', border:`1px solid ${mediaOk?'#bbf7d0':'#e8e8e8'}` }}>
+            <div style={{ display:'flex', gap:5 }}>
+              {[0,1,2,3].map(i => (
+                <div key={i} style={{ width:28, height:6, borderRadius:99, background: screenshots[i] ? 'var(--orange)' : '#e0e0e0', transition:'background .2s' }}/>
+              ))}
+            </div>
+            <span style={{ fontSize:12, fontWeight:700, color: mediaOk ? '#16a34a' : '#aaa' }}>
+              {hasVideo ? '✅ Video added' : filled === 4 ? '✅ All 4 uploaded' : `${filled} / 4 photos${filled === 0 ? ' — or add a video below' : ''}`}
+            </span>
+          </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(2,1fr)', gap:12, marginBottom:20 }}>
             {[0,1,2,3].map(i => (
@@ -285,8 +303,8 @@ export default function SubmitProductModal({ open, onClose }) {
                     </>
                   ) : (
                     <>
-                      <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{ marginBottom:6 }}><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
-                      <span style={{ fontSize:11, color:'#ccc', fontWeight:600 }}>Screenshot {i+1}</span>
+                      <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="1.5" style={{ marginBottom:5 }}><rect x="3" y="3" width="18" height="18" rx="3"/><circle cx="8.5" cy="8.5" r="1.5"/><polyline points="21 15 16 10 5 21"/></svg>
+                      <span style={{ fontSize:10, color:'#ccc', fontWeight:700, textTransform:'uppercase', letterSpacing:'.04em' }}>Photo {i+1}</span>
                     </>
                   )}
                 </div>
@@ -294,11 +312,18 @@ export default function SubmitProductModal({ open, onClose }) {
             ))}
           </div>
 
+          {/* OR divider */}
+          <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+            <div style={{ flex:1, height:1, background:'#e8e8e8' }}/>
+            <span style={{ fontSize:11, fontWeight:700, color:'#bbb', letterSpacing:'.06em' }}>OR ADD A VIDEO</span>
+            <div style={{ flex:1, height:1, background:'#e8e8e8' }}/>
+          </div>
+
           <div style={{ marginBottom:20 }}>
-            <label style={lbl}>Demo Video URL <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>YouTube or Vimeo</span></label>
+            <label style={lbl}>Demo Video URL <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>YouTube or Vimeo link</span></label>
             <div style={{ position:'relative' }}>
               <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.97C18.88 4 12 4 12 4s-6.88 0-8.59.45A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.97C5.12 20 12 20 12 20s6.88 0 8.59-.45a2.78 2.78 0 001.95-1.97A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/></svg>
-              <input type="url" value={form.videoUrl} placeholder="" onChange={e => setForm(f=>({...f,videoUrl:e.target.value}))}
+              <input type="url" value={form.videoUrl} placeholder="https://youtube.com/watch?v=…" onChange={e => setForm(f=>({...f,videoUrl:e.target.value}))}
                 style={{ ...inp, paddingLeft:34 }} onFocus={fo} onBlur={bl}/>
             </div>
           </div>
@@ -307,7 +332,7 @@ export default function SubmitProductModal({ open, onClose }) {
             <button onClick={() => setStep(2)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
             <button onClick={() => setStep(4)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>Next →</button>
           </div>
-        </>}
+        </>})()}
 
         {/* ── Step 4: Visibility */}
         {step === 4 && <>
