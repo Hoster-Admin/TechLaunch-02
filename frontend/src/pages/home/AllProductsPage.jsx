@@ -24,9 +24,21 @@ const MOCK_PRODUCTS = [
 ];
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
-const COUNTRIES  = [['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['bh','🇧🇭 Bahrain'],['tn','🇹🇳 Tunisia'],['lb','🇱🇧 Lebanon']];
+const COUNTRIES = [
+  ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],       ['eg','🇪🇬 Egypt'],
+  ['jo','🇯🇴 Jordan'],     ['ma','🇲🇦 Morocco'],   ['kw','🇰🇼 Kuwait'],
+  ['qa','🇶🇦 Qatar'],      ['bh','🇧🇭 Bahrain'],   ['tn','🇹🇳 Tunisia'],
+  ['lb','🇱🇧 Lebanon'],    ['iq','🇮🇶 Iraq'],       ['om','🇴🇲 Oman'],
+  ['ly','🇱🇾 Libya'],      ['dz','🇩🇿 Algeria'],    ['sy','🇸🇾 Syria'],
+  ['ye','🇾🇪 Yemen'],      ['ps','🇵🇸 Palestine'],  ['sd','🇸🇩 Sudan'],
+];
 
-const COUNTRY_NAMES = Object.fromEntries(COUNTRIES.map(([code, label]) => [code, label]));
+const COUNTRY_MATCH = {
+  sa:'saudi arabia', ae:'uae', eg:'egypt', jo:'jordan', ma:'morocco',
+  kw:'kuwait', qa:'qatar', bh:'bahrain', tn:'tunisia', lb:'lebanon',
+  iq:'iraq', om:'oman', ly:'libya', dz:'algeria', sy:'syria',
+  ye:'yemen', ps:'palestine', sd:'sudan',
+};
 
 export default function AllProductsPage({ onSignIn, onSignUp }) {
   const navigate = useNavigate();
@@ -77,7 +89,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
     const q = searchQ.toLowerCase();
     const matchQ = !q || p.name.toLowerCase().includes(q) || (p.tagline||'').toLowerCase().includes(q) || (p.industry||'').toLowerCase().includes(q);
     const matchI = !selIndustries.length || selIndustries.includes(p.industry);
-    const matchC = !selCountries.length  || selCountries.some(c => (p.country||'').toLowerCase().includes(COUNTRY_NAMES[c]?.replace(/🇸🇦|🇦🇪|🇪🇬|🇯🇴|🇲🇦|🇰🇼|🇶🇦|🇧🇭|🇹🇳|🇱🇧/g,'').trim().toLowerCase()));
+    const matchC = !selCountries.length  || selCountries.some(c => (p.country||'').toLowerCase().includes(COUNTRY_MATCH[c] || c));
     return matchQ && matchI && matchC;
   });
 
