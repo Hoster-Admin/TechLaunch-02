@@ -14,7 +14,6 @@ export const UIProvider = ({ children }) => {
   const [votes,          setVotes]          = useState(new Set());
   const [notifications,  setNotifications]  = useState([]);
   const [unreadCount,    setUnreadCount]    = useState(0);
-  const [dmThreads,      setDmThreads]      = useState({});
   const [following,      setFollowing]      = useState(new Set());
   const [followingIds,   setFollowingIds]   = useState(new Set());
   const [profiles]                          = useState(DEMO_PROFILES);
@@ -105,40 +104,17 @@ export const UIProvider = ({ children }) => {
   }, []);
 
   const openDM = useCallback((handle, name, avatar) => {
-    setDmThreads(prev => {
-      if (!prev[handle]) {
-        return { ...prev, [handle]: [{ from: handle, text: `Hey! Thanks for reaching out 👋`, ts: 'Now' }] };
-      }
-      return prev;
-    });
-    setInboxTarget({ handle, name, avatar });
+    const cleanHandle = (handle || '').replace('@', '');
+    setInboxTarget({ handle: cleanHandle, name, avatar });
     setInboxOpen(true);
   }, []);
-
-  const sendDM = useCallback((handle, text, myHandle) => {
-    const ts = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-    setDmThreads(prev => ({
-      ...prev,
-      [handle]: [...(prev[handle] || []), { from: myHandle || 'me', text, ts }]
-    }));
-    setTimeout(() => {
-      const replies = ['Thanks for reaching out! 🙌','That sounds interesting, tell me more.','Happy to connect! What are you working on?','Great to hear from you 👋','Let\'s schedule a call sometime!'];
-      const reply = replies[Math.floor(Math.random() * replies.length)];
-      const rts = new Date().toLocaleTimeString('en-US', { hour: '2-digit', minute: '2-digit' });
-      setDmThreads(prev => ({
-        ...prev,
-        [handle]: [...(prev[handle] || []), { from: handle, text: reply, ts: rts }]
-      }));
-      addNotification('dm', `${handle} replied to your message`, '💬', handle);
-    }, 1200);
-  }, [addNotification]);
 
   return (
     <UIContext.Provider value={{
       bookmarks, toggleBookmark, loadBookmarks,
       votes, toggleVote,
       notifications, unreadCount, addNotification, markAllRead, markOneRead, loadNotifications,
-      dmThreads, openDM, sendDM, inboxOpen, setInboxOpen, inboxTarget, setInboxTarget,
+      openDM, inboxOpen, setInboxOpen, inboxTarget, setInboxTarget,
       following, toggleFollow,
       followingIds, toggleFollowId,
       profiles,
