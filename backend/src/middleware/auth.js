@@ -12,7 +12,7 @@ const authenticate = async (req, res, next) => {
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const { rows } = await query(
-      'SELECT id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country FROM users WHERE id=$1',
+      'SELECT id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at FROM users WHERE id=$1',
       [decoded.userId]
     );
     if (!rows.length) return res.status(401).json({ success:false, message:'User not found' });
@@ -38,7 +38,7 @@ const optionalAuth = async (req, res, next) => {
     const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await query(
-      'SELECT id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country FROM users WHERE id=$1',
+      'SELECT id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at FROM users WHERE id=$1',
       [decoded.userId]
     );
     if (rows.length && rows[0].status === 'active') req.user = rows[0];
