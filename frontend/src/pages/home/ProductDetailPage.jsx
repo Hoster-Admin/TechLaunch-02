@@ -41,19 +41,18 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
   const [loading, setLoading] = useState(true);
   const [copied,  setCopied]  = useState(false);
 
-  const pid = parseInt(id);
-
   useEffect(() => {
     setLoading(true);
-    productsAPI.get(pid).then(({ data }) => {
+    productsAPI.get(id).then(({ data }) => {
       setProduct(data.data); setLoading(false);
     }).catch(() => {
-      setProduct(MOCK_PRODUCTS.find(p => p.id === pid) || null);
+      const numId = parseInt(id);
+      setProduct(MOCK_PRODUCTS.find(p => p.id === numId || String(p.id) === id) || null);
       setLoading(false);
     });
-  }, [pid]);
+  }, [id]);
 
-  const p = product || MOCK_PRODUCTS.find(p => p.id === pid) || null;
+  const p = product || MOCK_PRODUCTS.find(p => p.id === parseInt(id) || String(p.id) === id) || null;
 
   if (loading) return (
     <><Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
@@ -159,7 +158,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
 
           {/* Screenshots carousel */}
           <div style={{ display:'flex', gap:12, overflowX:'auto', paddingBottom:20, marginBottom:36, scrollbarWidth:'none' }}>
-            <div style={{ minWidth:280, height:160, borderRadius:14, background:`linear-gradient(135deg,${pid%3===0?'#1a1a2e,#16213e':pid%3===1?'#0f3460,#533483':'#2d0036,#1a0a2e'})`, border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
+            <div style={{ minWidth:280, height:160, borderRadius:14, background:`linear-gradient(135deg,${(id||'').charCodeAt(0)%3===0?'#1a1a2e,#16213e':(id||'').charCodeAt(0)%3===1?'#0f3460,#533483':'#2d0036,#1a0a2e'})`, border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
               <div style={{ fontSize:40 }}>{p.logo_emoji||'🚀'}</div>
               <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.6)', letterSpacing:'.06em' }}>DASHBOARD</div>
             </div>

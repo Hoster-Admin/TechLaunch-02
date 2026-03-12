@@ -49,13 +49,13 @@ export default function Footer() {
             ]},
             { title:'Community', links:[
               { label:'Articles',      action:() => navigate('/articles') },
-              { label:'Weekly Digest', action:() => {} },
+              { label:'Weekly Digest', action:() => navigate('/articles') },
               { label:'Accelerators',  action:() => navigate('/accelerators') },
-              { label:'Events',        action:() => {} },
+              { label:'Events',        action:() => navigate('/accelerators') },
             ]},
             { title:'Company', links:[
               { label:'About',          action:() => navigate('/about') },
-              { label:'Contact',        action:() => {} },
+              { label:'Contact',        action:() => navigate('/about') },
               { label:'Write for Us',   action:() => navigate('/articles') },
               { label:'Privacy Policy', action:() => navigate('/privacy') },
               { label:'Terms of Use',   action:() => navigate('/terms') },
