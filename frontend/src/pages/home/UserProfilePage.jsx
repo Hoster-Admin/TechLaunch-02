@@ -302,15 +302,15 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                 {/* Stats */}
                 <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
                   <div style={{ textAlign:'left' }}>
-                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{profileProducts.length}</div>
-                    <div style={{ fontSize:11, color:'#aaa', fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1 }}>Products</div>
+                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'Inter,sans-serif' }}>{profileProducts.length}</div>
+                    <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Products</div>
                   </div>
                   <div style={{ textAlign:'left', cursor:'pointer' }} onClick={() => openFollowModal('followers')}>
-                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{displayFollowers}</div>
+                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'Inter,sans-serif' }}>{displayFollowers}</div>
                     <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Followers</div>
                   </div>
                   <div style={{ textAlign:'left', cursor:'pointer' }} onClick={() => openFollowModal('following')}>
-                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{followingCount}</div>
+                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'Inter,sans-serif' }}>{followingCount}</div>
                     <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Following</div>
                   </div>
                 </div>
