@@ -3,7 +3,10 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
+
+const DRAFT_KEY = 'tlmena_draft_product';
 
 /* ── World Dial Codes (comprehensive) ── */
 const WORLD_DIALS = [
@@ -128,10 +131,14 @@ const IconBox = ({ children }) => (
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
+  const { setSubmitOpen } = useUI();
   const navigate = useNavigate();
   const [activeTab,    setActiveTab]    = useState('profile');
   const [copied,       setCopied]       = useState(false);
   const [saving,       setSaving]       = useState(false);
+  const [localDraft,   setLocalDraft]   = useState(() => {
+    try { const d = localStorage.getItem(DRAFT_KEY); return d ? JSON.parse(d) : null; } catch { return null; }
+  });
 
   const [name,         setName]         = useState(user?.name      || '');
   const [handle,       setHandle]       = useState((user?.handle || '').replace('@',''));
@@ -460,13 +467,49 @@ export default function SettingsPage() {
 
             {/* ── MY PRODUCTS ── */}
             {activeTab === 'products' && (
-              <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'40px', textAlign:'center' }}>
-                <div style={{ fontSize:44, marginBottom:12 }}>🚀</div>
-                <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No products yet</div>
-                <p style={{ color:'#888', marginBottom:20 }}>Products you submit will appear here.</p>
-                <button onClick={()=>navigate('/')} style={{ padding:'11px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-                  Submit a Product 🚀
-                </button>
+              <div>
+                {/* Draft card */}
+                {localDraft && localDraft.form?.name && (
+                  <div style={{ background:'#fff9f7', border:'1.5px solid #ffd6c2', borderRadius:16, padding:20, marginBottom:16 }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+                      <div style={{ width:48, height:48, borderRadius:14, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
+                        {localDraft.form.logoEmoji || '🚀'}
+                      </div>
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
+                          <div style={{ fontSize:15, fontWeight:800 }}>{localDraft.form.name}</div>
+                          <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#ffd6c2', color:'#c0600a' }}>DRAFT</span>
+                        </div>
+                        <div style={{ fontSize:12, color:'#888' }}>{localDraft.form.tagline || 'No tagline yet'}</div>
+                        {localDraft.savedAt && <div style={{ fontSize:11, color:'#bbb', marginTop:2 }}>Last saved {new Date(localDraft.savedAt).toLocaleDateString('en-US', { month:'short', day:'numeric', hour:'2-digit', minute:'2-digit' })}</div>}
+                      </div>
+                    </div>
+                    <div style={{ display:'flex', gap:8 }}>
+                      <button onClick={() => {
+                        setSubmitOpen(true);
+                      }} style={{ flex:1, padding:'10px 0', borderRadius:10, border:'none', background:'var(--orange)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                        Continue Draft →
+                      </button>
+                      <button onClick={() => {
+                        try { localStorage.removeItem(DRAFT_KEY); } catch {}
+                        setLocalDraft(null);
+                        toast.success('Draft deleted');
+                      }} style={{ padding:'10px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', color:'#e63946', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                        Delete
+                      </button>
+                    </div>
+                  </div>
+                )}
+
+                {/* Empty state */}
+                <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'40px', textAlign:'center' }}>
+                  <div style={{ fontSize:44, marginBottom:12 }}>🚀</div>
+                  <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No products yet</div>
+                  <p style={{ color:'#888', marginBottom:20 }}>Products you submit will appear here.</p>
+                  <button onClick={() => setSubmitOpen(true)} style={{ padding:'11px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                    Submit a Product 🚀
+                  </button>
+                </div>
               </div>
             )}
 

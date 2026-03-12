@@ -119,7 +119,25 @@ const markNotificationsRead = async (req, res, next) => {
   } catch(err){ next(err); }
 };
 
+// ── GET /api/users?search=q
+const searchUsers = async (req, res, next) => {
+  try {
+    const q = (req.query.search || '').trim();
+    const limit = Math.min(parseInt(req.query.limit) || 8, 20);
+    if (!q) return res.json({ success:true, data:[] });
+    const { rows } = await query(`
+      SELECT id, name, handle, avatar_url, avatar_color, persona, verified
+      FROM users
+      WHERE status='active'
+        AND (handle ILIKE $1 OR name ILIKE $1)
+      ORDER BY followers_count DESC NULLS LAST
+      LIMIT $2`, [`%${q}%`, limit]);
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+};
+
 module.exports = {
   getProfile, updateProfile, changePassword, toggleFollow,
-  getBookmarks, getMyProducts, getNotifications, markNotificationsRead
+  getBookmarks, getMyProducts, getNotifications, markNotificationsRead,
+  searchUsers
 };
