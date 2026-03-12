@@ -119,6 +119,44 @@ const markNotificationsRead = async (req, res, next) => {
   } catch(err){ next(err); }
 };
 
+// ── GET /api/users/:handle/upvoted  — products a user has voted on
+const getUserUpvoted = async (req, res, next) => {
+  try {
+    const handle = (req.params.handle || '').replace('@','');
+    const { rows: users } = await query(
+      `SELECT id FROM users WHERE handle=$1 AND status='active' LIMIT 1`, [handle]);
+    if (!users.length) return res.json({ success:true, data:[] });
+    const uid = users[0].id;
+    const { rows } = await query(`
+      SELECT p.id, p.name, p.tagline, p.logo_emoji, p.industry, p.upvotes_count,
+             p.status, p.countries, uv.created_at AS voted_at,
+             true AS has_voted
+      FROM upvotes uv JOIN products p ON p.id = uv.product_id
+      WHERE uv.user_id=$1 AND p.status IN ('live','soon')
+      ORDER BY uv.created_at DESC LIMIT 30`, [uid]);
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+};
+
+// ── GET /api/users/:handle/activity  — comments + other activity
+const getUserActivity = async (req, res, next) => {
+  try {
+    const handle = (req.params.handle || '').replace('@','');
+    const { rows: users } = await query(
+      `SELECT id FROM users WHERE handle=$1 AND status='active' LIMIT 1`, [handle]);
+    if (!users.length) return res.json({ success:true, data:[] });
+    const uid = users[0].id;
+    const { rows } = await query(`
+      SELECT c.id, c.body, c.created_at,
+             p.id AS product_id, p.name AS product_name, p.logo_emoji AS product_emoji,
+             'comment' AS type
+      FROM comments c JOIN products p ON p.id = c.product_id
+      WHERE c.user_id=$1
+      ORDER BY c.created_at DESC LIMIT 40`, [uid]);
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+};
+
 // ── GET /api/users?search=q
 const searchUsers = async (req, res, next) => {
   try {
@@ -139,5 +177,5 @@ const searchUsers = async (req, res, next) => {
 module.exports = {
   getProfile, updateProfile, changePassword, toggleFollow,
   getBookmarks, getMyProducts, getNotifications, markNotificationsRead,
-  searchUsers
+  searchUsers, getUserUpvoted, getUserActivity
 };

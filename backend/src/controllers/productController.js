@@ -6,21 +6,23 @@ const getProducts = async (req, res, next) => {
     const {
       status = 'live', industry, country, search,
       sort = 'upvotes', page = 1, limit = 20,
-      featured
+      featured, submitter
     } = req.query;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
     const params = [];
     const conditions = [];
 
+    if (submitter){ params.push(submitter); conditions.push(`p.submitted_by = $${params.length}`); }
+
     // Status filter
     if (status === 'all') {
-      conditions.push(`p.status IN ('live','soon')`);
+      if (!submitter) conditions.push(`p.status IN ('live','soon')`);
+      // else: no status filter — show all statuses for the submitter
     } else {
       params.push(status);
       conditions.push(`p.status = $${params.length}`);
     }
-
     if (industry) { params.push(industry); conditions.push(`p.industry = $${params.length}`); }
     if (country)  { params.push(country);  conditions.push(`$${params.length} = ANY(p.countries)`); }
     if (featured === 'true') conditions.push(`p.featured = true`);

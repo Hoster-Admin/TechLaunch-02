@@ -7,65 +7,77 @@ import { useUI } from '../../context/UIContext';
 import { usersAPI, productsAPI } from '../../utils/api';
 import ProductCard from '../../components/home/ProductCard';
 
-const DEMO_PROFILES = {
-  'sara_builds': { id:null, handle:'@sara_builds', name:'Sara Al-Mahmoud', avatar:'SA', persona:'Founder', headline:'Founder @ Noon Academy · Edtech · 🇸🇦', bio:'Building the future of education in the Arab world. Ex-McKinsey. Mom of 3.', country:'sa', twitter:'sara_builds', linkedin:'sara-mahmoud', verified:true, followers_count:840, following_count:210 },
-  'khalid_vc':   { id:null, handle:'@khalid_vc',   name:'Khalid Bin Tariq', avatar:'KT', persona:'Investor', headline:'Partner @ STV · Early Stage · 🇸🇦', bio:'Investing in MENA founders building category-defining companies.', country:'sa', twitter:'khalidvc', linkedin:'khalid-bin-tariq', verified:true, followers_count:1200, following_count:340 },
-  'mona_codes':  { id:null, handle:'@mona_codes',  name:'Mona Hassan', avatar:'MH', persona:'Builder', headline:'Solo founder · AI tools · 🇪🇬', bio:'Vibe coder. Building AI micro-tools for Arab creators. 3 products shipped.', country:'eg', twitter:'mona_codes', linkedin:'mona-hassan-dev', verified:false, followers_count:290, following_count:180 },
-  'ahmed_ux':    { id:null, handle:'@ahmed_ux',    name:'Ahmed Al-Rashidi', avatar:'AR', persona:'Product Manager', headline:'PM @ Tabby · Fintech · 🇦🇪', bio:'Product thinker. UXMENA community lead. Writing about Arab product culture.', country:'ae', twitter:'ahmed_ux', linkedin:'ahmed-rashidi-pm', verified:false, followers_count:560, following_count:220 },
-};
-
 const PERSONA_ICONS = { Founder:'🚀', Investor:'💰', Builder:'⚡', 'Product Manager':'🧠', Accelerator:'🏢', Enthusiast:'⭐', 'Venture Studio':'🏗️' };
 const PERSONA_MAP   = { founder:'Founder', investor:'Investor', builder:'Builder', pm:'Product Manager', accelerator:'Accelerator', enthusiast:'Enthusiast', venture:'Venture Studio', 'product manager':'Product Manager', 'venture studio':'Venture Studio' };
 const COUNTRY_NAMES = { sa:'Saudi Arabia',ae:'UAE',eg:'Egypt',jo:'Jordan',ma:'Morocco',kw:'Kuwait',qa:'Qatar',bh:'Bahrain',om:'Oman',lb:'Lebanon',iq:'Iraq',tn:'Tunisia',dz:'Algeria',ly:'Libya' };
+
+function timeAgo(dateStr) {
+  if (!dateStr) return '';
+  const diff = Date.now() - new Date(dateStr).getTime();
+  const m = Math.floor(diff / 60000);
+  if (m < 1) return 'just now';
+  if (m < 60) return `${m}m ago`;
+  const h = Math.floor(m / 60);
+  if (h < 24) return `${h}h ago`;
+  const d = Math.floor(h / 24);
+  if (d < 30) return `${d}d ago`;
+  return new Date(dateStr).toLocaleDateString('en-US', { month:'short', day:'numeric' });
+}
 
 export default function UserProfilePage({ onSignIn, onSignUp }) {
   const { handle } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { following, toggleFollow, followingIds, toggleFollowId, openDM, bookmarks, votes } = useUI();
+  const { following, toggleFollow, followingIds, toggleFollowId, openDM } = useUI();
   const [activeTab, setActiveTab] = useState('products');
-  const [profile, setProfile]     = useState(null);
+  const [profile, setProfile]       = useState(null);
+  const [loadingProfile, setLoadingProfile] = useState(true);
+  const [followLoading, setFollowLoading]   = useState(false);
+  const [aboutOpen, setAboutOpen]           = useState(false);
+
+  // tab data
   const [profileProducts, setProfileProducts] = useState([]);
-  const [loadingProfile, setLoadingProfile]   = useState(true);
-  const [followLoading, setFollowLoading]     = useState(false);
+  const [upvotedProducts, setUpvotedProducts] = useState([]);
+  const [activityItems, setActivityItems]     = useState([]);
+  const [loadingTab, setLoadingTab]           = useState(false);
 
   const isOwn = user && ((user.handle || '').replace('@','') === handle);
 
+  // Load profile
   useEffect(() => {
     setLoadingProfile(true);
-    if (isOwn) {
-      const p = {
-        id: user.id,
-        handle: '@' + (user.handle || '').replace('@',''),
-        name: user.name || 'Unknown',
-        avatar: (user.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2),
-        persona: PERSONA_MAP[(user.persona||'enthusiast').toLowerCase()] || 'Enthusiast',
-        headline: user.headline || '',
-        bio: user.bio || '',
-        country: user.country || '',
-        twitter: user.twitter || '',
-        linkedin: user.linkedin || '',
-        github: user.github || '',
-        website: user.website || '',
-        followers_count: user.followers_count ?? user.followers ?? 0,
-        following_count: user.following_count ?? user.following ?? 0,
-        verified: user.role === 'admin',
-        joinDate: user.created_at ? new Date(user.created_at).getFullYear() : 2024,
-      };
-      setProfile(p);
-      setLoadingProfile(false);
-      productsAPI.list({ submitter: user.id, status: 'all', limit: 20 })
-        .then(({ data }) => { if (data.data?.length) setProfileProducts(data.data); })
-        .catch(() => {});
-    } else {
-      usersAPI.profile(handle)
-        .then(({ data }) => {
+    setProfileProducts([]);
+    setUpvotedProducts([]);
+    setActivityItems([]);
+
+    const loadProfile = async () => {
+      try {
+        let p;
+        if (isOwn) {
+          p = {
+            id: user.id,
+            handle: '@' + (user.handle || '').replace('@',''),
+            name: user.name || 'Unknown',
+            persona: PERSONA_MAP[(user.persona||'enthusiast').toLowerCase()] || 'Enthusiast',
+            headline: user.headline || '',
+            bio: user.bio || '',
+            country: user.country || '',
+            twitter: user.twitter || '',
+            linkedin: user.linkedin || '',
+            github: user.github || '',
+            website: user.website || '',
+            followers_count: user.followers_count ?? 0,
+            following_count: user.following_count ?? 0,
+            verified: user.role === 'admin',
+            joinDate: user.created_at ? new Date(user.created_at).getFullYear() : 2024,
+          };
+        } else {
+          const { data } = await usersAPI.profile(handle);
           const u = data.data || data;
-          setProfile({
+          p = {
             id: u.id,
             handle: '@' + (u.handle || handle),
             name: u.name || u.full_name || handle,
-            avatar: (u.name || handle).split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2),
             persona: PERSONA_MAP[(u.persona||'enthusiast').toLowerCase()] || u.persona || 'Enthusiast',
             headline: u.headline || '',
             bio: u.bio || '',
@@ -74,26 +86,48 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             linkedin: u.linkedin || '',
             github: u.github || '',
             website: u.website || '',
-            followers_count: u.followers_count ?? u.followers ?? 0,
-            following_count: u.following_count ?? u.following ?? 0,
+            followers_count: u.followers_count ?? 0,
+            following_count: u.following_count ?? 0,
             verified: u.verified || u.role === 'admin',
             joinDate: u.created_at ? new Date(u.created_at).getFullYear() : null,
-          });
-          setLoadingProfile(false);
-          if (u.id) {
-            productsAPI.list({ submitter: u.id, status: 'all', limit: 20 })
-              .then(({ data: pd }) => { if (pd.data?.length) setProfileProducts(pd.data); })
-              .catch(() => {});
-          }
-        })
-        .catch(() => {
-          const demo = DEMO_PROFILES[handle];
-          if (demo) setProfile(demo);
-          else setProfile(null);
-          setLoadingProfile(false);
-        });
-    }
+          };
+        }
+        setProfile(p);
+        setLoadingProfile(false);
+
+        // Load products submitted by this user
+        if (p.id) {
+          const userId = p.id;
+          productsAPI.list({ submitter: userId, status: 'all', limit: 30 })
+            .then(({ data: pd }) => setProfileProducts(pd.data || []))
+            .catch(() => {});
+        }
+      } catch {
+        setProfile(null);
+        setLoadingProfile(false);
+      }
+    };
+    loadProfile();
   }, [handle, user?.id]);
+
+  // Load tab-specific data on tab switch
+  useEffect(() => {
+    if (!profile) return;
+    if (activeTab === 'interests') {
+      setLoadingTab(true);
+      usersAPI.upvoted(profile.handle.replace('@',''))
+        .then(({ data }) => setUpvotedProducts(data.data || []))
+        .catch(() => setUpvotedProducts([]))
+        .finally(() => setLoadingTab(false));
+    }
+    if (activeTab === 'activity') {
+      setLoadingTab(true);
+      usersAPI.activity(profile.handle.replace('@',''))
+        .then(({ data }) => setActivityItems(data.data || []))
+        .catch(() => setActivityItems([]))
+        .finally(() => setLoadingTab(false));
+    }
+  }, [activeTab, profile?.handle]);
 
   if (loadingProfile) return (
     <>
@@ -117,34 +151,25 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     </>
   );
 
-  const rawPersona = profile.persona || 'Enthusiast';
-  const personaLabel = PERSONA_MAP[rawPersona.toLowerCase()] || rawPersona;
+  const personaLabel = PERSONA_MAP[profile.persona?.toLowerCase()] || profile.persona || 'Enthusiast';
   const personaIcon  = PERSONA_ICONS[personaLabel] || '⭐';
-  const initials     = profile.avatar || (profile.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+  const initials     = (profile.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   const isFollowingHandle = following.has(profile.handle);
   const isFollowingId     = profile.id && followingIds.has(profile.id);
   const isFollowing       = isFollowingHandle || isFollowingId;
+  const displayFollowers  = (profile.followers_count ?? 0) + (isFollowing ? 1 : 0);
+  const followingCount    = isOwn ? following.size : (profile.following_count ?? 0);
 
-  const followers     = (profile.followers_count ?? 0) + (isFollowing && !isFollowingHandle && !isFollowingId ? 0 : 0);
-  const displayFollowers = isFollowing ? followers + 1 : followers;
-  const followingCount   = isOwn ? following.size : (profile.following_count ?? 0);
-
-  const interestedProducts = isOwn
-    ? profileProducts.filter(p => votes.has(p.id) || bookmarks.has(p.id))
-    : [];
+  const hasAbout = profile.bio || profile.country || profile.website || profile.twitter || profile.linkedin || profile.github || profile.joinDate;
 
   const handleFollowClick = async () => {
     if (!user) { onSignIn?.(); return; }
     setFollowLoading(true);
     try {
-      if (profile.id) {
-        await usersAPI.follow(profile.id);
-        toggleFollowId(profile.id);
-      }
+      if (profile.id) { await usersAPI.follow(profile.id); toggleFollowId(profile.id); }
       toggleFollow(profile.handle, profile.name);
-    } catch {
-      toggleFollow(profile.handle, profile.name);
-    } finally { setFollowLoading(false); }
+    } catch { toggleFollow(profile.handle, profile.name); }
+    finally { setFollowLoading(false); }
   };
 
   return (
@@ -153,14 +178,17 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
         <div style={{ maxWidth:900, margin:'0 auto', padding:'32px 32px 80px' }}>
 
-          {/* Profile card */}
+          {/* ── Profile card ── */}
           <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, overflow:'hidden', marginBottom:20 }}>
             <div style={{ height:100, background:'linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 50%,rgba(232,98,26,.15) 100%)' }}/>
             <div style={{ padding:'0 28px 24px', position:'relative' }}>
+
+              {/* Avatar */}
               <div style={{ width:80, height:80, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:24, fontWeight:900, border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)' }}>
                 {initials}
               </div>
 
+              {/* Action buttons */}
               <div style={{ display:'flex', justifyContent:'flex-end', paddingTop:12, marginBottom:8, gap:10 }}>
                 {isOwn ? (
                   <button onClick={() => navigate('/settings')}
@@ -182,22 +210,60 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                 )}
               </div>
 
+              {/* Name + handle + persona */}
               <div style={{ marginTop:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
                   <span style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em' }}>{profile.name}</span>
                   {profile.verified && <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#eff6ff', color:'#2563eb' }}>✓ Verified</span>}
                 </div>
                 <div style={{ fontSize:13, color:'#aaa', fontWeight:600, marginBottom:8 }}>{profile.handle}</div>
-                <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--orange-light)', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, color:'var(--orange)', marginBottom:10 }}>
+                <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--orange-light)', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, color:'var(--orange)', marginBottom:8 }}>
                   {personaIcon} {personaLabel}
                 </div>
-                {profile.headline && <div style={{ fontSize:13, color:'#555', marginBottom:10 }}>{profile.headline}</div>}
-                <div style={{ display:'flex', flexWrap:'wrap', gap:8, marginBottom:16 }}>
-                  {profile.website && <a href={profile.website.startsWith('http')?profile.website:'https://'+profile.website} target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f4f4f4' }}>🌐 Website</a>}
-                  {profile.twitter && <a href={`https://twitter.com/${profile.twitter.replace('@','')}`} target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f4f4f4' }}>𝕏 @{profile.twitter.replace('@','')}</a>}
-                  {profile.linkedin && <a href={`https://linkedin.com/in/${profile.linkedin}`} target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f4f4f4' }}>💼 LinkedIn</a>}
-                  {profile.github && <a href={`https://github.com/${profile.github}`} target="_blank" rel="noopener noreferrer" style={{ display:'flex', alignItems:'center', gap:5, fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f4f4f4' }}>⌥ GitHub</a>}
-                </div>
+
+                {/* Headline + collapsible About */}
+                {(profile.headline || hasAbout) && (
+                  <div style={{ marginBottom:12 }}>
+                    {/* Clickable headline row */}
+                    {hasAbout ? (
+                      <button
+                        onClick={() => setAboutOpen(o => !o)}
+                        style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
+                        <span style={{ fontSize:13, color:'#555', fontWeight:500 }}>{profile.headline || 'View details'}</span>
+                        <span style={{ fontSize:11, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)' }}>▼</span>
+                      </button>
+                    ) : (
+                      profile.headline && <div style={{ fontSize:13, color:'#555' }}>{profile.headline}</div>
+                    )}
+
+                    {/* Dropdown bio panel */}
+                    {aboutOpen && (
+                      <div style={{ marginTop:10, background:'#fafafa', border:'1px solid #f0f0f0', borderRadius:12, padding:'16px 18px', animation:'fadeIn .15s ease' }}>
+                        {profile.bio && (
+                          <div style={{ fontSize:13, color:'#444', lineHeight:1.7, marginBottom:12 }}>{profile.bio}</div>
+                        )}
+                        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                          {profile.country && (
+                            <span style={{ fontSize:12, color:'#777', fontWeight:600, padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>
+                              📍 {COUNTRY_NAMES[profile.country] || profile.country}
+                            </span>
+                          )}
+                          {profile.joinDate && (
+                            <span style={{ fontSize:12, color:'#777', fontWeight:600, padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>
+                              📅 Since {profile.joinDate}
+                            </span>
+                          )}
+                          {profile.website && <a href={profile.website.startsWith('http')?profile.website:'https://'+profile.website} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>🌐 Website</a>}
+                          {profile.twitter && <a href={`https://twitter.com/${profile.twitter.replace('@','')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>𝕏 @{profile.twitter.replace('@','')}</a>}
+                          {profile.linkedin && <a href={`https://linkedin.com/in/${profile.linkedin}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>💼 LinkedIn</a>}
+                          {profile.github && <a href={`https://github.com/${profile.github}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>⌥ GitHub</a>}
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                )}
+
+                {/* Stats */}
                 <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
                   {[
                     [profileProducts.length, 'Products'],
@@ -214,9 +280,9 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             </div>
           </div>
 
-          {/* Tabs */}
+          {/* ── Tabs ── */}
           <div style={{ display:'flex', marginBottom:16, background:'#fff', borderRadius:12, border:'1px solid #e8e8e8', overflow:'hidden' }}>
-            {[['products','🚀 Products'],['about','📋 About'],['interests','✨ Interests']].map(([t,label]) => (
+            {[['products','🚀 Products'],['interests','✨ Interests'],['activity','📝 Activity']].map(([t,label]) => (
               <button key={t} onClick={() => setActiveTab(t)}
                 style={{ flex:1, padding:'13px 16px', border:'none', background:activeTab===t?'var(--orange-light)':'transparent', fontSize:13, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
                 {label}
@@ -224,14 +290,16 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             ))}
           </div>
 
-          {/* Tab content */}
+          {/* ── Tab content ── */}
           <div>
+
+            {/* PRODUCTS — submitted by this user */}
             {activeTab === 'products' && (
               !profileProducts.length ? (
                 <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
                   <div style={{ fontSize:40, marginBottom:10 }}>🚀</div>
                   <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No products yet</div>
-                  <div style={{ fontSize:12, color:'#ccc' }}>Products linked to this profile will appear here.</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>Products submitted by this user will appear here.</div>
                   {isOwn && <button onClick={() => navigate('/submit')} style={{ marginTop:16, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>Submit a Product 🚀</button>}
                 </div>
               ) : (
@@ -245,42 +313,72 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               )
             )}
 
-            {activeTab === 'about' && (
-              <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:'24px 28px' }}>
-                <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#bbb', marginBottom:12 }}>BIO</div>
-                <div style={{ fontSize:14, color:profile.bio?'#333':'#bbb', lineHeight:1.7, marginBottom:20 }}>{profile.bio || 'No bio added yet.'}</div>
-                <div style={{ display:'flex', gap:20, paddingTop:16, borderTop:'1px solid #f0f0f0' }}>
-                  {profile.country && <div style={{ fontSize:12, color:'#aaa', fontWeight:600 }}>📍 {COUNTRY_NAMES[profile.country] || profile.country}</div>}
-                  {profile.joinDate && <div style={{ fontSize:12, color:'#aaa', fontWeight:600 }}>📅 Member since {profile.joinDate}</div>}
-                </div>
-              </div>
-            )}
-
+            {/* INTERESTS — products this user has upvoted */}
             {activeTab === 'interests' && (
-              !interestedProducts.length ? (
+              loadingTab ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
+                  <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                </div>
+              ) : !upvotedProducts.length ? (
                 <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
-                  <div style={{ fontSize:40, marginBottom:10 }}>✨</div>
-                  <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No interests yet</div>
-                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Products you upvote or bookmark will appear here.' : 'This user hasn\'t shared any interests yet.'}</div>
+                  <div style={{ fontSize:40, marginBottom:10 }}>🎉</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No upvotes yet</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Products you upvote will appear here.' : 'This user hasn\'t upvoted anything yet.'}</div>
                 </div>
               ) : (
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:14 }}>
-                  {interestedProducts.map(pr => (
-                    <div key={pr.id} onClick={() => navigate(`/products/${pr.id}`)}
-                      style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px', cursor:'pointer', transition:'all .15s' }}
-                      onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 4px 16px rgba(232,98,26,.1)'; }}
-                      onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
-                      <div style={{ width:42, height:42, borderRadius:10, border:'1px solid #f0f0f0', display:'grid', placeItems:'center', fontSize:20, marginBottom:8 }}>{pr.logo_emoji}</div>
-                      <div style={{ fontSize:14, fontWeight:800, marginBottom:3 }}>{pr.name}</div>
-                      <div style={{ fontSize:11, color:'#bbb', marginBottom:6 }}>{pr.industry}</div>
-                      <div style={{ fontSize:12, fontWeight:700, color:'var(--orange)' }}>▲ {pr.upvotes_count || 0}</div>
+                <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+                  {upvotedProducts.map((pr, i) => (
+                    <div key={pr.id} onClick={() => navigate(`/products/${pr.id}`)}>
+                      <ProductCard product={pr} rank={i + 1}/>
                     </div>
                   ))}
                 </div>
               )
             )}
-          </div>
 
+            {/* ACTIVITY — comments + interactions */}
+            {activeTab === 'activity' && (
+              loadingTab ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
+                  <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                </div>
+              ) : !activityItems.length ? (
+                <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                  <div style={{ fontSize:40, marginBottom:10 }}>📝</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No activity yet</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Your comments on products will show here.' : 'No public activity yet.'}</div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {activityItems.map(item => (
+                    <div key={item.id}
+                      onClick={() => navigate(`/products/${item.product_id}`)}
+                      style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px 20px', cursor:'pointer', transition:'all .15s' }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(232,98,26,.08)'; }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
+                      {/* Header row */}
+                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+                        <div style={{ width:36, height:36, borderRadius:9, border:'1px solid #f0f0f0', display:'grid', placeItems:'center', fontSize:18, flexShrink:0 }}>
+                          {item.product_emoji || '📦'}
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:13, fontWeight:700, color:'#222', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                            💬 Commented on <span style={{ color:'var(--orange)' }}>{item.product_name}</span>
+                          </div>
+                          <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{timeAgo(item.created_at)}</div>
+                        </div>
+                      </div>
+                      {/* Comment body */}
+                      <div style={{ fontSize:13, color:'#444', lineHeight:1.65, padding:'10px 14px', background:'#fafafa', borderRadius:10, borderLeft:'3px solid var(--orange)', fontStyle:'italic' }}>
+                        "{item.body}"
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )
+            )}
+
+          </div>
         </div>
       </div>
       <Footer/>

@@ -95,6 +95,8 @@ usersRouter.post('/me/change-password',   authenticate,
     body('current_password').notEmpty(),
     body('new_password').isLength({ min:8 }),
   ], validate, userCtrl.changePassword);
+usersRouter.get ('/:handle/upvoted',  optionalAuth, userCtrl.getUserUpvoted);
+usersRouter.get ('/:handle/activity', optionalAuth, userCtrl.getUserActivity);
 usersRouter.get ('/:handle',    optionalAuth, userCtrl.getProfile);
 usersRouter.post('/:id/follow', authenticate, userCtrl.toggleFollow);
 
