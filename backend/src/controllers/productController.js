@@ -110,7 +110,16 @@ const getProduct = async (req, res, next) => {
       'SELECT * FROM product_media WHERE product_id=$1 ORDER BY order_num', [id]
     );
 
-    res.json({ success:true, data: { ...rows[0], media } });
+    // Get makers
+    const { rows: makers } = await query(`
+      SELECT u.id, u.name, u.handle, u.avatar_url, u.avatar_color, u.headline, pm.role
+      FROM product_makers pm
+      JOIN users u ON u.id = pm.user_id
+      WHERE pm.product_id=$1
+      ORDER BY pm.created_at ASC`, [id]
+    );
+
+    res.json({ success:true, data: { ...rows[0], media, makers } });
   } catch (err) { next(err); }
 };
 
@@ -119,7 +128,7 @@ const createProduct = async (req, res, next) => {
   try {
     const {
       name, tagline, description, logo_emoji, website, demo_url, video_url,
-      industry, countries, tags, launch_date
+      industry, countries, tags, launch_date, maker_ids = []
     } = req.body;
 
     // Check platform setting: manual_approval
@@ -142,10 +151,30 @@ const createProduct = async (req, res, next) => {
        !manualApproval ? new Date() : null]
     );
 
+    const productId = rows[0].id;
+
+    // Save the submitter as primary maker
+    await query(
+      'INSERT INTO product_makers (product_id, user_id, role) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+      [productId, req.user.id, 'Maker']
+    );
+
+    // Save tagged co-founders/makers
+    if (Array.isArray(maker_ids) && maker_ids.length > 0) {
+      for (const uid of maker_ids) {
+        if (uid && uid !== req.user.id) {
+          await query(
+            'INSERT INTO product_makers (product_id, user_id, role) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
+            [productId, uid, 'Co-founder']
+          );
+        }
+      }
+    }
+
     // Log
     await query(
       'INSERT INTO activity_log (actor_id, action, entity, entity_id) VALUES ($1,$2,$3,$4)',
-      [req.user.id, 'product.submit', 'products', rows[0].id]
+      [req.user.id, 'product.submit', 'products', productId]
     );
 
     // Update user product count
@@ -184,15 +213,27 @@ const updateProduct = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── DELETE /api/products/:id  (admin only)
+// ── DELETE /api/products/:id  (owner can delete pending; admin can delete any)
 const deleteProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { rows } = await query('DELETE FROM products WHERE id=$1 RETURNING name', [id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    const { rows: found } = await query('SELECT * FROM products WHERE id=$1', [id]);
+    if (!found.length) return res.status(404).json({ success:false, message:'Not found' });
+    const product = found[0];
+
+    const isAdmin = ['admin','moderator'].includes(req.user.role);
+    const isOwner = product.submitted_by === req.user.id;
+
+    if (!isAdmin && !isOwner) return res.status(403).json({ success:false, message:'Forbidden' });
+    if (isOwner && !isAdmin && product.status !== 'pending') {
+      return res.status(403).json({ success:false, message:'You can only delete pending products' });
+    }
+
+    await query('DELETE FROM products WHERE id=$1', [id]);
+    await query('UPDATE users SET products_count = GREATEST(products_count - 1, 0) WHERE id=$1', [product.submitted_by]);
     await query('INSERT INTO activity_log (actor_id, action, entity) VALUES ($1,$2,$3)',
       [req.user.id, 'product.delete', 'products']);
-    res.json({ success:true, message:`${rows[0].name} deleted` });
+    res.json({ success:true, message:`${product.name} deleted` });
   } catch (err) { next(err); }
 };
 
