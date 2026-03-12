@@ -260,8 +260,8 @@ export default function SettingsPage() {
                           onChange={item => setDialCode(item)}
                           items={WORLD_DIALS}
                           matchFn={(item, q) => item.n.toLowerCase().includes(q.toLowerCase()) || item.d.includes(q)}
-                          renderTrigger={() => dialCode ? `${dialCode.f} ${dialCode.d}` : 'Select'}
-                          renderItem={item => `${item.f} ${item.n} ${item.d}`}/>
+                          renderTrigger={() => dialCode ? `${dialCode.f} ${dialCode.d}` : '🌐'}
+                          renderItem={item => `${item.f} ${item.d}  ${item.n}`}/>
                       </div>
                       <div style={{ flex:1, border:'1.5px solid #e8e8e8', borderRadius:10, display:'flex' }}>
                         <input type="tel" value={phone} onChange={e=>setPhone(e.target.value)} placeholder="5X XXX XXXX" style={inputStyle}/>
@@ -296,7 +296,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Row: Persona + Country */}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16 }}>
+                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
                   <div>
                     <label style={labelStyle}>PERSONA</label>
                     <SearchDD value={persona}
@@ -307,7 +307,7 @@ export default function SettingsPage() {
                         const p = PERSONAS.find(x=>x.v===val);
                         return p ? `${p.icon} ${p.v}` : 'Select persona…';
                       }}
-                      renderItem={item => `${item.icon} ${item.v} — ${item.desc}`}/>
+                      renderItem={item => `${item.icon} ${item.v}`}/>
                   </div>
                   <div>
                     <label style={labelStyle}>COUNTRY</label>
@@ -322,19 +322,16 @@ export default function SettingsPage() {
                       renderItem={item => item.l}/>
                   </div>
                 </div>
-              </div>
 
-              {/* ── City ── */}
-              <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20 }}>
-                <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:14, fontWeight:800, marginBottom:20, color:'#0a0a0a' }}>🏙️ Location</div>
+                {/* City plain text */}
                 <div>
                   <label style={labelStyle}>CITY</label>
-                  <SearchDD value={cityVal}
-                    onChange={item => setCityVal(item)}
-                    items={MAJOR_CITIES}
-                    matchFn={(item, q) => item.toLowerCase().includes(q.toLowerCase())}
-                    renderTrigger={(val) => val || 'Select city…'}
-                    renderItem={item => item}/>
+                  <div style={{ border:'1.5px solid #e8e8e8', borderRadius:10, background:'#fff', display:'flex' }}
+                    onFocus={e=>e.currentTarget.style.borderColor='var(--orange)'} onBlur={e=>e.currentTarget.style.borderColor='#e8e8e8'} tabIndex={-1}>
+                    <input type="text" value={cityVal} onChange={e=>setCityVal(e.target.value)} placeholder="e.g. Dubai, Cairo, Riyadh…" style={inputStyle}
+                      onFocus={e=>e.currentTarget.parentElement.style.borderColor='var(--orange)'}
+                      onBlur={e=>e.currentTarget.parentElement.style.borderColor='#e8e8e8'}/>
+                  </div>
                 </div>
               </div>
 

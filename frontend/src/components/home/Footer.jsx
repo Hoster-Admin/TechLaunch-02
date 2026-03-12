@@ -48,17 +48,17 @@ export default function Footer() {
               { label:'Venture Studio',          action:() => navigate('/list/venture') },
             ]},
             { title:'Community', links:[
-              { label:'Articles',      action:() => {} },
+              { label:'Articles',      action:() => navigate('/articles') },
               { label:'Weekly Digest', action:() => {} },
               { label:'Accelerators',  action:() => navigate('/accelerators') },
               { label:'Events',        action:() => {} },
             ]},
             { title:'Company', links:[
-              { label:'About',          action:() => {} },
+              { label:'About',          action:() => navigate('/about') },
               { label:'Contact',        action:() => {} },
-              { label:'Write for Us',   action:() => {} },
-              { label:'Privacy Policy', action:() => {} },
-              { label:'Terms of Use',   action:() => {} },
+              { label:'Write for Us',   action:() => navigate('/articles') },
+              { label:'Privacy Policy', action:() => navigate('/privacy') },
+              { label:'Terms of Use',   action:() => navigate('/terms') },
             ]},
           ].map(col => (
             <div key={col.title} style={{ display:'flex', flexDirection:'column', gap:10 }}>

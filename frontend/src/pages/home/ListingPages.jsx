@@ -61,7 +61,7 @@ const VENTURES = [
 ];
 
 const PAGE_CONFIG = {
-  startup:     { title:'Startups',                emoji:'🚀', desc:'Browse MENA startups across all industries and countries.',                  data:STARTUPS,     cta:'List Your Startup',  filters:['country','industry'] },
+  startup:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA startups across all industries and countries.',                  data:STARTUPS,     cta:'List Your Company',  filters:['country','industry'] },
   accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your startup across MENA.',       data:ACCELERATORS, cta:'List Your Program',  filters:['country','industry'] },
   investor:    { title:'Investment Firms',          emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA startups.',      data:INVESTORS,    cta:'List Your Firm',     filters:['stage','country'] },
   venture:     { title:'Venture Studios',           emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA startups.',     data:VENTURES,     cta:'List Your Studio',   filters:['stage','country'] },
@@ -121,7 +121,6 @@ function StartupCard({ item, onClick }) {
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap', marginBottom:3 }}>
             <span style={{ fontSize:15, fontWeight:900, letterSpacing:'-.02em' }}>{item.name}</span>
-            {item.verified && <span className="entity-verified">✓ Verified</span>}
           </div>
           <div style={{ fontSize:12, color:'#888', display:'flex', alignItems:'center', gap:5, flexWrap:'wrap' }}>
             <span>{item.flag} {item.country}</span>
@@ -130,7 +129,6 @@ function StartupCard({ item, onClick }) {
             {item.founded && <><span style={{ color:'#ddd' }}>·</span><span>Est. {item.founded}</span></>}
           </div>
         </div>
-        <span style={{ fontSize:11, fontWeight:800, padding:'4px 10px', borderRadius:20, background:sc.bg, color:sc.color, whiteSpace:'nowrap', flexShrink:0 }}>{item.stage}</span>
       </div>
 
       <p style={{ fontSize:13, color:'#555', lineHeight:1.65, marginBottom:14, display:'-webkit-box', WebkitLineClamp:2, WebkitBoxOrient:'vertical', overflow:'hidden' }}>{item.about}</p>
@@ -173,7 +171,6 @@ function EntityCard({ item, type, onClick }) {
         <div className="entity-name-row">
           <div className="entity-name">
             {item.name}
-            {item.verified && <span className="entity-verified">✓ Verified</span>}
           </div>
           <div className="entity-meta">{meta}</div>
         </div>

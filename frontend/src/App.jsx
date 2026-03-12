@@ -17,6 +17,10 @@ import BookmarksPage    from './pages/home/BookmarksPage';
 import UserProfilePage  from './pages/home/UserProfilePage';
 import SettingsPage     from './pages/home/SettingsPage';
 import { LoginPage, RegisterPage } from './pages/home/AuthPages';
+import { ArticlesList, ArticleDetail } from './pages/home/ArticlesPage';
+import AboutPage   from './pages/home/AboutPage';
+import PrivacyPage from './pages/home/PrivacyPage';
+import TermsPage   from './pages/home/TermsPage';
 
 import AdminDashboard   from './pages/admin/AdminDashboard';
 import AdminProducts    from './pages/admin/AdminProducts';
@@ -116,9 +120,14 @@ function AppRoutes() {
         <Route path="/list/:type"   element={<WithAuthCallbacks Component={ListingPage}/>}/>
         <Route path="/bookmarks"    element={<WithAuthCallbacks Component={BookmarksPage}/>}/>
         <Route path="/u/:handle"    element={<WithAuthCallbacks Component={UserProfilePage}/>}/>
-        <Route path="/settings"     element={<RequireAuth><SettingsPage/></RequireAuth>}/>
-        <Route path="/submit"       element={<Navigate to="/" replace/>}/>
-        <Route path="*"             element={<NotFound/>}/>
+        <Route path="/settings"          element={<RequireAuth><SettingsPage/></RequireAuth>}/>
+        <Route path="/articles"          element={<ArticlesList/>}/>
+        <Route path="/articles/:slug"    element={<ArticleDetail/>}/>
+        <Route path="/about"             element={<AboutPage/>}/>
+        <Route path="/privacy"           element={<PrivacyPage/>}/>
+        <Route path="/terms"             element={<TermsPage/>}/>
+        <Route path="/submit"            element={<Navigate to="/" replace/>}/>
+        <Route path="*"                  element={<NotFound/>}/>
       </Routes>
       <GlobalModals/>
     </>
