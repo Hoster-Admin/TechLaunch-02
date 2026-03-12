@@ -94,6 +94,7 @@ export default function Navbar() {
 
           <div className="nav-links">
             <Link to="/" className="nav-link">Home</Link>
+            <Link to="/people" className="nav-link">People</Link>
 
             <div className="nav-dropdown" ref={listRef}>
               <button className="nav-link dropdown-trigger" onClick={() => setListOpen(v => !v)}>
