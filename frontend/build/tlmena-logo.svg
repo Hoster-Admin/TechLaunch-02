@@ -1,0 +1,22 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 220 52" width="220" height="52">
+  <!-- Icon box: black rounded square -->
+  <rect x="0" y="0" width="52" height="52" rx="14" ry="14" fill="#0a0a0a"/>
+
+  <!-- Bar chart icon (white, centred on 52×52 box, bars from 24×24 viewBox scaled ~1.5×) -->
+  <g transform="translate(10, 8) scale(1.33)" stroke="white" stroke-width="2" stroke-linecap="round" fill="none">
+    <line x1="6"  y1="26" x2="6"  y2="14"/>
+    <line x1="12" y1="26" x2="12" y2="4"/>
+    <line x1="18" y1="26" x2="18" y2="10"/>
+  </g>
+
+  <!-- "Tech Launch" wordmark -->
+  <text
+    x="66"
+    y="34"
+    font-family="'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif"
+    font-size="22"
+    font-weight="800"
+    letter-spacing="-0.6"
+    fill="#0a0a0a"
+  >Tech Launch</text>
+</svg>

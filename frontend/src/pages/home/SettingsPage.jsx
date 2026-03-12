@@ -537,7 +537,7 @@ export default function SettingsPage() {
 
   const fileInputRef = useRef(null);
   const [avatarImg, setAvatarImg] = useState(() => {
-    try { return localStorage.getItem(`tlm_avatar_${user?.id}`) || null; } catch { return null; }
+    try { return user?.avatar_url || localStorage.getItem(`tlm_avatar_${user?.id}`) || null; } catch { return user?.avatar_url || null; }
   });
 
   const [coType,     setCoType]    = useState('');
@@ -564,11 +564,19 @@ export default function SettingsPage() {
     if (!file) return;
     if (file.size > 2 * 1024 * 1024) { toast.error('Image must be under 2MB'); return; }
     const reader = new FileReader();
-    reader.onload = (ev) => {
+    reader.onload = async (ev) => {
       const base64 = ev.target.result;
       setAvatarImg(base64);
       try { localStorage.setItem(`tlm_avatar_${user.id}`, base64); } catch {}
-      toast.success('Photo updated!');
+      try {
+        const res = await api.put('/users/me', { avatar_url: base64 });
+        if (res.data?.success) {
+          updateUser({ avatar_url: base64 });
+          toast.success('Photo updated!');
+        }
+      } catch {
+        toast.error('Failed to save photo. Please try again.');
+      }
     };
     reader.readAsDataURL(file);
   };
