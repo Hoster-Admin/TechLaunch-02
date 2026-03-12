@@ -228,9 +228,9 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                     {hasAbout ? (
                       <button
                         onClick={() => setAboutOpen(o => !o)}
-                        style={{ display:'flex', alignItems:'center', gap:6, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
-                        <span style={{ fontSize:13, color:'#555', fontWeight:500 }}>{profile.headline || 'View details'}</span>
-                        <span style={{ fontSize:11, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)' }}>▼</span>
+                        style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
+                        <span style={{ fontSize:13, color:'#555', fontWeight:500, textDecoration:'underline', textUnderlineOffset:3 }}>{profile.headline || 'View details'}</span>
+                        <span style={{ fontSize:10, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)' }}>▼</span>
                       </button>
                     ) : (
                       profile.headline && <div style={{ fontSize:13, color:'#555' }}>{profile.headline}</div>
