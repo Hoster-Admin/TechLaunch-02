@@ -9,6 +9,7 @@ const productCtrl = require('../controllers/productController');
 const entityCtrl  = require('../controllers/entityController');
 const userCtrl    = require('../controllers/userController');
 const adminCtrl   = require('../controllers/adminController');
+const msgCtrl     = require('../controllers/messageController');
 
 const router = express.Router();
 
@@ -170,11 +171,24 @@ suggestionsRouter.post('/', authenticate,
 adminRouter.get('/suggestions',             requireMod, adminCtrl.getSuggestions);
 adminRouter.post('/suggestions/:id/respond',requireMod, adminCtrl.respondSuggestion);
 
+// ══════════════════════════════════════════════════
+// MESSAGES  /api/messages
+// ══════════════════════════════════════════════════
+const messagesRouter = express.Router();
+messagesRouter.use(authenticate);
+messagesRouter.get('/unread-count',  msgCtrl.getUnreadCount);
+messagesRouter.get('/threads',       msgCtrl.getThreads);
+messagesRouter.get('/:handle',       msgCtrl.getThread);
+messagesRouter.post('/:handle',
+  [body('body').trim().notEmpty().isLength({ max:2000 })], validate,
+  msgCtrl.sendMessage);
+
 // ── Mount all routers
 router.use('/auth',        authRouter);
 router.use('/products',    productsRouter);
 router.use('/entities',    entitiesRouter);
 router.use('/users',       usersRouter);
+router.use('/messages',    messagesRouter);
 router.use('/suggestions', suggestionsRouter);
 router.use('/admin',       adminRouter);
 

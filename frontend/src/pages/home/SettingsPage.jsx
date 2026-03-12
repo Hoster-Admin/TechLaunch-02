@@ -531,9 +531,12 @@ export default function SettingsPage() {
   const [twitter,      setTwitter]      = useState(user?.twitter    || '');
   const [linkedin,     setLinkedin]     = useState(user?.linkedin   || '');
   const [github,       setGithub]       = useState(user?.github     || '');
-  const [activeThread, setActiveThread] = useState(null);
-  const [msgInput,     setMsgInput]     = useState('');
-  const [threads,      setThreads]      = useState([]);
+  const [activeThread,  setActiveThread]  = useState(null);
+  const [msgInput,      setMsgInput]      = useState('');
+  const [threads,       setThreads]       = useState([]);
+  const [settingsMsgs,  setSettingsMsgs]  = useState([]);
+  const [settingsSending, setSettingsSending] = useState(false);
+  const settingsMsgScrollRef = React.useRef(null);
 
   const fileInputRef = useRef(null);
   const [avatarImg, setAvatarImg] = useState(() => {
@@ -644,11 +647,42 @@ export default function SettingsPage() {
     setActiveTab(key);
   };
 
-  const sendMsg = () => {
-    if (!msgInput.trim() || !activeThread) return;
+  const loadSettingsThreads = React.useCallback(async () => {
+    try {
+      const res = await api.get('/messages/threads');
+      if (res.data?.success) setThreads(res.data.data);
+    } catch {}
+  }, []);
+
+  const loadSettingsMessages = React.useCallback(async (handle) => {
+    if (!handle) return;
+    try {
+      const res = await api.get(`/messages/${handle}`);
+      if (res.data?.success) setSettingsMsgs(res.data.data);
+    } catch {}
+  }, []);
+
+  React.useEffect(() => {
+    if (activeTab === 'messages') loadSettingsThreads();
+  }, [activeTab, loadSettingsThreads]);
+
+  React.useEffect(() => {
+    if (activeThread) loadSettingsMessages(activeThread);
+  }, [activeThread, loadSettingsMessages]);
+
+  React.useEffect(() => {
+    if (settingsMsgScrollRef.current) settingsMsgScrollRef.current.scrollTop = settingsMsgScrollRef.current.scrollHeight;
+  }, [settingsMsgs]);
+
+  const sendMsg = async () => {
+    if (!msgInput.trim() || !activeThread || settingsSending) return;
     const text = msgInput.trim(); setMsgInput('');
-    setThreads(prev => prev.map(t => t.handle === activeThread
-      ? { ...t, msgs:[...t.msgs, { from:'me', text }] } : t));
+    setSettingsSending(true);
+    try {
+      await api.post(`/messages/${activeThread}`, { body: text });
+      await loadSettingsMessages(activeThread);
+      await loadSettingsThreads();
+    } catch { setMsgInput(text); } finally { setSettingsSending(false); }
   };
 
   const currentThread = threads.find(t => t.handle === activeThread);
@@ -928,16 +962,24 @@ export default function SettingsPage() {
                   <div className="adm-threads">
                     <div className="adm-threads-hd">Conversations</div>
                     {threads.length === 0
-                      ? <div style={{ padding:'24px 16px', fontSize:13, color:'#ccc' }}>No conversations yet.</div>
-                      : threads.map(t => (
-                          <div key={t.handle} className={`adm-thread${activeThread===t.handle?' sel':''}`} onClick={()=>setActiveThread(t.handle)}>
-                            <div className="adm-thread-av">{t.initials}</div>
-                            <div style={{ flex:1, minWidth:0 }}>
-                              <div className="adm-thread-name">{t.name}</div>
-                              <div className="adm-thread-prev">{t.msgs[t.msgs.length-1]?.text||''}</div>
+                      ? <div style={{ padding:'24px 16px', fontSize:13, color:'#ccc' }}>No conversations yet.<br/>Visit someone's profile and hit Message.</div>
+                      : threads.map(t => {
+                          const initials = (t.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+                          return (
+                            <div key={t.handle} className={`adm-thread${activeThread===t.handle?' sel':''}`} onClick={()=>setActiveThread(t.handle)}>
+                              {t.avatar_url
+                                ? <img src={t.avatar_url} alt={t.name} style={{ width:36,height:36,borderRadius:'50%',objectFit:'cover',flexShrink:0 }}/>
+                                : <div className="adm-thread-av" style={{ background:t.avatar_color||'var(--orange)' }}>{initials}</div>}
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div className="adm-thread-name" style={{ display:'flex', alignItems:'center', gap:4 }}>
+                                  {t.name}
+                                  {t.unread_count > 0 && <span style={{ width:16,height:16,borderRadius:'50%',background:'var(--orange)',color:'#fff',fontSize:9,fontWeight:900,display:'inline-grid',placeItems:'center' }}>{t.unread_count}</span>}
+                                </div>
+                                <div className="adm-thread-prev">{t.last_sender_id===user?.id?'You: ':''}{t.last_message||''}</div>
+                              </div>
                             </div>
-                          </div>
-                        ))
+                          );
+                        })
                     }
                   </div>
                   <div className="adm-chat-area">
@@ -948,16 +990,28 @@ export default function SettingsPage() {
                         </div>
                       </div>
                     ) : (<>
-                      <div className="adm-chat-hd">{currentThread?.name}</div>
-                      <div className="adm-bubbles">
-                        {(currentThread?.msgs||[]).map((m,i) => (
-                          <div key={i} className={`adm-bubble ${m.from==='me'?'mine':'theirs'}`}>{m.text}</div>
-                        ))}
+                      <div className="adm-chat-hd">{currentThread?.name || activeThread}</div>
+                      <div className="adm-bubbles" ref={settingsMsgScrollRef}>
+                        {settingsMsgs.length === 0
+                          ? <div style={{ textAlign:'center', color:'#ccc', fontSize:12, margin:'auto' }}>No messages yet. Say hello! 👋</div>
+                          : settingsMsgs.map(m => {
+                              const isMe = m.sender_id === user?.id;
+                              const time = new Date(m.created_at).toLocaleTimeString('en-US',{hour:'2-digit',minute:'2-digit'});
+                              return (
+                                <div key={m.id} style={{ display:'flex', justifyContent:isMe?'flex-end':'flex-start', marginBottom:6 }}>
+                                  <div className={`adm-bubble ${isMe?'mine':'theirs'}`}>
+                                    {m.body}
+                                    <div style={{ fontSize:10, opacity:.5, marginTop:3, textAlign:'right' }}>{time}</div>
+                                  </div>
+                                </div>
+                              );
+                            })
+                        }
                       </div>
                       <div className="adm-composer">
                         <input className="adm-compose-input" value={msgInput} onChange={e=>setMsgInput(e.target.value)}
-                          placeholder="Type a message…" onKeyDown={e=>e.key==='Enter'&&sendMsg()}/>
-                        <button className="adm-compose-send" onClick={sendMsg}>↑</button>
+                          placeholder="Type a message…" onKeyDown={e=>e.key==='Enter'&&sendMsg()} disabled={settingsSending}/>
+                        <button className="adm-compose-send" onClick={sendMsg} disabled={settingsSending}>↑</button>
                       </div>
                     </>)}
                   </div>
