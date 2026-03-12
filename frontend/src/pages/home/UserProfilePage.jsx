@@ -307,11 +307,11 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   </div>
                   <div style={{ textAlign:'left', cursor:'pointer' }} onClick={() => openFollowModal('followers')}>
                     <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{displayFollowers}</div>
-                    <div style={{ fontSize:11, color:'var(--orange)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, textDecoration:'underline' }}>Followers</div>
+                    <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Followers</div>
                   </div>
                   <div style={{ textAlign:'left', cursor:'pointer' }} onClick={() => openFollowModal('following')}>
                     <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{followingCount}</div>
-                    <div style={{ fontSize:11, color:'var(--orange)', fontWeight:700, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, textDecoration:'underline' }}>Following</div>
+                    <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Following</div>
                   </div>
                 </div>
               </div>
