@@ -159,7 +159,8 @@ export default function SettingsPage() {
   const [coName,     setCoName]    = useState('');
   const [coLogoImg,  setCoLogoImg] = useState(null);
   const [coIndustry, setCoIndustry]= useState('');
-  const [coCountry,  setCoCountry] = useState('');
+  const [coCountry,  setCoCountry] = useState([]);
+  const [coCountryOpen, setCoCountryOpen] = useState(false);
   const [coStages,   setCoStages]  = useState([]);
   const [coAbout,    setCoAbout]   = useState('');
   const [coWebsite,  setCoWebsite] = useState('');
@@ -196,7 +197,8 @@ export default function SettingsPage() {
     reader.readAsDataURL(file);
   };
 
-  const toggleCoStage = (s) => setCoStages(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev, s]);
+  const toggleCoStage   = (s) => setCoStages  (prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev, s]);
+  const toggleCoCountry = (v) => setCoCountry (prev => prev.includes(v) ? prev.filter(x=>x!==v) : [...prev, v]);
 
   const handleCoSubmit = async () => {
     if (!coType) { toast.error('Please select an entity type'); return; }
@@ -535,7 +537,7 @@ export default function SettingsPage() {
               const isCompany = coType === 'Company';
 
               const resetForm = () => {
-                setCoType(''); setCoName(''); setCoLogoImg(null); setCoIndustry(''); setCoCountry('');
+                setCoType(''); setCoName(''); setCoLogoImg(null); setCoIndustry(''); setCoCountry([]);
                 setCoStages([]); setCoAbout(''); setCoWebsite(''); setCoLinkedIn(''); setCoTwitter('');
                 setCoTikTok(''); setCoInstagram(''); setCoTeam(''); setCoFounded(''); setCoSubmitted(false);
               };
@@ -583,9 +585,9 @@ export default function SettingsPage() {
                           <div style={{ fontSize:16, fontWeight:800, color:'#0a0a0a' }}>{coName}</div>
                           <div style={{ fontSize:12, color:'#aaa', margin:'3px 0 6px', display:'flex', gap:5, flexWrap:'wrap' }}>
                             {coType && <span>{coType}</span>}
-                            {coType && coCountry && <span>·</span>}
-                            {coCountry && <span>{MENA_COUNTRIES_LIST.find(c=>c.v===coCountry)?.l}</span>}
-                            {coCountry && coIndustry && <span>·</span>}
+                            {coType && coCountry.length>0 && <span>·</span>}
+                            {coCountry.length>0 && <span>{coCountry.map(v=>MENA_COUNTRIES_LIST.find(c=>c.v===v)?.l).filter(Boolean).join(', ')}</span>}
+                            {coCountry.length>0 && coIndustry && <span>·</span>}
                             {coIndustry && <span>{coIndustry}</span>}
                             {isInvFirm && coStages.length > 0 && <><span>·</span><span>{coStages.join(', ')}</span></>}
                             {isCompany && coTeam && <><span>·</span><span>{coTeam} people</span></>}
@@ -651,12 +653,34 @@ export default function SettingsPage() {
                             {MENA_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
                           </select>
                         </div>
-                        <div>
-                          <label style={labelStyle}>COUNTRY</label>
-                          <select value={coCountry} onChange={e=>setCoCountry(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
-                            <option value="">Select country</option>
-                            {MENA_COUNTRIES_LIST.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
-                          </select>
+                        <div style={{ position:'relative' }}>
+                          <label style={labelStyle}>COUNTRY (select all that apply)</label>
+                          <div onClick={()=>setCoCountryOpen(o=>!o)}
+                            style={{ ...inpStyle, display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', userSelect:'none', color: coCountry.length ? '#0a0a0a' : '#aaa' }}>
+                            {coCountry.length
+                              ? coCountry.map(v=>MENA_COUNTRIES_LIST.find(c=>c.v===v)?.l).filter(Boolean).join(', ')
+                              : 'Select countries…'}
+                            <span style={{ fontSize:10, color:'#aaa', flexShrink:0, marginLeft:6 }}>▼</span>
+                          </div>
+                          {coCountryOpen && (
+                            <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, zIndex:50, marginTop:4, maxHeight:220, overflowY:'auto', boxShadow:'0 8px 24px rgba(0,0,0,.08)' }}>
+                              {MENA_COUNTRIES_LIST.map(c => (
+                                <label key={c.v} style={{ display:'flex', alignItems:'center', gap:10, padding:'7px 16px', cursor:'pointer', fontSize:14, fontFamily:'Inter,sans-serif' }}
+                                  onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
+                                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                                  <input type="checkbox" checked={coCountry.includes(c.v)} onChange={()=>toggleCoCountry(c.v)}
+                                    style={{ accentColor:'var(--orange)', width:16, height:16, cursor:'pointer' }}/>
+                                  {c.l}
+                                </label>
+                              ))}
+                              <div style={{ padding:'8px 16px', borderTop:'1px solid #f0f0f0' }}>
+                                <button onClick={()=>setCoCountryOpen(false)}
+                                  style={{ fontSize:12, fontWeight:700, color:'var(--orange)', background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                                  Done
+                                </button>
+                              </div>
+                            </div>
+                          )}
                         </div>
                       </div>
 
