@@ -149,4 +149,11 @@ export const adminAPI = {
   posts:       ()       => api.get('/admin/posts'),
   createPost:  (d)      => api.post('/admin/posts', d),
   deletePost:  (id)     => api.delete(`/admin/posts/${id}`),
+  // Suggestions
+  suggestions: (p)      => api.get('/admin/suggestions', { params: p }),
+  respondSuggestion: (id, response) => api.post(`/admin/suggestions/${id}/respond`, { response }),
+};
+
+export const suggestionsAPI = {
+  submit: (body) => api.post('/suggestions', { body }),
 };

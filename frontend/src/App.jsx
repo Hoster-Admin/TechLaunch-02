@@ -22,10 +22,11 @@ import { ArticlesList, ArticleDetail } from './pages/home/ArticlesPage';
 import AboutPage   from './pages/home/AboutPage';
 import PrivacyPage from './pages/home/PrivacyPage';
 import TermsPage   from './pages/home/TermsPage';
-import ContactPage from './pages/home/ContactPage';
+import ContactPage, { WriteForUsPage } from './pages/home/ContactPage';
 
-import AdminDashboard   from './pages/admin/AdminDashboard';
+import AdminDashboard    from './pages/admin/AdminDashboard';
 import AdminProducts    from './pages/admin/AdminProducts';
+import AdminSuggestions from './pages/admin/AdminSuggestions';
 import {
   AdminUsers, AdminEntities, AdminApplications,
   AdminFeatured, AdminReports, AdminSettings, AdminProfile
@@ -125,6 +126,7 @@ function AppRoutes() {
           <Route path="entities"       element={<AdminEntities/>}/>
           <Route path="applications"   element={<AdminApplications/>}/>
           <Route path="featured"       element={<AdminFeatured/>}/>
+          <Route path="suggestions"    element={<AdminSuggestions/>}/>
           <Route path="reports"        element={<AdminReports/>}/>
           <Route path="settings"       element={<AdminSettings/>}/>
           <Route path="profile"        element={<AdminProfile/>}/>
@@ -146,7 +148,7 @@ function AppRoutes() {
         <Route path="/privacy"           element={<PrivacyPage/>}/>
         <Route path="/terms"             element={<TermsPage/>}/>
         <Route path="/contact"           element={<ContactPage/>}/>
-        <Route path="/write-for-us"      element={<ContactPage writeForUs/>}/>
+        <Route path="/write-for-us"      element={<WriteForUsPage/>}/>
         <Route path="/submit"            element={<Navigate to="/" replace/>}/>
         <Route path="*"                  element={<NotFound/>}/>
       </Routes>
