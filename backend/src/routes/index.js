@@ -57,7 +57,7 @@ productsRouter.post('/',          authenticate,
   validate, productCtrl.createProduct
 );
 productsRouter.put ('/:id',       authenticate, productCtrl.updateProduct);
-productsRouter.delete('/:id',     authenticate, requireMod, productCtrl.deleteProduct);
+productsRouter.delete('/:id',     authenticate, productCtrl.deleteProduct);
 productsRouter.post('/:id/upvote',    authenticate, productCtrl.toggleUpvote);
 productsRouter.post('/:id/bookmark',  authenticate, productCtrl.toggleBookmark);
 productsRouter.post('/:id/waitlist',  optionalAuth,
@@ -72,6 +72,8 @@ productsRouter.post('/:id/comments',  authenticate,
 const entitiesRouter = express.Router();
 
 entitiesRouter.get ('/',            entityCtrl.getEntities);
+entitiesRouter.post('/',            authenticate,
+  [body('name').trim().notEmpty(), body('type').trim().notEmpty()], validate, entityCtrl.createEntity);
 entitiesRouter.get ('/:slug',       entityCtrl.getEntity);
 entitiesRouter.post('/:id/apply',   authenticate,
   [body('startup_name').trim().notEmpty()], validate, entityCtrl.applyToAccelerator);
@@ -84,6 +86,7 @@ entitiesRouter.post('/:id/pitch',   authenticate,
 const usersRouter = express.Router();
 
 usersRouter.get ('/',             optionalAuth, userCtrl.searchUsers);
+usersRouter.get ('/people',       optionalAuth, userCtrl.getPeople);
 usersRouter.get ('/me/bookmarks',         authenticate, userCtrl.getBookmarks);
 usersRouter.get ('/me/products',          authenticate, userCtrl.getMyProducts);
 usersRouter.get ('/me/notifications',     authenticate, userCtrl.getNotifications);
@@ -95,6 +98,8 @@ usersRouter.post('/me/change-password',   authenticate,
     body('current_password').notEmpty(),
     body('new_password').isLength({ min:8 }),
   ], validate, userCtrl.changePassword);
+usersRouter.get ('/:handle/followers', optionalAuth, userCtrl.getUserFollowers);
+usersRouter.get ('/:handle/following', optionalAuth, userCtrl.getUserFollowing);
 usersRouter.get ('/:handle/upvoted',  optionalAuth, userCtrl.getUserUpvoted);
 usersRouter.get ('/:handle/activity', optionalAuth, userCtrl.getUserActivity);
 usersRouter.get ('/:handle',    optionalAuth, userCtrl.getProfile);
