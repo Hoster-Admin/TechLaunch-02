@@ -71,7 +71,7 @@ export default function EntityProfileModal() {
             </div>
           </>}
 
-          {e.programs && <>
+          {Array.isArray(e.programs) && e.programs.length > 0 && <>
             <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.07em', textTransform:'uppercase', color:'#bbb', marginBottom:10 }}>Programs</div>
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>
               {e.programs.map((p,i) => (
