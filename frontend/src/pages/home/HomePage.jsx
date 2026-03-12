@@ -26,10 +26,10 @@ const COUNTRIES  = [['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','
 const COUNTRY_NAMES = Object.fromEntries(COUNTRIES.map(([code, label]) => [code, label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim()]));
 
 const ARTICLES = [
-  { tag:'Guide',        title:'How to Get the Best Out of Tech Launch as a Founder',            author:'Rania Al-Masri', initials:'RA', readTime:'4 min read', date:'Mar 6'  },
-  { tag:'For Students', title:'Where to Start Learning Vibe Coding as a Complete Beginner',     author:'Khalid Nasser',  initials:'KN', readTime:'6 min read', date:'Mar 4'  },
-  { tag:'Business',     title:"Why MENA Founders Should Launch Publicly Before They're Ready",  author:'Sara Hadid',     initials:'SH', readTime:'5 min read', date:'Mar 2'  },
-  { tag:'Business',     title:'The Investor Signals That Actually Matter in a MENA Pitch Deck', author:'Omar Fares',     initials:'OF', readTime:'7 min read', date:'Feb 28' },
+  { tag:'Guide',        title:'How to Get the Best Out of Tech Launch as a Founder',            author:'Rania Al-Masri', initials:'RA', readTime:'4 min read', date:'Mar 6', slug:'how-to-get-best-out-of-tech-launch'  },
+  { tag:'For Students', title:'Where to Start Learning Vibe Coding as a Complete Beginner',     author:'Khalid Nasser',  initials:'KN', readTime:'6 min read', date:'Mar 4', slug:'vibe-coding-beginner' },
+  { tag:'Business',     title:"Why MENA Founders Should Launch Publicly Before They're Ready",  author:'Sara Hadid',     initials:'SH', readTime:'5 min read', date:'Mar 2', slug:'mena-founders-launch-publicly' },
+  { tag:'Business',     title:'The Investor Signals That Actually Matter in a MENA Pitch Deck', author:'Omar Fares',     initials:'OF', readTime:'7 min read', date:'Feb 28', slug:'investor-signals-mena-pitch-deck' },
 ];
 const STATS = [
   { num: '248',    label: 'Products Listed' },
@@ -41,8 +41,10 @@ const STATS = [
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setSubmitOpen, setAuthModal } = useUI();
+  const { setSubmitOpen, setAuthModal, following } = useUI();
   const [products, setProducts]       = useState(MOCK_PRODUCTS);
+  const [trendingProducts, setTrending] = useState([]);
+  const [followingProducts, setFollowingProducts] = useState([]);
   const [loading,  setLoading]        = useState(false);
   const [feedType, setFeedType]       = useState('all');
   const [countryDDOpen, setCountryDD] = useState(false);
@@ -52,21 +54,45 @@ export default function HomePage() {
 
   useEffect(() => {
     productsAPI.list({ status: 'live', sort: 'top', limit: 20 })
-      .then(({ data }) => { if (data.data?.length) setProducts(data.data); })
-      .catch(() => {});
+      .then(({ data }) => {
+        if (data.data?.length) {
+          setProducts(data.data);
+          setTrending([...data.data].sort((a,b) => (b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5));
+        } else {
+          setTrending([...MOCK_PRODUCTS].sort((a,b)=>(b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5));
+        }
+      })
+      .catch(() => {
+        setTrending([...MOCK_PRODUCTS].sort((a,b)=>(b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5));
+      });
   }, []);
 
-  const filtered = products.filter(p => {
+  useEffect(() => {
+    if (feedType !== 'following') return;
+    if (!user) return;
+    productsAPI.list({ sort: 'following', limit: 20 })
+      .then(({ data }) => { if (data.data) setFollowingProducts(data.data); })
+      .catch(() => {});
+  }, [feedType, user?.id]);
+
+  const filtered = (feedType === 'following' ? followingProducts : products).filter(p => {
     if (feedType === 'new')  return p.badge === 'new' || p.status === 'live';
     if (feedType === 'soon') return p.status === 'soon';
     if (feedType === 'top')  return (p.upvotes_count || 0) > 100;
+    if (feedType === 'following') return true;
     return true;
   }).filter(p =>
     (!selectedCountries.length  || selectedCountries.some(c => COUNTRY_NAMES[c] && p.country === COUNTRY_NAMES[c])) &&
     (!selectedIndustries.length || selectedIndustries.includes(p.industry))
   );
 
-  const feedTitles = { all: "Today's Top Products", new: 'Just Launched', soon: 'Coming Soon', top: 'Top Voted' };
+  const feedTitles = {
+    all:       "Today's Top Products",
+    new:       'Just Launched',
+    soon:      'Coming Soon',
+    top:       'Top Voted',
+    following: 'From People You Follow',
+  };
 
   const handleSubmitProduct = () => {
     if (user) setSubmitOpen(true);
@@ -83,7 +109,6 @@ export default function HomePage() {
         <div className="hero">
           <div className="hero-badge">🌍 MENA's #1 Product Discovery Platform</div>
           <h1>Discover the <span>Next Big Thing</span><br/>from the MENA Region</h1>
-
           <p>The home for MENA startups, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
           <div className="hero-actions">
             <button className="btn-hero-primary" onClick={handleSubmitProduct}>🚀 Submit Your Product</button>
@@ -164,6 +189,14 @@ export default function HomePage() {
                 {type === 'all' ? 'All Products' : type === 'new' ? '🆕 Just Launched' : type === 'soon' ? '⏳ Coming Soon' : '🎉 Top Voted'}
               </button>
             ))}
+            {user && (
+              <button className={`filter-tab ${feedType === 'following' ? 'active' : ''}`}
+                onClick={() => { setFeedType('following'); setCountryDD(false); setIndDD(false); }}
+                style={{ display:'flex', alignItems:'center', gap:5 }}>
+                👥 Following
+                {following.size > 0 && <span style={{ fontSize:10, background:'var(--orange)', color:'#fff', borderRadius:'50%', width:16, height:16, display:'grid', placeItems:'center', fontWeight:800 }}>{following.size}</span>}
+              </button>
+            )}
           </div>
         </div>
 
@@ -175,31 +208,65 @@ export default function HomePage() {
               <div className="list-title">{feedTitles[feedType]}</div>
               <div className="list-count">{filtered.length} products</div>
             </div>
-            {loading
-              ? <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Spinner size="lg"/></div>
-              : filtered.length
-                ? filtered.map((p, i) => (
-                    <div key={p.id} onClick={() => navigate(`/products/${p.id}`)}>
-                      <ProductCard product={p} rank={i + 1}/>
-                    </div>
-                  ))
-                : (
-                  <div className="empty">
-                    <div className="empty-icon">🔍</div>
-                    <div className="empty-title">No products found</div>
-                    <div className="empty-desc">Try adjusting your filters</div>
-                  </div>
-                )
-            }
+            {loading ? (
+              <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Spinner size="lg"/></div>
+            ) : feedType === 'following' && !user ? (
+              <div className="empty">
+                <div className="empty-icon">👥</div>
+                <div className="empty-title">Sign in to see your following feed</div>
+                <div className="empty-desc">Follow founders and builders to see their latest launches here.</div>
+              </div>
+            ) : feedType === 'following' && followingProducts.length === 0 ? (
+              <div className="empty">
+                <div className="empty-icon">👥</div>
+                <div className="empty-title">Your following feed is empty</div>
+                <div className="empty-desc">Follow some founders or builders to see their products here.</div>
+                <button onClick={() => navigate('/directory')} style={{ marginTop:16, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                  Browse Founders →
+                </button>
+              </div>
+            ) : filtered.length ? (
+              filtered.map((p, i) => (
+                <div key={p.id} onClick={() => navigate(`/products/${p.id}`)}>
+                  <ProductCard product={p} rank={i + 1}/>
+                </div>
+              ))
+            ) : (
+              <div className="empty">
+                <div className="empty-icon">🔍</div>
+                <div className="empty-title">No products found</div>
+                <div className="empty-desc">Try adjusting your filters</div>
+              </div>
+            )}
           </div>
 
           {/* Sidebar */}
           <div className="sidebar" style={{ display: 'block' }}>
+            {/* Trending this week */}
+            {trendingProducts.length > 0 && (
+              <div className="sidebar-card">
+                <div className="sidebar-title">🔥 Trending This Week</div>
+                {trendingProducts.map((p, i) => (
+                  <div key={p.id} className="sidebar-item" onClick={() => navigate(`/products/${p.id}`)}
+                    style={{ cursor:'pointer', padding:'10px 0', borderBottom: i < trendingProducts.length-1 ? '1px solid #f4f4f4':'none' }}>
+                    <div style={{ width:28, height:28, borderRadius:8, background:'var(--orange-light)', display:'grid', placeItems:'center', fontSize:14, flexShrink:0 }}>
+                      {p.logo_emoji || '🚀'}
+                    </div>
+                    <div style={{ flex:1, minWidth:0 }}>
+                      <div style={{ fontSize:13, fontWeight:700, color:'#1a1a1a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p.name}</div>
+                      <div style={{ fontSize:11, color:'#aaa' }}>▲ {p.upvotes_count || 0} votes</div>
+                    </div>
+                    <div style={{ fontSize:11, fontWeight:800, color:'rgba(232,98,26,.6)', minWidth:20, textAlign:'right' }}>#{i+1}</div>
+                  </div>
+                ))}
+              </div>
+            )}
+
             {/* From the Community */}
             <div className="sidebar-card">
               <div className="sidebar-title">✍️ From the Community</div>
               {ARTICLES.map((a, i) => (
-                <div key={i} className="article-card">
+                <div key={i} className="article-card" onClick={() => navigate(`/articles/${a.slug}`)} style={{ cursor:'pointer' }}>
                   <div className="article-tag">{a.tag}</div>
                   <div className="article-title">{a.title}</div>
                   <div className="article-meta">

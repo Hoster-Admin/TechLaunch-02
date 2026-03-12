@@ -199,7 +199,7 @@ export function RegisterPage() {
 
             <div style={{ marginBottom:20 }}>
               <label style={labelStyle}>Password</label>
-              <input type="password" value={form.password} onChange={set('password')} placeholder="Min. 8 characters"
+              <input type="password" value={form.password} onChange={set('password')} placeholder="Min. 8 characters" autoComplete="new-password"
                 style={inputStyle(errors.password)}
                 onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor=errors.password?'#dc2626':'#e8e8e8'}/>
               {errors.password && <div style={errStyle}>{errors.password}</div>}
