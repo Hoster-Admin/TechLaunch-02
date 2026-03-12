@@ -59,7 +59,7 @@ const NAV_ITEMS = [
   { key:'applied',   icon:'📋', label:'Applied'            },
   { key:'messages',  icon:'💬', label:'Messages'           },
   { key:'bookmarks', icon:'🔖', label:'Bookmarks'          },
-  { key:'company',   icon:'🏢', label:'Create Company Page'},
+  { key:'company',   icon:'🏢', label:'Create Entity Page'},
 ];
 
 const MENA_INDUSTRIES = ['AI & ML','Cleantech','Cybersecurity','Dev Tools','E-Commerce','Edtech','Fintech','Foodtech','Healthtech','HR & Work','Logistics','Media','Proptech','Traveltech','Web3'];
@@ -155,15 +155,21 @@ export default function SettingsPage() {
     try { return localStorage.getItem(`tlm_avatar_${user?.id}`) || null; } catch { return null; }
   });
 
+  const [coType,     setCoType]    = useState('');
   const [coName,     setCoName]    = useState('');
-  const [coLogo,     setCoLogo]    = useState('🚀');
+  const [coLogoImg,  setCoLogoImg] = useState(null);
   const [coIndustry, setCoIndustry]= useState('');
   const [coCountry,  setCoCountry] = useState('');
-  const [coStage,    setCoStage]   = useState('');
+  const [coStages,   setCoStages]  = useState([]);
   const [coAbout,    setCoAbout]   = useState('');
   const [coWebsite,  setCoWebsite] = useState('');
+  const [coLinkedIn, setCoLinkedIn]= useState('');
+  const [coTwitter,  setCoTwitter] = useState('');
+  const [coTikTok,   setCoTikTok]  = useState('');
+  const [coInstagram,setCoInstagram]=useState('');
   const [coTeam,     setCoTeam]    = useState('');
   const [coFounded,  setCoFounded] = useState('');
+  const [coStageOpen,setCoStageOpen]=useState(false);
   const [coSubmitted,setCoSubmitted]=useState(false);
   const [coSaving,   setCoSaving]  = useState(false);
 
@@ -181,13 +187,38 @@ export default function SettingsPage() {
     reader.readAsDataURL(file);
   };
 
+  const handleCoLogoUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Logo must be under 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => { setCoLogoImg(ev.target.result); };
+    reader.readAsDataURL(file);
+  };
+
+  const toggleCoStage = (s) => setCoStages(prev => prev.includes(s) ? prev.filter(x=>x!==s) : [...prev, s]);
+
   const handleCoSubmit = async () => {
-    if (!coName.trim()) { toast.error('Company name is required'); return; }
+    if (!coType) { toast.error('Please select an entity type'); return; }
+    if (!coName.trim()) { toast.error('Entity name is required'); return; }
     setCoSaving(true);
-    await new Promise(r => setTimeout(r, 1000));
-    setCoSaving(false);
-    setCoSubmitted(true);
-    toast.success('Company page submitted for review!');
+    try {
+      const payload = {
+        entityType: coType, name: coName, industry: coIndustry, country: coCountry,
+        stages: coStages, teamSize: coTeam, foundedYear: coFounded, about: coAbout,
+        website: coWebsite, linkedin: coLinkedIn, twitter: coTwitter,
+        tiktok: coTikTok, instagram: coInstagram,
+        logoImg: coLogoImg ? true : false,
+        submittedBy: user?.id,
+      };
+      await new Promise(r => setTimeout(r, 900));
+      setCoSaving(false);
+      setCoSubmitted(true);
+      toast.success('Entity submitted for review!');
+    } catch {
+      setCoSaving(false);
+      toast.error('Something went wrong, please try again.');
+    }
   };
 
   if (!user) { navigate('/login'); return null; }
@@ -492,143 +523,233 @@ export default function SettingsPage() {
               </div>
             )}
 
-            {/* ── CREATE COMPANY PAGE ── */}
-            {activeTab === 'company' && (
-              <div>
-                <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>🏢 Create Company Page</div>
-                <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>List your company on Tech Launch MENA's directory.</div>
+            {/* ── CREATE ENTITY PAGE ── */}
+            {activeTab === 'company' && (() => {
+              const inpStyle = { width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' };
+              const selStyle = { ...inpStyle, background:'#fff', cursor:'pointer' };
+              const fo = e => { e.target.style.borderColor='var(--orange)'; };
+              const bl = e => { e.target.style.borderColor='#e8e8e8'; };
+              const yearOpts = Array.from({length:2026-1990+1},(_,i)=>2026-i);
+              const ENTITY_TYPES = ['Company','Accelerator/Incubator','Venture Studio','Investment Firm'];
+              const isInvFirm = coType === 'Investment Firm';
+              const isCompany = coType === 'Company';
 
-                {coSubmitted ? (
-                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'48px 32px', textAlign:'center' }}>
-                    <div style={{ fontSize:52, marginBottom:16 }}>🎉</div>
-                    <div style={{ fontSize:22, fontWeight:800, marginBottom:8 }}>Company Submitted!</div>
-                    <p style={{ color:'#666', marginBottom:8, fontSize:14, lineHeight:1.6, maxWidth:400, margin:'0 auto 16px' }}>
-                      <strong>{coName}</strong> has been submitted for review. Our team will verify and publish it within 48 hours.
-                    </p>
-                    <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#f0fdf4', padding:'8px 16px', borderRadius:20, fontSize:13, fontWeight:700, color:'#16a34a', marginBottom:24 }}>
-                      ✅ Under review
-                    </div>
-                    <br/>
-                    <button onClick={() => { setCoSubmitted(false); setCoName(''); setCoLogo('🚀'); setCoIndustry(''); setCoCountry(''); setCoStage(''); setCoAbout(''); setCoWebsite(''); setCoTeam(''); setCoFounded(''); }}
-                      style={{ padding:'10px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', marginTop:8 }}>
-                      Submit Another Company
-                    </button>
-                  </div>
-                ) : (<>
+              const resetForm = () => {
+                setCoType(''); setCoName(''); setCoLogoImg(null); setCoIndustry(''); setCoCountry('');
+                setCoStages([]); setCoAbout(''); setCoWebsite(''); setCoLinkedIn(''); setCoTwitter('');
+                setCoTikTok(''); setCoInstagram(''); setCoTeam(''); setCoFounded(''); setCoSubmitted(false);
+              };
 
-                  {/* Preview card */}
-                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20, display:'flex', alignItems:'flex-start', gap:16 }}>
-                    <div style={{ width:60, height:60, borderRadius:16, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize:32, flexShrink:0 }}>
-                      {coLogo || '🏢'}
-                    </div>
-                    <div style={{ flex:1 }}>
-                      <div style={{ fontSize:17, fontWeight:800, color: coName ? '#0a0a0a' : '#ccc' }}>{coName || 'Your Company Name'}</div>
-                      <div style={{ fontSize:12, color:'#aaa', margin:'4px 0 8px', display:'flex', gap:6, flexWrap:'wrap' }}>
-                        {coCountry && <span>{MENA_COUNTRIES_LIST.find(c=>c.v===coCountry)?.l}</span>}
-                        {coCountry && coIndustry && <span>·</span>}
-                        {coIndustry && <span>{coIndustry}</span>}
-                        {coStage && <><span>·</span><span>{coStage}</span></>}
+              const previewLinks = [
+                coWebsite   && { icon:'🌐', label:'Website',   url: coWebsite },
+                coLinkedIn  && { icon:'💼', label:'LinkedIn',  url: coLinkedIn },
+                coTwitter   && { icon:'𝕏',  label:'Twitter',   url: coTwitter },
+                coTikTok    && { icon:'♪',  label:'TikTok',    url: coTikTok },
+                coInstagram && { icon:'📸', label:'Instagram', url: coInstagram },
+              ].filter(Boolean);
+
+              return (
+                <div>
+                  <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>Create Entity Page</div>
+                  <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>List your company or organization on Tech Launch MENA's directory.</div>
+
+                  {coSubmitted ? (
+                    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'52px 32px', textAlign:'center' }}>
+                      <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', display:'grid', placeItems:'center', fontSize:36, margin:'0 auto 20px' }}>✅</div>
+                      <div style={{ fontSize:22, fontWeight:800, marginBottom:10 }}>Your entity is under review</div>
+                      <p style={{ color:'#666', fontSize:14, lineHeight:1.7, maxWidth:420, margin:'0 auto 20px' }}>
+                        <strong>{coName}</strong> has been submitted. Our team will review and publish your entity page within 48 hours. You'll be notified once it goes live.
+                      </p>
+                      <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#f0fdf4', padding:'8px 20px', borderRadius:20, fontSize:13, fontWeight:700, color:'#16a34a', marginBottom:28 }}>
+                        Under review · Estimated 48 hours
                       </div>
-                      <div style={{ fontSize:13, color: coAbout ? '#555' : '#ccc', lineHeight:1.6 }}>{coAbout || 'Your company description will appear here.'}</div>
+                      <br/>
+                      <button onClick={resetForm}
+                        style={{ padding:'10px 28px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+                        Submit Another Entity
+                      </button>
                     </div>
-                  </div>
+                  ) : (<>
 
-                  {/* Form */}
-                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20 }}>
-                    <div style={{ fontSize:14, fontWeight:800, marginBottom:20, color:'#0a0a0a' }}>🏢 Company Details</div>
-
-                    {/* Logo emoji */}
-                    <div style={{ marginBottom:16 }}>
-                      <label style={labelStyle}>LOGO (EMOJI)</label>
-                      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
-                        <div style={{ width:52, height:52, borderRadius:14, background:'#f5f5f5', display:'grid', placeItems:'center', fontSize:28, border:'1.5px solid #e8e8e8' }}>{coLogo}</div>
-                        <input value={coLogo} onChange={e=>setCoLogo(e.target.value)} maxLength={4}
-                          style={{ width:70, padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:22, fontFamily:'inherit', outline:'none', textAlign:'center' }}
-                          placeholder="🚀"/>
-                        <div style={{ fontSize:12, color:'#aaa' }}>Type or paste an emoji as your company logo</div>
+                    {/* ── Preview card ── */}
+                    {coName && (
+                      <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'20px 24px', marginBottom:20, display:'flex', alignItems:'flex-start', gap:16 }}>
+                        <div style={{ width:56, height:56, borderRadius:14, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize:28, flexShrink:0, overflow:'hidden' }}>
+                          {coLogoImg
+                            ? <img src={coLogoImg} alt="logo" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                            : <span style={{ fontSize:22, color:'#bbb' }}>?</span>}
+                        </div>
+                        <div style={{ flex:1, minWidth:0 }}>
+                          <div style={{ fontSize:16, fontWeight:800, color:'#0a0a0a' }}>{coName}</div>
+                          <div style={{ fontSize:12, color:'#aaa', margin:'3px 0 6px', display:'flex', gap:5, flexWrap:'wrap' }}>
+                            {coType && <span>{coType}</span>}
+                            {coType && coCountry && <span>·</span>}
+                            {coCountry && <span>{MENA_COUNTRIES_LIST.find(c=>c.v===coCountry)?.l}</span>}
+                            {coCountry && coIndustry && <span>·</span>}
+                            {coIndustry && <span>{coIndustry}</span>}
+                            {isInvFirm && coStages.length > 0 && <><span>·</span><span>{coStages.join(', ')}</span></>}
+                            {isCompany && coTeam && <><span>·</span><span>{coTeam} people</span></>}
+                            {coFounded && <><span>·</span><span>Est. {coFounded}</span></>}
+                          </div>
+                          {coAbout && <div style={{ fontSize:13, color:'#555', lineHeight:1.6, marginBottom:previewLinks.length?8:0 }}>{coAbout}</div>}
+                          {previewLinks.length > 0 && (
+                            <div style={{ display:'flex', gap:10, flexWrap:'wrap', marginTop:4 }}>
+                              {previewLinks.map(lk => (
+                                <a key={lk.label} href={lk.url} target="_blank" rel="noreferrer"
+                                  style={{ fontSize:12, color:'var(--orange)', fontWeight:600, textDecoration:'none', display:'flex', alignItems:'center', gap:4 }}>
+                                  {lk.icon} {lk.label}
+                                </a>
+                              ))}
+                            </div>
+                          )}
+                        </div>
                       </div>
-                    </div>
+                    )}
 
-                    {/* Company name + website */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-                      <div>
-                        <label style={labelStyle}>COMPANY NAME *</label>
-                        <input value={coName} onChange={e=>setCoName(e.target.value)} placeholder="e.g. Tabby"
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
-                          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
-                      </div>
-                      <div>
-                        <label style={labelStyle}>WEBSITE</label>
-                        <input value={coWebsite} onChange={e=>setCoWebsite(e.target.value)} placeholder="https://yourcompany.com"
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
-                          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
-                      </div>
-                    </div>
+                    {/* ── Form ── */}
+                    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20 }}>
+                      <div style={{ fontSize:14, fontWeight:800, marginBottom:20, color:'#0a0a0a' }}>Entity Details</div>
 
-                    {/* Industry + Country */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-                      <div>
-                        <label style={labelStyle}>INDUSTRY</label>
-                        <select value={coIndustry} onChange={e=>setCoIndustry(e.target.value)}
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
-                          <option value="">Select industry</option>
-                          {MENA_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                      {/* Entity type */}
+                      <div style={{ marginBottom:16 }}>
+                        <label style={labelStyle}>ENTITY TYPE *</label>
+                        <select value={coType} onChange={e=>setCoType(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
+                          <option value="">Select entity type</option>
+                          {ENTITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
                       </div>
-                      <div>
-                        <label style={labelStyle}>COUNTRY</label>
-                        <select value={coCountry} onChange={e=>setCoCountry(e.target.value)}
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
-                          <option value="">Select country</option>
-                          {MENA_COUNTRIES_LIST.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
-                        </select>
-                      </div>
-                    </div>
 
-                    {/* Stage + Team + Founded */}
-                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16 }}>
-                      <div>
-                        <label style={labelStyle}>STAGE</label>
-                        <select value={coStage} onChange={e=>setCoStage(e.target.value)}
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
-                          <option value="">Select stage</option>
-                          {FUNDING_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+                      {/* Logo upload */}
+                      <div style={{ marginBottom:16 }}>
+                        <label style={labelStyle}>COMPANY LOGO</label>
+                        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                          <div style={{ width:52, height:52, borderRadius:14, background:'#f5f5f5', border:'1.5px solid #e8e8e8', display:'grid', placeItems:'center', overflow:'hidden', flexShrink:0 }}>
+                            {coLogoImg
+                              ? <img src={coLogoImg} alt="logo" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                              : <span style={{ fontSize:22, color:'#ccc' }}>?</span>}
+                          </div>
+                          <label style={{ padding:'9px 18px', borderRadius:10, border:'1.5px solid #e8e8e8', fontSize:13, fontWeight:600, color:'#333', cursor:'pointer', background:'#fafafa', whiteSpace:'nowrap' }}>
+                            Upload company logo
+                            <input type="file" accept="image/*" onChange={handleCoLogoUpload} style={{ display:'none' }}/>
+                          </label>
+                          <span style={{ fontSize:12, color:'#bbb' }}>PNG, JPG up to 2MB</span>
+                        </div>
                       </div>
-                      <div>
-                        <label style={labelStyle}>TEAM SIZE</label>
-                        <select value={coTeam} onChange={e=>setCoTeam(e.target.value)}
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
-                          <option value="">Select size</option>
-                          {['1–5','6–15','16–30','31–60','61–100','100–250','250+'].map(s => <option key={s} value={s}>{s}</option>)}
-                        </select>
+
+                      {/* Entity name */}
+                      <div style={{ marginBottom:16 }}>
+                        <label style={labelStyle}>ENTITY NAME *</label>
+                        <input value={coName} onChange={e=>setCoName(e.target.value)} placeholder="e.g. Tabby" style={inpStyle} onFocus={fo} onBlur={bl}/>
                       </div>
-                      <div>
+
+                      {/* Industry + Country */}
+                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                        <div>
+                          <label style={labelStyle}>INDUSTRY</label>
+                          <select value={coIndustry} onChange={e=>setCoIndustry(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
+                            <option value="">Select industry</option>
+                            {MENA_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                          </select>
+                        </div>
+                        <div>
+                          <label style={labelStyle}>COUNTRY</label>
+                          <select value={coCountry} onChange={e=>setCoCountry(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
+                            <option value="">Select country</option>
+                            {MENA_COUNTRIES_LIST.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
+                          </select>
+                        </div>
+                      </div>
+
+                      {/* Stage focus — Investment Firm only, multi-select */}
+                      {isInvFirm && (
+                        <div style={{ marginBottom:16, position:'relative' }}>
+                          <label style={labelStyle}>STAGE FOCUS (select all that apply)</label>
+                          <div onClick={()=>setCoStageOpen(o=>!o)}
+                            style={{ ...inpStyle, display:'flex', justifyContent:'space-between', alignItems:'center', cursor:'pointer', userSelect:'none', color: coStages.length ? '#0a0a0a' : '#aaa' }}>
+                            {coStages.length ? coStages.join(', ') : 'Select stages…'}
+                            <span style={{ fontSize:10, color:'#aaa' }}>▼</span>
+                          </div>
+                          {coStageOpen && (
+                            <div style={{ position:'absolute', top:'100%', left:0, right:0, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, zIndex:50, marginTop:4, padding:'8px 0', boxShadow:'0 8px 24px rgba(0,0,0,.08)' }}>
+                              {FUNDING_STAGES.map(s => (
+                                <label key={s} style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 16px', cursor:'pointer', fontSize:14, fontFamily:'Inter,sans-serif' }}
+                                  onMouseEnter={e=>e.currentTarget.style.background='#fafafa'}
+                                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                                  <input type="checkbox" checked={coStages.includes(s)} onChange={()=>toggleCoStage(s)}
+                                    style={{ accentColor:'var(--orange)', width:16, height:16, cursor:'pointer' }}/>
+                                  {s}
+                                </label>
+                              ))}
+                              <div style={{ padding:'8px 16px', borderTop:'1px solid #f0f0f0', marginTop:4 }}>
+                                <button onClick={()=>setCoStageOpen(false)}
+                                  style={{ fontSize:12, fontWeight:700, color:'var(--orange)', background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                                  Done
+                                </button>
+                              </div>
+                            </div>
+                          )}
+                        </div>
+                      )}
+
+                      {/* Team size — Company only */}
+                      {isCompany && (
+                        <div style={{ marginBottom:16 }}>
+                          <label style={labelStyle}>TEAM SIZE</label>
+                          <select value={coTeam} onChange={e=>setCoTeam(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
+                            <option value="">Select size</option>
+                            {['1–5','6–15','16–30','31–60','61–100','100–250','250+'].map(s => <option key={s} value={s}>{s}</option>)}
+                          </select>
+                        </div>
+                      )}
+
+                      {/* Founded year — dropdown */}
+                      <div style={{ marginBottom:16 }}>
                         <label style={labelStyle}>FOUNDED YEAR</label>
-                        <input type="number" value={coFounded} onChange={e=>setCoFounded(e.target.value)} placeholder="2023" min="2000" max="2026"
-                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
-                          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+                        <select value={coFounded} onChange={e=>setCoFounded(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
+                          <option value="">Select year</option>
+                          {yearOpts.map(y => <option key={y} value={y}>{y}</option>)}
+                        </select>
                       </div>
+
+                      {/* About */}
+                      <div style={{ marginBottom:20 }}>
+                        <label style={labelStyle}>ABOUT</label>
+                        <textarea value={coAbout} onChange={e=>setCoAbout(e.target.value)} rows={4}
+                          placeholder="Describe what your entity does, who it serves, and what makes it unique in the MENA market..."
+                          style={{ ...inpStyle, resize:'vertical', lineHeight:1.6 }}
+                          onFocus={fo} onBlur={bl}/>
+                      </div>
+
+                      {/* Social links */}
+                      <div style={{ marginBottom:20 }}>
+                        <label style={labelStyle}>SOCIAL & WEB LINKS</label>
+                        <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                          {[
+                            { icon:'🌐', label:'Website',   val:coWebsite,    set:setCoWebsite,   ph:'https://yourcompany.com' },
+                            { icon:'💼', label:'LinkedIn',  val:coLinkedIn,   set:setCoLinkedIn,  ph:'https://linkedin.com/company/...' },
+                            { icon:'𝕏',  label:'Twitter',   val:coTwitter,    set:setCoTwitter,   ph:'https://twitter.com/...' },
+                            { icon:'♪',  label:'TikTok',    val:coTikTok,     set:setCoTikTok,    ph:'https://tiktok.com/@...' },
+                            { icon:'📸', label:'Instagram', val:coInstagram,  set:setCoInstagram, ph:'https://instagram.com/...' },
+                          ].map(lk => (
+                            <div key={lk.label} style={{ display:'flex', alignItems:'center', gap:10 }}>
+                              <div style={{ width:36, height:36, borderRadius:10, background:'#f5f5f5', display:'grid', placeItems:'center', fontSize:16, flexShrink:0 }}>{lk.icon}</div>
+                              <input value={lk.val} onChange={e=>lk.set(e.target.value)} placeholder={lk.ph}
+                                style={{ ...inpStyle, flex:1 }} onFocus={fo} onBlur={bl}/>
+                            </div>
+                          ))}
+                        </div>
+                      </div>
+
+                      <button onClick={handleCoSubmit} disabled={coSaving || !coName.trim() || !coType}
+                        style={{ padding:'12px 28px', borderRadius:12, background:(coName.trim()&&coType)?'var(--orange)':'#e8e8e8', color:(coName.trim()&&coType)?'#fff':'#aaa', border:'none', fontSize:14, fontWeight:700, cursor:(coName.trim()&&coType)?'pointer':'not-allowed', transition:'all .15s' }}>
+                        {coSaving ? 'Submitting…' : 'Submit Entity for Review'}
+                      </button>
                     </div>
 
-                    {/* About */}
-                    <div style={{ marginBottom:20 }}>
-                      <label style={labelStyle}>ABOUT YOUR COMPANY</label>
-                      <textarea value={coAbout} onChange={e=>setCoAbout(e.target.value)} rows={4}
-                        placeholder="Describe what your company does, who it serves, and what makes it unique in the MENA market..."
-                        style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', resize:'vertical', boxSizing:'border-box', lineHeight:1.6 }}
-                        onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
-                    </div>
-
-                    <button onClick={handleCoSubmit} disabled={coSaving || !coName.trim()}
-                      style={{ padding:'12px 28px', borderRadius:12, background:coName.trim()?'var(--orange)':'#e8e8e8', color:coName.trim()?'#fff':'#aaa', border:'none', fontSize:14, fontWeight:700, cursor:coName.trim()?'pointer':'not-allowed', transition:'all .15s' }}>
-                      {coSaving ? 'Submitting…' : '🚀 Submit Company for Review'}
-                    </button>
-                  </div>
-
-                </>)}
-              </div>
-            )}
+                  </>)}
+                </div>
+              );
+            })()}
 
           </div>
         </div>
