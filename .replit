@@ -47,5 +47,5 @@ waitForPort = 5000
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "cd backend && NODE_ENV=production PORT=5000 node src/server.js"]
+run = ["node", "backend/src/server.js"]
 build = ["bash", "-c", "cd frontend && npm run build"]
