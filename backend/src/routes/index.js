@@ -82,6 +82,7 @@ entitiesRouter.post('/:id/pitch',   authenticate,
 // ══════════════════════════════════════════════════
 const usersRouter = express.Router();
 
+usersRouter.get ('/',             optionalAuth, userCtrl.searchUsers);
 usersRouter.get ('/me/bookmarks',         authenticate, userCtrl.getBookmarks);
 usersRouter.get ('/me/products',          authenticate, userCtrl.getMyProducts);
 usersRouter.get ('/me/notifications',     authenticate, userCtrl.getNotifications);
