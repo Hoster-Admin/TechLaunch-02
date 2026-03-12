@@ -64,7 +64,8 @@ const login = async (req, res, next) => {
 
     const { rows } = await query(
       `SELECT id, name, handle, email, password_hash, role, status, persona, country,
-              verified, avatar_url, avatar_color FROM users WHERE email=$1`,
+              headline, github, bio, website, twitter, linkedin, followers_count, following_count,
+              verified, avatar_url, avatar_color, created_at FROM users WHERE email=$1`,
       [email]
     );
     if (!rows.length) {
