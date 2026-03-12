@@ -195,7 +195,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
               </button>
             )}
 
-            <div style={{ marginLeft:'auto', fontSize:13, fontWeight:600, color:'#aaa', whiteSpace:'nowrap', fontFamily:"'DM Mono',monospace" }}>
+            <div style={{ marginLeft:'auto', fontSize:13, fontWeight:600, color:'#aaa', whiteSpace:'nowrap', fontFamily:"'Inter',sans-serif" }}>
               {filtered.length} product{filtered.length !== 1 ? 's' : ''}
             </div>
           </div>
