@@ -16,6 +16,7 @@ export const UIProvider = ({ children }) => {
   const [unreadCount,    setUnreadCount]    = useState(0);
   const [dmThreads,      setDmThreads]      = useState({});
   const [following,      setFollowing]      = useState(new Set());
+  const [followingIds,   setFollowingIds]   = useState(new Set());
   const [profiles]                          = useState(DEMO_PROFILES);
   const [submitOpen,     setSubmitOpen]     = useState(false);
   const [inboxOpen,      setInboxOpen]      = useState(false);
@@ -24,6 +25,26 @@ export const UIProvider = ({ children }) => {
   const [waitlistModal,  setWaitlistModal]  = useState(null);
   const [authModal,      setAuthModal]      = useState(null);
   const [searchQuery,    setSearchQuery]    = useState('');
+
+  const loadNotifications = useCallback((apiNotifs) => {
+    if (!Array.isArray(apiNotifs)) return;
+    const mapped = apiNotifs.map(n => ({
+      type: n.type || 'system',
+      text: n.message || n.text || '',
+      icon: n.type === 'upvote' ? '▲' : n.type === 'follow' ? '👤' : n.type === 'comment' ? '💬' : '🔔',
+      time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recently',
+      unread: !n.read_at,
+      handle: n.actor_handle || null,
+    }));
+    setNotifications(mapped);
+    setUnreadCount(mapped.filter(n => n.unread).length);
+  }, []);
+
+  const loadBookmarks = useCallback((apiBookmarks) => {
+    if (!Array.isArray(apiBookmarks)) return;
+    const ids = new Set(apiBookmarks.map(b => b.id || b.product_id));
+    setBookmarks(ids);
+  }, []);
 
   const addNotification = useCallback((type, text, icon, handle) => {
     const notif = { type, text, icon: icon || '🔔', time: 'Just now', unread: true, handle };
@@ -74,6 +95,15 @@ export const UIProvider = ({ children }) => {
     });
   }, []);
 
+  const toggleFollowId = useCallback((id) => {
+    setFollowingIds(prev => {
+      const next = new Set(prev);
+      if (next.has(id)) { next.delete(id); return next; }
+      next.add(id);
+      return next;
+    });
+  }, []);
+
   const openDM = useCallback((handle, name, avatar) => {
     setDmThreads(prev => {
       if (!prev[handle]) {
@@ -105,11 +135,12 @@ export const UIProvider = ({ children }) => {
 
   return (
     <UIContext.Provider value={{
-      bookmarks, toggleBookmark,
+      bookmarks, toggleBookmark, loadBookmarks,
       votes, toggleVote,
-      notifications, unreadCount, addNotification, markAllRead, markOneRead,
+      notifications, unreadCount, addNotification, markAllRead, markOneRead, loadNotifications,
       dmThreads, openDM, sendDM, inboxOpen, setInboxOpen, inboxTarget, setInboxTarget,
       following, toggleFollow,
+      followingIds, toggleFollowId,
       profiles,
       submitOpen, setSubmitOpen,
       entityModal, setEntityModal,

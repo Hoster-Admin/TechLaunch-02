@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
@@ -32,6 +32,125 @@ const MOCK_PRODUCTS = [
   { id:10, name:'Cura',          tagline:'Arabic mental health therapy online',        logo_emoji:'🧠', industry:'Healthtech', country:'Saudi Arabia', status:'soon', upvotes_count:0,   website:'',                          description:'Cura connects Arabic speakers to licensed therapists for online mental health sessions — fully private, in Arabic, and accessible from anywhere.', tags:['Mental Health','Arabic','Therapy'] },
 ];
 
+function timeAgo(dateStr) {
+  const d = new Date(dateStr);
+  const diff = (Date.now() - d.getTime()) / 1000;
+  if (diff < 60)   return 'just now';
+  if (diff < 3600) return `${Math.floor(diff/60)}m ago`;
+  if (diff < 86400) return `${Math.floor(diff/3600)}h ago`;
+  return `${Math.floor(diff/86400)}d ago`;
+}
+
+function CommentsSection({ productId, onSignIn, product }) {
+  const { user } = useAuth();
+  const [comments, setComments] = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [body, setBody]         = useState('');
+  const [posting, setPosting]   = useState(false);
+  const textRef = useRef(null);
+
+  useEffect(() => {
+    if (!productId) return;
+    productsAPI.comments(productId)
+      .then(({ data }) => { setComments(data.data || []); setLoading(false); })
+      .catch(() => setLoading(false));
+  }, [productId]);
+
+  const handlePost = async () => {
+    if (!user) { onSignIn?.(); return; }
+    if (!body.trim()) return;
+    setPosting(true);
+    try {
+      const { data } = await productsAPI.addComment(productId, body.trim());
+      const newComment = data.data || {
+        id: Date.now(), body: body.trim(),
+        user: { name: user.name, handle: user.handle, avatar_url: null },
+        created_at: new Date().toISOString(),
+      };
+      setComments(prev => [newComment, ...prev]);
+      setBody('');
+      toast.success('Comment posted!');
+    } catch {
+      toast.error('Could not post comment');
+    } finally { setPosting(false); }
+  };
+
+  const initials = (name) => (name || '?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
+
+  return (
+    <div style={{ marginBottom: 36 }}>
+      <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', marginBottom:18 }}>
+        💬 Discussion ({loading ? '…' : comments.length})
+      </div>
+
+      {/* Comment box */}
+      <div style={{ display:'flex', gap:12, marginBottom:20, alignItems:'flex-start' }}>
+        <div style={{ width:36, height:36, borderRadius:'50%', background: user ? 'var(--orange)' : '#e8e8e8', color: user ? '#fff' : '#aaa', display:'grid', placeItems:'center', fontSize:13, fontWeight:800, flexShrink:0 }}>
+          {user ? initials(user.name) : '?'}
+        </div>
+        <div style={{ flex:1 }}>
+          <textarea
+            ref={textRef}
+            value={body}
+            onChange={e => setBody(e.target.value)}
+            onKeyDown={e => { if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) handlePost(); }}
+            placeholder={user ? `What do you think about ${product?.name || 'this product'}?` : 'Sign in to leave a comment…'}
+            rows={3}
+            style={{ width:'100%', padding:'11px 14px', borderRadius:12, border:'1.5px solid #e8e8e8', fontSize:13, fontFamily:'Inter,sans-serif', resize:'vertical', outline:'none', boxSizing:'border-box', lineHeight:1.6, color:'#1a1a1a', background: user ? '#fff' : '#fafafa' }}
+            onFocus={e => { if (user) e.target.style.borderColor='var(--orange)'; }}
+            onBlur={e => e.target.style.borderColor='#e8e8e8'}
+            readOnly={!user}
+            onClick={() => { if (!user) onSignIn?.(); }}
+          />
+          {user && (
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:8 }}>
+              <span style={{ fontSize:11, color:'#bbb' }}>⌘+Enter to post</span>
+              <button onClick={handlePost} disabled={posting || !body.trim()}
+                style={{ padding:'8px 18px', borderRadius:9, background: body.trim() ? 'var(--orange)' : '#f0f0f0', color: body.trim() ? '#fff' : '#bbb', border:'none', fontSize:13, fontWeight:700, cursor: body.trim() ? 'pointer' : 'default', transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
+                {posting ? 'Posting…' : 'Post'}
+              </button>
+            </div>
+          )}
+        </div>
+      </div>
+
+      {/* Comments list */}
+      {loading ? (
+        <div style={{ display:'flex', justifyContent:'center', padding:40 }}><Spinner/></div>
+      ) : comments.length === 0 ? (
+        <div style={{ textAlign:'center', padding:'40px 20px', background:'#f9f9f9', borderRadius:16, border:'1px solid #f0f0f0' }}>
+          <div style={{ fontSize:32, marginBottom:10 }}>💬</div>
+          <div style={{ fontSize:14, fontWeight:700, color:'#bbb' }}>No comments yet</div>
+          <div style={{ fontSize:12, color:'#ccc', marginTop:4 }}>Be the first to share your thoughts!</div>
+        </div>
+      ) : (
+        <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
+          {comments.map((c, i) => {
+            const cUser = c.user || c.author || {};
+            const name = cUser.name || cUser.full_name || 'Anonymous';
+            const handle = cUser.handle || cUser.username || '';
+            return (
+              <div key={c.id || i} style={{ display:'flex', gap:12, alignItems:'flex-start', background:'#fafafa', borderRadius:14, padding:'14px 16px', border:'1px solid #f0f0f0' }}>
+                <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:13, fontWeight:800, flexShrink:0 }}>
+                  {initials(name)}
+                </div>
+                <div style={{ flex:1, minWidth:0 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
+                    <span style={{ fontSize:13, fontWeight:800 }}>{name}</span>
+                    {handle && <span style={{ fontSize:11, color:'#aaa', fontWeight:600 }}>@{handle.replace('@','')}</span>}
+                    <span style={{ fontSize:11, color:'#ccc' }}>{timeAgo(c.created_at)}</span>
+                  </div>
+                  <div style={{ fontSize:13, color:'#333', lineHeight:1.6, wordBreak:'break-word' }}>{c.body || c.content || c.text}</div>
+                </div>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function ProductDetailPage({ onSignIn, onSignUp }) {
   const { id } = useParams();
   const navigate = useNavigate();
@@ -41,19 +160,18 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
   const [loading, setLoading] = useState(true);
   const [copied,  setCopied]  = useState(false);
 
-  const pid = parseInt(id);
-
   useEffect(() => {
     setLoading(true);
-    productsAPI.get(pid).then(({ data }) => {
+    productsAPI.get(id).then(({ data }) => {
       setProduct(data.data); setLoading(false);
     }).catch(() => {
-      setProduct(MOCK_PRODUCTS.find(p => p.id === pid) || null);
+      const found = MOCK_PRODUCTS.find(p => String(p.id) === id) || null;
+      setProduct(found);
       setLoading(false);
     });
-  }, [pid]);
+  }, [id]);
 
-  const p = product || MOCK_PRODUCTS.find(p => p.id === pid) || null;
+  const p = product || null;
 
   if (loading) return (
     <><Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
@@ -96,6 +214,8 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
     toast.success('Link copied!');
   };
 
+  const ownerHandle = p.submitter_handle || p.user?.handle || p.owner_handle || 'product_owner';
+  const ownerName   = p.submitter_name  || p.user?.name  || p.owner_name  || `${p.name} Team`;
   const bookmarkCount = Math.floor(voteCount * 0.28 + 5);
 
   return (
@@ -159,7 +279,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
 
           {/* Screenshots carousel */}
           <div style={{ display:'flex', gap:12, overflowX:'auto', paddingBottom:20, marginBottom:36, scrollbarWidth:'none' }}>
-            <div style={{ minWidth:280, height:160, borderRadius:14, background:`linear-gradient(135deg,${pid%3===0?'#1a1a2e,#16213e':pid%3===1?'#0f3460,#533483':'#2d0036,#1a0a2e'})`, border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
+            <div style={{ minWidth:280, height:160, borderRadius:14, background:`linear-gradient(135deg,${(id||'').charCodeAt(0)%3===0?'#1a1a2e,#16213e':(id||'').charCodeAt(0)%3===1?'#0f3460,#533483':'#2d0036,#1a0a2e'})`, border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:8 }}>
               <div style={{ fontSize:40 }}>{p.logo_emoji||'🚀'}</div>
               <div style={{ fontSize:11, fontWeight:700, color:'rgba(255,255,255,.6)', letterSpacing:'.06em' }}>DASHBOARD</div>
             </div>
@@ -197,17 +317,20 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
             </div>
           </div>
 
-          {/* Contact button */}
+          {/* Message owner */}
           {user && (
             <div style={{ marginBottom:36 }}>
-              <button onClick={() => openDM('@product_owner', `${p.name} Owner`, p.logo_emoji||'🚀')}
+              <button onClick={() => openDM(ownerHandle.startsWith('@') ? ownerHandle : '@'+ownerHandle, ownerName, p.logo_emoji||'🚀')}
                 style={{ width:'100%', padding:14, borderRadius:14, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, transition:'opacity .15s' }}
                 onMouseOver={e=>e.currentTarget.style.opacity='.88'} onMouseOut={e=>e.currentTarget.style.opacity='1'}>
                 <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2"><path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/></svg>
-                Share your thoughts with the product owner
+                Message {ownerName}
               </button>
             </div>
           )}
+
+          {/* Comments */}
+          <CommentsSection productId={p.id} onSignIn={onSignIn} product={p}/>
 
         </div>
       </div>

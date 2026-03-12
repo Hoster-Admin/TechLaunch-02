@@ -1,8 +1,9 @@
-import React from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate } from 'react-router-dom';
+import React, { useEffect } from 'react';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UIProvider, useUI } from './context/UIContext';
+import { usersAPI } from './utils/api';
 import { LoadingPage } from './components/ui';
 
 import AdminLayout  from './components/admin/AdminLayout';
@@ -21,6 +22,7 @@ import { ArticlesList, ArticleDetail } from './pages/home/ArticlesPage';
 import AboutPage   from './pages/home/AboutPage';
 import PrivacyPage from './pages/home/PrivacyPage';
 import TermsPage   from './pages/home/TermsPage';
+import ContactPage from './pages/home/ContactPage';
 
 import AdminDashboard   from './pages/admin/AdminDashboard';
 import AdminProducts    from './pages/admin/AdminProducts';
@@ -37,10 +39,26 @@ import AuthModal          from './components/home/AuthModal';
 
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
+  const location = useLocation();
   if (loading) return <LoadingPage/>;
-  if (!user)   return <Navigate to="/login" replace/>;
+  if (!user)   return <Navigate to="/login" state={{ from: location.pathname }} replace/>;
   return children;
 };
+
+function DataSync() {
+  const { user } = useAuth();
+  const { loadNotifications, loadBookmarks } = useUI();
+  useEffect(() => {
+    if (!user) return;
+    usersAPI.notifications().then(({ data }) => {
+      if (data?.data) loadNotifications(data.data);
+    }).catch(() => {});
+    usersAPI.bookmarks().then(({ data }) => {
+      if (data?.data) loadBookmarks(data.data);
+    }).catch(() => {});
+  }, [user?.id]);
+  return null;
+}
 
 const RequireAdmin = ({ children }) => {
   const { user, loading } = useAuth();
@@ -93,6 +111,7 @@ function WithAuthCallbacks({ Component, ...props }) {
 function AppRoutes() {
   return (
     <>
+      <DataSync/>
       <Routes>
         {/* Auth */}
         <Route path="/login"    element={<GuestOnly><LoginPage/></GuestOnly>}/>
@@ -126,6 +145,8 @@ function AppRoutes() {
         <Route path="/about"             element={<AboutPage/>}/>
         <Route path="/privacy"           element={<PrivacyPage/>}/>
         <Route path="/terms"             element={<TermsPage/>}/>
+        <Route path="/contact"           element={<ContactPage/>}/>
+        <Route path="/write-for-us"      element={<ContactPage writeForUs/>}/>
         <Route path="/submit"            element={<Navigate to="/" replace/>}/>
         <Route path="*"                  element={<NotFound/>}/>
       </Routes>

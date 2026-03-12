@@ -49,14 +49,14 @@ export default function Footer() {
             ]},
             { title:'Community', links:[
               { label:'Articles',      action:() => navigate('/articles') },
-              { label:'Weekly Digest', action:() => {} },
+              { label:'Weekly Digest', action:() => navigate('/articles') },
               { label:'Accelerators',  action:() => navigate('/accelerators') },
-              { label:'Events',        action:() => {} },
+              { label:'Events',        action:() => navigate('/accelerators') },
             ]},
             { title:'Company', links:[
               { label:'About',          action:() => navigate('/about') },
-              { label:'Contact',        action:() => {} },
-              { label:'Write for Us',   action:() => navigate('/articles') },
+              { label:'Contact',        action:() => navigate('/contact') },
+              { label:'Write for Us',   action:() => navigate('/write-for-us') },
               { label:'Privacy Policy', action:() => navigate('/privacy') },
               { label:'Terms of Use',   action:() => navigate('/terms') },
             ]},
