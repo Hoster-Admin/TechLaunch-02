@@ -33,7 +33,7 @@ const getProfile = async (req, res, next) => {
 // ── PUT /api/users/me
 const updateProfile = async (req, res, next) => {
   try {
-    const allowed = ['name','bio','website','twitter','linkedin','country','persona'];
+    const allowed = ['name','bio','website','twitter','linkedin','country','persona','avatar_url','avatar_color'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
     if (!Object.keys(updates).length) return res.status(400).json({ success:false, message:'Nothing to update' });
