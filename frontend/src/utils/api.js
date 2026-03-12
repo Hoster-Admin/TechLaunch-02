@@ -114,6 +114,7 @@ export const usersAPI = {
   changePassword:(data)   => api.post('/users/me/change-password', data),
   follow:        (id)     => api.post(`/users/${id}/follow`),
   bookmarks:     ()       => api.get('/users/me/bookmarks'),
+  myProducts:    ()       => api.get('/users/me/products'),
   notifications: ()       => api.get('/users/me/notifications'),
   markRead:      ()       => api.put('/users/me/notifications/read'),
 };
