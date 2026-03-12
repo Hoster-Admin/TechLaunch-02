@@ -317,6 +317,37 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
             </div>
           </div>
 
+          {/* Makers */}
+          {p.makers && p.makers.length > 0 && (
+            <div style={{ marginBottom:36 }}>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', marginBottom:14 }}>
+                {p.makers.length === 1 ? 'Maker' : 'Makers'}
+              </div>
+              <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                {p.makers.map(m => (
+                  <a key={m.id} href={`/u/${m.handle}`} style={{ textDecoration:'none', color:'inherit' }}>
+                    <div style={{ display:'flex', alignItems:'center', gap:12, padding:'14px 18px', background:'#f9f9f9', borderRadius:14, border:'1px solid #f0f0f0', transition:'all .15s', cursor:'pointer' }}
+                      onMouseEnter={e => { e.currentTarget.style.background='var(--orange-light)'; e.currentTarget.style.borderColor='var(--orange)'; }}
+                      onMouseLeave={e => { e.currentTarget.style.background='#f9f9f9'; e.currentTarget.style.borderColor='#f0f0f0'; }}>
+                      {m.avatar_url
+                        ? <img src={m.avatar_url} alt={m.name} style={{ width:44, height:44, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
+                        : <div style={{ width:44, height:44, borderRadius:'50%', background:m.avatar_color||'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:15, fontWeight:800, flexShrink:0, fontFamily:'DM Sans,sans-serif' }}>
+                            {(m.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+                          </div>
+                      }
+                      <div style={{ flex:1, minWidth:0 }}>
+                        <div style={{ fontSize:14, fontWeight:800, color:'#0a0a0a' }}>{m.name}</div>
+                        <div style={{ fontSize:12, color:'#888' }}>@{m.handle} · <span style={{ color:'var(--orange)' }}>{m.role}</span></div>
+                        {m.headline && <div style={{ fontSize:12, color:'#999', marginTop:2 }}>{m.headline}</div>}
+                      </div>
+                      <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#ccc" strokeWidth="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg>
+                    </div>
+                  </a>
+                ))}
+              </div>
+            </div>
+          )}
+
           {/* Message owner */}
           {user && (
             <div style={{ marginBottom:36 }}>
