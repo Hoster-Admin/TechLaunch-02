@@ -72,7 +72,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
   const isBookmarked = bookmarks.has(p.id);
   const voteCount    = p.upvotes_count || p.upvotes || 0;
   const isSoon       = p.status === 'soon';
-  const tags         = p.tags || [p.industry].filter(Boolean);
+  const tags         = [...new Set([...(p.tags || []), p.industry].filter(Boolean))];
   const reasons      = REASONS_MAP[p.industry] || ['🚀 Purpose-built for the MENA market','⚡ Fast, reliable, and easy to use','🌍 Supports Arabic & English','🔒 Enterprise-grade security','💬 Responsive local support team'];
 
   const handleVote = () => {
@@ -124,9 +124,8 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
 
           {/* Tags */}
           <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:20 }}>
-            {p.industry && <span style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#f4f4f4', color:'#555' }}>{p.industry}</span>}
             {tags.map(t => <span key={t} style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#f4f4f4', color:'#555' }}>{t}</span>)}
-            {p.country && <span style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#f4f4f4', color:'#555' }}>{p.country}</span>}
+            {p.country && <span key="country" style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#f4f4f4', color:'#555' }}>{p.country}</span>}
           </div>
 
           {/* Action buttons */}

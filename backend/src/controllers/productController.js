@@ -76,9 +76,11 @@ const getProducts = async (req, res, next) => {
 };
 
 // ── GET /api/products/:id
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const getProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
+    if (!UUID_RE.test(id)) return res.status(404).json({ success: false, message: 'Product not found' });
     let voteJoin = '', bookmarkJoin = '', waitlistJoin = '';
     if (req.user) {
       voteJoin     = `LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = '${req.user.id}'`;
