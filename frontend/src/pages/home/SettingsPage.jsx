@@ -7,6 +7,8 @@ import { useUI } from '../../context/UIContext';
 import { productsAPI, entitiesAPI } from '../../utils/api';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
+import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
+import 'react-image-crop/dist/ReactCrop.css';
 
 const DRAFT_KEY = 'tlmena_draft_product';
 
@@ -539,9 +541,14 @@ export default function SettingsPage() {
   const settingsMsgScrollRef = React.useRef(null);
 
   const fileInputRef = useRef(null);
+  const cropImgRef   = useRef(null);
   const [avatarImg, setAvatarImg] = useState(() => {
     try { return user?.avatar_url || localStorage.getItem(`tlm_avatar_${user?.id}`) || null; } catch { return user?.avatar_url || null; }
   });
+  const [cropSrc,       setCropSrc]       = useState(null);
+  const [crop,          setCrop]          = useState();
+  const [completedCrop, setCompletedCrop] = useState(null);
+  const [cropSaving,    setCropSaving]    = useState(false);
 
   const [coType,     setCoType]    = useState('');
   const [coName,     setCoName]    = useState('');
@@ -564,24 +571,59 @@ export default function SettingsPage() {
 
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
+    e.target.value = '';
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error('Image must be under 2MB'); return; }
+    if (file.size > 10 * 1024 * 1024) { toast.error('Image must be under 10MB'); return; }
     const reader = new FileReader();
-    reader.onload = async (ev) => {
-      const base64 = ev.target.result;
-      setAvatarImg(base64);
-      try { localStorage.setItem(`tlm_avatar_${user.id}`, base64); } catch {}
-      try {
-        const res = await api.put('/users/me', { avatar_url: base64 });
-        if (res.data?.success) {
-          updateUser({ avatar_url: base64 });
-          toast.success('Photo updated!');
-        }
-      } catch {
-        toast.error('Failed to save photo. Please try again.');
-      }
+    reader.onload = (ev) => {
+      setCropSrc(ev.target.result);
+      setCrop(undefined);
+      setCompletedCrop(null);
     };
     reader.readAsDataURL(file);
+  };
+
+  const onCropImageLoad = (e) => {
+    const { naturalWidth: w, naturalHeight: h } = e.currentTarget;
+    const c = centerCrop(makeAspectCrop({ unit:'%', width:80 }, 1, w, h), w, h);
+    setCrop(c);
+  };
+
+  const saveCroppedAvatar = async () => {
+    if (!completedCrop || !cropImgRef.current) return;
+    setCropSaving(true);
+    try {
+      const img    = cropImgRef.current;
+      const scaleX = img.naturalWidth  / img.width;
+      const scaleY = img.naturalHeight / img.height;
+      const canvas = document.createElement('canvas');
+      const size   = 400;
+      canvas.width  = size;
+      canvas.height = size;
+      const ctx = canvas.getContext('2d');
+      ctx.beginPath();
+      ctx.arc(size / 2, size / 2, size / 2, 0, Math.PI * 2);
+      ctx.clip();
+      ctx.drawImage(
+        img,
+        completedCrop.x * scaleX,
+        completedCrop.y * scaleY,
+        completedCrop.width  * scaleX,
+        completedCrop.height * scaleY,
+        0, 0, size, size
+      );
+      const base64 = canvas.toDataURL('image/jpeg', 0.88);
+      setAvatarImg(base64);
+      setCropSrc(null);
+      try { localStorage.setItem(`tlm_avatar_${user.id}`, base64); } catch {}
+      const res = await api.put('/users/me', { avatar_url: base64 });
+      if (res.data?.success) {
+        updateUser({ avatar_url: base64 });
+        toast.success('Profile photo updated!');
+      }
+    } catch {
+      toast.error('Failed to save photo. Please try again.');
+    } finally { setCropSaving(false); }
   };
 
   const handleCoLogoUpload = (e) => {
@@ -1273,6 +1315,51 @@ export default function SettingsPage() {
         </div>
       </div>
       <Footer/>
+
+      {/* ── Avatar Crop Modal ── */}
+      {cropSrc && (
+        <div style={{ position:'fixed', inset:0, background:'rgba(0,0,0,.75)', zIndex:9999, display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}
+          onClick={e => { if (e.target === e.currentTarget) setCropSrc(null); }}>
+          <div style={{ background:'#fff', borderRadius:20, padding:28, maxWidth:520, width:'100%', boxShadow:'0 20px 60px rgba(0,0,0,.4)' }}>
+            <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:18 }}>
+              <div>
+                <div style={{ fontSize:17, fontWeight:800 }}>Crop your photo</div>
+                <div style={{ fontSize:12, color:'#aaa', marginTop:2 }}>Drag and resize the circle to crop</div>
+              </div>
+              <button onClick={() => setCropSrc(null)}
+                style={{ width:32, height:32, borderRadius:'50%', border:'none', background:'#f4f4f4', cursor:'pointer', fontSize:16, display:'grid', placeItems:'center' }}>✕</button>
+            </div>
+
+            <div style={{ display:'flex', justifyContent:'center', maxHeight:400, overflow:'auto' }}>
+              <ReactCrop
+                crop={crop}
+                onChange={c => setCrop(c)}
+                onComplete={c => setCompletedCrop(c)}
+                aspect={1}
+                circularCrop
+                style={{ maxWidth:'100%' }}>
+                <img
+                  ref={cropImgRef}
+                  src={cropSrc}
+                  onLoad={onCropImageLoad}
+                  style={{ maxWidth:'100%', maxHeight:360, display:'block' }}
+                  alt="crop preview"/>
+              </ReactCrop>
+            </div>
+
+            <div style={{ display:'flex', gap:10, marginTop:20, justifyContent:'flex-end' }}>
+              <button onClick={() => setCropSrc(null)}
+                style={{ padding:'10px 20px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', fontSize:13, fontWeight:700, cursor:'pointer', color:'#555' }}>
+                Cancel
+              </button>
+              <button onClick={saveCroppedAvatar} disabled={!completedCrop || cropSaving}
+                style={{ padding:'10px 24px', borderRadius:10, border:'none', background:completedCrop&&!cropSaving?'var(--orange)':'#ccc', color:'#fff', fontSize:13, fontWeight:700, cursor:completedCrop&&!cropSaving?'pointer':'not-allowed' }}>
+                {cropSaving ? 'Saving…' : 'Save Photo'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
