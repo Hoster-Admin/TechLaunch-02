@@ -643,21 +643,34 @@ export default function SettingsPage() {
     if (!coName.trim()) { toast.error('Entity name is required'); return; }
     setCoSaving(true);
     try {
-      const payload = {
-        entityType: coType, name: coName, industry: coIndustry, country: coCountry,
-        stages: coStages, teamSize: coTeam, foundedYear: coFounded, about: coAbout,
-        website: coWebsite, linkedin: coLinkedIn, twitter: coTwitter,
-        tiktok: coTikTok, instagram: coInstagram,
-        logoImg: coLogoImg ? true : false,
-        submittedBy: user?.id,
+      const typeMap = {
+        'Company': 'startup',
+        'Accelerator/Incubator': 'accelerator',
+        'Venture Studio': 'venture_studio',
+        'Investment Firm': 'investor',
       };
-      await new Promise(r => setTimeout(r, 900));
+      const countryLabel = coCountry.length > 0
+        ? (MENA_COUNTRIES_LIST.find(c => c.v === coCountry[0])?.l?.replace(/^[\S]+ /,'') || coCountry[0])
+        : null;
+      await entitiesAPI.create({
+        name: coName.trim(),
+        type: typeMap[coType] || 'company',
+        description: coAbout || null,
+        website: coWebsite || null,
+        country: countryLabel,
+        industry: coIndustry || null,
+        stage: coStages.length > 0 ? coStages.join(', ') : null,
+        employees: coTeam || null,
+        founded_year: coFounded ? parseInt(coFounded) : null,
+        focus: null,
+        logo_emoji: '🏢',
+      });
       setCoSaving(false);
       setCoSubmitted(true);
       toast.success('Entity submitted for review!');
-    } catch {
+    } catch (err) {
       setCoSaving(false);
-      toast.error('Something went wrong, please try again.');
+      toast.error(err?.response?.data?.message || 'Something went wrong, please try again.');
     }
   };
 
