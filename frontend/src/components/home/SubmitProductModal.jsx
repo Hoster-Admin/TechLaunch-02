@@ -237,6 +237,7 @@ export default function SubmitProductModal({ open, onClose }) {
         video_url: form.videoUrl.trim() || null,
         countries: selectedCountries.length > 0 ? selectedCountries : ['other'],
         tags: [],
+        maker_ids: coFounders.map(cf => cf.id),
       });
       clearDraft();
       addNotification('product', `Your product "${form.name}" was submitted for review 🚀`, '🚀');
