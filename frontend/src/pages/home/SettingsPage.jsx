@@ -54,12 +54,24 @@ const PERSONAS = [
 ];
 
 const NAV_ITEMS = [
-  { key:'profile',   icon:'👤', label:'My Profile'  },
-  { key:'products',  icon:'🚀', label:'My Products' },
-  { key:'applied',   icon:'📋', label:'Applied'     },
-  { key:'messages',  icon:'💬', label:'Messages'    },
-  { key:'bookmarks', icon:'🔖', label:'Bookmarks'   },
+  { key:'profile',   icon:'👤', label:'My Profile'         },
+  { key:'products',  icon:'🚀', label:'My Products'        },
+  { key:'applied',   icon:'📋', label:'Applied'            },
+  { key:'messages',  icon:'💬', label:'Messages'           },
+  { key:'bookmarks', icon:'🔖', label:'Bookmarks'          },
+  { key:'company',   icon:'🏢', label:'Create Company Page'},
 ];
+
+const MENA_INDUSTRIES = ['AI & ML','Cleantech','Cybersecurity','Dev Tools','E-Commerce','Edtech','Fintech','Foodtech','Healthtech','HR & Work','Logistics','Media','Proptech','Traveltech','Web3'];
+const MENA_COUNTRIES_LIST = [
+  { v:'sa', l:'🇸🇦 Saudi Arabia' },{ v:'ae', l:'🇦🇪 UAE' },        { v:'eg', l:'🇪🇬 Egypt'   },
+  { v:'jo', l:'🇯🇴 Jordan'       },{ v:'ma', l:'🇲🇦 Morocco' },     { v:'kw', l:'🇰🇼 Kuwait'  },
+  { v:'qa', l:'🇶🇦 Qatar'        },{ v:'bh', l:'🇧🇭 Bahrain' },     { v:'tn', l:'🇹🇳 Tunisia' },
+  { v:'lb', l:'🇱🇧 Lebanon'      },{ v:'iq', l:'🇮🇶 Iraq'    },     { v:'om', l:'🇴🇲 Oman'    },
+  { v:'ly', l:'🇱🇾 Libya'        },{ v:'dz', l:'🇩🇿 Algeria' },     { v:'sy', l:'🇸🇾 Syria'   },
+  { v:'ye', l:'🇾🇪 Yemen'        },{ v:'ps', l:'🇵🇸 Palestine'},     { v:'sd', l:'🇸🇩 Sudan'   },
+];
+const FUNDING_STAGES = ['Ideation Stage','Pre-Seed','Seed','MVP','Early Stage','Series A','Series B','Series C','Pre-IPO','Growth'];
 
 const labelStyle = { display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 };
 const inputStyle  = { flex:1, padding:'10px 14px', border:'none', fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', color:'#0a0a0a', background:'transparent' };
@@ -138,6 +150,46 @@ export default function SettingsPage() {
   const [msgInput,     setMsgInput]     = useState('');
   const [threads,      setThreads]      = useState([]);
 
+  const fileInputRef = useRef(null);
+  const [avatarImg, setAvatarImg] = useState(() => {
+    try { return localStorage.getItem(`tlm_avatar_${user?.id}`) || null; } catch { return null; }
+  });
+
+  const [coName,     setCoName]    = useState('');
+  const [coLogo,     setCoLogo]    = useState('🚀');
+  const [coIndustry, setCoIndustry]= useState('');
+  const [coCountry,  setCoCountry] = useState('');
+  const [coStage,    setCoStage]   = useState('');
+  const [coAbout,    setCoAbout]   = useState('');
+  const [coWebsite,  setCoWebsite] = useState('');
+  const [coTeam,     setCoTeam]    = useState('');
+  const [coFounded,  setCoFounded] = useState('');
+  const [coSubmitted,setCoSubmitted]=useState(false);
+  const [coSaving,   setCoSaving]  = useState(false);
+
+  const handleAvatarUpload = (e) => {
+    const file = e.target.files[0];
+    if (!file) return;
+    if (file.size > 2 * 1024 * 1024) { toast.error('Image must be under 2MB'); return; }
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const base64 = ev.target.result;
+      setAvatarImg(base64);
+      try { localStorage.setItem(`tlm_avatar_${user.id}`, base64); } catch {}
+      toast.success('Photo updated!');
+    };
+    reader.readAsDataURL(file);
+  };
+
+  const handleCoSubmit = async () => {
+    if (!coName.trim()) { toast.error('Company name is required'); return; }
+    setCoSaving(true);
+    await new Promise(r => setTimeout(r, 1000));
+    setCoSaving(false);
+    setCoSubmitted(true);
+    toast.success('Company page submitted for review!');
+  };
+
   if (!user) { navigate('/login'); return null; }
 
   const initials     = user.name?.split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2) || '?';
@@ -207,10 +259,15 @@ export default function SettingsPage() {
                 </div>
                 <div style={{ padding:'0 24px 24px', position:'relative' }}>
                   <div style={{ position:'relative', display:'inline-block', marginTop:-36, marginBottom:10 }}>
-                    <div style={{ width:72, height:72, borderRadius:'50%', background:user.avatar_color||'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:22, fontWeight:900, border:'4px solid #fff', boxShadow:'0 4px 16px rgba(0,0,0,.15)' }}>{initials}</div>
-                    <button style={{ position:'absolute', bottom:0, right:0, width:24, height:24, borderRadius:'50%', background:'#fff', border:'2px solid #e8e8e8', display:'grid', placeItems:'center', cursor:'pointer' }}>
+                    {avatarImg ? (
+                      <img src={avatarImg} alt="avatar" style={{ width:72, height:72, borderRadius:'50%', objectFit:'cover', border:'4px solid #fff', boxShadow:'0 4px 16px rgba(0,0,0,.15)', display:'block' }}/>
+                    ) : (
+                      <div style={{ width:72, height:72, borderRadius:'50%', background:user.avatar_color||'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:22, fontWeight:900, border:'4px solid #fff', boxShadow:'0 4px 16px rgba(0,0,0,.15)' }}>{initials}</div>
+                    )}
+                    <button onClick={() => fileInputRef.current?.click()} style={{ position:'absolute', bottom:0, right:0, width:24, height:24, borderRadius:'50%', background:'#fff', border:'2px solid #e8e8e8', display:'grid', placeItems:'center', cursor:'pointer' }} title="Upload photo">
                       <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2.5"><path d="M12 20h9"/><path d="M16.5 3.5a2.121 2.121 0 013 3L7 19l-4 1 1-4L16.5 3.5z"/></svg>
                     </button>
+                    <input ref={fileInputRef} type="file" accept="image/*" style={{ display:'none' }} onChange={handleAvatarUpload}/>
                   </div>
                   <div style={{ fontSize:20, fontWeight:800, marginBottom:3 }}>{user.name}</div>
                   <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:8 }}>
@@ -432,6 +489,144 @@ export default function SettingsPage() {
                     </>)}
                   </div>
                 </div>
+              </div>
+            )}
+
+            {/* ── CREATE COMPANY PAGE ── */}
+            {activeTab === 'company' && (
+              <div>
+                <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>🏢 Create Company Page</div>
+                <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>List your company on Tech Launch MENA's directory.</div>
+
+                {coSubmitted ? (
+                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'48px 32px', textAlign:'center' }}>
+                    <div style={{ fontSize:52, marginBottom:16 }}>🎉</div>
+                    <div style={{ fontSize:22, fontWeight:800, marginBottom:8 }}>Company Submitted!</div>
+                    <p style={{ color:'#666', marginBottom:8, fontSize:14, lineHeight:1.6, maxWidth:400, margin:'0 auto 16px' }}>
+                      <strong>{coName}</strong> has been submitted for review. Our team will verify and publish it within 48 hours.
+                    </p>
+                    <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#f0fdf4', padding:'8px 16px', borderRadius:20, fontSize:13, fontWeight:700, color:'#16a34a', marginBottom:24 }}>
+                      ✅ Under review
+                    </div>
+                    <br/>
+                    <button onClick={() => { setCoSubmitted(false); setCoName(''); setCoLogo('🚀'); setCoIndustry(''); setCoCountry(''); setCoStage(''); setCoAbout(''); setCoWebsite(''); setCoTeam(''); setCoFounded(''); }}
+                      style={{ padding:'10px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', marginTop:8 }}>
+                      Submit Another Company
+                    </button>
+                  </div>
+                ) : (<>
+
+                  {/* Preview card */}
+                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20, display:'flex', alignItems:'flex-start', gap:16 }}>
+                    <div style={{ width:60, height:60, borderRadius:16, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize:32, flexShrink:0 }}>
+                      {coLogo || '🏢'}
+                    </div>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:17, fontWeight:800, color: coName ? '#0a0a0a' : '#ccc' }}>{coName || 'Your Company Name'}</div>
+                      <div style={{ fontSize:12, color:'#aaa', margin:'4px 0 8px', display:'flex', gap:6, flexWrap:'wrap' }}>
+                        {coCountry && <span>{MENA_COUNTRIES_LIST.find(c=>c.v===coCountry)?.l}</span>}
+                        {coCountry && coIndustry && <span>·</span>}
+                        {coIndustry && <span>{coIndustry}</span>}
+                        {coStage && <><span>·</span><span>{coStage}</span></>}
+                      </div>
+                      <div style={{ fontSize:13, color: coAbout ? '#555' : '#ccc', lineHeight:1.6 }}>{coAbout || 'Your company description will appear here.'}</div>
+                    </div>
+                  </div>
+
+                  {/* Form */}
+                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20 }}>
+                    <div style={{ fontSize:14, fontWeight:800, marginBottom:20, color:'#0a0a0a' }}>🏢 Company Details</div>
+
+                    {/* Logo emoji */}
+                    <div style={{ marginBottom:16 }}>
+                      <label style={labelStyle}>LOGO (EMOJI)</label>
+                      <div style={{ display:'flex', gap:8, alignItems:'center' }}>
+                        <div style={{ width:52, height:52, borderRadius:14, background:'#f5f5f5', display:'grid', placeItems:'center', fontSize:28, border:'1.5px solid #e8e8e8' }}>{coLogo}</div>
+                        <input value={coLogo} onChange={e=>setCoLogo(e.target.value)} maxLength={4}
+                          style={{ width:70, padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:22, fontFamily:'inherit', outline:'none', textAlign:'center' }}
+                          placeholder="🚀"/>
+                        <div style={{ fontSize:12, color:'#aaa' }}>Type or paste an emoji as your company logo</div>
+                      </div>
+                    </div>
+
+                    {/* Company name + website */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                      <div>
+                        <label style={labelStyle}>COMPANY NAME *</label>
+                        <input value={coName} onChange={e=>setCoName(e.target.value)} placeholder="e.g. Tabby"
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
+                          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>WEBSITE</label>
+                        <input value={coWebsite} onChange={e=>setCoWebsite(e.target.value)} placeholder="https://yourcompany.com"
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
+                          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+                      </div>
+                    </div>
+
+                    {/* Industry + Country */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                      <div>
+                        <label style={labelStyle}>INDUSTRY</label>
+                        <select value={coIndustry} onChange={e=>setCoIndustry(e.target.value)}
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+                          <option value="">Select industry</option>
+                          {MENA_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>COUNTRY</label>
+                        <select value={coCountry} onChange={e=>setCoCountry(e.target.value)}
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+                          <option value="">Select country</option>
+                          {MENA_COUNTRIES_LIST.map(c => <option key={c.v} value={c.v}>{c.l}</option>)}
+                        </select>
+                      </div>
+                    </div>
+
+                    {/* Stage + Team + Founded */}
+                    <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr 1fr', gap:16, marginBottom:16 }}>
+                      <div>
+                        <label style={labelStyle}>STAGE</label>
+                        <select value={coStage} onChange={e=>setCoStage(e.target.value)}
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+                          <option value="">Select stage</option>
+                          {FUNDING_STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>TEAM SIZE</label>
+                        <select value={coTeam} onChange={e=>setCoTeam(e.target.value)}
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#fff', boxSizing:'border-box', cursor:'pointer' }}>
+                          <option value="">Select size</option>
+                          {['1–5','6–15','16–30','31–60','61–100','100–250','250+'].map(s => <option key={s} value={s}>{s}</option>)}
+                        </select>
+                      </div>
+                      <div>
+                        <label style={labelStyle}>FOUNDED YEAR</label>
+                        <input type="number" value={coFounded} onChange={e=>setCoFounded(e.target.value)} placeholder="2023" min="2000" max="2026"
+                          style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
+                          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+                      </div>
+                    </div>
+
+                    {/* About */}
+                    <div style={{ marginBottom:20 }}>
+                      <label style={labelStyle}>ABOUT YOUR COMPANY</label>
+                      <textarea value={coAbout} onChange={e=>setCoAbout(e.target.value)} rows={4}
+                        placeholder="Describe what your company does, who it serves, and what makes it unique in the MENA market..."
+                        style={{ width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', resize:'vertical', boxSizing:'border-box', lineHeight:1.6 }}
+                        onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+                    </div>
+
+                    <button onClick={handleCoSubmit} disabled={coSaving || !coName.trim()}
+                      style={{ padding:'12px 28px', borderRadius:12, background:coName.trim()?'var(--orange)':'#e8e8e8', color:coName.trim()?'#fff':'#aaa', border:'none', fontSize:14, fontWeight:700, cursor:coName.trim()?'pointer':'not-allowed', transition:'all .15s' }}>
+                      {coSaving ? 'Submitting…' : '🚀 Submit Company for Review'}
+                    </button>
+                  </div>
+
+                </>)}
               </div>
             )}
 
