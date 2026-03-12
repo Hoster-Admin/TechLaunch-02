@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/home/ProductCard';
@@ -41,9 +41,8 @@ const STATS = [
 export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
-  const { setSubmitOpen, setAuthModal, following } = useUI();
+  const { setSubmitOpen, setAuthModal } = useUI();
   const [products, setProducts]       = useState(MOCK_PRODUCTS);
-  const [followingProducts, setFollowingProducts] = useState([]);
   const [loading,  setLoading]        = useState(false);
   const [feedType, setFeedType]       = useState('all');
   const [countryDDOpen, setCountryDD] = useState(false);
@@ -52,40 +51,27 @@ export default function HomePage() {
   const [selectedIndustries, setIndustries] = useState([]);
 
   useEffect(() => {
-    productsAPI.list({ status: 'live', sort: 'top', limit: 20 })
-      .then(({ data }) => {
-        if (data.data?.length) {
-          setProducts(data.data);
-        }
-      })
-      .catch(() => {});
-  }, []);
+    setLoading(true);
+    const params =
+      feedType === 'soon' ? { status: 'soon', sort: 'newest', limit: 20 } :
+      feedType === 'new'  ? { status: 'live', sort: 'newest', limit: 20 } :
+                            { status: 'live', sort: 'top',    limit: 20 };
+    productsAPI.list(params)
+      .then(({ data }) => { if (data.data?.length) setProducts(data.data); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [feedType]);
 
-  useEffect(() => {
-    if (feedType !== 'following') return;
-    if (!user) return;
-    productsAPI.list({ sort: 'following', limit: 20 })
-      .then(({ data }) => { if (data.data) setFollowingProducts(data.data); })
-      .catch(() => {});
-  }, [feedType, user?.id]);
-
-  const filtered = (feedType === 'following' ? followingProducts : products).filter(p => {
-    if (feedType === 'new')  return p.badge === 'new' || p.status === 'live';
-    if (feedType === 'soon') return p.status === 'soon';
-    if (feedType === 'top')  return (p.upvotes_count || 0) > 100;
-    if (feedType === 'following') return true;
-    return true;
-  }).filter(p =>
-    (!selectedCountries.length  || selectedCountries.some(c => COUNTRY_NAMES[c] && p.country === COUNTRY_NAMES[c])) &&
+  const filtered = products.filter(p =>
+    (!selectedCountries.length  || selectedCountries.some(c => p.countries?.includes(COUNTRY_NAMES[c]))) &&
     (!selectedIndustries.length || selectedIndustries.includes(p.industry))
   );
 
   const feedTitles = {
-    all:       "Today's Top Products",
-    new:       'Just Launched',
-    soon:      'Coming Soon',
-    top:       'Top Voted',
-    following: 'From People You Follow',
+    all:  "Today's Top Products",
+    new:  'Just Launched',
+    soon: 'Coming Soon',
+    top:  'Top Voted',
   };
 
   const handleSubmitProduct = () => {
@@ -183,14 +169,6 @@ export default function HomePage() {
                 {type === 'all' ? 'All Products' : type === 'new' ? '🆕 Just Launched' : type === 'soon' ? '⏳ Coming Soon' : '🎉 Top Voted'}
               </button>
             ))}
-            {user && (
-              <button className={`filter-tab ${feedType === 'following' ? 'active' : ''}`}
-                onClick={() => { setFeedType('following'); setCountryDD(false); setIndDD(false); }}
-                style={{ display:'flex', alignItems:'center', gap:5 }}>
-                👥 Following
-                {following.size > 0 && <span style={{ fontSize:10, background:'var(--orange)', color:'#fff', borderRadius:'50%', width:16, height:16, display:'grid', placeItems:'center', fontWeight:800 }}>{following.size}</span>}
-              </button>
-            )}
           </div>
         </div>
 
@@ -204,21 +182,6 @@ export default function HomePage() {
             </div>
             {loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Spinner size="lg"/></div>
-            ) : feedType === 'following' && !user ? (
-              <div className="empty">
-                <div className="empty-icon">👥</div>
-                <div className="empty-title">Sign in to see your following feed</div>
-                <div className="empty-desc">Follow founders and builders to see their latest launches here.</div>
-              </div>
-            ) : feedType === 'following' && followingProducts.length === 0 ? (
-              <div className="empty">
-                <div className="empty-icon">👥</div>
-                <div className="empty-title">Your following feed is empty</div>
-                <div className="empty-desc">Follow some founders or builders to see their products here.</div>
-                <button onClick={() => navigate('/directory')} style={{ marginTop:16, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                  Browse Founders →
-                </button>
-              </div>
             ) : filtered.length ? (
               filtered.map((p, i) => (
                 <div key={p.id} onClick={() => navigate(`/products/${p.id}`)}>
