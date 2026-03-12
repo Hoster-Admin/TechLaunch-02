@@ -102,10 +102,11 @@ export const productsAPI = {
 };
 
 export const entitiesAPI = {
-  list:  (params) => api.get('/entities', { params }),
-  get:   (slug)   => api.get(`/entities/${slug}`),
-  apply: (id, d)  => api.post(`/entities/${id}/apply`, d),
-  pitch: (id, d)  => api.post(`/entities/${id}/pitch`, d),
+  list:    (params) => api.get('/entities', { params }),
+  get:     (slug)   => api.get(`/entities/${slug}`),
+  create:  (data)   => api.post('/entities', data),
+  apply:   (id, d)  => api.post(`/entities/${id}/apply`, d),
+  pitch:   (id, d)  => api.post(`/entities/${id}/pitch`, d),
 };
 
 export const usersAPI = {
@@ -119,6 +120,10 @@ export const usersAPI = {
   markRead:      ()       => api.put('/users/me/notifications/read'),
   upvoted:       (handle) => api.get(`/users/${handle}/upvoted`),
   activity:      (handle) => api.get(`/users/${handle}/activity`),
+  followers:     (handle) => api.get(`/users/${handle}/followers`),
+  following:     (handle) => api.get(`/users/${handle}/following`),
+  people:        (params) => api.get('/users/people', { params }),
+  deleteProduct: (id)     => api.delete(`/products/${id}`),
 };
 
 export const adminAPI = {

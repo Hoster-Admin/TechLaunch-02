@@ -34,6 +34,10 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [followLoading, setFollowLoading]   = useState(false);
   const [aboutOpen, setAboutOpen]           = useState(false);
+  const [followModal, setFollowModal]       = useState(null);
+  const [followList, setFollowList]         = useState([]);
+  const [loadingFollowList, setLoadingFollowList] = useState(false);
+  const [deletingId, setDeletingId]         = useState(null);
 
   // tab data
   const [profileProducts, setProfileProducts] = useState([]);
@@ -174,6 +178,33 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     finally { setFollowLoading(false); }
   };
 
+  const openFollowModal = async (type) => {
+    setFollowModal(type);
+    setLoadingFollowList(true);
+    setFollowList([]);
+    try {
+      const h = (profile.handle||'').replace('@','');
+      const res = type === 'followers' ? await usersAPI.followers(h) : await usersAPI.following(h);
+      setFollowList(res.data?.data || []);
+    } catch {}
+    finally { setLoadingFollowList(false); }
+  };
+
+  const handleDeleteProduct = async (e, productId, productName) => {
+    e.stopPropagation();
+    if (!window.confirm(`Delete "${productName}"? This cannot be undone.`)) return;
+    setDeletingId(productId);
+    try {
+      await usersAPI.deleteProduct(productId);
+      setProfileProducts(prev => prev.filter(p => p.id !== productId));
+      const { default: toast } = await import('react-hot-toast');
+      toast.success(`"${productName}" deleted`);
+    } catch (err) {
+      const { default: toast } = await import('react-hot-toast');
+      toast.error(err?.response?.data?.message || 'Failed to delete');
+    } finally { setDeletingId(null); }
+  };
+
   return (
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
@@ -270,16 +301,18 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
 
                 {/* Stats */}
                 <div style={{ display:'flex', gap:24, flexWrap:'wrap' }}>
-                  {[
-                    [profileProducts.length, 'Products'],
-                    [displayFollowers, 'Followers'],
-                    [followingCount, 'Following'],
-                  ].map(([num, label]) => (
-                    <div key={label} style={{ textAlign:'left' }}>
-                      <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{num}</div>
-                      <div style={{ fontSize:11, color:'#aaa', fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1 }}>{label}</div>
-                    </div>
-                  ))}
+                  <div style={{ textAlign:'left' }}>
+                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{profileProducts.length}</div>
+                    <div style={{ fontSize:11, color:'#aaa', fontWeight:600, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1 }}>Products</div>
+                  </div>
+                  <div style={{ textAlign:'left', cursor:'pointer' }} onClick={() => openFollowModal('followers')}>
+                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{displayFollowers}</div>
+                    <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Followers</div>
+                  </div>
+                  <div style={{ textAlign:'left', cursor:'pointer' }} onClick={() => openFollowModal('following')}>
+                    <div style={{ fontSize:20, fontWeight:800, fontFamily:'DM Mono,monospace' }}>{followingCount}</div>
+                    <div style={{ fontSize:11, color:'#000', fontWeight:400, textTransform:'uppercase', letterSpacing:'.04em', marginTop:1, fontFamily:'Inter,sans-serif' }}>Following</div>
+                  </div>
                 </div>
               </div>
             </div>
@@ -310,8 +343,18 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
                   {profileProducts.map((pr, i) => (
-                    <div key={pr.id} onClick={() => navigate(`/products/${pr.id}`)}>
-                      <ProductCard product={pr} rank={i + 1}/>
+                    <div key={pr.id} style={{ position:'relative' }}>
+                      <div onClick={() => navigate(`/products/${pr.id}`)}>
+                        <ProductCard product={pr} rank={i + 1}/>
+                      </div>
+                      {isOwn && pr.status === 'pending' && (
+                        <button
+                          onClick={(e) => handleDeleteProduct(e, pr.id, pr.name)}
+                          disabled={deletingId === pr.id}
+                          style={{ position:'absolute', top:12, right:12, padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:12, fontWeight:700, cursor:'pointer', zIndex:10 }}>
+                          {deletingId === pr.id ? '…' : '🗑 Delete'}
+                        </button>
+                      )}
                     </div>
                   ))}
                 </div>
@@ -387,6 +430,44 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         </div>
       </div>
       <Footer/>
+
+      {/* ── Followers / Following modal ── */}
+      {followModal && (
+        <div onClick={() => setFollowModal(null)} style={{ position:'fixed', inset:0, zIndex:3000, background:'rgba(0,0,0,.5)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div onClick={e => e.stopPropagation()} style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:440, maxHeight:'80vh', display:'flex', flexDirection:'column', overflow:'hidden', boxShadow:'0 24px 80px rgba(0,0,0,.2)' }}>
+            <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between' }}>
+              <span style={{ fontSize:16, fontWeight:800 }}>{followModal === 'followers' ? 'Followers' : 'Following'}</span>
+              <button onClick={() => setFollowModal(null)} style={{ width:30, height:30, borderRadius:8, border:'1px solid #e8e8e8', background:'transparent', cursor:'pointer', fontSize:16, color:'#aaa' }}>✕</button>
+            </div>
+            <div style={{ overflowY:'auto', flex:1, padding:'12px 0' }}>
+              {loadingFollowList ? (
+                <div style={{ textAlign:'center', padding:40, color:'#aaa' }}>Loading…</div>
+              ) : followList.length === 0 ? (
+                <div style={{ textAlign:'center', padding:40, color:'#aaa' }}>
+                  <div style={{ fontSize:32, marginBottom:10 }}>👥</div>
+                  <div style={{ fontSize:14, fontWeight:600 }}>No {followModal} yet</div>
+                </div>
+              ) : followList.map(u => (
+                <div key={u.id} onClick={() => { setFollowModal(null); navigate(`/u/${u.handle}`); }}
+                  style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 24px', cursor:'pointer', transition:'background .1s' }}
+                  onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                  {u.avatar_url
+                    ? <img src={u.avatar_url} alt={u.name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
+                    : <div style={{ width:42, height:42, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:14, fontWeight:800, flexShrink:0 }}>
+                        {(u.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2)}
+                      </div>
+                  }
+                  <div style={{ flex:1, minWidth:0 }}>
+                    <div style={{ fontSize:14, fontWeight:700 }}>{u.name}</div>
+                    <div style={{ fontSize:12, color:'#aaa' }}>@{u.handle}{u.headline ? ` · ${u.headline.slice(0,40)}` : ''}</div>
+                  </div>
+                  {u.verified && <span style={{ fontSize:14 }}>✅</span>}
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+      )}
     </>
   );
 }
