@@ -1,4 +1,4 @@
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&family=DM+Sans:wght@300;400;500;600;700;800&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=DM+Mono:wght@400;500&display=swap');
 
 /* ── ROOT VARS (public site) ── */
 :root {
@@ -349,7 +349,7 @@ nav {
 .empty-desc { font-size: 14px; color: var(--gray-600); }
 
 /* ── ADMIN LAYOUT ── */
-.admin-app { display: flex; height: 100vh; overflow: hidden; font-family: 'DM Sans', sans-serif; }
+.admin-app { display: flex; height: 100vh; overflow: hidden; font-family: 'Inter', sans-serif; }
 
 /* ── ADMIN SIDEBAR ── */
 .admin-sidebar {
@@ -446,7 +446,7 @@ nav {
   padding: 5px 12px; border-radius: 20px; font-size: 12px; font-weight: 600;
   cursor: pointer; border: 1.5px solid var(--gray-200); color: var(--gray-600);
   background: var(--white); transition: all .12s; white-space: nowrap;
-  font-family: 'DM Sans', sans-serif;
+  font-family: 'Inter', sans-serif;
 }
 .filter-chip:hover { border-color: var(--gray-400); color: var(--ink); }
 .filter-chip.active { background: var(--orange); color: #fff; border-color: var(--orange); }
@@ -459,7 +459,7 @@ nav {
 .tbl tr:hover td { background: var(--gray-50); }
 
 /* ── ACTION BUTTONS ── */
-.action-btn { font-family: 'DM Sans', sans-serif; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 7px; cursor: pointer; border: none; transition: all .12s; white-space: nowrap; }
+.action-btn { font-family: 'Inter', sans-serif; font-size: 11px; font-weight: 700; padding: 4px 10px; border-radius: 7px; cursor: pointer; border: none; transition: all .12s; white-space: nowrap; }
 .action-approve { background: var(--green-light); color: var(--green); }
 .action-approve:hover { background: #dcfce7; }
 .action-reject { background: var(--red-light); color: var(--red); }
@@ -532,11 +532,11 @@ nav {
 .modal-admin-title { font-size: 16px; font-weight: 800; }
 .modal-close-btn { width: 30px; height: 30px; border-radius: 8px; border: 1px solid var(--gray-200); background: transparent; cursor: pointer; font-size: 14px; display: grid; place-items: center; }
 .modal-admin-body { padding: 20px 24px; }
-.btn-modal-primary { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 9px; border: none; background: var(--orange); color: #fff; cursor: pointer; }
-.btn-modal-ghost { font-family: 'DM Sans', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 9px; background: var(--gray-100); color: var(--ink); border: 1.5px solid var(--gray-200); cursor: pointer; }
+.btn-modal-primary { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 9px; border: none; background: var(--orange); color: #fff; cursor: pointer; }
+.btn-modal-ghost { font-family: 'Inter', sans-serif; font-size: 13px; font-weight: 700; padding: 8px 16px; border-radius: 9px; background: var(--gray-100); color: var(--ink); border: 1.5px solid var(--gray-200); cursor: pointer; }
 
 /* ── ADMIN TOAST ── */
-.admin-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 22px; border-radius: 100px; font-size: 13px; font-weight: 600; opacity: 0; transition: all .3s; z-index: 9999; white-space: nowrap; pointer-events: none; font-family: 'DM Sans', sans-serif; }
+.admin-toast { position: fixed; bottom: 28px; left: 50%; transform: translateX(-50%) translateY(20px); background: var(--ink); color: #fff; padding: 10px 22px; border-radius: 100px; font-size: 13px; font-weight: 600; opacity: 0; transition: all .3s; z-index: 9999; white-space: nowrap; pointer-events: none; font-family: 'Inter', sans-serif; }
 .admin-toast.show { opacity: 1; transform: translateX(-50%) translateY(0); }
 
 /* ── EMPTY STATE (admin) ── */
@@ -553,5 +553,28 @@ nav {
 }
 @media(max-width:768px) {
   :root { --nav-h: 56px; }
-
 }
+
+/* ── MESSAGES UI (Settings page) ── */
+.adm-msg-wrap { display: grid; grid-template-columns: 255px 1fr; background: #fff; border: 1.5px solid #ebebeb; border-radius: 18px; overflow: hidden; min-height: 500px; }
+.adm-threads { border-right: 1.5px solid #f0f0f0; display: flex; flex-direction: column; }
+.adm-threads-hd { padding: 14px 16px; font-size: 11px; font-weight: 800; color: #bbb; text-transform: uppercase; letter-spacing: .07em; border-bottom: 1.5px solid #f0f0f0; flex-shrink: 0; }
+.adm-thread { display: flex; align-items: center; gap: 11px; padding: 13px 14px; cursor: pointer; border-bottom: 1px solid #f8f8f8; transition: background .1s; }
+.adm-thread:hover { background: #fafafa; }
+.adm-thread.sel { background: #fceee9; }
+.adm-thread-av { width: 38px; height: 38px; border-radius: 50%; background: var(--orange); color: #fff; font-size: 13px; font-weight: 800; display: grid; place-items: center; flex-shrink: 0; }
+.adm-thread-name { font-size: 13px; font-weight: 700; color: #0a0a0a; }
+.adm-thread-prev { font-size: 11px; color: #bbb; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-top: 1px; }
+.adm-chat-area { display: flex; flex-direction: column; }
+.adm-chat-empty { flex: 1; display: grid; place-items: center; text-align: center; padding: 40px; color: #ccc; }
+.adm-chat-hd { padding: 14px 18px; font-size: 13px; font-weight: 800; border-bottom: 1.5px solid #f0f0f0; flex-shrink: 0; }
+.adm-bubbles { flex: 1; overflow-y: auto; padding: 18px; display: flex; flex-direction: column; gap: 8px; }
+.adm-bubble { max-width: 72%; padding: 10px 15px; border-radius: 14px; font-size: 13px; line-height: 1.55; }
+.adm-bubble.mine { background: var(--orange); color: #fff; align-self: flex-end; border-bottom-right-radius: 4px; }
+.adm-bubble.theirs { background: #f4f4f4; color: #0a0a0a; align-self: flex-start; border-bottom-left-radius: 4px; }
+.adm-composer { display: flex; align-items: center; gap: 10px; padding: 12px 18px; border-top: 1.5px solid #f0f0f0; flex-shrink: 0; }
+.adm-compose-input { flex: 1; padding: 9px 14px; border-radius: 22px; border: 1.5px solid #e8e8e8; font-size: 13px; font-family: 'Inter', sans-serif; outline: none; color: #0a0a0a; background: #fafafa; }
+.adm-compose-input:focus { border-color: var(--orange); background: #fff; }
+.adm-compose-send { width: 36px; height: 36px; border-radius: 50%; background: var(--orange); border: none; color: #fff; font-size: 16px; font-weight: 800; cursor: pointer; display: grid; place-items: center; flex-shrink: 0; transition: opacity .15s; }
+.adm-compose-send:hover { opacity: .85; }
+@media(max-width: 640px) { .adm-msg-wrap { grid-template-columns: 1fr; } }

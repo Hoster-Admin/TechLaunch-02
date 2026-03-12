@@ -18,11 +18,19 @@ const MOCK_PRODUCTS = [
   { id:7,  name:'Trella',       tagline:'Digital freight marketplace in MENA',   logo_emoji:'🚛', industry:'Logistics',   country:'Egypt',         status:'live', badge:null,   upvotes_count:154, tags:['Freight','Logistics'] },
   { id:8,  name:'Foodics',      tagline:'Restaurant management system for F&B',  logo_emoji:'🍽️', industry:'Foodtech',    country:'Saudi Arabia',  status:'live', badge:null,   upvotes_count:143, tags:['F&B','POS'] },
   { id:9,  name:'Waffarha',     tagline:'Discount coupons and deals platform',   logo_emoji:'🎟️', industry:'E-Commerce',  country:'Egypt',         status:'live', badge:null,   upvotes_count:128, tags:['Deals','Coupons'] },
-  { id:10, name:'Cura',         tagline:'Arabic mental health therapy online',   logo_emoji:'🧠', industry:'Healthtech',  country:'Saudi Arabia',  status:'soon', badge:'soon', upvotes_count:0,   tags:['Mental Health','Arabic'] },
+  { id:10, name:'Cura',         tagline:'Mental health therapy online for MENA', logo_emoji:'🧠', industry:'Healthtech',  country:'Saudi Arabia',  status:'soon', badge:'soon', upvotes_count:0,   tags:['Mental Health'] },
 ];
 
-const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Islamic Fintech','Web3'];
-const COUNTRIES  = [['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['lb','🇱🇧 Lebanon']];
+const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
+const COUNTRIES  = [['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['lb','🇱🇧 Lebanon'],['bh','🇧🇭 Bahrain'],['tn','🇹🇳 Tunisia']];
+const COUNTRY_NAMES = Object.fromEntries(COUNTRIES.map(([code, label]) => [code, label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim()]));
+
+const ARTICLES = [
+  { tag:'Guide',        title:'How to Get the Best Out of Tech Launch as a Founder',            author:'Rania Al-Masri', initials:'RA', readTime:'4 min read', date:'Mar 6'  },
+  { tag:'For Students', title:'Where to Start Learning Vibe Coding as a Complete Beginner',     author:'Khalid Nasser',  initials:'KN', readTime:'6 min read', date:'Mar 4'  },
+  { tag:'Business',     title:"Why MENA Founders Should Launch Publicly Before They're Ready",  author:'Sara Hadid',     initials:'SH', readTime:'5 min read', date:'Mar 2'  },
+  { tag:'Business',     title:'The Investor Signals That Actually Matter in a MENA Pitch Deck', author:'Omar Fares',     initials:'OF', readTime:'7 min read', date:'Feb 28' },
+];
 const STATS = [
   { num: '248',    label: 'Products Listed' },
   { num: '1,840',  label: 'Founders' },
@@ -54,7 +62,7 @@ export default function HomePage() {
     if (feedType === 'top')  return (p.upvotes_count || 0) > 100;
     return true;
   }).filter(p =>
-    (!selectedCountries.length  || selectedCountries.some(c => p.country?.toLowerCase().includes(c))) &&
+    (!selectedCountries.length  || selectedCountries.some(c => COUNTRY_NAMES[c] && p.country === COUNTRY_NAMES[c])) &&
     (!selectedIndustries.length || selectedIndustries.includes(p.industry))
   );
 
@@ -199,14 +207,18 @@ export default function HomePage() {
             {/* From the Community */}
             <div className="sidebar-card">
               <div className="sidebar-title">✍️ From the Community</div>
-              {[...products].sort((a,b) => (b.upvotes_count||0)-(a.upvotes_count||0)).slice(0,5).map((p) => (
-                <div key={p.id} className="sidebar-item" onClick={() => navigate(`/products/${p.id}`)}>
-                  <div className="sidebar-item-icon" style={{ background: 'var(--gray-100)' }}>{p.logo_emoji}</div>
-                  <div>
-                    <div className="sidebar-item-name">{p.name}</div>
-                    <div className="sidebar-item-meta">{p.industry}</div>
+              {ARTICLES.map((a, i) => (
+                <div key={i} className="article-card">
+                  <div className="article-tag">{a.tag}</div>
+                  <div className="article-title">{a.title}</div>
+                  <div className="article-meta">
+                    <span className="article-author-dot">{a.initials}</span>
+                    {a.author}
+                    <span>·</span>
+                    {a.readTime}
+                    <span>·</span>
+                    {a.date}
                   </div>
-                  <div className="sidebar-item-right">🎉 {p.upvotes_count}</div>
                 </div>
               ))}
             </div>
@@ -232,15 +244,13 @@ export default function HomePage() {
             {/* Weekly Digest */}
             <div className="sidebar-card" style={{ background: 'var(--black)' }}>
               <div className="sidebar-title" style={{ color: 'var(--white)' }}>📬 Weekly Digest</div>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.6, marginBottom: 16 }}>
-                Get the top MENA products and insights every Friday.
+              <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.6, marginBottom: 14 }}>
+                Get the top MENA launches every week.
               </p>
-              <div style={{ display: 'flex', gap: 6 }}>
-                <input type="email" placeholder="your@email.com" style={{ flex: 1, padding: '8px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,.15)', background: 'rgba(255,255,255,.08)', color: '#fff', fontSize: 12, outline: 'none', fontFamily: 'Inter,sans-serif' }}/>
-                <button style={{ padding: '8px 14px', borderRadius: 8, background: 'var(--orange)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', whiteSpace: 'nowrap', fontFamily: 'Inter,sans-serif' }}>
-                  Subscribe
-                </button>
-              </div>
+              <input type="email" placeholder="your@email.com" style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,.15)', background: 'rgba(255,255,255,.08)', color: '#fff', fontSize: 12, outline: 'none', fontFamily: 'Inter,sans-serif', boxSizing: 'border-box', marginBottom: 8 }}/>
+              <button style={{ width: '100%', padding: '9px', borderRadius: 8, background: 'var(--orange)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter,sans-serif' }}>
+                Subscribe
+              </button>
             </div>
 
             {/* Community CTAs */}
