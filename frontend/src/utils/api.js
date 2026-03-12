@@ -117,6 +117,8 @@ export const usersAPI = {
   myProducts:    ()       => api.get('/users/me/products'),
   notifications: ()       => api.get('/users/me/notifications'),
   markRead:      ()       => api.put('/users/me/notifications/read'),
+  upvoted:       (handle) => api.get(`/users/${handle}/upvoted`),
+  activity:      (handle) => api.get(`/users/${handle}/activity`),
 };
 
 export const adminAPI = {
