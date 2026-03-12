@@ -106,19 +106,39 @@ export default function SubmitProductModal({ open, onClose }) {
     } catch { setEntityResults([]); }
   };
 
+  const validateStep2 = () => {
+    if (!form.name.trim()) { toast.error('Product name is required'); return false; }
+    if (!form.tagline.trim()) { toast.error('Tagline is required'); return false; }
+    if (!form.industry) { toast.error('Please select an industry'); return false; }
+    if (selectedCountries.length === 0) { toast.error('Select at least one country'); return false; }
+    return true;
+  };
+
   const submit = async () => {
+    if (!form.name.trim() || !form.tagline.trim() || !form.industry) {
+      toast.error('Please complete all required fields'); return;
+    }
     setSubmitting(true);
     try {
       await productsAPI.create({
-        name: form.name, tagline: form.tagline, industry: form.industry,
-        description: form.description, website: form.website,
-        logo_emoji: form.logoEmoji, status: type || 'live',
-        country: selectedCountries[0] || 'other',
+        name: form.name.trim(),
+        tagline: form.tagline.trim(),
+        industry: form.industry,
+        description: form.description.trim() || null,
+        website: form.website.trim() || null,
+        logo_emoji: form.logoEmoji || '🚀',
+        video_url: form.videoUrl.trim() || null,
+        countries: selectedCountries.length > 0 ? selectedCountries : ['other'],
+        tags: [],
       });
-    } catch {}
-    addNotification('product', `Your product "${form.name}" was submitted for review 🚀`, '🚀');
-    setSubmitting(false);
-    setStep(6);
+      addNotification('product', `Your product "${form.name}" was submitted for review 🚀`, '🚀');
+      setStep(6);
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Submission failed. Please try again.';
+      toast.error(msg);
+    } finally {
+      setSubmitting(false);
+    }
   };
 
   return (
@@ -261,7 +281,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(1)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button onClick={() => setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>Next →</button>
+            <button onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>Next →</button>
           </div>
         </>}
 
