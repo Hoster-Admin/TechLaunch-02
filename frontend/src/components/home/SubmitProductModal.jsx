@@ -1,8 +1,11 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { productsAPI, entitiesAPI } from '../../utils/api';
+import api from '../../utils/api';
 import toast from 'react-hot-toast';
+
+const DRAFT_KEY = 'tlmena_draft_product';
 
 const COUNTRIES = [
   ['sa','🇸🇦','Saudi Arabia'],['ae','🇦🇪','UAE'],['eg','🇪🇬','Egypt'],['jo','🇯🇴','Jordan'],
@@ -40,6 +43,24 @@ const Toggle = ({ on, onChange, label, sub, handle }) => (
   </div>
 );
 
+const AvatarCircle = ({ user, size=32 }) => {
+  const colors = ['#FF6B35','#E63946','#457B9D','#2A9D8F','#E9C46A','#7B2D8B'];
+  const bg = user.avatar_color || colors[(user.handle||'').charCodeAt(0) % colors.length] || '#FF6B35';
+  const initials = (user.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  if (user.avatar_url) return <img src={user.avatar_url} style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover' }} alt={user.name}/>;
+  return <div style={{ width:size, height:size, borderRadius:'50%', background:bg, display:'flex', alignItems:'center', justifyContent:'center', fontSize:size*0.35, fontWeight:800, color:'#fff', flexShrink:0 }}>{initials}</div>;
+};
+
+function saveDraft(data) {
+  try { localStorage.setItem(DRAFT_KEY, JSON.stringify({ ...data, savedAt: Date.now() })); } catch {}
+}
+function loadDraft() {
+  try { const d = localStorage.getItem(DRAFT_KEY); return d ? JSON.parse(d) : null; } catch { return null; }
+}
+function clearDraft() {
+  try { localStorage.removeItem(DRAFT_KEY); } catch {}
+}
+
 export default function SubmitProductModal({ open, onClose }) {
   const { user } = useAuth();
   const { addNotification } = useUI();
@@ -54,23 +75,89 @@ export default function SubmitProductModal({ open, onClose }) {
   // Entity search
   const [entityQ, setEntityQ] = useState('');
   const [entityResults, setEntityResults] = useState([]);
+  const [allEntities, setAllEntities] = useState([]);
   const [selectedEntity, setSelectedEntity] = useState(null);
   const [entityOpen, setEntityOpen] = useState(false);
-  const entityRef = useRef(null);
+
+  // Co-founder search (Step 4)
+  const [founderQ, setFounderQ] = useState('');
+  const [founderResults, setFounderResults] = useState([]);
+  const [coFounders, setCoFounders] = useState([]);
+  const [founderOpen, setFounderOpen] = useState(false);
+
+  // Draft dialog
+  const [draftPrompt, setDraftPrompt] = useState(null); // 'save' | 'restore'
+  const [pendingDraft, setPendingDraft] = useState(null);
 
   const logoInputRef = useRef(null);
   const screenshotRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
 
+  // Load all entities on mount
+  useEffect(() => {
+    entitiesAPI.list({ limit: 50 }).then(res => {
+      setAllEntities(res.data?.data || res.data || []);
+    }).catch(() => {});
+  }, []);
+
+  // Check for draft when modal opens
+  useEffect(() => {
+    if (!open) return;
+    const draft = loadDraft();
+    if (draft && draft.form?.name) {
+      setPendingDraft(draft);
+      setDraftPrompt('restore');
+    }
+  }, [open]);
+
   if (!open) return null;
+
+  const restoreDraft = () => {
+    if (!pendingDraft) return;
+    setStep(pendingDraft.step || 1);
+    setType(pendingDraft.type || null);
+    setForm(pendingDraft.form || { name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
+    setCountries(pendingDraft.selectedCountries || []);
+    setSelectedEntity(pendingDraft.selectedEntity || null);
+    setEntityQ(pendingDraft.selectedEntity?.name || '');
+    setCoFounders(pendingDraft.coFounders || []);
+    setDraftPrompt(null);
+    setPendingDraft(null);
+  };
+
+  const discardDraft = () => {
+    clearDraft();
+    setPendingDraft(null);
+    setDraftPrompt(null);
+  };
 
   const reset = () => {
     setStep(1); setType(null);
     setForm({ name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
     setLogoFile(null); setCountries([]); setScreenshots([null,null,null,null]);
     setEntityQ(''); setSelectedEntity(null); setEntityResults([]);
+    setFounderQ(''); setFounderResults([]); setCoFounders([]);
+    setDraftPrompt(null); setPendingDraft(null);
   };
 
-  const handleClose = () => { reset(); onClose(); };
+  const handleClose = () => {
+    if (step > 1 && step < 6) {
+      setDraftPrompt('save');
+      return;
+    }
+    reset(); onClose();
+  };
+
+  const confirmSaveDraft = () => {
+    saveDraft({ step, type, form, selectedCountries, selectedEntity, coFounders });
+    toast.success('Draft saved — find it in Settings → My Products');
+    reset(); onClose();
+  };
+
+  const confirmDiscardAndClose = () => {
+    clearDraft();
+    reset(); onClose();
+  };
+
   const handleOverlayClick = (e) => { if (e.target === e.currentTarget) handleClose(); };
   const toggleCountry = (code) => setCountries(prev => prev.includes(code) ? prev.filter(c=>c!==code) : [...prev, code]);
   const fo = e => { e.target.style.borderColor='var(--orange)'; };
@@ -99,12 +186,32 @@ export default function SubmitProductModal({ open, onClose }) {
 
   const searchEntities = async (q) => {
     setEntityQ(q);
-    if (!q.trim()) { setEntityResults([]); return; }
-    try {
-      const res = await entitiesAPI.list({ search: q, limit: 6 });
-      setEntityResults(res.data?.data || res.data || []);
-    } catch { setEntityResults([]); }
+    if (!q.trim()) {
+      setEntityResults(allEntities);
+      return;
+    }
+    const lower = q.toLowerCase();
+    setEntityResults(allEntities.filter(e => (e.name||'').toLowerCase().includes(lower) || (e.type||'').toLowerCase().includes(lower)));
   };
+
+  const searchFounders = async (q) => {
+    setFounderQ(q);
+    if (!q.trim()) { setFounderResults([]); return; }
+    try {
+      const res = await api.get(`/users?search=${encodeURIComponent(q)}&limit=6`);
+      const results = (res.data?.data || []).filter(u => u.id !== user?.id && !coFounders.find(c=>c.id===u.id));
+      setFounderResults(results);
+    } catch { setFounderResults([]); }
+  };
+
+  const addCoFounder = (u) => {
+    setCoFounders(prev => prev.find(c=>c.id===u.id) ? prev : [...prev, u]);
+    setFounderQ('');
+    setFounderResults([]);
+    setFounderOpen(false);
+  };
+
+  const removeCoFounder = (id) => setCoFounders(prev => prev.filter(c=>c.id!==id));
 
   const validateStep2 = () => {
     if (!form.name.trim()) { toast.error('Product name is required'); return false; }
@@ -131,6 +238,7 @@ export default function SubmitProductModal({ open, onClose }) {
         countries: selectedCountries.length > 0 ? selectedCountries : ['other'],
         tags: [],
       });
+      clearDraft();
       addNotification('product', `Your product "${form.name}" was submitted for review 🚀`, '🚀');
       setStep(6);
     } catch (err) {
@@ -141,12 +249,46 @@ export default function SubmitProductModal({ open, onClose }) {
     }
   };
 
+  const entityDisplayList = entityQ.trim() ? entityResults : allEntities;
+
   return (
     <div onClick={handleOverlayClick} style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(0,0,0,.6)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
       <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:540, maxHeight:'93vh', overflowY:'auto', padding:'32px 36px', position:'relative', boxShadow:'0 24px 80px rgba(0,0,0,.2)' }}>
+
+        {/* ── Draft: restore prompt ── */}
+        {draftPrompt === 'restore' && (
+          <div style={{ position:'absolute', inset:0, zIndex:10, background:'rgba(255,255,255,.97)', borderRadius:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
+            <div style={{ fontSize:44, marginBottom:16 }}>📝</div>
+            <div style={{ fontSize:20, fontWeight:800, marginBottom:8 }}>You have a saved draft</div>
+            <div style={{ fontSize:14, color:'#666', marginBottom:8 }}><strong>{pendingDraft?.form?.name || 'Untitled product'}</strong></div>
+            <div style={{ fontSize:13, color:'#aaa', marginBottom:28 }}>
+              Saved {pendingDraft?.savedAt ? new Date(pendingDraft.savedAt).toLocaleDateString() : ''}
+            </div>
+            <div style={{ display:'flex', gap:12, width:'100%' }}>
+              <button onClick={discardDraft} style={{ flex:1, padding:'12px 0', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#f8f8f8', fontSize:14, fontWeight:700, cursor:'pointer', color:'#666' }}>Start Fresh</button>
+              <button onClick={restoreDraft} style={{ flex:1, padding:'12px 0', borderRadius:12, border:'none', background:'var(--orange)', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Continue Draft →</button>
+            </div>
+          </div>
+        )}
+
+        {/* ── Draft: save-on-close prompt ── */}
+        {draftPrompt === 'save' && (
+          <div style={{ position:'absolute', inset:0, zIndex:10, background:'rgba(255,255,255,.97)', borderRadius:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
+            <div style={{ fontSize:44, marginBottom:16 }}>💾</div>
+            <div style={{ fontSize:20, fontWeight:800, marginBottom:8 }}>Save your progress?</div>
+            <div style={{ fontSize:14, color:'#666', marginBottom:28, lineHeight:1.6 }}>
+              Your draft will be saved and you can continue later from <strong>Settings → My Products</strong>.
+            </div>
+            <div style={{ display:'flex', gap:12, width:'100%' }}>
+              <button onClick={confirmDiscardAndClose} style={{ flex:1, padding:'12px 0', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#f8f8f8', fontSize:14, fontWeight:700, cursor:'pointer', color:'#e63946' }}>Discard</button>
+              <button onClick={confirmSaveDraft} style={{ flex:1, padding:'12px 0', borderRadius:12, border:'none', background:'var(--orange)', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Save Draft 💾</button>
+            </div>
+          </div>
+        )}
+
         <button onClick={handleClose} style={{ position:'absolute', top:16, right:16, width:32, height:32, borderRadius:8, border:'1px solid #e8e8e8', background:'transparent', display:'grid', placeItems:'center', cursor:'pointer', fontSize:16, color:'#aaa' }}>✕</button>
 
-        {/* ── Step 1: Type */}
+        {/* ── Step 1: Type ── */}
         {step === 1 && <>
           <Prog step={1}/>
           <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:6 }}>What are you launching?</div>
@@ -165,13 +307,13 @@ export default function SubmitProductModal({ open, onClose }) {
           <button onClick={() => type && setStep(2)} style={{ width:'100%', padding:14, borderRadius:12, fontFamily:"'DM Sans',sans-serif", fontSize:15, fontWeight:800, border:'none', background:type?'var(--orange)':'#e8e8e8', color:type?'#fff':'#bbb', cursor:type?'pointer':'not-allowed', transition:'all .15s' }}>Next →</button>
         </>}
 
-        {/* ── Step 2: Details */}
+        {/* ── Step 2: Details ── */}
         {step === 2 && <>
           <Prog step={2}/>
           <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:6 }}>Tell us about it</div>
           <div style={{ fontSize:14, color:'#666', marginBottom:24 }}>The basics — you can edit everything later.</div>
 
-          {/* Logo upload — clean, no box */}
+          {/* Logo */}
           <div style={{ marginBottom:20 }}>
             <label style={lbl}>Product Logo</label>
             <div style={{ display:'flex', alignItems:'center', gap:16 }}>
@@ -192,24 +334,20 @@ export default function SubmitProductModal({ open, onClose }) {
                   📤 Upload logo image
                 </button>
                 <div style={{ fontSize:11, color:'#bbb', marginTop:8, lineHeight:1.5 }}>PNG, JPG or SVG · Recommended 200×200 px</div>
-                {logoFile && (
-                  <button type="button" onClick={() => setLogoFile(null)}
-                    style={{ marginTop:8, fontSize:11, color:'#aaa', background:'none', border:'none', cursor:'pointer', padding:0, textDecoration:'underline' }}>Remove</button>
-                )}
+                {logoFile && <button type="button" onClick={() => setLogoFile(null)}
+                  style={{ marginTop:6, fontSize:11, color:'#aaa', background:'none', border:'none', cursor:'pointer', padding:0, textDecoration:'underline' }}>Remove</button>}
               </div>
             </div>
           </div>
 
-          {/* Text fields — empty boxes */}
           {[['name','Product Name *'],['tagline','Tagline *'],['website','Website URL']].map(([k,label]) => (
             <div key={k} style={{ marginBottom:16 }}>
               <label style={lbl}>{label}</label>
-              <input type={k==='website'?'url':'text'} value={form[k]} placeholder="" onChange={e => setForm(f=>({...f,[k]:e.target.value}))}
+              <input type={k==='website'?'url':'text'} value={form[k]} onChange={e => setForm(f=>({...f,[k]:e.target.value}))}
                 style={inp} onFocus={fo} onBlur={bl}/>
             </div>
           ))}
 
-          {/* Industry */}
           <div style={{ marginBottom:16 }}>
             <label style={lbl}>Industry *</label>
             <select value={form.industry} onChange={e => setForm(f=>({...f,industry:e.target.value}))}
@@ -219,7 +357,6 @@ export default function SubmitProductModal({ open, onClose }) {
             </select>
           </div>
 
-          {/* Available In */}
           <div style={{ marginBottom:16 }}>
             <label style={lbl}>Available In * <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
             <div style={{ display:'flex', flexWrap:'wrap', gap:7, padding:10, border:'1.5px solid #e8e8e8', borderRadius:12, background:'#fafafa', minHeight:48 }}>
@@ -232,7 +369,6 @@ export default function SubmitProductModal({ open, onClose }) {
             </div>
           </div>
 
-          {/* Short Description — keeps placeholder */}
           <div style={{ marginBottom:16 }}>
             <label style={lbl}>Short Description * <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>3 sentences max</span></label>
             <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} rows={3}
@@ -240,15 +376,15 @@ export default function SubmitProductModal({ open, onClose }) {
               style={{ ...inp, resize:'vertical', lineHeight:1.6 }} onFocus={fo} onBlur={bl}/>
           </div>
 
-          {/* Associated Entity */}
-          <div style={{ marginBottom:20, position:'relative' }} ref={entityRef}>
-            <label style={lbl}>Associated Entity <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Optional — link to a company registered with us</span></label>
+          {/* Associated Entity — shows all 17 on focus */}
+          <div style={{ marginBottom:20, position:'relative' }}>
+            <label style={lbl}>Associated Entity <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Optional — link to a registered company</span></label>
             {selectedEntity ? (
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', border:'1.5px solid var(--orange)', borderRadius:11, background:'var(--orange-light)' }}>
                 <span style={{ fontSize:20 }}>{selectedEntity.logo_emoji || '🏢'}</span>
                 <div style={{ flex:1 }}>
                   <div style={{ fontSize:14, fontWeight:700 }}>{selectedEntity.name}</div>
-                  <div style={{ fontSize:12, color:'#888' }}>{selectedEntity.type || selectedEntity.entity_type || 'Company'}</div>
+                  <div style={{ fontSize:12, color:'#888', textTransform:'capitalize' }}>{(selectedEntity.type || selectedEntity.entity_type || 'Company').replace('_',' ')}</div>
                 </div>
                 <button type="button" onClick={() => { setSelectedEntity(null); setEntityQ(''); }}
                   style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:4 }}>✕</button>
@@ -257,19 +393,23 @@ export default function SubmitProductModal({ open, onClose }) {
               <>
                 <div style={{ position:'relative' }}>
                   <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
-                  <input value={entityQ} onChange={e => { searchEntities(e.target.value); setEntityOpen(true); }} placeholder="Search companies, accelerators…"
-                    style={{ ...inp, paddingLeft:34 }} onFocus={() => setEntityOpen(true)} onBlur={() => setTimeout(() => setEntityOpen(false), 150)}/>
+                  <input value={entityQ}
+                    onChange={e => { searchEntities(e.target.value); setEntityOpen(true); }}
+                    placeholder={`Search ${allEntities.length} registered companies…`}
+                    style={{ ...inp, paddingLeft:34 }}
+                    onFocus={() => { setEntityOpen(true); if (!entityQ.trim()) setEntityResults(allEntities); }}
+                    onBlur={() => setTimeout(() => setEntityOpen(false), 180)}/>
                 </div>
-                {entityOpen && entityResults.length > 0 && (
-                  <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:100, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', overflow:'hidden', marginTop:4 }}>
-                    {entityResults.map(e => (
+                {entityOpen && entityDisplayList.length > 0 && (
+                  <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:100, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', overflow:'hidden', marginTop:4, maxHeight:220, overflowY:'auto' }}>
+                    {entityDisplayList.map(e => (
                       <div key={e.id} onClick={() => { setSelectedEntity(e); setEntityQ(e.name); setEntityOpen(false); }}
                         style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f4f4f4', transition:'background .1s' }}
                         onMouseEnter={ev => ev.currentTarget.style.background='#fafafa'} onMouseLeave={ev => ev.currentTarget.style.background='#fff'}>
                         <span style={{ fontSize:20 }}>{e.logo_emoji || '🏢'}</span>
                         <div>
                           <div style={{ fontSize:13, fontWeight:700 }}>{e.name}</div>
-                          <div style={{ fontSize:11, color:'#aaa' }}>{e.type || e.entity_type || 'Company'}</div>
+                          <div style={{ fontSize:11, color:'#aaa', textTransform:'capitalize' }}>{(e.type || e.entity_type || 'Company').replace('_',' ')}</div>
                         </div>
                       </div>
                     ))}
@@ -285,7 +425,7 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
         </>}
 
-        {/* ── Step 3: Media */}
+        {/* ── Step 3: Media ── */}
         {step === 3 && (()=>{
           const filled = screenshots.filter(Boolean).length;
           const hasVideo = form.videoUrl.trim().length > 0;
@@ -295,7 +435,6 @@ export default function SubmitProductModal({ open, onClose }) {
           <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>Add media</div>
           <div style={{ fontSize:14, color:'#666', marginBottom:16 }}>Upload <strong>4 screenshots</strong> — or add a <strong>demo video</strong> instead.</div>
 
-          {/* Progress bar */}
           <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:20, padding:'10px 14px', borderRadius:12, background: mediaOk ? '#f0fdf4' : '#fafafa', border:`1px solid ${mediaOk?'#bbf7d0':'#e8e8e8'}` }}>
             <div style={{ display:'flex', gap:5 }}>
               {[0,1,2,3].map(i => (
@@ -332,7 +471,6 @@ export default function SubmitProductModal({ open, onClose }) {
             ))}
           </div>
 
-          {/* OR divider */}
           <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
             <div style={{ flex:1, height:1, background:'#e8e8e8' }}/>
             <span style={{ fontSize:11, fontWeight:700, color:'#bbb', letterSpacing:'.06em' }}>OR ADD A VIDEO</span>
@@ -350,23 +488,82 @@ export default function SubmitProductModal({ open, onClose }) {
 
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(2)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button onClick={() => setStep(4)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>Next →</button>
+            <button onClick={() => setStep(4)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>
+              {mediaOk ? 'Next →' : 'Skip for now →'}
+            </button>
           </div>
         </>})()}
 
-        {/* ── Step 4: Visibility */}
+        {/* ── Step 4: Visibility + Co-founders ── */}
         {step === 4 && <>
           <Prog step={4}/>
-          <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:6 }}>Visibility settings</div>
-          <div style={{ fontSize:14, color:'#666', marginBottom:24 }}>Control how your product post appears on the platform.</div>
+          <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:6 }}>Team & visibility</div>
+          <div style={{ fontSize:14, color:'#666', marginBottom:24 }}>Tag your team and control how this post appears.</div>
 
+          {/* Profile toggle */}
           <Toggle on={form.linkProfile} onChange={() => setForm(f=>({...f,linkProfile:!f.linkProfile}))}
             label="Tag my public profile with this post"
             sub="Your name and handle will appear on the product card:"
             handle={user?.handle}/>
 
-          <div style={{ padding:'12px 14px', background:'#f8f8f8', borderRadius:12, fontSize:13, color:'#666', marginBottom:16, marginTop:12 }}>
+          <div style={{ padding:'10px 14px', background:'#f8f8f8', borderRadius:10, fontSize:13, color:'#666', marginBottom:20, marginTop:10 }}>
             <strong style={{ color:'#0a0a0a' }}>Preview:</strong> Product will show <span style={{ color:'var(--orange)', fontWeight:700 }}>{form.linkProfile ? (user?.name || 'your name') : 'Anonymous'}</span> as the maker.
+          </div>
+
+          {/* Co-founder tagging */}
+          <div style={{ marginBottom:20 }}>
+            <label style={lbl}>Tag co-founders / collaborators <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Others working on this product</span></label>
+
+            {/* Tagged co-founders list */}
+            {coFounders.length > 0 && (
+              <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:12 }}>
+                {coFounders.map(cf => (
+                  <div key={cf.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', border:'1.5px solid var(--orange)', borderRadius:12, background:'var(--orange-light)' }}>
+                    <AvatarCircle user={cf} size={36}/>
+                    <div style={{ flex:1 }}>
+                      <div style={{ fontSize:13, fontWeight:700 }}>{cf.name}</div>
+                      <div style={{ fontSize:12, color:'#888' }}>@{cf.handle}</div>
+                    </div>
+                    <button type="button" onClick={() => removeCoFounder(cf.id)}
+                      style={{ background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:4 }}>✕</button>
+                  </div>
+                ))}
+              </div>
+            )}
+
+            {/* Search input */}
+            <div style={{ position:'relative' }}>
+              <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2.5"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
+              <input value={founderQ}
+                onChange={e => { searchFounders(e.target.value); setFounderOpen(true); }}
+                placeholder="Search by name or @handle…"
+                style={{ ...inp, paddingLeft:34 }}
+                onFocus={() => setFounderOpen(true)}
+                onBlur={() => setTimeout(() => setFounderOpen(false), 180)}/>
+            </div>
+            {founderOpen && founderResults.length > 0 && (
+              <div style={{ position:'relative', zIndex:100 }}>
+                <div style={{ position:'absolute', top:4, left:0, right:0, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', overflow:'hidden' }}>
+                  {founderResults.map(u => (
+                    <div key={u.id} onClick={() => addCoFounder(u)}
+                      style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', cursor:'pointer', borderBottom:'1px solid #f4f4f4', transition:'background .1s' }}
+                      onMouseEnter={ev => ev.currentTarget.style.background='#fafafa'} onMouseLeave={ev => ev.currentTarget.style.background='#fff'}>
+                      <AvatarCircle user={u} size={34}/>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700 }}>{u.name}</div>
+                        <div style={{ fontSize:11, color:'#aaa' }}>@{u.handle} · {u.persona || 'Member'}</div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+            {founderQ.length > 1 && founderResults.length === 0 && founderOpen && (
+              <div style={{ padding:'10px 14px', fontSize:13, color:'#aaa', background:'#fafafa', borderRadius:10, marginTop:4 }}>
+                No members found for "{founderQ}"
+              </div>
+            )}
+            <div style={{ fontSize:12, color:'#bbb', marginTop:8 }}>They'll be notified and can confirm their role after you launch.</div>
           </div>
 
           <div style={{ display:'flex', gap:10 }}>
@@ -375,69 +572,127 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
         </>}
 
-        {/* ── Step 5: Review */}
+        {/* ── Step 5: Review ── */}
         {step === 5 && <>
           <Prog step={5}/>
-          <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:6 }}>Review your listing</div>
-          <div style={{ fontSize:14, color:'#666', marginBottom:20 }}>Check everything before submitting.</div>
+          <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>Review your listing</div>
+          <div style={{ fontSize:14, color:'#666', marginBottom:20 }}>Looks good? Hit submit and we'll review it within 24 hours.</div>
 
-          <div style={{ background:'#f8f8f8', borderRadius:16, padding:20, marginBottom:16, border:'1px solid #eee' }}>
-            <div style={{ display:'flex', alignItems:'flex-start', gap:14 }}>
-              <div style={{ width:56, height:56, borderRadius:14, background:'#fff', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize:28, flexShrink:0, overflow:'hidden' }}>
-                {logoFile ? <img src={logoFile} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt="logo"/> : form.logoEmoji}
+          {/* Product card preview */}
+          <div style={{ border:'1.5px solid #e8e8e8', borderRadius:16, padding:20, marginBottom:16, background:'#fafafa' }}>
+            <div style={{ display:'flex', alignItems:'center', gap:16, marginBottom:16 }}>
+              {/* Big logo */}
+              <div style={{ width:80, height:80, borderRadius:20, overflow:'hidden', background:'#f0f0f0', flexShrink:0, border:'2px solid #e8e8e8' }}>
+                {logoFile
+                  ? <img src={logoFile} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt="logo"/>
+                  : <div style={{ width:'100%', height:'100%', display:'flex', alignItems:'center', justifyContent:'center', fontSize:40 }}>{form.logoEmoji || '🚀'}</div>
+                }
               </div>
               <div style={{ flex:1, minWidth:0 }}>
-                <div style={{ fontSize:15, fontWeight:800, marginBottom:4 }}>{form.name || '(no name)'}</div>
-                <div style={{ fontSize:13, color:'#666', marginBottom:8 }}>{form.tagline || '(no tagline)'}</div>
-                <div style={{ display:'flex', flexWrap:'wrap', gap:6 }}>
-                  {form.industry && <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:5, background:'#f0f0f0', color:'#555' }}>{form.industry}</span>}
-                  {selectedCountries.slice(0,3).map(c => { const m=COUNTRIES.find(x=>x[0]===c); return m?<span key={c} style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:5, background:'#f0f0f0', color:'#555' }}>{m[1]} {m[2]}</span>:null; })}
-                  <span style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:5, background:type==='soon'?'#eef2ff':'#fceee9', color:type==='soon'?'#4f46e5':'var(--orange)' }}>{type==='soon'?'Coming Soon':'Live'}</span>
-                </div>
+                <div style={{ fontSize:18, fontWeight:800, marginBottom:4 }}>{form.name || '—'}</div>
+                <div style={{ fontSize:13, color:'#666', lineHeight:1.5 }}>{form.tagline || '—'}</div>
+                {form.website && <div style={{ fontSize:12, color:'var(--orange)', marginTop:4 }}>{form.website}</div>}
               </div>
             </div>
-            {form.description && <div style={{ fontSize:13, color:'#666', marginTop:14, lineHeight:1.6 }}>{form.description}</div>}
-            {selectedEntity && (
-              <div style={{ fontSize:12, color:'#aaa', marginTop:12, paddingTop:12, borderTop:'1px solid #eee', display:'flex', alignItems:'center', gap:6 }}>
-                <span>{selectedEntity.logo_emoji || '🏢'}</span> Associated with <strong style={{ color:'#555' }}>{selectedEntity.name}</strong>
+
+            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:10, marginBottom:12 }}>
+              <div style={{ background:'#fff', border:'1px solid #f0f0f0', borderRadius:10, padding:'10px 12px' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:4 }}>Industry</div>
+                <div style={{ fontSize:13, fontWeight:700 }}>{form.industry || '—'}</div>
+              </div>
+              <div style={{ background:'#fff', border:'1px solid #f0f0f0', borderRadius:10, padding:'10px 12px' }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:4 }}>Type</div>
+                <div style={{ fontSize:13, fontWeight:700 }}>{type === 'live' ? '🚀 Live' : '⏳ Coming Soon'}</div>
+              </div>
+            </div>
+
+            {selectedCountries.length > 0 && (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:6 }}>Available In</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:5 }}>
+                  {selectedCountries.map(code => {
+                    const c = COUNTRIES.find(([v])=>v===code);
+                    return c ? <span key={code} style={{ fontSize:12, padding:'3px 10px', borderRadius:20, background:'#f0f0f0', fontWeight:600 }}>{c[1]} {c[2]}</span> : null;
+                  })}
+                </div>
               </div>
             )}
-            {form.linkProfile && <div style={{ fontSize:12, color:'#aaa', marginTop:8, display:'flex', alignItems:'center', gap:6 }}><span>👤</span> Tagged to {user?.name || 'your profile'}</div>}
-          </div>
 
-          {screenshots.some(Boolean) && (
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(4,1fr)', gap:8, marginBottom:16 }}>
-              {screenshots.map((s,i) => s ? (
-                <div key={i} style={{ aspectRatio:'16/9', borderRadius:8, overflow:'hidden' }}>
-                  <img src={s} style={{ width:'100%', height:'100%', objectFit:'cover' }} alt={`ss${i+1}`}/>
+            {form.description && (
+              <div style={{ marginBottom:12 }}>
+                <div style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:4 }}>Description</div>
+                <div style={{ fontSize:13, color:'#444', lineHeight:1.6 }}>{form.description}</div>
+              </div>
+            )}
+
+            {selectedEntity && (
+              <div style={{ display:'flex', alignItems:'center', gap:8, padding:'8px 12px', background:'#fff', border:'1px solid #f0f0f0', borderRadius:10, marginBottom:12 }}>
+                <span style={{ fontSize:18 }}>{selectedEntity.logo_emoji || '🏢'}</span>
+                <div>
+                  <div style={{ fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.04em' }}>Associated With</div>
+                  <div style={{ fontSize:13, fontWeight:700 }}>{selectedEntity.name}</div>
                 </div>
-              ) : null)}
-            </div>
-          )}
+              </div>
+            )}
 
-          <div style={{ background:'var(--orange-light)', borderRadius:10, padding:'12px 14px', fontSize:12, color:'#666', lineHeight:1.6, marginBottom:20 }}>
-            ⏱️ Products are reviewed within 24 hours. You'll be notified when it goes live.
+            {coFounders.length > 0 && (
+              <div>
+                <div style={{ fontSize:10, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.05em', marginBottom:8 }}>Team</div>
+                <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+                  {form.linkProfile && user && (
+                    <div style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px', background:'#f0f0f0', borderRadius:20 }}>
+                      <AvatarCircle user={user} size={20}/>
+                      <span style={{ fontSize:12, fontWeight:700 }}>{user.name}</span>
+                      <span style={{ fontSize:11, color:'#888' }}>(you)</span>
+                    </div>
+                  )}
+                  {coFounders.map(cf => (
+                    <div key={cf.id} style={{ display:'flex', alignItems:'center', gap:6, padding:'5px 10px', background:'#f0f0f0', borderRadius:20 }}>
+                      <AvatarCircle user={cf} size={20}/>
+                      <span style={{ fontSize:12, fontWeight:700 }}>{cf.name}</span>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
+
+            <div style={{ marginTop:12, padding:'8px 12px', background: form.linkProfile ? 'var(--orange-light)' : '#f8f8f8', borderRadius:10, fontSize:12, color:'#666', border:`1px solid ${form.linkProfile ? '#ffd6c2' : '#f0f0f0'}` }}>
+              {form.linkProfile
+                ? <>Posted by <span style={{ fontWeight:700, color:'var(--orange)' }}>@{user?.handle}</span></>
+                : 'Posted anonymously'}
+            </div>
           </div>
+
+          <div style={{ padding:'12px 16px', background:'#fff9f7', border:'1px solid #ffe4d4', borderRadius:12, fontSize:13, color:'#c0600a', marginBottom:20, lineHeight:1.6 }}>
+            ⏱ <strong>Under review</strong> — usually approved within 24 hours.
+          </div>
+
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(4)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button onClick={submit} disabled={submitting} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer', opacity:submitting?0.7:1 }}>
-              {submitting ? 'Submitting…' : 'Submit Product 🚀'}
+            <button onClick={submit} disabled={submitting}
+              style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:submitting?'#e8e8e8':'var(--orange)', color:submitting?'#aaa':'#fff', cursor:submitting?'not-allowed':'pointer', transition:'all .15s' }}>
+              {submitting ? 'Submitting…' : '🚀 Submit for Review'}
             </button>
           </div>
         </>}
 
-        {/* ── Step 6: Success */}
-        {step === 6 && <>
-          <div style={{ textAlign:'center', padding:'20px 0 10px' }}>
-            <div style={{ fontSize:52, marginBottom:16 }}>🎉</div>
-            <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:8 }}>Product Submitted!</div>
-            <p style={{ fontSize:14, color:'#666', lineHeight:1.6, marginBottom:28 }}>We'll review your submission and notify you when it goes live. Usually within 24 hours.</p>
-            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-              <button onClick={handleClose} style={{ width:'100%', padding:13, borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:800, cursor:'pointer' }}>Back to Homepage</button>
-              <button onClick={handleClose} style={{ width:'100%', padding:13, borderRadius:12, background:'#f5f5f5', color:'#666', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>Close</button>
+        {/* ── Step 6: Success ── */}
+        {step === 6 && (
+          <div style={{ textAlign:'center', padding:'20px 0' }}>
+            <div style={{ fontSize:64, marginBottom:16 }}>🎉</div>
+            <div style={{ fontSize:24, fontWeight:800, letterSpacing:'-.02em', marginBottom:8 }}>You're all set!</div>
+            <div style={{ fontSize:15, color:'#555', lineHeight:1.7, marginBottom:8 }}>
+              <strong>{form.name}</strong> has been submitted.
+            </div>
+            <div style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 18px', background:'#fff9f7', border:'1.5px solid #ffd6c2', borderRadius:12, fontSize:14, color:'#c0600a', fontWeight:600, marginBottom:28, lineHeight:1.5 }}>
+              ⏱ Under review — usually approved within 24 hours
+            </div>
+            <div style={{ display:'flex', gap:10, justifyContent:'center' }}>
+              <button onClick={() => { reset(); onClose(); }} style={{ padding:'12px 28px', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#f8f8f8', fontSize:14, fontWeight:700, cursor:'pointer', color:'#444' }}>Close</button>
+              <button onClick={() => { reset(); }} style={{ padding:'12px 28px', borderRadius:12, border:'none', background:'var(--orange)', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>Submit Another 🚀</button>
             </div>
           </div>
-        </>}
+        )}
       </div>
     </div>
   );
