@@ -62,11 +62,13 @@ const VENTURES = [
   { id:4, icon:'⚡', name:'DTEC Ventures',  country:'UAE', flag:'🇦🇪', stage:'Pre-Seed',  type:'Deep Tech',      tags:['AI & ML','Dev Tools','Cybersecurity'],portfolio:30, aum:'–',   verified:false, founded:'2015', about:"Dubai Silicon Oasis's venture studio incubating deep tech startups with access to global R&D networks." },
 ];
 
+const STARTUP_CONFIG = { title:'Companies', emoji:'🚀', desc:'Browse MENA startups across all industries and countries.', data:STARTUPS, cta:'List Your Company', filters:['country','industry'], cardType:'startup' };
 const PAGE_CONFIG = {
-  startup:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA startups across all industries and countries.',                  data:STARTUPS,     cta:'List Your Company',  filters:['country','industry'] },
-  accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your startup across MENA.',       data:ACCELERATORS, cta:'List Your Program',  filters:['country','industry'] },
-  investor:    { title:'Investment Firms',          emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA startups.',      data:INVESTORS,    cta:'List Your Firm',     filters:['stage','country'] },
-  venture:     { title:'Venture Studios',           emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA startups.',     data:VENTURES,     cta:'List Your Studio',   filters:['stage','country'] },
+  startup:     STARTUP_CONFIG,
+  company:     STARTUP_CONFIG,
+  accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your startup across MENA.',       data:ACCELERATORS, cta:'List Your Program',  filters:['country','industry'], cardType:'entity' },
+  investor:    { title:'Investment Firms',          emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA startups.',      data:INVESTORS,    cta:'List Your Firm',     filters:['stage','country'],   cardType:'entity' },
+  venture:     { title:'Venture Studios',           emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA startups.',     data:VENTURES,     cta:'List Your Studio',   filters:['stage','country'],   cardType:'entity' },
 };
 
 function FilterDropdown({ label, icon, options, selected, onToggle, onReset }) {
@@ -284,7 +286,7 @@ export default function ListingPage() {
           ) : (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:20 }}>
               {data.map(item =>
-                type === 'startup'
+                config.cardType === 'startup'
                   ? <StartupCard key={item.id} item={item} onClick={() => openModal(item)}/>
                   : <EntityCard  key={item.id} item={item} type={type} onClick={() => openModal(item)}/>
               )}
