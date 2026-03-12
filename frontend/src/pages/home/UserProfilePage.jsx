@@ -5,6 +5,7 @@ import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { usersAPI, productsAPI } from '../../utils/api';
+import ProductCard from '../../components/home/ProductCard';
 
 const DEMO_PROFILES = {
   'sara_builds': { id:null, handle:'@sara_builds', name:'Sara Al-Mahmoud', avatar:'SA', persona:'Founder', headline:'Founder @ Noon Academy · Edtech · 🇸🇦', bio:'Building the future of education in the Arab world. Ex-McKinsey. Mom of 3.', country:'sa', twitter:'sara_builds', linkedin:'sara-mahmoud', verified:true, followers_count:840, following_count:210 },
@@ -236,26 +237,8 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
                   {profileProducts.map((pr, i) => (
-                    <div key={pr.id} className="product-card" onClick={() => navigate(`/products/${pr.id}`)}>
-                      <div className="product-rank">#{i+1}</div>
-                      <div className="product-logo">{pr.logo_emoji || '🚀'}</div>
-                      <div className="product-body">
-                        <div className="product-top">
-                          <span className="product-name">{pr.name}</span>
-                          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:pr.status==='soon'?'#f5f5f5':'#eefbf3', color:pr.status==='soon'?'#aaa':'#22c55e', marginLeft:6 }}>{pr.status==='soon'?'Soon':'Live'}</span>
-                        </div>
-                        <div className="product-tagline">{pr.tagline}</div>
-                        <div className="product-meta">
-                          {pr.industry && <span className="meta-tag">{pr.industry}</span>}
-                          {pr.country && <span className="meta-tag">{pr.country}</span>}
-                        </div>
-                      </div>
-                      <div className="product-actions" onClick={e => e.stopPropagation()}>
-                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'6px 10px', borderRadius:10, border:'1.5px solid #e8e8e8', minWidth:44 }}>
-                          <span style={{ fontSize:11 }}>▲</span>
-                          <span style={{ fontSize:12, fontWeight:800 }}>{pr.upvotes_count || 0}</span>
-                        </div>
-                      </div>
+                    <div key={pr.id} onClick={() => navigate(`/products/${pr.id}`)}>
+                      <ProductCard product={pr} rank={i + 1}/>
                     </div>
                   ))}
                 </div>
