@@ -65,8 +65,16 @@ app.use('/api', routes);
 // ── Serve React build in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuild = path.join(__dirname, '../../frontend/build');
-  app.use(express.static(clientBuild));
+  app.use(express.static(clientBuild, {
+    maxAge: '1y',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
   app.get('*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
     res.sendFile(path.join(clientBuild, 'index.html'));
   });
 }
