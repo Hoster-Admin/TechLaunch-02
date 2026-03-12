@@ -234,18 +234,27 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   {isOwn && <button onClick={() => navigate('/submit')} style={{ marginTop:16, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>Submit a Product 🚀</button>}
                 </div>
               ) : (
-                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:14 }}>
-                  {profileProducts.map(pr => (
-                    <div key={pr.id} onClick={() => navigate(`/products/${pr.id}`)}
-                      style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'18px 16px', cursor:'pointer', transition:'all .15s' }}
-                      onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 4px 16px rgba(232,98,26,.1)'; }}
-                      onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
-                      <div style={{ width:44, height:44, borderRadius:12, background:'#f8f8f8', display:'grid', placeItems:'center', fontSize:22, marginBottom:10 }}>{pr.logo_emoji}</div>
-                      <div style={{ fontSize:14, fontWeight:800, marginBottom:4 }}>{pr.name}</div>
-                      <div style={{ fontSize:12, color:'#aaa', marginBottom:8, lineHeight:1.4 }}>{pr.tagline}</div>
-                      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
-                        <span style={{ fontSize:12, fontWeight:700, color:'var(--orange)' }}>▲ {pr.upvotes_count || 0}</span>
-                        <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:pr.status==='soon'?'#f5f5f5':'#eefbf3', color:pr.status==='soon'?'#aaa':'#22c55e' }}>{pr.status==='soon'?'Soon':'Live'}</span>
+                <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
+                  {profileProducts.map((pr, i) => (
+                    <div key={pr.id} className="product-card" onClick={() => navigate(`/products/${pr.id}`)}>
+                      <div className="product-rank">#{i+1}</div>
+                      <div className="product-logo">{pr.logo_emoji || '🚀'}</div>
+                      <div className="product-body">
+                        <div className="product-top">
+                          <span className="product-name">{pr.name}</span>
+                          <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:pr.status==='soon'?'#f5f5f5':'#eefbf3', color:pr.status==='soon'?'#aaa':'#22c55e', marginLeft:6 }}>{pr.status==='soon'?'Soon':'Live'}</span>
+                        </div>
+                        <div className="product-tagline">{pr.tagline}</div>
+                        <div className="product-meta">
+                          {pr.industry && <span className="meta-tag">{pr.industry}</span>}
+                          {pr.country && <span className="meta-tag">{pr.country}</span>}
+                        </div>
+                      </div>
+                      <div className="product-actions" onClick={e => e.stopPropagation()}>
+                        <div style={{ display:'flex', flexDirection:'column', alignItems:'center', gap:2, padding:'6px 10px', borderRadius:10, border:'1.5px solid #e8e8e8', minWidth:44 }}>
+                          <span style={{ fontSize:11 }}>▲</span>
+                          <span style={{ fontSize:12, fontWeight:800 }}>{pr.upvotes_count || 0}</span>
+                        </div>
                       </div>
                     </div>
                   ))}
