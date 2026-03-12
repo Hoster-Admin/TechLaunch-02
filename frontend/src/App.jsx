@@ -15,6 +15,7 @@ import DirectoryPage    from './pages/home/DirectoryPage';
 import AcceleratorsPage from './pages/home/AcceleratorsPage';
 import ListingPage      from './pages/home/ListingPages';
 import BookmarksPage    from './pages/home/BookmarksPage';
+import PeoplePage       from './pages/home/PeoplePage';
 import UserProfilePage  from './pages/home/UserProfilePage';
 import SettingsPage     from './pages/home/SettingsPage';
 import { LoginPage, RegisterPage } from './pages/home/AuthPages';
@@ -140,6 +141,7 @@ function AppRoutes() {
         <Route path="/accelerators" element={<WithAuthCallbacks Component={AcceleratorsPage}/>}/>
         <Route path="/list/:type"   element={<WithAuthCallbacks Component={ListingPage}/>}/>
         <Route path="/bookmarks"    element={<WithAuthCallbacks Component={BookmarksPage}/>}/>
+        <Route path="/people"       element={<WithAuthCallbacks Component={PeoplePage}/>}/>
         <Route path="/u/:handle"    element={<WithAuthCallbacks Component={UserProfilePage}/>}/>
         <Route path="/settings"          element={<RequireAuth><SettingsPage/></RequireAuth>}/>
         <Route path="/articles"          element={<ArticlesList/>}/>
