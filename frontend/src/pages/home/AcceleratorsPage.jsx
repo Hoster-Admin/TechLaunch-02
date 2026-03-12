@@ -71,7 +71,7 @@ export default function AcceleratorsPage({ onSignIn, onSignUp }) {
           </div>
 
           <div style={{ fontSize:18, fontWeight:800, marginBottom:20 }}>
-            {filter === 'All' ? 'All Programs' : filter} <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'DM Mono,monospace', marginLeft:8 }}>{filtered.length}</span>
+            {filter === 'All' ? 'All Programs' : filter} <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'Inter,sans-serif', marginLeft:8 }}>{filtered.length}</span>
           </div>
 
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(340px,1fr))', gap:16 }}>
@@ -101,7 +101,7 @@ export default function AcceleratorsPage({ onSignIn, onSignUp }) {
                   </div>
                   <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between' }}>
                     <div style={{ fontSize:12, color:'#aaa' }}>
-                      <span style={{ fontWeight:700, color:'#0a0a0a', fontFamily:'DM Mono,monospace' }}>{acc.portfolio}</span>+ companies
+                      <span style={{ fontWeight:700, color:'#0a0a0a', fontFamily:'Inter,sans-serif' }}>{acc.portfolio}</span>+ companies
                     </div>
                     <button style={{ padding:'7px 14px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:12, fontWeight:700, cursor:'pointer' }}>
                       View →

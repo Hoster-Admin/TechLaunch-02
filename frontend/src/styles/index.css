@@ -216,7 +216,7 @@ nav {
 /* ── PRODUCT LIST ── */
 .list-header { display: flex; align-items: center; justify-content: space-between; margin-bottom: 16px; }
 .list-title { font-size: 18px; font-weight: 800; letter-spacing: -.02em; }
-.list-count { font-size: 13px; color: var(--gray-400); font-family: 'DM Mono', monospace; }
+.list-count { font-size: 13px; color: var(--gray-400); font-family: 'Inter', sans-serif; }
 
 /* ── PRODUCT CARD ── */
 .product-card {
@@ -226,7 +226,7 @@ nav {
   transition: border-color .15s, box-shadow .15s; cursor: pointer;
 }
 .product-card:hover { border-color: var(--gray-400); box-shadow: 0 4px 20px rgba(0,0,0,.06); }
-.product-rank { font-size: 12px; font-weight: 700; color: var(--gray-400); font-family: 'DM Mono', monospace; width: 20px; text-align: center; flex-shrink: 0; }
+.product-rank { font-size: 12px; font-weight: 700; color: var(--gray-400); font-family: 'Inter', sans-serif; width: 20px; text-align: center; flex-shrink: 0; }
 .product-logo {
   width: 56px; height: 56px; border-radius: 14px;
   display: grid; place-items: center; font-size: 26px;
@@ -259,7 +259,7 @@ nav {
 .upvote-btn:hover { border-color: var(--orange); color: var(--orange); }
 .upvote-btn.voted { background: var(--orange); border-color: var(--orange); }
 .upvote-arrow { font-size: 14px; line-height: 1; }
-.upvote-count { font-size: 13px; font-weight: 800; font-family: 'DM Mono', monospace; }
+.upvote-count { font-size: 13px; font-weight: 800; font-family: 'Inter', sans-serif; }
 .upvote-btn.voted .upvote-count, .upvote-btn.voted .upvote-arrow { color: var(--white); }
 .bookmark-btn {
   width: 36px; height: 36px; border-radius: 8px;
@@ -279,7 +279,7 @@ nav {
 .sidebar-item-icon { width: 36px; height: 36px; border-radius: 10px; display: grid; place-items: center; font-size: 18px; flex-shrink: 0; }
 .sidebar-item-name { font-size: 13px; font-weight: 700; }
 .sidebar-item-meta { font-size: 11px; color: var(--gray-400); }
-.sidebar-item-right { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--orange); font-family: 'DM Mono', monospace; }
+.sidebar-item-right { margin-left: auto; font-size: 12px; font-weight: 700; color: var(--orange); font-family: 'Inter', sans-serif; }
 .sidebar-search-wrap {
   display: flex; align-items: center; gap: 10px;
   background: var(--white); border: 1.5px solid var(--gray-200);

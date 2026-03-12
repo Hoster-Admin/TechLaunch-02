@@ -83,7 +83,7 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
         <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 32px 80px' }}>
           {activeTab === 'industries' && <>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-              <div style={{ fontSize:18, fontWeight:800 }}>Industries <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'DM Mono,monospace', marginLeft:8 }}>{filteredIndustries.length}</span></div>
+              <div style={{ fontSize:18, fontWeight:800 }}>Industries <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'Inter,sans-serif', marginLeft:8 }}>{filteredIndustries.length}</span></div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:14 }}>
               {filteredIndustries.map(ind => (
@@ -95,7 +95,7 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
                   <div style={{ fontSize:14, fontWeight:800, marginBottom:4 }}>{ind.name}</div>
                   <div style={{ fontSize:12, color:'#888', marginBottom:10, lineHeight:1.4 }}>{ind.desc}</div>
                   <div style={{ fontSize:12, fontWeight:700, color:'var(--orange)', display:'flex', alignItems:'center', gap:4 }}>
-                    <span style={{ fontFamily:'DM Mono,monospace' }}>{ind.count}</span> products →
+                    <span style={{ fontFamily:'Inter,sans-serif' }}>{ind.count}</span> products →
                   </div>
                 </div>
               ))}
@@ -104,7 +104,7 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
 
           {activeTab === 'countries' && <>
             <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:20 }}>
-              <div style={{ fontSize:18, fontWeight:800 }}>Countries <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'DM Mono,monospace', marginLeft:8 }}>{filteredCountries.length}</span></div>
+              <div style={{ fontSize:18, fontWeight:800 }}>Countries <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'Inter,sans-serif', marginLeft:8 }}>{filteredCountries.length}</span></div>
             </div>
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:14 }}>
               {filteredCountries.map(c => (
