@@ -91,6 +91,16 @@ const getBookmarks = async (req, res, next) => {
   } catch(err){ next(err); }
 };
 
+// ── GET /api/users/me/products
+const getMyProducts = async (req, res, next) => {
+  try {
+    const { rows } = await query(`
+      SELECT id, name, tagline, logo_emoji, industry, upvotes_count, status, countries, created_at
+      FROM products WHERE submitted_by=$1 ORDER BY created_at DESC`, [req.user.id]);
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+};
+
 // ── GET /api/users/me/notifications
 const getNotifications = async (req, res, next) => {
   try {
@@ -111,5 +121,5 @@ const markNotificationsRead = async (req, res, next) => {
 
 module.exports = {
   getProfile, updateProfile, changePassword, toggleFollow,
-  getBookmarks, getNotifications, markNotificationsRead
+  getBookmarks, getMyProducts, getNotifications, markNotificationsRead
 };

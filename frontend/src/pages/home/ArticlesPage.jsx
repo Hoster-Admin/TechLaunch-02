@@ -9,6 +9,7 @@ const ARTICLES = [
     tag:'Guide',
     title:'How to Get the Best Out of Tech Launch as a Founder',
     author:'Rania Al-Masri',
+    authorHandle:'rania_almasri',
     authorBio:'Co-Founder & CEO at Launchpad MENA. Previously at Wamda.',
     initials:'RA',
     readTime:'4 min read',
@@ -33,6 +34,7 @@ const ARTICLES = [
     tag:'For Students',
     title:'Where to Start Learning Vibe Coding as a Complete Beginner',
     author:'Khalid Nasser',
+    authorHandle:'khalid_nasser',
     authorBio:'Software Engineer at Foodics. Teacher and mentor at AUC Venture Lab.',
     initials:'KN',
     readTime:'6 min read',
@@ -55,6 +57,7 @@ const ARTICLES = [
     tag:'Business',
     title:"Why MENA Founders Should Launch Publicly Before They're Ready",
     author:'Sara Hadid',
+    authorHandle:'sara_hadid',
     authorBio:'Founder @ Maktaba. Angel investor. Previously at Flat6Labs Cairo.',
     initials:'SH',
     readTime:'5 min read',
@@ -77,6 +80,7 @@ const ARTICLES = [
     tag:'Business',
     title:'The Investor Signals That Actually Matter in a MENA Pitch Deck',
     author:'Omar Fares',
+    authorHandle:'omar_fares',
     authorBio:'Principal at STV. Previously at McKinsey Riyadh. Author of "Raising in MENA".',
     initials:'OF',
     readTime:'7 min read',
@@ -125,7 +129,9 @@ function ArticlesList() {
                 <p style={{ fontSize:14, color:'#666', lineHeight:1.7, marginBottom:14 }}>{a.excerpt}</p>
                 <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:13, color:'#aaa' }}>
                   <div style={{ width:28, height:28, borderRadius:7, background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:10, fontWeight:900, flexShrink:0 }}>{a.initials}</div>
-                  <span style={{ fontWeight:600, color:'#555' }}>{a.author}</span>
+                  <span onClick={e => { e.stopPropagation(); navigate(`/u/${a.authorHandle}`); }}
+                    style={{ fontWeight:600, color:'#555', cursor:'pointer', transition:'color .15s' }}
+                    onMouseOver={e=>e.currentTarget.style.color='var(--orange)'} onMouseOut={e=>e.currentTarget.style.color='#555'}>{a.author}</span>
                   <span>·</span>
                   <span>{a.readTime}</span>
                   <span>·</span>
@@ -180,9 +186,12 @@ function ArticleDetail() {
 
           {/* Author row */}
           <div style={{ display:'flex', alignItems:'center', gap:12, paddingBottom:28, borderBottom:'1px solid #f0f0f0', marginBottom:36 }}>
-            <div style={{ width:44, height:44, borderRadius:11, background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:14, fontWeight:900 }}>{article.initials}</div>
+            <div style={{ width:44, height:44, borderRadius:11, background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:14, fontWeight:900, cursor:'pointer', flexShrink:0 }}
+              onClick={() => navigate(`/u/${article.authorHandle}`)}>{article.initials}</div>
             <div>
-              <div style={{ fontSize:14, fontWeight:700, color:'#0a0a0a' }}>{article.author}</div>
+              <div onClick={() => navigate(`/u/${article.authorHandle}`)}
+                style={{ fontSize:14, fontWeight:700, color:'#0a0a0a', cursor:'pointer', transition:'color .15s', display:'inline-block' }}
+                onMouseOver={e=>e.currentTarget.style.color='var(--orange)'} onMouseOut={e=>e.currentTarget.style.color='#0a0a0a'}>{article.author}</div>
               <div style={{ fontSize:12, color:'#aaa', marginTop:2 }}>{article.authorBio}</div>
             </div>
             <div style={{ marginLeft:'auto', fontSize:12, color:'#aaa', textAlign:'right' }}>
@@ -205,7 +214,7 @@ function ArticleDetail() {
           <div style={{ marginTop:48, padding:'28px 32px', background:'#0a0a0a', borderRadius:20, textAlign:'center' }}>
             <div style={{ fontSize:16, fontWeight:800, color:'#fff', marginBottom:8 }}>Want to write for the community?</div>
             <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', marginBottom:18 }}>Share your insights with thousands of MENA founders, investors, and builders.</p>
-            <button style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+            <button onClick={() => navigate('/write-for-us')} style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
               Submit Your Article →
             </button>
           </div>

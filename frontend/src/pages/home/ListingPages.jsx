@@ -5,7 +5,11 @@ import Footer from '../../components/home/Footer';
 import { useUI } from '../../context/UIContext';
 
 const STAGE_COLORS = {
-  'Growth':      { bg:'#fdf4ff', color:'#7c3aed' },
+  'Ideation Stage':{ bg:'#f0fdf4', color:'#15803d' },
+  'Pre-Seed':    { bg:'#f5f3ff', color:'#7c3aed' },
+  'Seed':        { bg:'#dcfce7', color:'#16a34a' },
+  'MVP':         { bg:'#fef2f2', color:'#dc2626' },
+  'Early Stage': { bg:'#fffbeb', color:'#d97706' },
   'Series A':    { bg:'#eff6ff', color:'#2563eb' },
   'Series A+':   { bg:'#eff6ff', color:'#2563eb' },
   'Series B':    { bg:'#fffbeb', color:'#d97706' },
@@ -13,10 +17,8 @@ const STAGE_COLORS = {
   'Series C':    { bg:'#fef3c7', color:'#b45309' },
   'Seed–A':      { bg:'#dcfce7', color:'#16a34a' },
   'Seed–B':      { bg:'#dcfce7', color:'#16a34a' },
-  'Early Stage': { bg:'#fffbeb', color:'#d97706' },
-  'MVP':         { bg:'#fef2f2', color:'#dc2626' },
-  'Pre-Seed':    { bg:'#f5f3ff', color:'#7c3aed' },
-  'Seed':        { bg:'#dcfce7', color:'#16a34a' },
+  'Growth':      { bg:'#fdf4ff', color:'#7c3aed' },
+  'Pre-IPO':     { bg:'#fff1f2', color:'#be123c' },
   'Angel':       { bg:'#fdf4ff', color:'#9333ea' },
 };
 
@@ -26,12 +28,12 @@ const STARTUPS = [
   { id:3,  icon:'🏥', name:'Vezeeta',        country:'Egypt',        flag:'🇪🇬', stage:'Series A+',   industry:'Healthtech',  tags:['Healthcare','Booking','SaaS'],         employees:'500+', followers:1560, verified:true,  founded:2012, about:'Leading digital health platform for booking doctors and managing patient records across Egypt and the MENA region.' },
   { id:4,  icon:'📈', name:'Baraka',         country:'UAE',          flag:'🇦🇪', stage:'Early Stage', industry:'Fintech',     tags:['Investing','Stocks','Mobile'],         employees:'50+',  followers:670,  verified:false, founded:2020, about:'Commission-free investing app making global stock markets accessible to Arab retail investors in the GCC.' },
   { id:5,  icon:'🛍️', name:'Tamara',         country:'Saudi Arabia', flag:'🇸🇦', stage:'Series A+',   industry:'Fintech',     tags:['BNPL','Islamic Finance','B2B'],        employees:'300+', followers:1100, verified:true,  founded:2020, about:'BNPL and embedded finance platform for Saudi consumers and merchants with Sharia-compliant products.' },
-  { id:6,  icon:'🤖', name:'Kader AI',       country:'Jordan',       flag:'🇯🇴', stage:'MVP',         industry:'AI & ML',     tags:['HR','AI','Arabic NLP'],                employees:'15',   followers:290,  verified:false, founded:2023, about:'AI-powered HR automation platform built specifically for MENA enterprise HR workflows and Arabic language.' },
+  { id:6,  icon:'🤖', name:'Kader AI',       country:'Jordan',       flag:'🇯🇴', stage:'Ideation Stage',industry:'AI & ML',     tags:['HR','AI','Arabic NLP'],                employees:'15',   followers:290,  verified:false, founded:2023, about:'AI-powered HR automation platform built specifically for MENA enterprise HR workflows and Arabic language.' },
   { id:7,  icon:'🚛', name:'Trella',         country:'Egypt',        flag:'🇪🇬', stage:'Series A',    industry:'Logistics',   tags:['Freight','B2B','Marketplace'],         employees:'150+', followers:520,  verified:true,  founded:2018, about:'Digital freight marketplace reducing empty miles and logistics costs across Egypt and the MENA region.' },
   { id:8,  icon:'🍽️', name:'Foodics',        country:'Saudi Arabia', flag:'🇸🇦', stage:'Series B',    industry:'Foodtech',    tags:['POS','Restaurant','SaaS'],             employees:'300+', followers:890,  verified:true,  founded:2014, about:'Restaurant POS and management system used by over 20,000 restaurants and food businesses across MENA.' },
-  { id:9,  icon:'🏠', name:'Property Finder',country:'UAE',          flag:'🇦🇪', stage:'Growth',      industry:'Proptech',    tags:['Real Estate','Marketplace','Mobile'],  employees:'400+', followers:2100, verified:true,  founded:2007, about:"MENA's leading property portal connecting buyers, renters, and agents across the Gulf region." },
+  { id:9,  icon:'🏠', name:'Property Finder',country:'UAE',          flag:'🇦🇪', stage:'Series C',    industry:'Proptech',    tags:['Real Estate','Marketplace','Mobile'],  employees:'400+', followers:2100, verified:true,  founded:2007, about:"MENA's leading property portal connecting buyers, renters, and agents across the Gulf region." },
   { id:10, icon:'🎓', name:'Almentor',       country:'Egypt',        flag:'🇪🇬', stage:'Series A',    industry:'Edtech',      tags:['E-Learning','Arabic','Content'],       employees:'80+',  followers:460,  verified:false, founded:2016, about:'Arabic online learning platform with thousands of video courses for Arab professionals and students.' },
-  { id:11, icon:'🏦', name:'Fawry',          country:'Egypt',        flag:'🇪🇬', stage:'Growth',      industry:'Fintech',     tags:['Payments','E-Commerce','B2B'],         employees:'2000+',followers:3200, verified:true,  founded:2008, about:"Egypt's largest fintech company powering digital payments for over 30 million users across Egypt." },
+  { id:11, icon:'🏦', name:'Fawry',          country:'Egypt',        flag:'🇪🇬', stage:'Pre-IPO',     industry:'Fintech',     tags:['Payments','E-Commerce','B2B'],         employees:'2000+',followers:3200, verified:true,  founded:2008, about:"Egypt's largest fintech company powering digital payments for over 30 million users across Egypt." },
   { id:12, icon:'🔬', name:'Cura',           country:'Saudi Arabia', flag:'🇸🇦', stage:'Seed',        industry:'Healthtech',  tags:['Mental Health','Therapy','Online'],    employees:'30+',  followers:210,  verified:false, founded:2022, about:'Mental health therapy online for MENA — connecting patients with licensed therapists in Arabic and English.' },
 ];
 
@@ -142,12 +144,6 @@ function StartupCard({ item, onClick }) {
           <div style={{ display:'flex', alignItems:'center', gap:5 }}>
             <span style={{ fontSize:14 }}>👥</span>
             <span><b style={{ color:'#0a0a0a', fontWeight:800 }}>{item.employees}</b> employees</span>
-          </div>
-        )}
-        {item.followers && (
-          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-            <span style={{ fontSize:14 }}>⭐</span>
-            <span><b style={{ color:'#0a0a0a', fontWeight:800 }}>{item.followers.toLocaleString()}</b> followers</span>
           </div>
         )}
         <button className="btn-entity-more" style={{ marginLeft:'auto' }} onClick={e => { e.stopPropagation(); onClick(); }}>
