@@ -173,8 +173,67 @@ const searchUsers = async (req, res, next) => {
   } catch(err){ next(err); }
 };
 
+// ── GET /api/users/:handle/followers
+const getUserFollowers = async (req, res, next) => {
+  try {
+    const { rows: target } = await query('SELECT id FROM users WHERE handle=$1', [req.params.handle]);
+    if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
+    const userId = target[0].id;
+    const { rows } = await query(`
+      SELECT u.id, u.name, u.handle, u.avatar_url, u.avatar_color, u.headline, u.persona, u.verified,
+             u.followers_count
+      FROM follows f JOIN users u ON u.id = f.follower_id
+      WHERE f.following_id=$1
+      ORDER BY f.created_at DESC`, [userId]
+    );
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+};
+
+// ── GET /api/users/:handle/following
+const getUserFollowing = async (req, res, next) => {
+  try {
+    const { rows: target } = await query('SELECT id FROM users WHERE handle=$1', [req.params.handle]);
+    if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
+    const userId = target[0].id;
+    const { rows } = await query(`
+      SELECT u.id, u.name, u.handle, u.avatar_url, u.avatar_color, u.headline, u.persona, u.verified,
+             u.followers_count
+      FROM follows f JOIN users u ON u.id = f.following_id
+      WHERE f.follower_id=$1
+      ORDER BY f.created_at DESC`, [userId]
+    );
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+};
+
+// ── GET /api/users/people (discovery)
+const getPeople = async (req, res, next) => {
+  try {
+    const { persona, country, search, page=1, limit=24 } = req.query;
+    const params = [];
+    const conditions = ["status='active'"];
+    if (persona)  { params.push(persona);      conditions.push(`persona ILIKE $${params.length}`); }
+    if (country)  { params.push(country);      conditions.push(`country=$${params.length}`); }
+    if (search)   { params.push(`%${search}%`);conditions.push(`(name ILIKE $${params.length} OR handle ILIKE $${params.length} OR headline ILIKE $${params.length})`); }
+    const where = 'WHERE ' + conditions.join(' AND ');
+    const offset = (parseInt(page)-1)*parseInt(limit);
+    params.push(parseInt(limit), offset);
+    const { rows } = await query(`
+      SELECT id, name, handle, avatar_url, avatar_color, headline, persona, verified,
+             country, followers_count, products_count, COUNT(*) OVER() AS total
+      FROM users ${where}
+      ORDER BY followers_count DESC NULLS LAST, created_at DESC
+      LIMIT $${params.length-1} OFFSET $${params.length}`, params
+    );
+    const total = rows.length > 0 ? parseInt(rows[0].total) : 0;
+    res.json({ success:true, data:rows.map(({total,...r})=>r), pagination:{total, page:parseInt(page)} });
+  } catch(err){ next(err); }
+};
+
 module.exports = {
   getProfile, updateProfile, changePassword, toggleFollow,
   getBookmarks, getMyProducts, getNotifications, markNotificationsRead,
-  searchUsers, getUserUpvoted, getUserActivity
+  searchUsers, getUserUpvoted, getUserActivity,
+  getUserFollowers, getUserFollowing, getPeople
 };
