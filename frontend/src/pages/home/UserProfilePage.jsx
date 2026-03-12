@@ -226,20 +226,20 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   {personaIcon} {personaLabel}
                 </div>
 
-                {/* Headline + collapsible About */}
-                {(profile.headline || hasAbout) && (
+                {/* Headline — always visible under username */}
+                {profile.headline && (
+                  <div style={{ fontSize:13, color:'#555', marginBottom:8, lineHeight:1.5 }}>{profile.headline}</div>
+                )}
+
+                {/* Collapsible About */}
+                {hasAbout && (
                   <div style={{ marginBottom:12 }}>
-                    {/* Clickable headline row */}
-                    {hasAbout ? (
-                      <button
-                        onClick={() => setAboutOpen(o => !o)}
-                        style={{ display:'flex', alignItems:'center', gap:5, background:'none', border:'none', cursor:'pointer', padding:0, textAlign:'left' }}>
-                        <span style={{ fontSize:13, color:'#555', fontWeight:500, textDecoration:'underline', textUnderlineOffset:3 }}>{profile.headline || 'View details'}</span>
-                        <span style={{ fontSize:10, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)' }}>▼</span>
-                      </button>
-                    ) : (
-                      profile.headline && <div style={{ fontSize:13, color:'#555' }}>{profile.headline}</div>
-                    )}
+                    <button
+                      onClick={() => setAboutOpen(o => !o)}
+                      style={{ display:'inline-flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                      <span style={{ fontSize:12, color:'#777', fontWeight:600, textDecoration:'underline', textUnderlineOffset:3 }}>About</span>
+                      <span style={{ fontSize:9, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)', marginTop:1 }}>▼</span>
+                    </button>
 
                     {/* Dropdown bio panel */}
                     {aboutOpen && (
