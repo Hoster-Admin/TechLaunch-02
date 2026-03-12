@@ -6,9 +6,8 @@ const getProfile = async (req, res, next) => {
   try {
     const handle = req.params.handle.replace('@','');
     const { rows } = await query(`
-      SELECT id, name, handle, persona, country, bio, website, twitter, linkedin,
-             avatar_url, avatar_color, verified, followers_count, following_count,
-             products_count, votes_given, created_at
+      SELECT id, name, handle, persona, headline, country, bio, website, twitter, linkedin, github,
+             avatar_url, avatar_color, verified, followers_count, following_count, created_at
       FROM users WHERE handle=$1 AND status='active'`, [handle]);
     if (!rows.length) return res.status(404).json({ success:false, message:'User not found' });
 
@@ -33,7 +32,7 @@ const getProfile = async (req, res, next) => {
 // ── PUT /api/users/me
 const updateProfile = async (req, res, next) => {
   try {
-    const allowed = ['name','bio','website','twitter','linkedin','country','persona','avatar_url','avatar_color'];
+    const allowed = ['name','headline','bio','website','twitter','linkedin','github','country','persona','avatar_url','avatar_color'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
     if (!Object.keys(updates).length) return res.status(400).json({ success:false, message:'Nothing to update' });
@@ -42,7 +41,7 @@ const updateProfile = async (req, res, next) => {
     const setClauses = keys.map((k,i) => `${k}=$${i+2}`).join(', ');
     const { rows } = await query(
       `UPDATE users SET ${setClauses} WHERE id=$1
-       RETURNING id,name,handle,email,persona,country,bio,website,twitter,linkedin,avatar_url,avatar_color,verified,role`,
+       RETURNING id,name,handle,email,persona,headline,country,bio,website,twitter,linkedin,github,avatar_url,avatar_color,verified,role`,
       [req.user.id, ...Object.values(updates)]
     );
     res.json({ success:true, data:rows[0] });
