@@ -195,15 +195,6 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <div className="sidebar" style={{ display: 'block' }}>
-            {/* Search */}
-            <div className="sidebar-search-wrap">
-              <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2">
-                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-              </svg>
-              <input className="sidebar-search-input" type="text" placeholder="Search products…"
-                onKeyDown={e => e.key === 'Enter' && e.target.value && navigate(`/products?q=${encodeURIComponent(e.target.value)}`)}/>
-            </div>
-
             {/* From the Community */}
             <div className="sidebar-card">
               <div className="sidebar-title">✍️ From the Community</div>
