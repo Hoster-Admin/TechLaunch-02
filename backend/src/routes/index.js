@@ -144,12 +144,37 @@ adminRouter.post  ('/posts',          requireMod,
   [body('type').notEmpty(), body('body').trim().notEmpty()], validate, adminCtrl.createPlatformPost);
 adminRouter.delete('/posts/:id',      requireMod, adminCtrl.deletePlatformPost);
 
+// ══════════════════════════════════════════════════
+// SUGGESTIONS  /api/suggestions
+// ══════════════════════════════════════════════════
+const suggestionsRouter = express.Router();
+
+suggestionsRouter.post('/', authenticate,
+  [body('body').trim().notEmpty().isLength({ max: 5000 }).withMessage('Suggestion body required')],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { query: dbQuery } = require('../config/database');
+      const result = await dbQuery(
+        'INSERT INTO suggestions (user_id, body) VALUES ($1, $2) RETURNING *',
+        [req.user.id, req.body.body]
+      );
+      res.status(201).json({ success: true, data: { suggestion: result.rows[0] } });
+    } catch (err) { next(err); }
+  }
+);
+
+// Admin suggestions routes
+adminRouter.get('/suggestions',             requireMod, adminCtrl.getSuggestions);
+adminRouter.post('/suggestions/:id/respond',requireMod, adminCtrl.respondSuggestion);
+
 // ── Mount all routers
-router.use('/auth',     authRouter);
-router.use('/products', productsRouter);
-router.use('/entities', entitiesRouter);
-router.use('/users',    usersRouter);
-router.use('/admin',    adminRouter);
+router.use('/auth',        authRouter);
+router.use('/products',    productsRouter);
+router.use('/entities',    entitiesRouter);
+router.use('/users',       usersRouter);
+router.use('/suggestions', suggestionsRouter);
+router.use('/admin',       adminRouter);
 
 // Health check
 router.get('/health', (req, res) => {

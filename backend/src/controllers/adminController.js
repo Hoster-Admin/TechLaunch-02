@@ -443,6 +443,41 @@ const deletePlatformPost = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+const getSuggestions = async (req, res, next) => {
+  try {
+    const { status } = req.query;
+    let sql = `
+      SELECT s.*, u.name AS user_name, u.handle AS user_handle, u.avatar_color,
+             r.name AS responder_name
+      FROM suggestions s
+      LEFT JOIN users u ON u.id = s.user_id
+      LEFT JOIN users r ON r.id = s.responded_by
+      ${status && status !== 'all' ? "WHERE s.status = $1" : ""}
+      ORDER BY s.created_at DESC
+    `;
+    const result = status && status !== 'all'
+      ? await query(sql, [status])
+      : await query(sql);
+    res.json({ success: true, data: { suggestions: result.rows } });
+  } catch (err) { next(err); }
+};
+
+const respondSuggestion = async (req, res, next) => {
+  try {
+    const { response } = req.body;
+    if (!response || !response.trim()) {
+      return res.status(400).json({ success: false, message: 'Response text is required' });
+    }
+    const result = await query(
+      `UPDATE suggestions SET admin_response=$1, responded_by=$2, responded_at=NOW(), status='responded'
+       WHERE id=$3 RETURNING *`,
+      [response.trim(), req.user.id, req.params.id]
+    );
+    if (!result.rows.length) return res.status(404).json({ success: false, message: 'Not found' });
+    res.json({ success: true, data: { suggestion: result.rows[0] } });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getDashboard,
   adminGetProducts, approveProduct, rejectProduct, toggleFeatured,
@@ -453,4 +488,5 @@ module.exports = {
   getTeam, addTeamMember, removeTeamMember,
   getReports,
   getPlatformPosts, createPlatformPost, deletePlatformPost,
+  getSuggestions, respondSuggestion,
 };

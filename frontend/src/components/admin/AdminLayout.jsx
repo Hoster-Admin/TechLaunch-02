@@ -10,6 +10,7 @@ const TITLES = {
   '/admin/entities':     { title: 'Entities',                sub: 'Startups, accelerators, investors and studios' },
   '/admin/applications': { title: 'Applications & Waitlists',sub: 'Track applications and waitlist signups' },
   '/admin/featured':     { title: 'Featured & Spotlight',    sub: 'Control what appears on the homepage' },
+  '/admin/suggestions':  { title: 'Suggestions',             sub: 'Member suggestions and recommendations' },
   '/admin/reports':      { title: 'Reports & Analytics',     sub: 'Platform-wide metrics and growth data' },
   '/admin/settings':     { title: 'Platform Settings',       sub: 'Configure platform behaviour and integrations' },
   '/admin/profile':      { title: 'My Profile',              sub: 'Your account and preferences' },
