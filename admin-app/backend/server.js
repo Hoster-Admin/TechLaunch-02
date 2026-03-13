@@ -503,31 +503,45 @@ admin.get('/export/:type', async (req, res) => {
     const { from, to, status } = req.query;
     let rows, headers, filename;
 
-    const dateFilter = (col) => {
+    const buildDateFilter = (col, params) => {
       const parts = [];
-      if (from) parts.push(`${col} >= '${from}'`);
-      if (to)   parts.push(`${col} <= '${to} 23:59:59'`);
+      if (from) { params.push(from);                  parts.push(`${col} >= $${params.length}`); }
+      if (to)   { params.push(to + ' 23:59:59');      parts.push(`${col} <= $${params.length}`); }
       return parts.length ? ' AND ' + parts.join(' AND ') : '';
     };
 
     if (type === 'products') {
-      const where = status && status !== 'all' ? `status='${status}'` : '1=1';
-      const result = await q(`SELECT p.name,p.tagline,p.industry,p.status,p.upvotes_count,p.comments_count,p.waitlist_count,p.featured,u.name AS submitter,p.created_at FROM products p LEFT JOIN users u ON u.id=p.submitted_by WHERE ${where}${dateFilter('p.created_at')} ORDER BY p.created_at DESC`);
+      const params = [];
+      let where;
+      if (status && status !== 'all') {
+        params.push(status);
+        where = `status=$${params.length}`;
+      } else {
+        where = '1=1';
+      }
+      const dateClause = buildDateFilter('p.created_at', params);
+      const result = await q(`SELECT p.name,p.tagline,p.industry,p.status,p.upvotes_count,p.comments_count,p.waitlist_count,p.featured,u.name AS submitter,p.created_at FROM products p LEFT JOIN users u ON u.id=p.submitted_by WHERE ${where}${dateClause} ORDER BY p.created_at DESC`, params);
       rows = result.rows;
       headers = ['Name','Tagline','Industry','Status','Upvotes','Comments','Waitlist','Featured','Submitter','Submitted At'];
       filename = 'products';
     } else if (type === 'users') {
-      const result = await q(`SELECT name,handle,email,persona,country,role,status,verified,products_count,created_at FROM users WHERE role='user'${dateFilter('created_at')} ORDER BY created_at DESC`);
+      const params = [];
+      const dateClause = buildDateFilter('created_at', params);
+      const result = await q(`SELECT name,handle,email,persona,country,role,status,verified,products_count,created_at FROM users WHERE role='user'${dateClause} ORDER BY created_at DESC`, params);
       rows = result.rows;
       headers = ['Name','Handle','Email','Persona','Country','Role','Status','Verified','Products','Joined At'];
       filename = 'users';
     } else if (type === 'entities') {
-      const result = await q(`SELECT name,type,country,industry,stage,aum,portfolio_count,verified,website,created_at FROM entities${dateFilter('created_at') ? ' WHERE 1=1' + dateFilter('created_at') : ''} ORDER BY created_at DESC`);
+      const params = [];
+      const dateClause = buildDateFilter('created_at', params);
+      const result = await q(`SELECT name,type,country,industry,stage,aum,portfolio_count,verified,website,created_at FROM entities${dateClause ? ' WHERE 1=1' + dateClause : ''} ORDER BY created_at DESC`, params);
       rows = result.rows;
       headers = ['Name','Type','Country','Industry','Stage','AUM','Portfolio','Verified','Website','Created At'];
       filename = 'entities';
     } else if (type === 'applications') {
-      const result = await q(`SELECT u.name AS applicant,u.email,e.name AS entity,aa.startup_name,aa.stage,aa.status,aa.notes,aa.created_at FROM accelerator_applications aa JOIN users u ON u.id=aa.applicant_id JOIN entities e ON e.id=aa.entity_id${dateFilter('aa.created_at') ? ' WHERE 1=1' + dateFilter('aa.created_at') : ''} ORDER BY aa.created_at DESC`);
+      const params = [];
+      const dateClause = buildDateFilter('aa.created_at', params);
+      const result = await q(`SELECT u.name AS applicant,u.email,e.name AS entity,aa.startup_name,aa.stage,aa.status,aa.notes,aa.created_at FROM accelerator_applications aa JOIN users u ON u.id=aa.applicant_id JOIN entities e ON e.id=aa.entity_id${dateClause ? ' WHERE 1=1' + dateClause : ''} ORDER BY aa.created_at DESC`, params);
       rows = result.rows;
       headers = ['Applicant','Email','Entity','Startup','Stage','Status','Notes','Applied At'];
       filename = 'applications';
