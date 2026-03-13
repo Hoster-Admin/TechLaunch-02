@@ -193,9 +193,13 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
             <div style={{ textAlign:'center', padding:'80px 20px' }}><Spinner size="lg"/></div>
           ) : !filtered.length ? (
             <div style={{ textAlign:'center', padding:'80px 20px' }}>
-              <div style={{ fontSize:48, marginBottom:16 }}>🔍</div>
-              <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No products found</div>
-              <p style={{ color:'#888' }}>Try adjusting your filters or search term.</p>
+              <div style={{ fontSize:48, marginBottom:16 }}>{hasFilters ? '🔍' : '📦'}</div>
+              <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>
+                {hasFilters ? 'No products found' : 'No products yet'}
+              </div>
+              <p style={{ color:'#888' }}>
+                {hasFilters ? 'Try adjusting your filters or search term.' : 'Products submitted by the community will appear here.'}
+              </p>
             </div>
           ) : (
             <div id="allProductsGrid" style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(340px, 1fr))', gap:14 }}>

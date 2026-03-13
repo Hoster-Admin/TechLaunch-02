@@ -18,11 +18,37 @@ app.set('trust proxy', 1);
 // ── Security headers
 app.use(helmet({
   crossOriginResourcePolicy: { policy: 'cross-origin' },
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:  ["'self'"],
+      scriptSrc:   ["'self'", "'unsafe-inline'", "'unsafe-eval'"],
+      styleSrc:    ["'self'", "'unsafe-inline'", 'https:'],
+      imgSrc:      ["'self'", 'data:', 'blob:', 'https:'],
+      fontSrc:     ["'self'", 'https:', 'data:'],
+      connectSrc:  ["'self'", 'https:'],
+      mediaSrc:    ["'self'", 'https:'],
+      frameSrc:    ["'none'"],
+      objectSrc:   ["'none'"],
+    },
+  },
 }));
 
 // ── CORS
+const allowedOrigins = [
+  'http://localhost:3000',
+  'http://localhost:5000',
+  process.env.CLIENT_URL,
+  process.env.ADMIN_URL,
+].filter(Boolean);
+
 app.use(cors({
-  origin: process.env.CLIENT_URL || 'http://localhost:3000',
+  origin: (origin, cb) => {
+    if (!origin) return cb(null, true);
+    if (allowedOrigins.includes(origin) || origin.endsWith('.replit.dev') || origin.endsWith('.replit.app') || origin.endsWith('.tlmena.com')) {
+      return cb(null, true);
+    }
+    cb(null, true);
+  },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],

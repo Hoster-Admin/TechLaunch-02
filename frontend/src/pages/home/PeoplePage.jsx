@@ -104,7 +104,7 @@ function PersonCard({ person, currentUser }) {
             <span style={{ fontSize:11, color:'#aaa' }}>{person.country}</span>
           )}
           <span style={{ fontSize:11, color:'#aaa', marginLeft:'auto' }}>
-            {person.followers_count || 0} followers
+            {person.followers_count || 0} {person.followers_count === 1 ? 'follower' : 'followers'}
           </span>
         </div>
       </div>

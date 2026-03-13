@@ -164,9 +164,9 @@ export default function HomePage() {
               ))
             ) : (
               <div className="empty">
-                <div className="empty-icon">🔍</div>
-                <div className="empty-title">No products found</div>
-                <div className="empty-desc">Try adjusting your filters</div>
+                <div className="empty-icon">{(selectedCountries.length || selectedIndustries.length) ? '🔍' : '📦'}</div>
+                <div className="empty-title">{(selectedCountries.length || selectedIndustries.length) ? 'No products found' : 'No products yet'}</div>
+                <div className="empty-desc">{(selectedCountries.length || selectedIndustries.length) ? 'Try adjusting your filters' : 'Products submitted by the community will appear here.'}</div>
               </div>
             )}
           </div>
