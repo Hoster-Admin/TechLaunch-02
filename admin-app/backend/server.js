@@ -196,12 +196,14 @@ admin.get('/users', async (req, res) => {
 
 admin.post('/users', async (req, res) => {
   try {
-    const { name, email, role='moderator', persona, country } = req.body;
+    const { name, email, role='moderator', persona, country, handle: customHandle } = req.body;
     if (!name || !email) return res.status(400).json({ success:false, message:'name and email are required' });
     const allowed = ['admin','moderator','editor','user'];
     if (!allowed.includes(role)) return res.status(400).json({ success:false, message:'Invalid role' });
     const isTeam = role !== 'user';
-    const handle = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Math.floor(Math.random()*100);
+    const handle = customHandle?.trim()
+      ? customHandle.toLowerCase().replace(/[^a-z0-9_]/g,'')
+      : email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Math.floor(Math.random()*100);
     const tempPwd = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
     const hash   = await bcrypt.hash(tempPwd, 10);
     const colors = ['#E15033','#2563eb','#7c3aed','#16a34a','#d97706'];

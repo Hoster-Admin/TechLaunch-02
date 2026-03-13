@@ -45,7 +45,7 @@ export default function Users() {
   const [exporting, setExporting] = useState(false);
   const [showAdd, setShowAdd]     = useState(false);
   const [saving, setSaving]       = useState(false);
-  const [form, setForm]           = useState({ name:'', email:'', persona:'Founder', country:'' });
+  const [form, setForm]           = useState({ name:'', handle:'', email:'', entityType:'Startup', country:'' });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -61,10 +61,10 @@ export default function Users() {
     if (!form.name || !form.email) return toast.error('Name and email are required');
     setSaving(true);
     try {
-      const { data: d } = await adminAPI.createUser({ ...form, role: 'user' });
+      await adminAPI.createUser({ ...form, persona: form.entityType, role: 'user' });
       toast.success(`${form.name} added successfully!`);
       setShowAdd(false);
-      setForm({ name:'', email:'', persona:'Founder', country:'' });
+      setForm({ name:'', handle:'', email:'', entityType:'Startup', country:'' });
       load();
     } catch(e) { toast.error(e.message || 'Failed to add user'); }
     finally { setSaving(false); }
@@ -127,15 +127,23 @@ export default function Users() {
           <Field label="Full Name">
             <input style={iS} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} autoFocus/>
           </Field>
+          <Field label="Handle Name">
+            <div style={{position:'relative'}}>
+              <span style={{position:'absolute',left:10,top:'50%',transform:'translateY(-50%)',color:'#AAAAAA',fontSize:13}}>@</span>
+              <input style={{...iS,paddingLeft:22}} value={form.handle} onChange={e=>setForm(f=>({...f,handle:e.target.value.toLowerCase().replace(/[^a-z0-9_]/g,'')}))} placeholder="auto-generated if blank"/>
+            </div>
+          </Field>
           <Field label="Email Address">
             <input style={iS} type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
           </Field>
-          <Field label="Persona">
-            <select style={sS} value={form.persona} onChange={e=>setForm(f=>({...f,persona:e.target.value}))}>
-              <option>Founder</option>
-              <option>Investor</option>
-              <option>Product Manager</option>
-              <option>Enthusiast</option>
+          <Field label="Entity Type">
+            <select style={sS} value={form.entityType} onChange={e=>setForm(f=>({...f,entityType:e.target.value}))}>
+              <option>Startup</option>
+              <option>VC / Investor</option>
+              <option>Accelerator</option>
+              <option>Corporate</option>
+              <option>Media</option>
+              <option>Individual</option>
             </select>
           </Field>
           <Field label="Country (optional)">
