@@ -379,11 +379,21 @@ export default function PostDetailPage() {
             </div>
 
             <p style={{
-              margin: '0 0 18px', fontSize: 16, color: '#1e293b',
+              margin: `0 0 ${post.image_url ? '14px' : '18px'}`, fontSize: 16, color: '#1e293b',
               lineHeight: 1.75, whiteSpace: 'pre-wrap', fontWeight: 400,
             }}>
               {post.content}
             </p>
+
+            {post.image_url && (
+              <div style={{ marginBottom: 18, borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                <img
+                  src={post.image_url}
+                  alt="Post image"
+                  style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }}
+                />
+              </div>
+            )}
 
             {/* post actions */}
             <div style={{

@@ -5,7 +5,7 @@ import Footer from '../../components/home/Footer';
 import { ARTICLES } from './ArticlesPage';
 import { PeopleContent } from './PeoplePage';
 import { useAuth } from '../../context/AuthContext';
-import { launcherAPI } from '../../utils/api';
+import { launcherAPI, uploadAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const TABS = ['All', 'Articles', 'Posts', 'People'];
@@ -148,10 +148,23 @@ function PostCard({ post, onDeleted, currentUser }) {
       </div>
 
       <p
-        style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: '0 0 16px', cursor: 'pointer' }}
+        style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: `0 0 ${post.image_url ? '12px' : '16px'}`, cursor: 'pointer' }}
         onClick={() => navigate(`/launcher/posts/${post.id}`)}
         title="Open post"
       >{post.content}</p>
+
+      {post.image_url && (
+        <div
+          style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', border: '1px solid #f0f0f0', cursor: 'pointer' }}
+          onClick={() => navigate(`/launcher/posts/${post.id}`)}
+        >
+          <img
+            src={post.image_url}
+            alt="Post image"
+            style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }}
+          />
+        </div>
+      )}
 
       <div style={{ display: 'flex', gap: 20 }}>
         <button onClick={handleLike}
@@ -262,18 +275,40 @@ function ArticleCard({ article, onClick }) {
 }
 
 function CreatePostModal({ onClose, onCreated }) {
-  const [content, setContent] = useState('');
-  const [tag, setTag]         = useState('Discussion');
-  const [loading, setLoading] = useState(false);
+  const [content, setContent]   = useState('');
+  const [tag, setTag]           = useState('Discussion');
+  const [loading, setLoading]   = useState(false);
+  const [imgFile, setImgFile]   = useState(null);
+  const [imgPreview, setImgPreview] = useState(null);
   const textRef = useRef();
+  const fileRef = useRef();
 
   useEffect(() => { textRef.current?.focus(); }, []);
+
+  const handleImgSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 8 * 1024 * 1024) { toast.error('Image must be under 8 MB'); return; }
+    setImgFile(file);
+    setImgPreview(URL.createObjectURL(file));
+  };
+
+  const removeImg = () => {
+    setImgFile(null);
+    setImgPreview(null);
+    if (fileRef.current) fileRef.current.value = '';
+  };
 
   const submit = async () => {
     if (!content.trim()) { toast.error('Write something first'); return; }
     setLoading(true);
     try {
-      const res = await launcherAPI.createPost({ content: content.trim(), tag });
+      let image_url = null;
+      if (imgFile) {
+        const upRes = await uploadAPI.postImage(imgFile);
+        image_url = upRes.data.data.url;
+      }
+      const res = await launcherAPI.createPost({ content: content.trim(), tag, image_url });
       onCreated(res.data.data);
       toast.success('Post shared!');
       onClose();
@@ -283,7 +318,7 @@ function CreatePostModal({ onClose, onCreated }) {
 
   return (
     <div style={{
-      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.4)', zIndex: 1000,
+      position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 1000,
       display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 16,
     }} onClick={onClose}>
       <div onClick={e => e.stopPropagation()} style={{
@@ -294,6 +329,7 @@ function CreatePostModal({ onClose, onCreated }) {
           <h3 style={{ fontSize: 17, fontWeight: 800, margin: 0 }}>Share to Launcher</h3>
           <button onClick={onClose} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 22, color: '#aaa', lineHeight: 1 }}>✕</button>
         </div>
+
         <textarea ref={textRef} value={content} onChange={e => setContent(e.target.value)}
           placeholder="What's on your mind? Share a milestone, tip, question, or discussion with the MENA tech community…"
           maxLength={2000}
@@ -309,7 +345,29 @@ function CreatePostModal({ onClose, onCreated }) {
         <div style={{ fontSize: 11, color: '#bbb', textAlign: 'right', marginTop: 4 }}>
           {content.length}/2000
         </div>
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginTop: 16 }}>
+
+        {/* Image preview */}
+        {imgPreview && (
+          <div style={{ position: 'relative', marginTop: 12, borderRadius: 12, overflow: 'hidden', border: '1.5px solid #e8e8e8' }}>
+            <img
+              src={imgPreview}
+              alt="Preview"
+              style={{ width: '100%', maxHeight: 280, objectFit: 'cover', display: 'block' }}
+            />
+            <button
+              onClick={removeImg}
+              style={{
+                position: 'absolute', top: 8, right: 8, background: 'rgba(0,0,0,.55)',
+                border: 'none', borderRadius: '50%', width: 28, height: 28,
+                display: 'flex', alignItems: 'center', justifyContent: 'center',
+                cursor: 'pointer', color: '#fff', fontSize: 14, lineHeight: 1,
+              }}
+            >✕</button>
+          </div>
+        )}
+
+        <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginTop: 16 }}>
+          {/* Tag selector */}
           <select value={tag} onChange={e => setTag(e.target.value)}
             style={{
               padding: '8px 12px', border: '1.5px solid #e8e8e8', borderRadius: 10,
@@ -317,14 +375,42 @@ function CreatePostModal({ onClose, onCreated }) {
             }}>
             {POST_TAGS.map(t => <option key={t} value={t}>{t}</option>)}
           </select>
+
+          {/* Image attach button */}
+          <input
+            ref={fileRef}
+            type="file"
+            accept="image/*"
+            style={{ display: 'none' }}
+            onChange={handleImgSelect}
+          />
+          <button
+            onClick={() => fileRef.current?.click()}
+            title="Add image"
+            style={{
+              display: 'flex', alignItems: 'center', gap: 6,
+              padding: '8px 14px', borderRadius: 10,
+              border: `1.5px solid ${imgFile ? 'var(--orange)' : '#e8e8e8'}`,
+              background: imgFile ? '#fff5f2' : '#fff',
+              color: imgFile ? 'var(--orange)' : '#888',
+              fontSize: 13, fontWeight: 600, cursor: 'pointer',
+              fontFamily: "'DM Sans',sans-serif", transition: 'all .15s',
+            }}
+          >
+            <span style={{ fontSize: 16 }}>📷</span>
+            {imgFile ? 'Change' : 'Photo'}
+          </button>
+
+          {/* Submit */}
           <button onClick={submit} disabled={loading || !content.trim()}
             style={{
               marginLeft: 'auto', padding: '10px 24px', borderRadius: 12, border: 'none',
               background: 'var(--orange)', color: '#fff', fontSize: 14, fontWeight: 700,
-              cursor: 'pointer', opacity: loading || !content.trim() ? 0.6 : 1,
+              cursor: loading || !content.trim() ? 'default' : 'pointer',
+              opacity: loading || !content.trim() ? 0.6 : 1,
               fontFamily: "'DM Sans',sans-serif",
             }}>
-            {loading ? 'Posting…' : 'Post'}
+            {loading ? (imgFile ? 'Uploading…' : 'Posting…') : 'Post'}
           </button>
         </div>
       </div>

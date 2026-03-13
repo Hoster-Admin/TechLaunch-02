@@ -2,6 +2,30 @@ const express = require('express');
 const { body, query: qv } = require('express-validator');
 const { authenticate, optionalAuth, requireAdmin, requireMod, requireEditor } = require('../middleware/auth');
 const { validate } = require('../middleware/error');
+const multer = require('multer');
+const path = require('path');
+const fs = require('fs');
+
+// ── Multer config for post images
+const postImgStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    const dir = path.join(__dirname, '../../uploads/posts');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+const uploadPostImg = multer({
+  storage: postImgStorage,
+  limits: { fileSize: 8 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    if (file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('Images only'));
+  },
+});
 
 // Controllers
 const authCtrl      = require('../controllers/authController');
@@ -299,7 +323,18 @@ launcherRouter.post('/:id/comments',           authenticate,
   validate, launcherCtrl.addComment);
 launcherRouter.post('/comments/:id/like',      authenticate, launcherCtrl.toggleCommentLike);
 
+// ══════════════════════════════════════════════════
+// UPLOAD  /api/upload
+// ══════════════════════════════════════════════════
+const uploadRouter = express.Router();
+uploadRouter.post('/post-image', authenticate, uploadPostImg.single('image'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  const url = `/uploads/posts/${req.file.filename}`;
+  res.json({ success: true, data: { url } });
+});
+
 // ── Mount all routers
+router.use('/upload',       uploadRouter);
 router.use('/auth',         authRouter);
 router.use('/products',     productsRouter);
 router.use('/entities',     entitiesRouter);

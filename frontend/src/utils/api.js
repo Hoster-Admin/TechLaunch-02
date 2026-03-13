@@ -166,6 +166,14 @@ export const suggestionsAPI = {
   submit: (body) => api.post('/suggestions', { body }),
 };
 
+export const uploadAPI = {
+  postImage: (file) => {
+    const fd = new FormData();
+    fd.append('image', file);
+    return api.post('/upload/post-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
+};
+
 export const launcherAPI = {
   posts:           ()        => api.get('/launcher'),
   getPost:         (id)      => api.get(`/launcher/${id}`),

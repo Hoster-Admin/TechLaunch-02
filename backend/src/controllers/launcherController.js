@@ -6,7 +6,7 @@ const getPosts = async (req, res, next) => {
     const userId = req.user?.id || null;
     const { rows } = await query(`
       SELECT
-        lp.id, lp.content, lp.tag, lp.likes_count, lp.comments_count, lp.created_at,
+        lp.id, lp.content, lp.tag, lp.image_url, lp.likes_count, lp.comments_count, lp.created_at,
         u.id   AS user_id,
         u.name AS author,
         u.handle AS author_handle,
@@ -29,12 +29,12 @@ const getPosts = async (req, res, next) => {
 // ── POST /api/launcher  — create a post
 const createPost = async (req, res, next) => {
   try {
-    const { content, tag } = req.body;
+    const { content, tag, image_url } = req.body;
     const { rows } = await query(`
-      INSERT INTO launcher_posts (user_id, content, tag)
-      VALUES ($1, $2, $3)
-      RETURNING id, content, tag, likes_count, comments_count, created_at
-    `, [req.user.id, content.trim(), tag || 'Discussion']);
+      INSERT INTO launcher_posts (user_id, content, tag, image_url)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, content, tag, image_url, likes_count, comments_count, created_at
+    `, [req.user.id, content.trim(), tag || 'Discussion', image_url || null]);
     const post = rows[0];
     res.status(201).json({
       success: true,
@@ -152,7 +152,7 @@ const getPost = async (req, res, next) => {
     const userId = req.user?.id || null;
     const { rows } = await query(`
       SELECT
-        lp.id, lp.content, lp.tag, lp.likes_count, lp.comments_count, lp.created_at,
+        lp.id, lp.content, lp.tag, lp.image_url, lp.likes_count, lp.comments_count, lp.created_at,
         u.id   AS user_id,
         u.name AS author,
         u.handle AS author_handle,
