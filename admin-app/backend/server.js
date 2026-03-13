@@ -368,6 +368,11 @@ admin.put('/settings', async (req, res) => {
 // Reports
 admin.get('/reports', async (req, res) => {
   try {
+    const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
+    if ((req.query.from && !ISO_DATE.test(req.query.from)) ||
+        (req.query.to   && !ISO_DATE.test(req.query.to))) {
+      return res.status(400).json({ success: false, message: 'Invalid date format. Use YYYY-MM-DD.' });
+    }
     const { from, to } = req.query;
     const df = from ? `AND created_at >= '${from}'` : '';
     const dt = to   ? `AND created_at <= '${to} 23:59:59'` : '';
