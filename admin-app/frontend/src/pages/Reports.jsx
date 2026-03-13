@@ -1,17 +1,41 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../utils/api.js';
 import { SCard } from './shared.jsx';
+import toast from 'react-hot-toast';
+
+const inputS = { border:'1px solid #E8E8E8', borderRadius:8, padding:'7px 10px', fontSize:12, outline:'none', background:'#FAFAFA', fontFamily:'inherit' };
 
 export default function Reports() {
-  const [data, setData]     = useState(null);
-  const [loading, setLoading] = useState(true);
+  const [data, setData]         = useState(null);
+  const [loading, setLoading]   = useState(true);
+  const [from, setFrom]         = useState('');
+  const [to, setTo]             = useState('');
+  const [exporting, setExporting] = useState('');
 
-  useEffect(() => {
-    adminAPI.reports()
+  const load = useCallback(() => {
+    setLoading(true);
+    const params = {};
+    if (from) params.from = from;
+    if (to)   params.to   = to;
+    adminAPI.reports(params)
       .then(({ data: d }) => setData(d.data))
-      .catch(() => {})
+      .catch(() => toast.error('Failed to load reports'))
       .finally(() => setLoading(false));
-  }, []);
+  }, [from, to]);
+
+  useEffect(() => { load(); }, [load]);
+
+  const doExport = async (type) => {
+    setExporting(type);
+    try {
+      const p = {};
+      if (from) p.from = from;
+      if (to)   p.to   = to;
+      await adminAPI.exportCSV(type, p);
+      toast.success(`${type} CSV downloaded`);
+    } catch(e) { toast.error(e.message || 'Export failed'); }
+    finally { setExporting(''); }
+  };
 
   if (loading) return <div style={{textAlign:'center',padding:'60px 0',color:'#AAAAAA',fontSize:14}}>Loading reports…</div>;
   if (!data)   return <div style={{textAlign:'center',padding:'60px 0',color:'#AAAAAA',fontSize:14}}>No data available</div>;
@@ -33,6 +57,33 @@ export default function Reports() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      {/* Date range + export bar */}
+      <SCard>
+        <div style={{padding:'12px 20px',display:'flex',gap:12,alignItems:'center',flexWrap:'wrap'}}>
+          <span style={{fontSize:12,fontWeight:700,color:'#666'}}>Date range:</span>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{fontSize:11,color:'#888'}}>From</span>
+            <input type="date" value={from} onChange={e=>setFrom(e.target.value)} style={inputS} />
+          </div>
+          <div style={{display:'flex',alignItems:'center',gap:6}}>
+            <span style={{fontSize:11,color:'#888'}}>To</span>
+            <input type="date" value={to} onChange={e=>setTo(e.target.value)} style={inputS} />
+          </div>
+          {(from||to) && (
+            <button onClick={()=>{setFrom('');setTo('');}} style={{padding:'7px 12px',borderRadius:8,border:'1px solid #E8E8E8',background:'#fff',fontSize:11,color:'#666',cursor:'pointer',fontWeight:600}}>
+              ✕ Clear
+            </button>
+          )}
+          <div style={{marginLeft:'auto',display:'flex',gap:8}}>
+            {['products','users','applications'].map(t=>(
+              <button key={t} onClick={()=>doExport(t)} disabled={!!exporting} style={{padding:'7px 12px',borderRadius:8,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:11,color:'#555',cursor:'pointer',fontWeight:600,opacity:exporting===t?.6:1}}>
+                {exporting===t?'…':'↓ '+t.charAt(0).toUpperCase()+t.slice(1)+' CSV'}
+              </button>
+            ))}
+          </div>
+        </div>
+      </SCard>
+
       {/* KPI grid */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(3,1fr)',gap:16}}>
         {KPI_CARDS.map((c,i)=>(

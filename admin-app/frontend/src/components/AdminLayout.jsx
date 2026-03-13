@@ -9,6 +9,7 @@ import AdminFeatured    from '../pages/Featured.jsx';
 import AdminReports     from '../pages/Reports.jsx';
 import AdminSettings    from '../pages/Settings.jsx';
 import AdminSuggestions from '../pages/Suggestions.jsx';
+import AdminActivityLog  from '../pages/ActivityLog.jsx';
 import { useAuth } from '../App.jsx';
 
 const PAGES = {
@@ -19,6 +20,7 @@ const PAGES = {
   applications: { title:'Applications & Waitlists', sub:'Review applications and waitlists',   Component: AdminApplications },
   featured:     { title:'Featured & Spotlight',   sub:'Control what appears on homepage',       Component: AdminFeatured },
   reports:      { title:'Reports & Analytics',    sub:'Platform performance metrics',           Component: AdminReports },
+  activity:     { title:'Audit Log',              sub:'Full history of admin actions',          Component: AdminActivityLog },
   settings:     { title:'Platform Settings',      sub:'Configure platform behaviour',           Component: AdminSettings },
   suggestions:  { title:'Suggestions',            sub:'User feedback and feature requests',     Component: AdminSuggestions },
 };

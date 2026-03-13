@@ -46,6 +46,9 @@ export default function Users() {
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving]   = useState(false);
   const [form, setForm]       = useState({ name:'', email:'', password:'', role:'moderator' });
+  const [selected, setSelected]   = useState(new Set());
+  const [bulking, setBulking]     = useState(false);
+  const [exporting, setExporting] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -81,6 +84,39 @@ export default function Users() {
       load();
     } catch(e) { toast.error(e.message||'Failed to create user'); }
     finally { setSaving(false); }
+  };
+
+  const toggleAll = (list) => {
+    setSelected(selected.size === list.length ? new Set() : new Set(list.map(u => u.id)));
+  };
+
+  const toggleOne = (id) => {
+    const s = new Set(selected);
+    s.has(id) ? s.delete(id) : s.add(id);
+    setSelected(s);
+  };
+
+  const doBulk = async (action) => {
+    if (!selected.size) return;
+    setBulking(true);
+    try {
+      await adminAPI.bulkUsers({ ids: [...selected], action });
+      toast.success(`${selected.size} user(s) updated`);
+      setSelected(new Set());
+      load();
+    } catch(e) {
+      toast.error(e.message || 'Bulk action failed');
+    } finally { setBulking(false); }
+  };
+
+  const doExport = async () => {
+    setExporting(true);
+    try {
+      await adminAPI.exportCSV('users');
+      toast.success('Users CSV downloaded');
+    } catch(e) {
+      toast.error(e.message || 'Export failed');
+    } finally { setExporting(false); }
   };
 
   const filtered = users.filter(u => {
@@ -161,27 +197,49 @@ export default function Users() {
       </SCard>
 
       {/* Platform Users */}
-      <SCard title="Platform Users" sub={`${users.length} registered users`}>
+      <SCard title="Platform Users" sub={`${users.length} registered users`}
+        action={<button onClick={doExport} disabled={exporting} style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',color:'#555',opacity:exporting?0.6:1}}>{exporting?'…':'↓ Export CSV'}</button>}>
         <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'14px 20px',borderBottom:'1px solid #F4F4F4'}}>
           {FILTERS.map(f=>(
-            <button key={f.key} onClick={()=>setFilter(f.key)} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:filter===f.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:filter===f.key?'var(--orange)':'#E8E8E8',background:filter===f.key?'var(--orange)':'#fff',color:filter===f.key?'#fff':'#666'}}>{f.label}</button>
+            <button key={f.key} onClick={()=>{setFilter(f.key);setSelected(new Set());}} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:filter===f.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:filter===f.key?'var(--orange)':'#E8E8E8',background:filter===f.key?'var(--orange)':'#fff',color:filter===f.key?'#fff':'#666'}}>{f.label}</button>
           ))}
         </div>
-        <div style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4'}}>
-          <div style={{position:'relative',maxWidth:300}}>
+        <div style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4',display:'flex',gap:10,alignItems:'center',flexWrap:'wrap'}}>
+          <div style={{position:'relative',maxWidth:300,flex:1}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search users…" style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'7px 12px 7px 32px',fontSize:12,width:'100%',outline:'none',background:'#FAFAFA'}}/>
             <svg style={{position:'absolute',left:9,top:'50%',transform:'translateY(-50%)',color:'#AAAAAA'}} width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
+          {selected.size > 0 && (
+            <div style={{display:'flex',alignItems:'center',gap:8,padding:'6px 12px',background:'#FFF7F0',border:'1.5px solid var(--orange)',borderRadius:10}}>
+              <span style={{fontSize:11,fontWeight:700,color:'var(--orange)'}}>{selected.size} selected</span>
+              <button onClick={()=>doBulk('verify')}    disabled={bulking} style={{padding:'4px 10px',borderRadius:7,border:'none',background:'#2563eb',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer'}}>✓ Verify</button>
+              <button onClick={()=>doBulk('suspend')}   disabled={bulking} style={{padding:'4px 10px',borderRadius:7,border:'none',background:'#dc2626',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer'}}>Suspend</button>
+              <button onClick={()=>doBulk('reinstate')} disabled={bulking} style={{padding:'4px 10px',borderRadius:7,border:'none',background:'#16a34a',color:'#fff',fontSize:11,fontWeight:700,cursor:'pointer'}}>Reinstate</button>
+              <button onClick={()=>setSelected(new Set())} style={{padding:'4px 8px',borderRadius:7,border:'1px solid #E8E8E8',background:'#fff',fontSize:11,color:'#666',cursor:'pointer'}}>✕</button>
+            </div>
+          )}
         </div>
-        <Tbl heads={['User','Persona','Country','Joined','Products','Status','Actions']}>
+        <Tbl heads={[
+          <input key="chk" type="checkbox"
+            checked={filtered.length>0 && selected.size===filtered.length}
+            onChange={()=>toggleAll(filtered)}
+            style={{cursor:'pointer',accentColor:'var(--orange)',width:14,height:14}}/>,
+          'User','Persona','Country','Joined','Products','Status','Actions'
+        ]}>
           {loading
-            ? <tr><td colSpan={7} style={{padding:40,textAlign:'center',color:'#AAAAAA',fontSize:13}}>Loading…</td></tr>
+            ? <tr><td colSpan={8} style={{padding:40,textAlign:'center',color:'#AAAAAA',fontSize:13}}>Loading…</td></tr>
             : filtered.length===0
-              ? <tr><td colSpan={7}><EmptyState icon="👥" title="No users found"/></td></tr>
-              : filtered.map(u => (
-                <tr key={u.id} style={{borderBottom:'1px solid #F4F4F4'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+              ? <tr><td colSpan={8}><EmptyState icon="👥" title="No users found"/></td></tr>
+              : filtered.map(u => {
+                const sel = selected.has(u.id);
+                return (
+                <tr key={u.id} style={{borderBottom:'1px solid #F4F4F4',background:sel?'#FFF7F0':'transparent'}}
+                  onMouseEnter={e=>{ if(!sel) e.currentTarget.style.background='#FAFAFA'; }}
+                  onMouseLeave={e=>{ e.currentTarget.style.background=sel?'#FFF7F0':'transparent'; }}>
+                  <td style={{padding:'11px 8px 11px 16px',width:32}}>
+                    <input type="checkbox" checked={sel} onChange={()=>toggleOne(u.id)}
+                      style={{cursor:'pointer',accentColor:'var(--orange)',width:14,height:14}}/>
+                  </td>
                   <td style={{padding:'11px 16px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:10}}>
                       <div style={{width:32,height:32,borderRadius:10,background:u.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'#fff',flexShrink:0}}>
@@ -208,7 +266,7 @@ export default function Users() {
                     </div>
                   </td>
                 </tr>
-              ))
+              ); })
           }
         </Tbl>
       </SCard>

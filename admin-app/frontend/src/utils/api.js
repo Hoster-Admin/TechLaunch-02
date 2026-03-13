@@ -46,7 +46,29 @@ export const adminAPI = {
   applications: ()          => req('GET',  '/admin/applications'),
   updateAccelApp: (id, body)=> req('PATCH', `/admin/applications/accelerator/${id}`, body),
   updatePitch:    (id, body)=> req('PATCH', `/admin/applications/pitches/${id}`, body),
-  reports:      ()          => req('GET',  '/admin/reports'),
+  bulkProducts: (body)      => req('POST', '/admin/products/bulk', body),
+  bulkUsers:    (body)      => req('POST', '/admin/users/bulk', body),
+  activityLog:  (p={})     => req('GET',  '/admin/activity-log?' + new URLSearchParams(p)),
+  exportCSV:    (type, p={}) => {
+    const token = getToken();
+    const qs = new URLSearchParams(p).toString();
+    const url = `/api/admin/export/${type}${qs?'?'+qs:''}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.setAttribute('download', '');
+    const headers = new Headers({ 'Authorization': `Bearer ${token}` });
+    return fetch(url, { headers }).then(r => {
+      const cd = r.headers.get('Content-Disposition') || '';
+      const fn = cd.match(/filename="([^"]+)"/)?.[1] || `${type}.csv`;
+      return r.blob().then(b => {
+        const link = document.createElement('a');
+        link.href = URL.createObjectURL(b);
+        link.download = fn;
+        link.click();
+      });
+    });
+  },
+  reports:      (p={})      => req('GET',  '/admin/reports?' + new URLSearchParams(p)),
   settings:     ()          => req('GET',  '/admin/settings'),
   saveSettings: (body)      => req('PUT',  '/admin/settings', body),
   suggestions:  (p={})      => req('GET',  '/admin/suggestions?' + new URLSearchParams(p)),

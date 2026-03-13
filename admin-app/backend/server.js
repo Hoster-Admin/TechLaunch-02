@@ -101,6 +101,14 @@ app.get('/api/auth/me', authenticate, requireAdmin, (req, res) => {
 const admin = express.Router();
 admin.use(authenticate, requireAdmin);
 
+// ─── AUDIT LOG HELPER ────────────────────────────────────────────────────────
+async function logAction(actorId, action, entity, entityId, details) {
+  try {
+    await q(`INSERT INTO activity_log (actor_id,action,entity,entity_id,details) VALUES ($1,$2,$3,$4,$5)`,
+      [actorId||null, action, entity||null, entityId||null, details ? JSON.stringify(details) : null]);
+  } catch(_) { /* non-fatal */ }
+}
+
 // Dashboard
 admin.get('/dashboard', async (req, res) => {
   try {
@@ -156,6 +164,7 @@ admin.post('/products/:id/reject', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE products SET status='rejected',rejected_reason=$1 WHERE id=$2 RETURNING name`, [req.body.reason||null, req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'product.rejected', 'product', req.params.id, { name:rows[0].name, reason:req.body.reason||null });
     res.json({ success:true, message:`${rows[0].name} rejected` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -164,6 +173,7 @@ admin.post('/products/:id/featured', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE products SET featured=NOT featured WHERE id=$1 RETURNING name,featured`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, rows[0].featured ? 'product.featured' : 'product.unfeatured', 'product', req.params.id, { name:rows[0].name });
     res.json({ success:true, data:rows[0] });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -199,6 +209,7 @@ admin.post('/users', async (req, res) => {
     if (persona) { cols.push('persona'); vals.push(persona); }
     const placeholders = vals.map((_,i)=>`$${i+1}`).join(',');
     const { rows } = await q(`INSERT INTO users (${cols.join(',')}) VALUES (${placeholders}) RETURNING id,name,email,role`, vals);
+    await logAction(req.user.id, 'user.created', 'user', rows[0].id, { name:rows[0].name, role:rows[0].role });
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added as ${role}` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
@@ -217,6 +228,7 @@ admin.post('/users/:id/verify', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE users SET verified=true WHERE id=$1 RETURNING name`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'user.verified', 'user', req.params.id, { name:rows[0].name });
     res.json({ success:true, message:`${rows[0].name} verified` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -225,6 +237,7 @@ admin.post('/users/:id/suspend', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE users SET status='suspended' WHERE id=$1 AND role='user' RETURNING name`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'user.suspended', 'user', req.params.id, { name:rows[0].name });
     res.json({ success:true, message:`${rows[0].name} suspended` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -233,6 +246,7 @@ admin.post('/users/:id/reinstate', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE users SET status='active' WHERE id=$1 RETURNING name`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'user.reinstated', 'user', req.params.id, { name:rows[0].name });
     res.json({ success:true, message:`${rows[0].name} reinstated` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -265,6 +279,7 @@ admin.post('/entities', async (req, res) => {
       VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,false,$15)
       RETURNING id,name,type,country`,
       [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,portfolio_count||null,employees||null,founded_year||null,logo_emoji,focus||null,req.user.id]);
+    await logAction(req.user.id, 'entity.created', 'entity', rows[0].id, { name:rows[0].name, type:rows[0].type });
     res.json({ success:true, data:rows[0], message:`${rows[0].name} created` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Entity with this name already exists' });
@@ -276,6 +291,7 @@ admin.post('/entities/:id/verify', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE entities SET verified=true,verified_by=$1 WHERE id=$2 RETURNING name`, [req.user.id, req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'entity.verified', 'entity', req.params.id, { name:rows[0].name });
     res.json({ success:true, message:`${rows[0].name} verified` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -303,6 +319,7 @@ admin.patch('/applications/accelerator/:id', async (req, res) => {
     if (fields.length === 1) return res.json({ success:true });
     vals.push(req.params.id);
     await q(`UPDATE accelerator_applications SET ${fields.join(',')} WHERE id=$${vals.length}`, vals);
+    if (status) await logAction(req.user.id, 'application.status_updated', 'application', req.params.id, { status });
     res.json({ success:true });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -317,6 +334,7 @@ admin.patch('/applications/pitches/:id', async (req, res) => {
     if (fields.length === 1) return res.json({ success:true });
     vals.push(req.params.id);
     await q(`UPDATE investor_pitches SET ${fields.join(',')} WHERE id=$${vals.length}`, vals);
+    if (status) await logAction(req.user.id, 'pitch.status_updated', 'pitch', req.params.id, { status });
     res.json({ success:true });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -336,6 +354,7 @@ admin.put('/settings', async (req, res) => {
     for (const [key, value] of Object.entries(req.body)) {
       await q(`INSERT INTO platform_settings (key,value,type,updated_by,updated_at) VALUES ($1,$2,'boolean',$3,NOW()) ON CONFLICT (key) DO UPDATE SET value=$2,updated_by=$3,updated_at=NOW()`, [key,String(value),req.user.id]);
     }
+    await logAction(req.user.id, 'settings.updated', 'settings', null, req.body);
     res.json({ success:true, message:'Settings updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -343,12 +362,24 @@ admin.put('/settings', async (req, res) => {
 // Reports
 admin.get('/reports', async (req, res) => {
   try {
+    const { from, to } = req.query;
+    const df = from ? `AND created_at >= '${from}'` : '';
+    const dt = to   ? `AND created_at <= '${to} 23:59:59'` : '';
+    const dpf = from ? `AND p.created_at >= '${from}'` : '';
+    const dpt = to   ? `AND p.created_at <= '${to} 23:59:59'` : '';
     const [kpis, countryBreakdown, industryBreakdown, personaBreakdown, signupTrend] = await Promise.all([
-      q(`SELECT (SELECT COUNT(*) FROM products WHERE status='live') AS live_products,(SELECT COUNT(*) FROM users WHERE status='active') AS active_users,(SELECT COALESCE(SUM(upvotes_count),0) FROM products) AS total_upvotes,(SELECT COALESCE(SUM(waitlist_count),0) FROM products) AS waitlist_total,(SELECT COUNT(*) FROM accelerator_applications) AS total_apps,(SELECT ROUND(AVG(upvotes_count)) FROM products WHERE status='live') AS avg_upvotes,(SELECT name FROM products ORDER BY upvotes_count DESC LIMIT 1) AS top_product`),
-      q(`SELECT country,COUNT(*) AS count FROM users WHERE country IS NOT NULL GROUP BY country ORDER BY count DESC LIMIT 8`),
-      q(`SELECT industry,COUNT(*) AS count FROM products GROUP BY industry ORDER BY count DESC LIMIT 8`),
-      q(`SELECT persona,COUNT(*) AS count FROM users WHERE status='active' GROUP BY persona ORDER BY count DESC`),
-      q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'IYYY-IW') AS week,COUNT(*) AS signups FROM users WHERE created_at>NOW()-INTERVAL '8 weeks' GROUP BY week ORDER BY week`),
+      q(`SELECT
+          (SELECT COUNT(*) FROM products WHERE status='live' ${dpf} ${dpt}) AS live_products,
+          (SELECT COUNT(*) FROM users WHERE status='active' ${df} ${dt}) AS active_users,
+          (SELECT COALESCE(SUM(upvotes_count),0) FROM products ${from||to?`WHERE 1=1 ${dpf} ${dpt}`:''}) AS total_upvotes,
+          (SELECT COALESCE(SUM(waitlist_count),0) FROM products ${from||to?`WHERE 1=1 ${dpf} ${dpt}`:''}) AS waitlist_total,
+          (SELECT COUNT(*) FROM accelerator_applications ${from||to?`WHERE 1=1 ${df} ${dt}`:''}) AS total_apps,
+          (SELECT ROUND(AVG(upvotes_count)) FROM products WHERE status='live' ${dpf} ${dpt}) AS avg_upvotes,
+          (SELECT name FROM products ORDER BY upvotes_count DESC LIMIT 1) AS top_product`),
+      q(`SELECT country,COUNT(*) AS count FROM users WHERE country IS NOT NULL ${df} ${dt} GROUP BY country ORDER BY count DESC LIMIT 8`),
+      q(`SELECT industry,COUNT(*) AS count FROM products WHERE 1=1 ${dpf} ${dpt} GROUP BY industry ORDER BY count DESC LIMIT 8`),
+      q(`SELECT persona,COUNT(*) AS count FROM users WHERE status='active' ${df} ${dt} GROUP BY persona ORDER BY count DESC`),
+      q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'IYYY-IW') AS week,COUNT(*) AS signups FROM users WHERE created_at>${from?`'${from}'`:`NOW()-INTERVAL '8 weeks'`} ${dt} GROUP BY week ORDER BY week`),
     ]);
     res.json({ success:true, data:{ kpis:kpis.rows[0], country_breakdown:countryBreakdown.rows, industry_breakdown:industryBreakdown.rows, persona_breakdown:personaBreakdown.rows, signup_trend:signupTrend.rows } });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
@@ -392,6 +423,7 @@ admin.post('/products/bulk', async (req, res) => {
     } else {
       return res.status(400).json({ success:false, message:'Unknown action' });
     }
+    await logAction(req.user.id, `products.bulk_${action}`, 'product', null, { count:ids.length, ids });
     res.json({ success:true, message:`${ids.length} product(s) ${action}d` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
@@ -411,7 +443,35 @@ admin.post('/users/bulk', async (req, res) => {
     } else {
       return res.status(400).json({ success:false, message:'Unknown action' });
     }
+    await logAction(req.user.id, `users.bulk_${action}`, 'user', null, { count:ids.length });
     res.json({ success:true, message:`${ids.length} user(s) updated` });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+// Activity Log
+admin.get('/activity-log', async (req, res) => {
+  try {
+    const { actor, action, entity, from, to, page=1, limit=50 } = req.query;
+    const conds = [], params = [];
+    if (actor)  { params.push(`%${actor}%`);  conds.push(`u.name ILIKE $${params.length}`); }
+    if (action) { params.push(`%${action}%`); conds.push(`al.action ILIKE $${params.length}`); }
+    if (entity) { params.push(entity);         conds.push(`al.entity=$${params.length}`); }
+    if (from)   { params.push(from);           conds.push(`al.created_at >= $${params.length}::date`); }
+    if (to)     { params.push(to);             conds.push(`al.created_at < ($${params.length}::date + interval '1 day')`); }
+    const where  = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
+    const offset = (parseInt(page)-1)*parseInt(limit);
+    const countRes = await q(`SELECT COUNT(*) FROM activity_log al LEFT JOIN users u ON u.id=al.actor_id ${where}`, params);
+    params.push(parseInt(limit), offset);
+    const { rows } = await q(`
+      SELECT al.id, al.action, al.entity, al.entity_id, al.details, al.created_at,
+             u.name AS actor_name, u.role AS actor_role, u.avatar_color
+      FROM activity_log al
+      LEFT JOIN users u ON u.id=al.actor_id
+      ${where}
+      ORDER BY al.created_at DESC
+      LIMIT $${params.length-1} OFFSET $${params.length}
+    `, params);
+    res.json({ success:true, data:{ logs:rows, total:parseInt(countRes.rows[0].count), page:parseInt(page), limit:parseInt(limit) } });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 

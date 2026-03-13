@@ -8,6 +8,7 @@ const NAV = [
   { key:'applications', icon:'📋', label:'Applications' },
   { key:'featured',     icon:'⭐', label:'Featured' },
   { key:'reports',      icon:'📈', label:'Reports' },
+  { key:'activity',     icon:'📝', label:'Audit Log' },
   { key:'settings',     icon:'⚙️',  label:'Settings' },
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
