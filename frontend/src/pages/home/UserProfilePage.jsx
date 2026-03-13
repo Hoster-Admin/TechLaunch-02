@@ -135,11 +135,34 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     }
   }, [activeTab, profile?.handle]);
 
+  const BackButton = () => (
+    <button
+      onClick={() => navigate(-1)}
+      style={{
+        display:'inline-flex', alignItems:'center', gap:6,
+        background:'none', border:'none', cursor:'pointer', padding:'6px 0',
+        fontSize:13, fontWeight:700, color:'#666', fontFamily:'inherit', transition:'color .15s',
+      }}
+      onMouseEnter={e => e.currentTarget.style.color = 'var(--orange)'}
+      onMouseLeave={e => e.currentTarget.style.color = '#666'}
+    >
+      <svg width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
+        <path d="M19 12H5M12 5l-7 7 7 7"/>
+      </svg>
+      Back
+    </button>
+  );
+
   if (loadingProfile) return (
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
-      <div style={{ paddingTop:'var(--nav-h)', display:'flex', justifyContent:'center', padding:'120px 20px' }}>
-        <div style={{ width:32, height:32, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+      <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
+        <div style={{ maxWidth:900, margin:'0 auto', paddingTop:24, paddingLeft:32, paddingRight:32, paddingBottom:80 }}>
+          <BackButton/>
+          <div style={{ display:'flex', justifyContent:'center', padding:'80px 20px' }}>
+            <div style={{ width:32, height:32, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+          </div>
+        </div>
       </div>
     </>
   );
@@ -147,11 +170,15 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   if (!profile) return (
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
-      <div style={{ paddingTop:'var(--nav-h)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'80vh', padding:'40px 20px', textAlign:'center' }}>
-        <div style={{ fontSize:52, marginBottom:16 }}>👤</div>
-        <h2 style={{ fontSize:24, fontWeight:800, marginBottom:8 }}>User not found</h2>
-        <p style={{ color:'#888', marginBottom:24 }}>This profile doesn't exist or hasn't been set up yet.</p>
-        <button onClick={() => navigate('/')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Back to Home</button>
+      <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
+        <div style={{ maxWidth:900, margin:'0 auto', paddingTop:24, paddingLeft:32, paddingRight:32, paddingBottom:80 }}>
+          <BackButton/>
+          <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', padding:'40px 20px', textAlign:'center' }}>
+            <div style={{ fontSize:52, marginBottom:16 }}>👤</div>
+            <h2 style={{ fontSize:24, fontWeight:800, marginBottom:8 }}>User not found</h2>
+            <p style={{ color:'#888', marginBottom:24 }}>This profile doesn't exist or hasn't been set up yet.</p>
+          </div>
+        </div>
       </div>
       <Footer/>
     </>
@@ -209,7 +236,10 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
-        <div className="profile-page-inner" style={{ maxWidth:900, margin:'0 auto', padding:'32px 32px 80px' }}>
+        <div className="profile-page-inner" style={{ maxWidth:900, margin:'0 auto', padding:'24px 32px 80px' }}>
+
+          {/* ── Back button ── */}
+          <div style={{ marginBottom:16 }}><BackButton/></div>
 
           {/* ── Profile card ── */}
           <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, overflow:'hidden', marginBottom:20 }}>

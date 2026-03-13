@@ -101,8 +101,16 @@ function ArticleCard({ article, onClick }) {
 }
 
 function PostCard({ post }) {
+  const navigate = useNavigate();
   const [liked, setLiked] = useState(false);
+  const [showComments, setShowComments] = useState(false);
   const tagStyle = TAG_COLORS[post.tag] || { bg: '#f4f4f4', color: '#555' };
+
+  const goToProfile = (e) => {
+    e.stopPropagation();
+    navigate(`/u/${post.authorHandle}`);
+  };
+
   return (
     <div style={{
       background: '#fff',
@@ -111,11 +119,14 @@ function PostCard({ post }) {
       padding: '22px 24px',
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
-        <div style={{
-          width: 36, height: 36, borderRadius: 10, background: '#0a0a0a',
-          color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0,
-        }}>{post.initials}</div>
-        <div style={{ flex: 1 }}>
+        <div
+          onClick={goToProfile}
+          style={{
+            width: 36, height: 36, borderRadius: 10, background: '#0a0a0a',
+            color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 800,
+            flexShrink: 0, cursor: 'pointer',
+          }}>{post.initials}</div>
+        <div style={{ flex: 1, cursor: 'pointer' }} onClick={goToProfile}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>{post.author}</div>
           <div style={{ fontSize: 11, color: '#bbb' }}>@{post.authorHandle} · {post.date}</div>
         </div>
@@ -141,13 +152,45 @@ function PostCard({ post }) {
           </svg>
           {post.likes + (liked ? 1 : 0)}
         </button>
-        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#888' }}>
+        <button
+          onClick={() => setShowComments(v => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700,
+            color: showComments ? 'var(--orange)' : '#888', background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, fontFamily: "'DM Sans',sans-serif", transition: 'color .15s',
+          }}
+        >
           <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
             <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
           </svg>
           {post.replies}
-        </span>
+        </button>
       </div>
+
+      {showComments && (
+        <div style={{ marginTop: 16, borderTop: '1px solid #f0f0f0', paddingTop: 16 }}>
+          <div style={{ textAlign: 'center', padding: '16px 0', color: '#bbb' }}>
+            <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
+            <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>No replies yet</div>
+            <div style={{ fontSize: 12, color: '#ccc', marginTop: 4 }}>Be the first to reply</div>
+          </div>
+          <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+            <input
+              placeholder="Write a reply…"
+              style={{
+                flex: 1, padding: '9px 14px', border: '1.5px solid #e8e8e8', borderRadius: 10,
+                fontSize: 13, fontFamily: "'DM Sans',sans-serif", outline: 'none',
+              }}
+              onFocus={e => e.target.style.borderColor = 'var(--orange)'}
+              onBlur={e => e.target.style.borderColor = '#e8e8e8'}
+            />
+            <button style={{
+              padding: '9px 18px', borderRadius: 10, border: 'none', background: 'var(--orange)',
+              color: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'DM Sans',sans-serif",
+            }}>Reply</button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
