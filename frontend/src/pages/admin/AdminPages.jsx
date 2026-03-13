@@ -77,6 +77,76 @@ function EmptyState({ icon='📭', title, sub }) {
 }
 
 // ─── USERS ────────────────────────────────────────────
+const MENA_COUNTRIES_U = ['UAE','Saudi Arabia','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain','Oman','Iraq','Lebanon','Tunisia','Libya','Algeria','Yemen','Sudan','Syria','Palestine'];
+const PERSONAS_U = ['Founder','Investor','Product Manager','Enthusiast'];
+
+function AddUserModal({ onClose, onSuccess }) {
+  const [form, setForm] = useState({ name:'', email:'', handle:'', persona:'Founder', country:'UAE', password:'' });
+  const [saving, setSaving] = useState(false);
+  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
+
+  const submit = async e => {
+    e.preventDefault();
+    if (!form.name.trim() || !form.email.trim()) { toast.error('Name and email are required'); return; }
+    setSaving(true);
+    try {
+      const { authAPI } = await import('../../utils/api');
+      await authAPI.register({ ...form, username: form.handle.replace('@','') || form.name.toLowerCase().replace(/\s+/g,'_') });
+      toast.success(`✅ ${form.name} account created!`);
+      onSuccess?.();
+      onClose();
+    } catch {
+      toast.error('Failed to create user — email may already be in use');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center',padding:20}} onClick={onClose}>
+      <div style={{background:'#fff',borderRadius:20,padding:28,width:'100%',maxWidth:520,maxHeight:'90vh',overflowY:'auto',boxShadow:'0 24px 80px rgba(0,0,0,.2)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',alignItems:'flex-start',justifyContent:'space-between',marginBottom:4}}>
+          <div>
+            <div style={{fontSize:18,fontWeight:800,color:'#0A0A0A'}}>Add User</div>
+            <div style={{fontSize:13,color:'#AAAAAA',marginTop:2}}>Create a new account on the platform</div>
+          </div>
+          <button onClick={onClose} style={{width:28,height:28,borderRadius:8,border:'none',background:'#F4F4F4',cursor:'pointer',fontSize:16,color:'#666',display:'flex',alignItems:'center',justifyContent:'center'}}>✕</button>
+        </div>
+        <form onSubmit={submit} style={{marginTop:20}}>
+          {[['Full Name *','name','text','Sara Al-Mahmoud'],['Email *','email','email','sara@example.com'],['Handle','handle','text','@sara_builds'],['Password','password','password','min 8 chars']].map(([label,key,type,ph]) => (
+            <div key={key} style={{marginBottom:14}}>
+              <label style={{display:'block',fontSize:12,fontWeight:700,color:'#0A0A0A',marginBottom:5}}>{label}</label>
+              <input type={type} value={form[key]} onChange={e=>set(key,e.target.value)} placeholder={ph}
+                style={{width:'100%',padding:'10px 13px',border:'1.5px solid #E8E8E8',borderRadius:10,fontSize:13,fontFamily:'inherit',color:'#0A0A0A',outline:'none',boxSizing:'border-box'}}
+                onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#E8E8E8'}/>
+            </div>
+          ))}
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:14,marginBottom:20}}>
+            <div>
+              <label style={{display:'block',fontSize:12,fontWeight:700,color:'#0A0A0A',marginBottom:5}}>Persona</label>
+              <select value={form.persona} onChange={e=>set('persona',e.target.value)} style={{width:'100%',padding:'10px 13px',border:'1.5px solid #E8E8E8',borderRadius:10,fontSize:13,fontFamily:'inherit',color:'#0A0A0A',outline:'none',background:'#fff',boxSizing:'border-box'}}>
+                {PERSONAS_U.map(p=><option key={p}>{p}</option>)}
+              </select>
+            </div>
+            <div>
+              <label style={{display:'block',fontSize:12,fontWeight:700,color:'#0A0A0A',marginBottom:5}}>Country</label>
+              <select value={form.country} onChange={e=>set('country',e.target.value)} style={{width:'100%',padding:'10px 13px',border:'1.5px solid #E8E8E8',borderRadius:10,fontSize:13,fontFamily:'inherit',color:'#0A0A0A',outline:'none',background:'#fff',boxSizing:'border-box'}}>
+                {MENA_COUNTRIES_U.map(c=><option key={c}>{c}</option>)}
+              </select>
+            </div>
+          </div>
+          <div style={{display:'flex',gap:10,justifyContent:'flex-end'}}>
+            <button type="button" onClick={onClose} style={{padding:'10px 20px',borderRadius:10,border:'1.5px solid #E8E8E8',background:'#fff',color:'#0A0A0A',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>Cancel</button>
+            <button type="submit" disabled={saving} style={{padding:'10px 20px',borderRadius:10,border:'none',background:'var(--orange)',color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.6:1}}>
+              {saving?'Creating…':'Create User'}
+            </button>
+          </div>
+        </form>
+      </div>
+    </div>
+  );
+}
+
 export function AdminUsers() {
   const [users, setUsers] = useState([]);
   const [filter, setFilter] = useState('all');
@@ -84,6 +154,7 @@ export function AdminUsers() {
   const [selected, setSelected] = useState(null);
   const [loading, setLoading] = useState(true);
   const [acting, setActing] = useState({});
+  const [showAddUser, setShowAddUser] = useState(false);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -124,7 +195,9 @@ export function AdminUsers() {
 
   return (
     <div>
-      <SectionCard title="User Management" sub={`${users.length} total users on platform`}>
+      {showAddUser && <AddUserModal onClose={()=>setShowAddUser(false)} onSuccess={load}/>}
+      <SectionCard title="User Management" sub={`${users.length} total users on platform`}
+        action={<button onClick={()=>setShowAddUser(true)} style={{display:'flex',alignItems:'center',gap:6,padding:'7px 14px',borderRadius:10,border:'none',background:'var(--orange)',color:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>+ Add User</button>}>
         <FilterChips options={FILTERS} value={filter} onChange={setFilter}/>
         <div style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4'}}>
           <div style={{position:'relative',maxWidth:300}}>
@@ -363,65 +436,77 @@ export function AdminApplications() {
 
   return (
     <div>
-      {/* Accelerator Apps */}
-      <SectionCard title="Accelerator Applications" sub={`${accelApps.length} applications`}>
-        {accelApps.length === 0 ? <EmptyState icon="📋" title="No applications yet" sub="Accelerator applications will appear here"/> : (
-          <Tbl heads={['Applicant','Startup','Accelerator','Stage','Date','Status','Actions']}>
-            {accelApps.map(a => {
-              const s = STATUS_MAP[a.status]||{v:'gray',l:a.status};
-              return (
-                <tr key={a.id} style={{borderBottom:'1px solid #F4F4F4'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{padding:'11px 16px'}}>
-                    <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{a.applicant_name}</div>
-                    <div style={{fontSize:11,color:'#AAAAAA'}}>@{a.applicant_handle}</div>
-                  </td>
-                  <td style={{padding:'11px 16px',fontSize:12,color:'#0A0A0A'}}>{a.product_name||'—'}</td>
-                  <td style={{padding:'11px 16px',fontSize:13,color:'#0A0A0A'}}>{a.entity_name}</td>
-                  <td style={{padding:'11px 16px'}}><Badge variant="purple">{a.stage||'—'}</Badge></td>
-                  <td style={{padding:'11px 16px',fontSize:11,color:'#AAAAAA'}}>{new Date(a.created_at).toLocaleDateString()}</td>
-                  <td style={{padding:'11px 16px'}}><Badge variant={s.v}>{s.l}</Badge></td>
-                  <td style={{padding:'11px 16px'}}>
-                    {(a.status==='pending'||a.status==='reviewing') && (
-                      <div style={{display:'flex',gap:6}}>
-                        <ActionBtn variant="approve" onClick={()=>toast.success('Accepted!')}>Accept</ActionBtn>
-                        <ActionBtn variant="reject" onClick={()=>toast.success('Rejected')}>Reject</ActionBtn>
-                      </div>
-                    )}
-                  </td>
-                </tr>
-              );
-            })}
-          </Tbl>
-        )}
-      </SectionCard>
+      {/* Two-column: Accelerator Apps + Investor Pitches */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:16,marginBottom:20}}>
+        {/* Accelerator Apps */}
+        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
+          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4'}}>
+            <div style={{fontWeight:800,fontSize:14,color:'#0A0A0A'}}>Accelerator Applications</div>
+            <div style={{fontSize:11,color:'#AAAAAA'}}>{accelApps.length} applications</div>
+          </div>
+          {accelApps.length === 0 ? <EmptyState icon="📋" title="No applications yet" sub="Accelerator applications will appear here"/> : (
+            <div style={{overflowX:'auto'}}>
+              <Tbl heads={['Applicant','Startup','Accelerator','Status','Actions']}>
+                {accelApps.map(a => {
+                  const s = STATUS_MAP[a.status]||{v:'gray',l:a.status};
+                  return (
+                    <tr key={a.id} style={{borderBottom:'1px solid #F4F4F4'}}
+                      onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <td style={{padding:'10px 14px'}}>
+                        <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A'}}>{a.applicant_name}</div>
+                        <div style={{fontSize:10,color:'#AAAAAA'}}>@{a.applicant_handle}</div>
+                      </td>
+                      <td style={{padding:'10px 14px',fontSize:11,color:'#0A0A0A'}}>{a.product_name||'—'}</td>
+                      <td style={{padding:'10px 14px',fontSize:11,color:'#0A0A0A'}}>{a.entity_name}</td>
+                      <td style={{padding:'10px 14px'}}><Badge variant={s.v}>{s.l}</Badge></td>
+                      <td style={{padding:'10px 14px'}}>
+                        {(a.status==='pending'||a.status==='reviewing') && (
+                          <div style={{display:'flex',gap:4}}>
+                            <ActionBtn variant="approve" onClick={()=>toast.success('Accepted!')}>✓</ActionBtn>
+                            <ActionBtn variant="reject" onClick={()=>toast.success('Rejected')}>✕</ActionBtn>
+                          </div>
+                        )}
+                      </td>
+                    </tr>
+                  );
+                })}
+              </Tbl>
+            </div>
+          )}
+        </div>
 
-      {/* Investor Pitches */}
-      <SectionCard title="Investor Pitches" sub={`${pitches.length} pitch requests`}>
-        {pitches.length === 0 ? <EmptyState icon="💼" title="No pitches yet" sub="Investor pitch requests will appear here"/> : (
-          <Tbl heads={['Founder','Product','Investor','Ask','Date','Status']}>
-            {pitches.map(p => {
-              const s = STATUS_MAP[p.status]||{v:'gray',l:p.status};
-              return (
-                <tr key={p.id} style={{borderBottom:'1px solid #F4F4F4'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{padding:'11px 16px'}}>
-                    <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{p.founder_name}</div>
-                    <div style={{fontSize:11,color:'#AAAAAA'}}>@{p.founder_handle}</div>
-                  </td>
-                  <td style={{padding:'11px 16px',fontSize:12,color:'#0A0A0A'}}>{p.product_name||'—'}</td>
-                  <td style={{padding:'11px 16px',fontSize:13}}>{p.investor_name}</td>
-                  <td style={{padding:'11px 16px',fontSize:14,fontWeight:800,color:'#16a34a'}}>{p.ask_amount ? `$${Number(p.ask_amount).toLocaleString()}` : '—'}</td>
-                  <td style={{padding:'11px 16px',fontSize:11,color:'#AAAAAA'}}>{new Date(p.created_at).toLocaleDateString()}</td>
-                  <td style={{padding:'11px 16px'}}><Badge variant={s.v}>{s.l}</Badge></td>
-                </tr>
-              );
-            })}
-          </Tbl>
-        )}
-      </SectionCard>
+        {/* Investor Pitches */}
+        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
+          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4'}}>
+            <div style={{fontWeight:800,fontSize:14,color:'#0A0A0A'}}>Investor Pitches</div>
+            <div style={{fontSize:11,color:'#AAAAAA'}}>{pitches.length} pitch requests</div>
+          </div>
+          {pitches.length === 0 ? <EmptyState icon="💼" title="No pitches yet" sub="Investor pitch requests will appear here"/> : (
+            <div style={{overflowX:'auto'}}>
+              <Tbl heads={['Founder','Product','Investor','Ask','Status']}>
+                {pitches.map(p => {
+                  const s = STATUS_MAP[p.status]||{v:'gray',l:p.status};
+                  return (
+                    <tr key={p.id} style={{borderBottom:'1px solid #F4F4F4'}}
+                      onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
+                      onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                      <td style={{padding:'10px 14px'}}>
+                        <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A'}}>{p.founder_name}</div>
+                        <div style={{fontSize:10,color:'#AAAAAA'}}>@{p.founder_handle}</div>
+                      </td>
+                      <td style={{padding:'10px 14px',fontSize:11,color:'#0A0A0A'}}>{p.product_name||'—'}</td>
+                      <td style={{padding:'10px 14px',fontSize:11}}>{p.investor_name}</td>
+                      <td style={{padding:'10px 14px',fontSize:12,fontWeight:800,color:'#16a34a'}}>{p.ask_amount ? `$${Number(p.ask_amount).toLocaleString()}` : '—'}</td>
+                      <td style={{padding:'10px 14px'}}><Badge variant={s.v}>{s.l}</Badge></td>
+                    </tr>
+                  );
+                })}
+              </Tbl>
+            </div>
+          )}
+        </div>
+      </div>
 
       {/* Waitlists */}
       <SectionCard title="Waitlists" sub="Products with active waitlists">
@@ -490,18 +575,17 @@ export function AdminFeatured() {
   const nonFeatured = allProducts.filter(p => p.status === 'live' && !p.featured);
 
   return (
-    <div>
-      {/* Featured Spotlight */}
+    <div style={{display:'grid',gridTemplateColumns:'1fr 360px',gap:20,alignItems:'start'}}>
+      {/* Left: Featured Spotlight */}
       <SectionCard title="Featured Spotlight" sub="Products currently featured on the homepage">
         <div style={{padding:'16px 20px'}}>
           {loading ? (
             <div style={{textAlign:'center',padding:'30px 0',color:'#AAAAAA',fontSize:13}}>Loading…</div>
           ) : featuredProducts.length === 0 ? (
-            <EmptyState icon="⭐" title="No featured products" sub="Use the toggle below to feature live products"/>
+            <EmptyState icon="⭐" title="No featured products" sub="Use the buttons below to feature live products"/>
           ) : featuredProducts.map((p, i) => (
             <div key={p.id} style={{display:'flex',alignItems:'center',gap:14,background:'#FAFAFA',border:'1px solid #E8E8E8',borderRadius:14,padding:'14px 16px',marginBottom:10}}>
-              <div style={{color:'#AAAAAA',fontSize:18,lineHeight:1}}>⠿</div>
-              <div style={{fontSize:28}}>{p.logo||p.logo_emoji||'📦'}</div>
+              <div style={{fontSize:26}}>{p.logo||p.logo_emoji||'📦'}</div>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:800,color:'#0A0A0A'}}>{p.name}</div>
                 <div style={{fontSize:11,color:'#AAAAAA'}}>{p.tagline}</div>
@@ -512,14 +596,13 @@ export function AdminFeatured() {
             </div>
           ))}
 
-          {/* Add from live products */}
           {nonFeatured.length > 0 && (
             <div style={{marginTop:16}}>
               <div style={{fontSize:12,fontWeight:700,color:'#AAAAAA',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Add from live products</div>
               <div style={{display:'flex',flexDirection:'column',gap:8,maxHeight:280,overflowY:'auto'}}>
                 {nonFeatured.map(p => (
                   <div key={p.id} style={{display:'flex',alignItems:'center',gap:12,border:'1px solid #E8E8E8',borderRadius:12,padding:'10px 14px'}}>
-                    <div style={{fontSize:22}}>{p.logo||p.logo_emoji||'📦'}</div>
+                    <div style={{fontSize:20}}>{p.logo||p.logo_emoji||'📦'}</div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:700}}>{p.name}</div>
                       <div style={{fontSize:11,color:'#AAAAAA'}}>{p.category} · {p.country}</div>
@@ -533,28 +616,29 @@ export function AdminFeatured() {
         </div>
       </SectionCard>
 
-      {/* Banner settings */}
-      <SectionCard title="Homepage Banner" sub="Announcement bar shown at the top of the public site">
-        <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-          <textarea value={banner} onChange={e=>setBanner(e.target.value)} rows={2}
-            style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'10px 14px',fontSize:13,resize:'vertical',fontFamily:'inherit',outline:'none',width:'100%'}}/>
-          <div style={{display:'flex',gap:8}}>
-            <button disabled={savingBanner} onClick={async()=>{setSavingBanner(true);await new Promise(r=>setTimeout(r,400));setSavingBanner(false);toast.success('Banner updated!');}} style={{background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'10px 20px',fontWeight:700,fontSize:13,cursor:'pointer',opacity:savingBanner?0.6:1}}>
-              {savingBanner?'Saving…':'Save Banner'}
-            </button>
-            <button onClick={()=>toast.success('Banner hidden')} style={{background:'#F4F4F4',color:'#666',border:'none',borderRadius:10,padding:'10px 20px',fontWeight:600,fontSize:13,cursor:'pointer'}}>Hide</button>
+      {/* Right column: Banner + Editor's Pick */}
+      <div style={{display:'flex',flexDirection:'column',gap:16}}>
+        <SectionCard title="Homepage Banner" sub="Announcement bar on the public site">
+          <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+            <textarea value={banner} onChange={e=>setBanner(e.target.value)} rows={3}
+              style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'10px 14px',fontSize:13,resize:'vertical',fontFamily:'inherit',outline:'none',width:'100%',boxSizing:'border-box'}}/>
+            <div style={{display:'flex',gap:8}}>
+              <button disabled={savingBanner} onClick={async()=>{setSavingBanner(true);await new Promise(r=>setTimeout(r,400));setSavingBanner(false);toast.success('Banner updated!');}} style={{background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'9px 18px',fontWeight:700,fontSize:12,cursor:'pointer',opacity:savingBanner?0.6:1,fontFamily:'inherit'}}>
+                {savingBanner?'Saving…':'Save Banner'}
+              </button>
+              <button onClick={()=>toast.success('Banner hidden')} style={{background:'#F4F4F4',color:'#666',border:'none',borderRadius:10,padding:'9px 18px',fontWeight:600,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Hide</button>
+            </div>
           </div>
-        </div>
-      </SectionCard>
+        </SectionCard>
 
-      {/* Editor's pick */}
-      <SectionCard title="Editor's Pick" sub="Weekly editorial note shown on homepage">
-        <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
-          <textarea value={editorNote} onChange={e=>setEditorNote(e.target.value)} rows={3}
-            style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'10px 14px',fontSize:13,resize:'vertical',fontFamily:'inherit',outline:'none',width:'100%'}}/>
-          <button onClick={()=>toast.success("Editor's pick updated!")} style={{alignSelf:'flex-start',background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'10px 20px',fontWeight:700,fontSize:13,cursor:'pointer'}}>Update Pick</button>
-        </div>
-      </SectionCard>
+        <SectionCard title="Editor's Pick" sub="Weekly editorial note on homepage">
+          <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:12}}>
+            <textarea value={editorNote} onChange={e=>setEditorNote(e.target.value)} rows={4}
+              style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'10px 14px',fontSize:13,resize:'vertical',fontFamily:'inherit',outline:'none',width:'100%',boxSizing:'border-box'}}/>
+            <button onClick={()=>toast.success("Editor's pick updated!")} style={{alignSelf:'flex-start',background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'9px 18px',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit'}}>Update Pick</button>
+          </div>
+        </SectionCard>
+      </div>
     </div>
   );
 }
@@ -732,6 +816,7 @@ export function AdminSettings() {
   if (loading) return <div style={{textAlign:'center',padding:'60px 0',color:'#AAAAAA',fontSize:14}}>Loading settings…</div>;
 
   return (
+    <div>
     <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
       <SectionCard title="Moderation" sub="Control how content is reviewed">
         <div style={{padding:'0 20px 8px'}}>
@@ -757,16 +842,45 @@ export function AdminSettings() {
         </div>
       </SectionCard>
 
+      <SectionCard title="Integrations" sub="Connected services and third-party tools">
+        <div style={{padding:'0 20px 8px'}}>
+          {[
+            { icon:'📧', name:'Resend', desc:'Transactional email delivery', color:'#0A0A0A', status:'connected' },
+            { icon:'📊', name:'Mixpanel', desc:'Product analytics & funnels', color:'#7c3aed', status:'disconnected' },
+            { icon:'🗄️', name:'Neon DB', desc:'PostgreSQL database (production)', color:'#16a34a', status:'connected' },
+            { icon:'🪣', name:'Cloudflare R2', desc:'Object storage for media', color:'#d97706', status:'disconnected' },
+          ].map((intg, i) => (
+            <div key={i} style={{display:'flex',alignItems:'center',gap:12,padding:'12px 0',borderBottom: i < 3 ? '1px solid #F4F4F4' : 'none'}}>
+              <div style={{width:36,height:36,borderRadius:10,background:intg.status==='connected'?`${intg.color}12`:'#F4F4F4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>{intg.icon}</div>
+              <div style={{flex:1}}>
+                <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{intg.name}</div>
+                <div style={{fontSize:11,color:'#AAAAAA'}}>{intg.desc}</div>
+              </div>
+              <span style={{fontSize:11,fontWeight:700,padding:'3px 9px',borderRadius:99,background:intg.status==='connected'?'#DCFCE7':'#F4F4F4',color:intg.status==='connected'?'#166534':'#666'}}>
+                {intg.status==='connected'?'● Connected':'○ Not connected'}
+              </span>
+            </div>
+          ))}
+        </div>
+      </SectionCard>
+    </div>
+
+    {/* Danger Zone — full width below the grid */}
+    <div style={{marginTop:20}}>
       <SectionCard title="Danger Zone" sub="Irreversible actions — proceed with caution">
-        <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:10}}>
-          <button onClick={()=>toast.error('Cannot delete — contact system admin')} style={{background:'#FEE2E2',color:'#991B1B',border:'1px solid #FECACA',borderRadius:10,padding:'10px 16px',fontWeight:700,fontSize:13,cursor:'pointer',textAlign:'left'}}>
+        <div style={{padding:'16px 20px',display:'flex',gap:10,flexWrap:'wrap'}}>
+          <button onClick={()=>toast.error('Cannot delete — contact system admin')} style={{background:'#FEE2E2',color:'#991B1B',border:'1px solid #FECACA',borderRadius:10,padding:'10px 16px',fontWeight:700,fontSize:13,cursor:'pointer'}}>
             🗑️ Clear All Pending Products
           </button>
-          <button onClick={()=>toast.error('Disabled in this environment')} style={{background:'#FEE2E2',color:'#991B1B',border:'1px solid #FECACA',borderRadius:10,padding:'10px 16px',fontWeight:700,fontSize:13,cursor:'pointer',textAlign:'left'}}>
+          <button onClick={()=>toast.error('Disabled in this environment')} style={{background:'#FEE2E2',color:'#991B1B',border:'1px solid #FECACA',borderRadius:10,padding:'10px 16px',fontWeight:700,fontSize:13,cursor:'pointer'}}>
             ⚠️ Reset Platform Data
+          </button>
+          <button onClick={()=>toast.success('Export started — check your email')} style={{background:'#F4F4F4',color:'#0A0A0A',border:'1px solid #E8E8E8',borderRadius:10,padding:'10px 16px',fontWeight:700,fontSize:13,cursor:'pointer'}}>
+            📤 Export All Data (CSV)
           </button>
         </div>
       </SectionCard>
+    </div>
     </div>
   );
 }
