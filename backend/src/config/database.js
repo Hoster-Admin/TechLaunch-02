@@ -1,15 +1,31 @@
 const { Pool } = require('pg');
 
-const pool = new Pool({
-  host:     process.env.DB_HOST     || 'localhost',
-  port:     parseInt(process.env.DB_PORT) || 5432,
-  database: process.env.DB_NAME     || 'techlaunch',
-  user:     process.env.DB_USER     || 'postgres',
-  password: process.env.DB_PASSWORD || 'password',
-  max: 20,
-  idleTimeoutMillis: 30000,
-  connectionTimeoutMillis: 2000,
-});
+let poolConfig;
+
+const externalDbUrl = process.env.NEON_DATABASE_URL;
+
+if (externalDbUrl) {
+  poolConfig = {
+    connectionString: externalDbUrl,
+    ssl: { rejectUnauthorized: false },
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 5000,
+  };
+} else {
+  poolConfig = {
+    host:     process.env.PGHOST     || process.env.DB_HOST     || 'localhost',
+    port:     parseInt(process.env.PGPORT     || process.env.DB_PORT) || 5432,
+    database: process.env.PGDATABASE || process.env.DB_NAME     || 'techlaunch',
+    user:     process.env.PGUSER     || process.env.DB_USER     || 'postgres',
+    password: process.env.PGPASSWORD || process.env.DB_PASSWORD || 'password',
+    max: 20,
+    idleTimeoutMillis: 30000,
+    connectionTimeoutMillis: 2000,
+  };
+}
+
+const pool = new Pool(poolConfig);
 
 pool.on('connect', () => {
   if (process.env.NODE_ENV !== 'test') {
@@ -22,10 +38,7 @@ pool.on('error', (err) => {
   process.exit(-1);
 });
 
-// Helper: run a query
 const query = (text, params) => pool.query(text, params);
-
-// Helper: get a client for transactions
 const getClient = () => pool.connect();
 
 module.exports = { pool, query, getClient };

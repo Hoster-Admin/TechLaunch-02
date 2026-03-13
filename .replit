@@ -49,3 +49,10 @@ waitForPort = 5000
 deploymentTarget = "autoscale"
 run = ["sh", "-c", "cd backend && NODE_ENV=production node src/server.js"]
 build = ["npm", "--prefix", "frontend", "run", "build"]
+
+[userenv]
+
+[userenv.production]
+NEON_DATABASE_URL = "postgresql://neondb_owner:npg_aCzH4gsNbZP0@ep-divine-art-al1b8jbq-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
+JWT_SECRET = "tlmena_jwt_super_secret_key_2026_mena_platform_secure"
+CLIENT_URL = "https://tlmena.com"
