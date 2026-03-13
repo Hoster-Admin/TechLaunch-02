@@ -57,7 +57,7 @@ const PERSONAS = [
   { v:'Product Manager', icon:'🧠', desc:'Discover & follow launches'  },
   { v:'Accelerator',     icon:'🏢', desc:'List your program'           },
   { v:'Enthusiast',      icon:'⭐', desc:'Follow the ecosystem'        },
-  { v:'Venture Studio',  icon:'🏗️', desc:'Co-build startups'           },
+  { v:'Venture Studio',  icon:'🏗️', desc:'Co-build companies'          },
 ];
 
 const NAV_ITEMS = [

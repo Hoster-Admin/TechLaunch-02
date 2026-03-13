@@ -10,7 +10,13 @@ import { Spinner } from '../../components/ui';
 
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
-const COUNTRIES  = [['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['lb','🇱🇧 Lebanon'],['bh','🇧🇭 Bahrain'],['tn','🇹🇳 Tunisia']];
+const COUNTRIES  = [
+  ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],
+  ['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['bh','🇧🇭 Bahrain'],
+  ['tn','🇹🇳 Tunisia'],['lb','🇱🇧 Lebanon'],['iq','🇮🇶 Iraq'],['om','🇴🇲 Oman'],
+  ['ly','🇱🇾 Libya'],['dz','🇩🇿 Algeria'],['sy','🇸🇾 Syria'],['ye','🇾🇪 Yemen'],
+  ['ps','🇵🇸 Palestine'],['sd','🇸🇩 Sudan'],
+];
 const COUNTRY_NAMES = Object.fromEntries(COUNTRIES.map(([code, label]) => [code, label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim()]));
 
 const ARTICLES = [
@@ -71,12 +77,9 @@ export default function HomePage() {
         <div className="hero">
           <div className="hero-badge">🌍 MENA's #1 Product Discovery Platform</div>
           <h1>Discover the <span>Next Big Thing</span><br/>from the MENA Region</h1>
-          <p>The home for MENA startups, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
+          <p>The home for MENA companies, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
           <div className="hero-actions">
             <button className="btn-hero-primary" onClick={handleSubmitProduct}>🚀 Submit Your Product</button>
-            <button className="btn-hero-ghost" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
-              Browse Products ↓
-            </button>
           </div>
         </div>
 

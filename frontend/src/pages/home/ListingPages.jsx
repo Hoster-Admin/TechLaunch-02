@@ -31,11 +31,20 @@ const COUNTRY_FLAGS = {
   'Pan-Arab':'🌍', 'MENA':'🌍',
 };
 
+const INDUSTRY_ICONS = {
+  'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥',
+  'E-Commerce':'🛒','Logistics':'🚚','Foodtech':'🍔','Proptech':'🏠',
+  'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
+  'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
+};
+
+const STAGE_OPTIONS = ['Ideation Stage', 'Pre-Seed', 'Seed'];
+
 const TYPE_LABELS = {
   accelerator:    'Accelerator',
   investor:       'Investor',
   venture_studio: 'Venture Studio',
-  startup:        'Startup',
+  startup:        'Company',
   company:        'Company',
 };
 
@@ -56,14 +65,14 @@ function normalizeEntity(e) {
 }
 
 const PAGE_CONFIG = {
-  startup:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA startups and companies.',                                     cta:'List Your Company', filters:['country','industry'], cardType:'startup',  apiType:'startup'        },
-  company:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA startups and companies.',                                     cta:'List Your Company', filters:['country','industry'], cardType:'startup',  apiType:'startup'        },
-  accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your startup across MENA.',  cta:'List Your Program', filters:['country','industry'], cardType:'entity',   apiType:'accelerator'    },
-  investor:    { title:'Investment Firms',         emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA startups.',  cta:'List Your Firm',    filters:['stage','country'],   cardType:'entity',   apiType:'investor'       },
-  venture:     { title:'Venture Studios',          emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA startups.', cta:'List Your Studio',  filters:['stage','country'],   cardType:'entity',   apiType:'venture_studio' },
+  startup:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA companies and products.',                                      cta:'List Your Company', filters:['country','industry'], cardType:'startup',  apiType:'startup'        },
+  company:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA companies and products.',                                      cta:'List Your Company', filters:['country','industry'], cardType:'startup',  apiType:'startup'        },
+  accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your company across MENA.',  cta:'List Your Program', filters:['country','industry'], cardType:'entity',   apiType:'accelerator'    },
+  investor:    { title:'Investment Firms',         emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA companies.',  cta:'List Your Firm',    filters:['stage','country'],   cardType:'entity',   apiType:'investor'       },
+  venture:     { title:'Venture Studios',          emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA companies.', cta:'List Your Studio',  filters:['stage','country'],   cardType:'entity',   apiType:'venture_studio' },
 };
 
-function FilterDropdown({ label, icon, options, selected, onToggle, onReset }) {
+function FilterDropdown({ label, icon, options, selected, onToggle, onReset, getOptionIcon }) {
   const [open, setOpen] = useState(false);
   const [q, setQ] = useState('');
   const ref = useRef(null);
@@ -84,11 +93,12 @@ function FilterDropdown({ label, icon, options, selected, onToggle, onReset }) {
         <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:500, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:14, boxShadow:'0 8px 32px rgba(0,0,0,.14)', minWidth:220, overflow:'hidden' }}>
           <input autoFocus value={q} onChange={e=>setQ(e.target.value)} placeholder={`Search ${label.toLowerCase()}…`}
             style={{ width:'100%', padding:'10px 14px', border:'none', borderBottom:'1px solid #f0f0f0', fontFamily:'Inter,sans-serif', fontSize:13, outline:'none', background:'#fafafa', boxSizing:'border-box' }}/>
-          <div style={{ maxHeight:240, overflowY:'auto' }}>
+          <div style={{ maxHeight:240, overflowY:'auto', display:'flex', flexDirection:'column' }}>
             {filtered.map(opt => (
               <label key={opt} style={{ display:'flex', alignItems:'center', gap:10, padding:'9px 14px', cursor:'pointer', fontSize:13, fontWeight:500, color:'#333', background: selected.includes(opt)?'#fff5f3':'transparent' }}
                 onMouseOver={e=>e.currentTarget.style.background='#fff5f3'} onMouseOut={e=>e.currentTarget.style.background=selected.includes(opt)?'#fff5f3':'transparent'}>
                 <input type="checkbox" checked={selected.includes(opt)} onChange={() => onToggle(opt)} style={{ accentColor:'var(--orange)', width:15, height:15, cursor:'pointer', flexShrink:0 }}/>
+                {getOptionIcon && <span style={{ fontSize:15, flexShrink:0 }}>{getOptionIcon(opt)}</span>}
                 {opt}
               </label>
             ))}
@@ -295,14 +305,16 @@ export default function ListingPage() {
         <div style={{ borderBottom:'1px solid #f0f0f0', background:'#fff', padding:'14px 40px' }}>
           <div style={{ maxWidth:1140, margin:'0 auto', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
             {config.filters.includes('stage') && (
-              <FilterDropdown label="Stage Focus" icon="📊" options={allStages}
+              <FilterDropdown label="Stage Focus" icon="📊" options={STAGE_OPTIONS}
                 selected={selStages} onToggle={v => toggle(selStages, setSelStages, v)} onReset={() => setSelStages([])}/>
             )}
             <FilterDropdown label="Country" icon="🌍" options={allCountries}
-              selected={selCountries} onToggle={v => toggle(selCountries, setSelCountries, v)} onReset={() => setSelCountries([])}/>
+              selected={selCountries} onToggle={v => toggle(selCountries, setSelCountries, v)} onReset={() => setSelCountries([])}
+              getOptionIcon={c => COUNTRY_FLAGS[c] || '🌍'}/>
             {config.filters.includes('industry') && (
               <FilterDropdown label="Industry" icon="🏭" options={allIndustries}
-                selected={selIndustries} onToggle={v => toggle(selIndustries, setSelIndustries, v)} onReset={() => setSelIndustries([])}/>
+                selected={selIndustries} onToggle={v => toggle(selIndustries, setSelIndustries, v)} onReset={() => setSelIndustries([])}
+                getOptionIcon={ind => INDUSTRY_ICONS[ind] || '🏭'}/>
             )}
             {hasFilters && (
               <button onClick={() => { setSelCountries([]); setSelIndustries([]); setSelStages([]); }}

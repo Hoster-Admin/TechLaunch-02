@@ -10,6 +10,12 @@ import toast from 'react-hot-toast';
 
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
+const INDUSTRY_ICONS = {
+  'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥',
+  'E-Commerce':'🛒','Logistics':'🚚','Foodtech':'🍔','Proptech':'🏠',
+  'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
+  'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
+};
 const COUNTRIES = [
   ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],       ['eg','🇪🇬 Egypt'],
   ['jo','🇯🇴 Jordan'],     ['ma','🇲🇦 Morocco'],   ['kw','🇰🇼 Kuwait'],
@@ -134,6 +140,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
                       <label key={ind} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:500 }}
                         onMouseOver={e=>e.currentTarget.style.background='#f8f8f8'} onMouseOut={e=>e.currentTarget.style.background=''}>
                         <input type="checkbox" checked={selIndustries.includes(ind)} onChange={() => toggleIndustry(ind)} style={{ accentColor:'var(--orange)', width:14, height:14 }}/>
+                        <span style={{ fontSize:15 }}>{INDUSTRY_ICONS[ind] || '🏭'}</span>
                         {ind}
                       </label>
                     ))}
@@ -154,9 +161,9 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
                     <span>Country</span>
                     {selCountries.length > 0 && <span onClick={() => setSelCountries([])} style={{ cursor:'pointer', color:'var(--orange)', fontWeight:700, fontSize:10 }}>Clear</span>}
                   </div>
-                  <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:1, maxHeight:260, overflowY:'auto' }}>
+                  <div style={{ display:'flex', flexDirection:'column', gap:1, maxHeight:260, overflowY:'auto' }}>
                     {COUNTRIES.map(([code, label]) => (
-                      <label key={code} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', borderRadius:8, cursor:'pointer', fontSize:12, fontWeight:500 }}
+                      <label key={code} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:500 }}
                         onMouseOver={e=>e.currentTarget.style.background='#f8f8f8'} onMouseOut={e=>e.currentTarget.style.background=''}>
                         <input type="checkbox" checked={selCountries.includes(code)} onChange={() => toggleCountry(code)} style={{ accentColor:'var(--orange)', width:13, height:13 }}/>
                         {label}
