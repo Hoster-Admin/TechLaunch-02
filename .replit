@@ -57,13 +57,13 @@ waitForPort = 5000
 name = "Public Site"
 author = "agent"
 
-[[workflows.workflow.tasks]]
-task = "shell.exec"
-args = "PORT=3001 node backend/src/server.js"
-waitForPort = 3001
-
 [workflows.workflow.metadata]
 outputType = "console"
+
+[[workflows.workflow.tasks]]
+task = "shell.exec"
+args = "NODE_ENV=production PORT=3001 node backend/src/server.js"
+waitForPort = 3001
 
 [deployment]
 deploymentTarget = "autoscale"
