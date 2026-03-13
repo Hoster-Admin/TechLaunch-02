@@ -545,14 +545,113 @@ nav {
 .empty-state .empty-text { font-size: 14px; font-weight: 700; color: var(--ink); }
 .empty-state .empty-sub { font-size: 12px; color: var(--gray-400); margin-top: 4px; }
 
+/* ── NAVBAR RESPONSIVE HELPERS ── */
+.nav-links-desktop  { display: flex; }
+.nav-search-wrap    { flex:1; display:flex; justify-content:center; padding:0 16px; max-width:420px; margin:0 auto; position:relative; }
+.nav-right-desktop  { display: flex; align-items: center; gap: 10px; }
+.nav-mobile-right   { display: none; align-items: center; gap: 8px; }
+.nav-hamburger      { width:36px; height:36px; border:none; background:transparent; display:grid; place-items:center; cursor:pointer; border-radius:9px; color:var(--black); transition:background .15s; }
+.nav-hamburger:hover { background:var(--gray-100); }
+
+/* ── MOBILE MENU ── */
+.mobile-menu {
+  position: fixed; top: var(--nav-h); left: 0; right: 0; bottom: 0;
+  background: #fff; z-index: 190;
+  overflow-y: auto; display: none;
+  border-top: 1px solid var(--gray-200);
+}
+.mobile-menu-links  { display: flex; flex-direction: column; padding: 4px 8px; }
+.mobile-menu-item   { padding: 12px 16px; font-size: 15px; font-weight: 600; color: var(--black); border-radius: 10px; cursor: pointer; transition: background .12s; }
+.mobile-menu-item:hover { background: var(--gray-100); }
+
 /* ── RESPONSIVE ── */
 @media(max-width:900px) {
   nav { padding: 0 16px; }
   .hero { padding: 48px 20px 52px; }
   .main-layout { padding: 20px 16px 60px; gap: 20px; }
+  .stats-grid { grid-template-columns: repeat(2,1fr); }
 }
+
 @media(max-width:768px) {
   :root { --nav-h: 56px; }
+
+  /* Navbar: show hamburger, hide desktop items */
+  .nav-links-desktop  { display: none !important; }
+  .nav-search-wrap    { display: none !important; }
+  .nav-right-desktop  { display: none !important; }
+  .nav-mobile-right   { display: flex !important; }
+  .mobile-menu        { display: block; }
+
+  /* Hero */
+  .hero { padding: 40px 16px 44px; }
+  .hero h1 { font-size: clamp(30px, 8vw, 48px); }
+  .hero p { font-size: 15px; }
+  .hero-stats { gap: 24px; margin-top: 36px; padding-top: 28px; }
+  .hero-stat-num { font-size: 22px; }
+
+  /* Main layout */
+  .main-layout { padding: 16px 12px 60px; grid-template-columns: 1fr; }
+
+  /* Product card: compact on mobile */
+  .product-card { padding: 14px 14px; gap: 12px; }
+  .product-logo { width: 46px; height: 46px; font-size: 22px; border-radius: 12px; }
+  .product-rank { width: 16px; font-size: 11px; }
+
+  /* Filter bar */
+  .filter-inner { padding: 0 12px; }
+  .filter-tab { padding: 14px 12px; font-size: 12px; }
+
+  /* Modals full-screen on mobile */
+  .modal-overlay { padding: 0; align-items: flex-end; }
+  .modal { border-radius: 20px 20px 0 0; max-width: 100%; padding: 28px 20px 36px; max-height: 92vh; overflow-y: auto; }
+
+  /* Sidebar hidden on mobile (already 1-col grid) */
+  .sidebar-card { padding: 18px; }
+
+  /* Stats grid */
+  .stats-grid { grid-template-columns: repeat(2,1fr); gap: 12px; }
+  .stat-value { font-size: 22px; }
+
+  /* People page grid */
+  .people-grid { grid-template-columns: 1fr !important; }
+
+  /* Entity/startup grids */
+  .entity-grid, .startup-grid, .listing-grid { grid-template-columns: 1fr !important; }
+
+  /* Profile page */
+  .profile-page-inner { padding: 16px 12px 60px !important; }
+  .profile-header-inner { flex-direction: column !important; align-items: flex-start !important; }
+
+  /* Settings */
+  .settings-layout { flex-direction: column !important; }
+  .settings-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--gray-200) !important; }
+
+  /* Admin (keep desktop-only) */
+  .admin-sidebar { display: none; }
+  .admin-content { padding: 16px; }
+}
+
+@media(max-width:480px) {
+  /* Even smaller phones */
+  .hero h1 { font-size: 28px; }
+  .hero-actions { flex-direction: column; width: 100%; }
+  .btn-hero-primary, .btn-hero-ghost { width: 100%; text-align: center; }
+  .hero-stats { gap: 16px; }
+  .hero-stat-num { font-size: 20px; }
+
+  .product-card { padding: 12px 10px; gap: 10px; flex-wrap: nowrap; }
+  .product-name { font-size: 14px; }
+  .upvote-btn { min-width: 46px; }
+
+  .modal { padding: 24px 16px 32px; }
+
+  .filter-tab { padding: 12px 10px; font-size: 11px; }
+
+  /* Stats 2-col */
+  .stats-grid { grid-template-columns: 1fr 1fr; }
+
+  /* Nav */
+  .logo-en { display: none; }
 }
 
 /* ── ARTICLE CARDS (sidebar) ── */
