@@ -26,8 +26,21 @@ const q = (sql, p) => pool.query(sql, p);
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 app.set('trust proxy', 1);
 app.use(helmet({ contentSecurityPolicy: false }));
+const ALLOWED_ORIGINS = [
+  'https://admin.tlmena.com',
+  'http://localhost:5174',
+  'http://localhost:5000',
+  ...(process.env.ADMIN_CLIENT_URL ? [process.env.ADMIN_CLIENT_URL] : []),
+];
 app.use(cors({
-  origin: process.env.ADMIN_CLIENT_URL || true,
+  origin: (origin, cb) => {
+    if (!origin || ALLOWED_ORIGINS.some(o => origin.startsWith(o)) ||
+        (process.env.NODE_ENV !== 'production')) {
+      cb(null, true);
+    } else {
+      cb(new Error('Not allowed by CORS'));
+    }
+  },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
