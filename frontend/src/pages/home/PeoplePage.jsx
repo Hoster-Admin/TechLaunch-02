@@ -27,15 +27,6 @@ const MENA_COUNTRIES = [
   { value:'Syria',        label:'🇸🇾 Syria'         },
 ];
 
-const PERSONAS = [
-  { value:'', label:'All Personas' },
-  { value:'Founder', label:'Founder 🚀' },
-  { value:'Investor', label:'Investor 💰' },
-  { value:'Builder', label:'Builder ⚡' },
-  { value:'Product Manager', label:'PM 🧠' },
-  { value:'Accelerator', label:'Accelerator 🏢' },
-  { value:'Enthusiast', label:'Enthusiast ⭐' },
-];
 
 function AvatarCircle({ user, size = 48 }) {
   if (user?.avatar_url) {
@@ -130,77 +121,178 @@ function PersonCard({ person, currentUser }) {
   );
 }
 
+const PERSONA_OPTIONS = [
+  { value:'Founder',         label:'Founder 🚀' },
+  { value:'Investor',        label:'Investor 💰' },
+  { value:'Builder',         label:'Builder ⚡' },
+  { value:'Product Manager', label:'PM 🧠' },
+  { value:'Accelerator',     label:'Accelerator 🏢' },
+  { value:'Enthusiast',      label:'Enthusiast ⭐' },
+];
+
+function CountryDropdown({ selected, onChange }) {
+  const [open, setOpen] = useState(false);
+  const ref = React.useRef(null);
+
+  useEffect(() => {
+    const handler = (e) => { if (ref.current && !ref.current.contains(e.target)) setOpen(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const toggle = (val) => {
+    onChange(prev => prev.includes(val) ? prev.filter(v => v !== val) : [...prev, val]);
+  };
+
+  const label = selected.length === 0
+    ? '🌍 All Countries'
+    : selected.length === 1
+      ? MENA_COUNTRIES.find(c => c.value === selected[0])?.label || selected[0]
+      : `${selected.length} countries`;
+
+  return (
+    <div ref={ref} style={{ position:'relative' }}>
+      <button type="button" onClick={() => setOpen(o => !o)}
+        style={{ padding:'8px 12px', border:`1.5px solid ${open ? 'var(--orange)' : '#e8e8e8'}`, borderRadius:10,
+          fontSize:13, fontFamily:'inherit', background:'#fff', cursor:'pointer', display:'flex',
+          alignItems:'center', gap:6, whiteSpace:'nowrap', color: selected.length ? '#111' : '#555' }}>
+        {label}
+        <svg width="11" height="11" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5" style={{ transform: open ? 'rotate(180deg)':'rotate(0deg)', transition:'transform .2s' }}>
+          <path d="M6 9l6 6 6-6"/>
+        </svg>
+      </button>
+      {open && (
+        <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, zIndex:200, background:'#fff',
+          border:'1.5px solid #ebebeb', borderRadius:12, boxShadow:'0 8px 30px rgba(0,0,0,.1)',
+          minWidth:210, maxHeight:280, overflowY:'auto', padding:'6px 0' }}>
+          {MENA_COUNTRIES.map(c => {
+            const checked = selected.includes(c.value);
+            return (
+              <div key={c.value} onClick={() => toggle(c.value)}
+                style={{ display:'flex', alignItems:'center', gap:10, padding:'8px 14px',
+                  cursor:'pointer', background: checked ? '#fff8f6':'transparent',
+                  transition:'background .15s' }}
+                onMouseEnter={e => e.currentTarget.style.background = checked ? '#fff0ec':'#f8f8f8'}
+                onMouseLeave={e => e.currentTarget.style.background = checked ? '#fff8f6':'transparent'}>
+                <div style={{ width:16, height:16, borderRadius:4, border:`2px solid ${checked ? 'var(--orange)':'#ccc'}`,
+                  background: checked ? 'var(--orange)':'transparent', display:'flex', alignItems:'center', justifyContent:'center', flexShrink:0 }}>
+                  {checked && <svg width="10" height="10" viewBox="0 0 12 12" fill="none"><polyline points="2,6 5,9 10,3" stroke="#fff" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"/></svg>}
+                </div>
+                <span style={{ fontSize:13 }}>{c.label}</span>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </div>
+  );
+}
+
 export function PeopleContent() {
   const { user } = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
 
-  const [people, setPeople]     = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [total, setTotal]       = useState(0);
-  const [page, setPage]         = useState(1);
+  const [people, setPeople]   = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [total, setTotal]     = useState(0);
+  const [page, setPage]       = useState(1);
 
-  const [search,  setSearch]  = useState(searchParams.get('q') || '');
-  const [persona, setPersona] = useState(searchParams.get('persona') || '');
-  const [country, setCountry] = useState(searchParams.get('country') || '');
+  const [search,   setSearch]   = useState(searchParams.get('q') || '');
+  const [personas, setPersonas] = useState(() => (searchParams.get('persona') || '').split(',').filter(Boolean));
+  const [countries, setCountries] = useState(() => (searchParams.get('country') || '').split(',').filter(Boolean));
 
-  const load = useCallback(async (pg = 1, reset = false) => {
+  const load = useCallback(async (pg = 1, reset = false, overridePersonas, overrideCountries) => {
     setLoading(true);
+    const pList = overridePersonas !== undefined ? overridePersonas : personas;
+    const cList = overrideCountries !== undefined ? overrideCountries : countries;
     try {
-      const res = await usersAPI.people({ search: search||undefined, persona: persona||undefined, country: country||undefined, page: pg, limit: 24 });
+      const res = await usersAPI.people({
+        search:  search || undefined,
+        persona: pList.length ? pList.join(',') : undefined,
+        country: cList.length ? cList.join(',') : undefined,
+        page: pg, limit: 24,
+      });
       const data = res.data?.data || [];
       setPeople(prev => reset || pg === 1 ? data : [...prev, ...data]);
       setTotal(res.data?.pagination?.total || 0);
       setPage(pg);
     } catch { toast.error('Failed to load people'); }
     finally { setLoading(false); }
-  }, [search, persona, country]);
+  }, [search, personas, countries]);
 
   useEffect(() => { load(1, true); }, [load]);
+
+  const togglePersona = (val) => {
+    const next = personas.includes(val) ? personas.filter(v => v !== val) : [...personas, val];
+    setPersonas(next);
+    load(1, true, next, countries);
+  };
+
+  const handleCountriesChange = (updater) => {
+    setCountries(prev => {
+      const next = updater(prev);
+      load(1, true, personas, next);
+      return next;
+    });
+  };
 
   const handleSearch = (e) => {
     e.preventDefault();
     const params = {};
-    if (search)  params.q = search;
-    if (persona) params.persona = persona;
-    if (country) params.country = country;
+    if (search)          params.q = search;
+    if (personas.length) params.persona = personas.join(',');
+    if (countries.length) params.country = countries.join(',');
     setSearchParams(params);
     load(1, true);
   };
 
+  const hasFilters = Boolean(search) || personas.length > 0 || countries.length > 0;
+
+  const handleClear = () => {
+    setSearch(''); setPersonas([]); setCountries([]);
+    setSearchParams({});
+    load(1, true, [], []);
+  };
+
   return (
     <div>
-      <form onSubmit={handleSearch} style={{ background:'#fff', border:'1.5px solid #ebebeb', borderRadius:16, padding:'16px 20px', marginBottom:24, display:'flex', gap:12, flexWrap:'wrap', alignItems:'center' }}>
-        <div style={{ flex:'1 1 200px', position:'relative' }}>
-          <svg style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2.2">
-            <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
-          </svg>
-          <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, handle, headline…"
-            style={{ width:'100%', padding:'8px 12px 8px 30px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:13, outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}
-            onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor='#e8e8e8'}/>
-        </div>
-
-        <select value={persona} onChange={e => setPersona(e.target.value)}
-          style={{ padding:'8px 12px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:13, fontFamily:'inherit', outline:'none', background:'#fff', cursor:'pointer' }}>
-          {PERSONAS.map(p => <option key={p.value} value={p.value}>{p.label}</option>)}
-        </select>
-
-        <select value={country} onChange={e => setCountry(e.target.value)}
-          style={{ padding:'8px 12px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:13, fontFamily:'inherit', outline:'none', background:'#fff', cursor:'pointer' }}>
-          <option value="">🌍 All Countries</option>
-          {MENA_COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
-        </select>
-
-        <button type="submit" style={{ padding:'8px 20px', borderRadius:10, border:'none', background:'var(--orange)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-          Search
-        </button>
-
-        {(search || persona || country) && (
-          <button type="button" onClick={() => { setSearch(''); setPersona(''); setCountry(''); setSearchParams({}); load(1, true); }}
-            style={{ padding:'8px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#f8f8f8', fontSize:13, color:'#888', cursor:'pointer' }}>
-            Clear
+      <div style={{ background:'#fff', border:'1.5px solid #ebebeb', borderRadius:16, padding:'16px 20px', marginBottom:24 }}>
+        <form onSubmit={handleSearch} style={{ display:'flex', gap:10, flexWrap:'wrap', alignItems:'center', marginBottom:14 }}>
+          <div style={{ flex:'1 1 200px', position:'relative' }}>
+            <svg style={{ position:'absolute', left:10, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2.2">
+              <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+            </svg>
+            <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by name, handle, headline…"
+              style={{ width:'100%', padding:'8px 12px 8px 30px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:13, outline:'none', fontFamily:'inherit', boxSizing:'border-box' }}
+              onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor='#e8e8e8'}/>
+          </div>
+          <CountryDropdown selected={countries} onChange={handleCountriesChange}/>
+          <button type="submit" style={{ padding:'8px 20px', borderRadius:10, border:'none', background:'var(--orange)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+            Search
           </button>
-        )}
-      </form>
+          {hasFilters && (
+            <button type="button" onClick={handleClear}
+              style={{ padding:'8px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#f8f8f8', fontSize:13, color:'#888', cursor:'pointer' }}>
+              Clear
+            </button>
+          )}
+        </form>
+
+        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
+          {PERSONA_OPTIONS.map(p => {
+            const active = personas.includes(p.value);
+            return (
+              <button key={p.value} type="button" onClick={() => togglePersona(p.value)}
+                style={{ padding:'5px 13px', borderRadius:20, border:`1.5px solid ${active ? 'var(--orange)':'#e8e8e8'}`,
+                  background: active ? '#fff4f0':'#fff', color: active ? 'var(--orange)':'#555',
+                  fontSize:12.5, fontWeight: active ? 700:400, cursor:'pointer', fontFamily:'inherit',
+                  transition:'all .15s' }}>
+                {p.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
 
       {!loading && (
         <div style={{ fontSize:13, color:'#888', marginBottom:16 }}>
