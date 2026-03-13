@@ -1,13 +1,8 @@
 import React, { useEffect, useState } from 'react';
 import { adminAPI } from '../utils/api.js';
 
-const UPVOTE_CHART = [
-  {day:'Mon',v:420},{day:'Tue',v:380},{day:'Wed',v:510},
-  {day:'Thu',v:460},{day:'Fri',v:620},{day:'Sat',v:390},{day:'Sun',v:540},
-];
-
 export default function Dashboard() {
-  const [data, setData]     = useState(null);
+  const [data, setData]       = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
@@ -17,124 +12,142 @@ export default function Dashboard() {
       .finally(() => setLoading(false));
   }, []);
 
-  if (loading) return <div style={{textAlign:'center',padding:'60px 0',color:'#AAAAAA',fontSize:14}}>Loading dashboard…</div>;
+  if (loading) return (
+    <div>
+      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:20}}>
+        {[...Array(4)].map((_,i) => (
+          <div key={i} style={{height:110,background:'#fff',borderRadius:16,border:'1px solid var(--gray-200)',animation:'pulse 1.5s ease-in-out infinite'}}/>
+        ))}
+      </div>
+      <div style={{textAlign:'center',padding:'40px 0',color:'var(--gray-400)',fontSize:13}}>Loading dashboard…</div>
+    </div>
+  );
 
   const s = data?.stats || {};
   const topProducts = data?.topProducts || [];
   const activity    = data?.activity    || [];
   const newUsers    = data?.newUsers    || [];
 
-  const statCards = [
-    { icon:'🚀', label:'Live Products',    value: s.products?.live    ?? '—', delta:`↑ ${s.products?.pending??0} pending`, color:'#E15033' },
-    { icon:'👥', label:'Registered Users', value: s.users?.total      ?? '—', delta:`${s.users?.active??0} active`,       color:'#16a34a' },
-    { icon:'🎉', label:'Total Upvotes',    value: s.upvotes           ?? '—', delta:'Across all products',                color:'#2563eb' },
-    { icon:'⏳', label:'Pending Review',   value: s.products?.pending ?? '—', delta: (s.products?.pending??0)>0 ? '↑ needs attention' : 'Queue is clear', color:'#d97706' },
+  const STAT_CARDS = [
+    { icon:'🚀', label:'Live Products',    value:s.products?.live    ?? 0,  delta:`↑ ${s.products?.pending??0} pending review`, color:'orange' },
+    { icon:'👥', label:'Registered Users', value:s.users?.total      ?? 0,  delta:`${s.users?.active??0} active now`,           color:'green'  },
+    { icon:'🎉', label:'Total Upvotes',    value:s.upvotes           ?? 0,  delta:'Across all products',                        color:'blue'   },
+    { icon:'⏳', label:'Pending Review',   value:s.products?.pending ?? 0,  delta:(s.products?.pending??0)>0?'↑ needs attention':'Queue is clear', color:'purple' },
   ];
 
-  const maxUpvote = Math.max(...UPVOTE_CHART.map(d => d.v));
+  const ICON_COLORS = { orange:'#E15033', green:'#16a34a', blue:'#2563eb', purple:'#7c3aed' };
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       {/* Stat cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
-        {statCards.map((c,i) => (
-          <div key={i} style={{background:'#fff',borderRadius:16,border:'1.5px solid #E8E8E8',padding:'20px 22px'}}>
-            <div style={{width:36,height:36,borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,marginBottom:12,background:`${c.color}15`}}>{c.icon}</div>
-            <div style={{fontSize:28,fontWeight:800,letterSpacing:'-.04em',color:'#0A0A0A',lineHeight:1}}>{c.value?.toLocaleString?.() ?? c.value}</div>
-            <div style={{fontSize:12,color:'#737373',fontWeight:500,marginTop:4}}>{c.label}</div>
-            <div style={{fontSize:11,fontWeight:700,marginTop:6,color:'#16a34a'}}>{c.delta}</div>
+        {STAT_CARDS.map((c,i) => (
+          <div key={i} className={`stat-card ${c.color}`}>
+            <div style={{width:36,height:36,borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,marginBottom:12,background:`${ICON_COLORS[c.color]}12`}}>{c.icon}</div>
+            <div style={{fontSize:30,fontWeight:800,letterSpacing:'-.05em',color:'var(--ink)',lineHeight:1}}>{Number(c.value).toLocaleString()}</div>
+            <div style={{fontSize:12,color:'var(--gray-400)',fontWeight:500,marginTop:4}}>{c.label}</div>
+            <div style={{fontSize:11,fontWeight:700,marginTop:6,color:'var(--green)'}}>{c.delta}</div>
           </div>
         ))}
       </div>
 
-      {/* Pending Queue + Upvote Chart */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 380px',gap:16}}>
-        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
-          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4',fontWeight:800,fontSize:14}}>Pending Review Queue</div>
-          <div style={{maxHeight:300,overflowY:'auto'}}>
-            {data?.newUsers?.filter?.(()=>false).length === 0
-              ? <div style={{padding:'40px 20px',textAlign:'center',color:'#AAAAAA',fontSize:13}}>Queue is clear ✅</div>
-              : (s.products?.pending > 0
-                  ? <div style={{padding:'20px',color:'#AAAAAA',fontSize:13}}>Load products section to review pending items</div>
-                  : <div style={{padding:'40px 20px',textAlign:'center',color:'#AAAAAA',fontSize:13}}>✅ No pending products</div>
-                )
-            }
+      {/* Pending queue + chart row */}
+      <div style={{display:'grid',gridTemplateColumns:'1fr 340px',gap:16}}>
+        <div className="card">
+          <div className="card-header">
+            <span className="card-title">Pending Review Queue</span>
+            <span style={{fontSize:11,fontWeight:700,padding:'3px 10px',borderRadius:99,background:'var(--amber-light)',color:'var(--amber)'}}>{s.products?.pending??0} waiting</span>
           </div>
+          {(s.products?.pending??0)===0
+            ? <div style={{padding:'40px 20px',textAlign:'center',color:'var(--gray-400)',fontSize:13}}>✅ Queue is clear — no pending products</div>
+            : <div style={{padding:'16px 20px',color:'var(--gray-500)',fontSize:13}}>Go to Products → Pending to review and approve/reject submissions.</div>
+          }
         </div>
-        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
-          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4',fontWeight:800,fontSize:14}}>Upvotes This Week</div>
-          <div style={{padding:'16px 20px 8px'}}>
-            <div style={{display:'flex',alignItems:'flex-end',gap:6,height:80}}>
-              {UPVOTE_CHART.map(d => (
-                <div key={d.day} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:4}}>
-                  <div style={{width:'100%',background:'var(--orange)',borderRadius:4,height:Math.round((d.v/maxUpvote)*70)}}/>
-                  <div style={{fontSize:10,color:'#AAAAAA'}}>{d.day}</div>
-                </div>
-              ))}
-            </div>
-            <div style={{fontSize:11,color:'#AAAAAA',marginTop:8}}>Total: {UPVOTE_CHART.reduce((a,b)=>a+b.v,0).toLocaleString()} upvotes this week</div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Upvote Activity</span></div>
+          <div style={{padding:'16px 20px'}}>
+            <BarChart data={data?.charts?.upvotes||[]} label="upvotes" color="var(--orange)"/>
           </div>
         </div>
       </div>
 
-      {/* Activity + Top Products + New Users */}
+      {/* 3-column bottom row */}
       <div style={{display:'grid',gridTemplateColumns:'1fr 260px 260px',gap:16}}>
         {/* Activity feed */}
-        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
-          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4',fontWeight:800,fontSize:14}}>Recent Activity</div>
-          <div style={{maxHeight:280,overflowY:'auto'}}>
-            {activity.length === 0 ? (
-              <div style={{padding:'30px 20px',textAlign:'center',color:'#AAAAAA',fontSize:13}}>No activity yet</div>
-            ) : activity.map((a,i) => (
-              <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'10px 20px',borderBottom:'1px solid #F4F4F4'}}>
-                <div style={{width:8,height:8,borderRadius:'50%',background:'var(--orange)',flexShrink:0,marginTop:4}}/>
-                <div>
-                  <div style={{fontSize:12,color:'#0A0A0A'}}>{a.actor_name} — {a.action}</div>
-                  <div style={{fontSize:10,color:'#AAAAAA'}}>{new Date(a.created_at).toLocaleTimeString()}</div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Recent Activity</span></div>
+          <div style={{maxHeight:300,overflowY:'auto'}}>
+            {activity.length===0
+              ? <div style={{padding:'30px 20px',textAlign:'center',color:'var(--gray-400)',fontSize:13}}>No activity yet</div>
+              : activity.map((a,i) => (
+                <div key={i} style={{display:'flex',gap:10,alignItems:'flex-start',padding:'10px 20px',borderBottom:'1px solid var(--gray-100)'}}>
+                  <div style={{width:8,height:8,borderRadius:'50%',background:'var(--orange)',flexShrink:0,marginTop:5}}/>
+                  <div>
+                    <div style={{fontSize:12,color:'var(--ink)',fontWeight:500}}>{a.actor_name} — <span style={{color:'var(--gray-400)'}}>{a.action}</span></div>
+                    <div style={{fontSize:10,color:'var(--gray-400)',marginTop:1}}>{new Date(a.created_at).toLocaleTimeString()}</div>
+                  </div>
                 </div>
-              </div>
-            ))}
+              ))}
           </div>
         </div>
 
         {/* Top Products */}
-        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
-          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4',fontWeight:800,fontSize:14}}>Top Products</div>
-          <div>
-            {topProducts.map((p,i) => (
-              <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'1px solid #F4F4F4'}}>
-                <div style={{fontSize:14,fontWeight:800,color:['#F59E0B','#94A3B8','#CD7C2F'][i]||'#AAAAAA',width:18}}>{i+1}</div>
-                <div style={{fontSize:18}}>{p.logo_emoji||'📦'}</div>
+        <div className="card">
+          <div className="card-header"><span className="card-title">Top Products</span></div>
+          {topProducts.length===0
+            ? <div style={{padding:'30px 16px',textAlign:'center',color:'var(--gray-400)',fontSize:12}}>No products yet</div>
+            : topProducts.map((p,i) => (
+              <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'1px solid var(--gray-100)'}}>
+                <div style={{fontSize:14,fontWeight:800,color:['#F59E0B','#94A3B8','#CD7C2F'][i]||'var(--gray-400)',width:18,flexShrink:0}}>{i+1}</div>
+                <div style={{width:32,height:32,borderRadius:9,background:'var(--gray-100)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>{p.logo_emoji||'📦'}</div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
-                  <div style={{fontSize:10,color:'#AAAAAA'}}>{p.industry}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
+                  <div style={{fontSize:10,color:'var(--gray-400)'}}>{p.industry}</div>
                 </div>
-                <div style={{fontSize:12,fontWeight:800,color:'var(--orange)'}}>🎉{p.upvotes_count}</div>
+                <div style={{fontSize:12,fontWeight:800,color:'var(--orange)',flexShrink:0}}>🎉 {p.upvotes_count}</div>
               </div>
             ))}
-            {topProducts.length === 0 && <div style={{padding:'30px 16px',textAlign:'center',color:'#AAAAAA',fontSize:12}}>No products yet</div>}
-          </div>
         </div>
 
         {/* New Users */}
-        <div style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',overflow:'hidden'}}>
-          <div style={{padding:'16px 20px',borderBottom:'1px solid #F4F4F4',fontWeight:800,fontSize:14}}>New Users</div>
-          <div>
-            {newUsers.map(u => (
-              <div key={u.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'1px solid #F4F4F4'}}>
-                <div style={{width:28,height:28,borderRadius:8,background:u.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#fff',flexShrink:0}}>
+        <div className="card">
+          <div className="card-header"><span className="card-title">New Members</span></div>
+          {newUsers.length===0
+            ? <div style={{padding:'30px 16px',textAlign:'center',color:'var(--gray-400)',fontSize:12}}>No users yet</div>
+            : newUsers.map(u => (
+              <div key={u.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'1px solid var(--gray-100)'}}>
+                <div style={{width:28,height:28,borderRadius:'50%',background:u.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#fff',flexShrink:0}}>
                   {(u.name||'U').split(' ').map(w=>w[0]).join('').slice(0,2)}
                 </div>
                 <div style={{flex:1,minWidth:0}}>
-                  <div style={{fontSize:12,fontWeight:700,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}</div>
-                  <div style={{fontSize:10,color:'#AAAAAA'}}>{u.persona}</div>
+                  <div style={{fontSize:12,fontWeight:700,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{u.name}</div>
+                  <div style={{fontSize:10,color:'var(--gray-400)'}}>{u.persona}</div>
                 </div>
+                {u.verified && <span style={{fontSize:10,color:'var(--orange)'}}>✓</span>}
               </div>
             ))}
-            {newUsers.length === 0 && <div style={{padding:'30px 16px',textAlign:'center',color:'#AAAAAA',fontSize:12}}>No users yet</div>}
-          </div>
         </div>
       </div>
+    </div>
+  );
+}
+
+function BarChart({ data, label, color }) {
+  if (!data || data.length === 0) {
+    return <div style={{height:80,display:'flex',alignItems:'center',justifyContent:'center',color:'var(--gray-400)',fontSize:12}}>No data yet</div>;
+  }
+  const max = Math.max(...data.map(d => parseInt(d.count||d.signups||0)), 1);
+  return (
+    <div style={{display:'flex',alignItems:'flex-end',gap:5,height:80}}>
+      {data.map((d,i) => {
+        const val = parseInt(d.count||d.signups||0);
+        return (
+          <div key={i} style={{flex:1,display:'flex',flexDirection:'column',alignItems:'center',gap:3}}>
+            <div style={{width:'100%',background:color,borderRadius:'3px 3px 0 0',height:Math.max(4,Math.round((val/max)*70)),minHeight:4}}/>
+            <div style={{fontSize:9,color:'var(--gray-400)',fontWeight:600}}>{d.day||`W${i+1}`}</div>
+          </div>
+        );
+      })}
     </div>
   );
 }
