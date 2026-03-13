@@ -1,10 +1,12 @@
 import React, { useState } from 'react';
 import { productsAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
 
 export default function ProductCard({ product, rank, onVote }) {
   const { user } = useAuth();
+  const { setAuthModal } = useUI();
   const [voted,     setVoted]     = useState(product.user_voted || false);
   const [votes,     setVotes]     = useState(product.upvotes_count || 0);
   const [bookmarked, setBookmarked] = useState(product.user_bookmarked || false);
@@ -12,7 +14,7 @@ export default function ProductCard({ product, rank, onVote }) {
 
   const handleUpvote = async (e) => {
     e.stopPropagation();
-    if (!user) { toast.error('Sign in to upvote'); return; }
+    if (!user) { setAuthModal('gate'); return; }
     if (loading) return;
     setLoading(true);
     try {
@@ -28,7 +30,7 @@ export default function ProductCard({ product, rank, onVote }) {
 
   const handleBookmark = async (e) => {
     e.stopPropagation();
-    if (!user) { toast.error('Sign in to bookmark'); return; }
+    if (!user) { setAuthModal('gate'); return; }
     const next = !bookmarked;
     setBookmarked(next);
     try {
@@ -75,13 +77,11 @@ export default function ProductCard({ product, rank, onVote }) {
       </div>
 
       <div className="product-actions" onClick={e => e.stopPropagation()}>
-        {/* Upvote — exact match: 54px wide, 10px radius, border 1.5px */}
         <button className={`upvote-btn ${voted ? 'voted' : ''}`} onClick={handleUpvote} disabled={loading}>
           <span className="upvote-arrow">🎉</span>
           <span className="upvote-count">{votes}</span>
         </button>
 
-        {/* Bookmark — exact SVG from prototype */}
         <button className={`bookmark-btn ${bookmarked ? 'saved' : ''}`} onClick={handleBookmark} title="Bookmark">
           <svg width="18" height="18" viewBox="0 0 24 24"
             fill={bookmarked ? 'var(--orange)' : 'none'}
