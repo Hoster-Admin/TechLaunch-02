@@ -147,9 +147,7 @@ function PostCard({ post }) {
             padding: 0, fontFamily: "'DM Sans',sans-serif", transition: 'color .15s',
           }}
         >
-          <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
-            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
-          </svg>
+          <span style={{ fontSize: 15, lineHeight: 1, filter: liked ? 'none' : 'grayscale(1)', transition: 'filter .15s' }}>🎉</span>
           {post.likes + (liked ? 1 : 0)}
         </button>
         <button
