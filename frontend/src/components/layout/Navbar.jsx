@@ -118,10 +118,10 @@ export default function Navbar() {
                 {[
                   { icon:'🔍', label:'All Products',            desc:'Search every product on the platform',   path:'/products' },
                   null,
-                  { icon:'🚀', label:'Company',                    desc:'Submit and showcase your product',        path:'/list/startup' },
+                  { icon:'🚀', label:'Companies',                  desc:'Submit and showcase your product',      path:'/list/startup' },
                   { icon:'🏢', label:'Accelerators & Incubators', desc:'List your program and find companies',  path:'/list/accelerator' },
-                  { icon:'💰', label:'Investment Firm',            desc:'Discover MENA deals and founders',      path:'/list/investor' },
-                  { icon:'🎯', label:'Venture Studio',             desc:'Build and co-found companies',          path:'/list/venture' },
+                  { icon:'💰', label:'Investment Firms',           desc:'Discover MENA deals and founders',      path:'/list/investor' },
+                  { icon:'🎯', label:'Venture Studios',            desc:'Build and co-found companies',          path:'/list/venture' },
                 ].map((item, i) => item === null
                   ? <div key={i} style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>
                   : (
@@ -306,10 +306,10 @@ export default function Navbar() {
             <div className="mobile-menu-item" onClick={() => navGo('/launcher')}>🚀 Launcher</div>
             <div className="mobile-menu-item" onClick={() => navGo('/products')}>🔍 All Products</div>
             <div style={{ height:1, background:'#f0f0f0', margin:'4px 16px' }}/>
-            <div className="mobile-menu-item" onClick={() => navGo('/list/startup')}>🚀 List as Company</div>
-            <div className="mobile-menu-item" onClick={() => navGo('/list/accelerator')}>🏢 List as Accelerators & Incubators</div>
-            <div className="mobile-menu-item" onClick={() => navGo('/list/investor')}>💰 List as Investor</div>
-            <div className="mobile-menu-item" onClick={() => navGo('/list/venture')}>🎯 List as Venture Studio</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/startup')}>🚀 Companies</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/accelerator')}>🏢 Accelerators & Incubators</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/investor')}>💰 Investment Firms</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/venture')}>🎯 Venture Studios</div>
           </div>
 
           {/* User section */}
