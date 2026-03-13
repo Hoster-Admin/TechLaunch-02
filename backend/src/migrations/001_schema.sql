@@ -39,6 +39,7 @@ CREATE TABLE users (
   votes_given     INTEGER    NOT NULL DEFAULT 0,
   followers_count INTEGER    NOT NULL DEFAULT 0,
   following_count INTEGER    NOT NULL DEFAULT 0,
+  entity_id     UUID         REFERENCES entities(id) ON DELETE SET NULL,
   created_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW(),
   updated_at    TIMESTAMPTZ  NOT NULL DEFAULT NOW()
 );
