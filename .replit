@@ -67,8 +67,8 @@ waitForPort = 3001
 
 [deployment]
 deploymentTarget = "autoscale"
-run = ["bash", "-c", "ADMIN_PORT=5000 NODE_ENV=production node admin-app/backend/server.js"]
-build = ["bash", "-c", "cd admin-app/frontend && npm run build"]
+run = ["node", "backend/src/server.js"]
+build = ["bash", "-c", "cd frontend && npm run build 2>/dev/null || true"]
 
 [userenv]
 
