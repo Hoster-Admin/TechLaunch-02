@@ -73,6 +73,13 @@ const toggleFollow = async (req, res, next) => {
       res.json({ success:true, data:{ following:false } });
     } else {
       await query('INSERT INTO follows (follower_id, following_id) VALUES ($1,$2)', [req.user.id, id]);
+      // Notify the followed user
+      await query(
+        `INSERT INTO notifications (user_id, type, title, body, link, data)
+         VALUES ($1,'follow','New follower',$2,$3,$4)`,
+        [id, `${req.user.name} started following you`, `/u/${req.user.handle}`,
+         JSON.stringify({ actor_id: req.user.id, actor_handle: req.user.handle })]
+      ).catch(() => {});
       res.json({ success:true, data:{ following:true } });
     }
   } catch(err){ next(err); }

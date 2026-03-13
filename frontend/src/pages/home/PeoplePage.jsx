@@ -3,6 +3,7 @@ import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import { usersAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -56,6 +57,7 @@ function AvatarCircle({ user, size = 48 }) {
 }
 
 function PersonCard({ person, currentUser }) {
+  const { openDM } = useUI();
   const [following, setFollowing] = useState(false);
   const [loadingFollow, setLoadingFollow] = useState(false);
 
@@ -71,6 +73,12 @@ function PersonCard({ person, currentUser }) {
     finally { setLoadingFollow(false); }
   };
 
+  const handleMessage = (e) => {
+    e.preventDefault();
+    if (!currentUser) { toast.error('Sign in to send messages'); return; }
+    openDM(person.handle, person.name, person.avatar_url || null);
+  };
+
   const isMe = currentUser?.id === person.id;
 
   return (
@@ -80,7 +88,7 @@ function PersonCard({ person, currentUser }) {
         onMouseEnter={e => { e.currentTarget.style.boxShadow='0 4px 24px rgba(0,0,0,.08)'; e.currentTarget.style.borderColor='#ddd'; }}
         onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.borderColor='#ebebeb'; }}>
 
-        <div style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:12 }}>
+        <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:12 }}>
           <AvatarCircle user={person} size={48}/>
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
@@ -92,13 +100,22 @@ function PersonCard({ person, currentUser }) {
             <div style={{ fontSize:12, color:'#aaa', marginTop:1 }}>@{person.handle}</div>
           </div>
           {!isMe && (
-            <button onClick={handleFollow} disabled={loadingFollow}
-              style={{ flexShrink:0, padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:700,
-                border:`1.5px solid ${following?'#e8e8e8':'var(--orange)'}`,
-                background:following?'#f8f8f8':'var(--orange)',
-                color:following?'#666':'#fff', cursor:'pointer', transition:'all .15s' }}>
-              {loadingFollow ? '…' : following ? 'Following' : 'Follow'}
-            </button>
+            <div style={{ display:'flex', gap:6, flexShrink:0 }}>
+              <button onClick={handleMessage}
+                style={{ padding:'5px 10px', borderRadius:20, fontSize:12, fontWeight:700,
+                  border:'1.5px solid #e8e8e8', background:'#f8f8f8',
+                  color:'#555', cursor:'pointer', transition:'all .15s' }}
+                title="Send message">
+                💬
+              </button>
+              <button onClick={handleFollow} disabled={loadingFollow}
+                style={{ padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:700,
+                  border:`1.5px solid ${following?'#e8e8e8':'var(--orange)'}`,
+                  background:following?'#f8f8f8':'var(--orange)',
+                  color:following?'#666':'#fff', cursor:'pointer', transition:'all .15s' }}>
+                {loadingFollow ? '…' : following ? 'Following' : 'Follow'}
+              </button>
+            </div>
           )}
         </div>
 

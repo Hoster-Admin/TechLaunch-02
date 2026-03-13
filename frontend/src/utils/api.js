@@ -165,3 +165,12 @@ export const adminAPI = {
 export const suggestionsAPI = {
   submit: (body) => api.post('/suggestions', { body }),
 };
+
+export const launcherAPI = {
+  posts:      ()        => api.get('/launcher'),
+  createPost: (data)    => api.post('/launcher', data),
+  like:       (id)      => api.post(`/launcher/${id}/like`),
+  deletePost: (id)      => api.delete(`/launcher/${id}`),
+  comments:   (id)      => api.get(`/launcher/${id}/comments`),
+  addComment: (id, b)   => api.post(`/launcher/${id}/comments`, { body: b }),
+};

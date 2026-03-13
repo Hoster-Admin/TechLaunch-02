@@ -4,12 +4,13 @@ const { authenticate, optionalAuth, requireAdmin, requireMod, requireEditor } = 
 const { validate } = require('../middleware/error');
 
 // Controllers
-const authCtrl    = require('../controllers/authController');
-const productCtrl = require('../controllers/productController');
-const entityCtrl  = require('../controllers/entityController');
-const userCtrl    = require('../controllers/userController');
-const adminCtrl   = require('../controllers/adminController');
-const msgCtrl     = require('../controllers/messageController');
+const authCtrl      = require('../controllers/authController');
+const productCtrl   = require('../controllers/productController');
+const entityCtrl    = require('../controllers/entityController');
+const userCtrl      = require('../controllers/userController');
+const adminCtrl     = require('../controllers/adminController');
+const msgCtrl       = require('../controllers/messageController');
+const launcherCtrl  = require('../controllers/launcherController');
 
 const router = express.Router();
 
@@ -281,12 +282,28 @@ pitchRouter.post('/',
   }
 );
 
+// ══════════════════════════════════════════════════
+// LAUNCHER POSTS  /api/launcher
+// ══════════════════════════════════════════════════
+const launcherRouter = express.Router();
+launcherRouter.get ('/',             optionalAuth, launcherCtrl.getPosts);
+launcherRouter.post('/',             authenticate,
+  [body('content').trim().notEmpty().isLength({ max:2000 })],
+  validate, launcherCtrl.createPost);
+launcherRouter.post('/:id/like',     authenticate, launcherCtrl.toggleLike);
+launcherRouter.delete('/:id',        authenticate, launcherCtrl.deletePost);
+launcherRouter.get ('/:id/comments', optionalAuth, launcherCtrl.getComments);
+launcherRouter.post('/:id/comments', authenticate,
+  [body('body').trim().notEmpty().isLength({ max:2000 })],
+  validate, launcherCtrl.addComment);
+
 // ── Mount all routers
 router.use('/auth',         authRouter);
 router.use('/products',     productsRouter);
 router.use('/entities',     entitiesRouter);
 router.use('/users',        usersRouter);
 router.use('/messages',     messagesRouter);
+router.use('/launcher',     launcherRouter);
 router.use('/suggestions',  suggestionsRouter);
 router.use('/admin',        adminRouter);
 router.use('/applications', applyRouter);
