@@ -375,6 +375,98 @@ admin.post('/suggestions/:id/respond', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+// Bulk product actions
+admin.post('/products/bulk', async (req, res) => {
+  try {
+    const { ids, action, reason } = req.body;
+    if (!ids?.length || !action) return res.status(400).json({ success:false, message:'ids and action required' });
+    const placeholders = ids.map((_,i)=>`$${i+1}`).join(',');
+    if (action === 'approve') {
+      await q(`UPDATE products SET status='live', approved_by=$${ids.length+1}, approved_at=NOW(), updated_at=NOW() WHERE id IN (${placeholders}) AND status='pending'`, [...ids, req.user.id]);
+    } else if (action === 'reject') {
+      await q(`UPDATE products SET status='rejected', rejected_reason=$${ids.length+1}, approved_by=$${ids.length+2}, updated_at=NOW() WHERE id IN (${placeholders})`, [...ids, reason||'Does not meet guidelines', req.user.id]);
+    } else if (action === 'feature') {
+      await q(`UPDATE products SET featured=true, updated_at=NOW() WHERE id IN (${placeholders})`, ids);
+    } else if (action === 'unfeature') {
+      await q(`UPDATE products SET featured=false, updated_at=NOW() WHERE id IN (${placeholders})`, ids);
+    } else {
+      return res.status(400).json({ success:false, message:'Unknown action' });
+    }
+    res.json({ success:true, message:`${ids.length} product(s) ${action}d` });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+// Bulk user actions
+admin.post('/users/bulk', async (req, res) => {
+  try {
+    const { ids, action } = req.body;
+    if (!ids?.length || !action) return res.status(400).json({ success:false, message:'ids and action required' });
+    const placeholders = ids.map((_,i)=>`$${i+1}`).join(',');
+    if (action === 'verify') {
+      await q(`UPDATE users SET verified=true, updated_at=NOW() WHERE id IN (${placeholders})`, ids);
+    } else if (action === 'suspend') {
+      await q(`UPDATE users SET status='suspended', updated_at=NOW() WHERE id IN (${placeholders}) AND role='user'`, ids);
+    } else if (action === 'reinstate') {
+      await q(`UPDATE users SET status='active', updated_at=NOW() WHERE id IN (${placeholders})`, ids);
+    } else {
+      return res.status(400).json({ success:false, message:'Unknown action' });
+    }
+    res.json({ success:true, message:`${ids.length} user(s) updated` });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+// CSV Export
+admin.get('/export/:type', async (req, res) => {
+  try {
+    const { type } = req.params;
+    const { from, to, status } = req.query;
+    let rows, headers, filename;
+
+    const dateFilter = (col) => {
+      const parts = [];
+      if (from) parts.push(`${col} >= '${from}'`);
+      if (to)   parts.push(`${col} <= '${to} 23:59:59'`);
+      return parts.length ? ' AND ' + parts.join(' AND ') : '';
+    };
+
+    if (type === 'products') {
+      const where = status && status !== 'all' ? `status='${status}'` : '1=1';
+      const result = await q(`SELECT p.name,p.tagline,p.industry,p.status,p.upvotes_count,p.comments_count,p.waitlist_count,p.featured,u.name AS submitter,p.created_at FROM products p LEFT JOIN users u ON u.id=p.submitted_by WHERE ${where}${dateFilter('p.created_at')} ORDER BY p.created_at DESC`);
+      rows = result.rows;
+      headers = ['Name','Tagline','Industry','Status','Upvotes','Comments','Waitlist','Featured','Submitter','Submitted At'];
+      filename = 'products';
+    } else if (type === 'users') {
+      const result = await q(`SELECT name,handle,email,persona,country,role,status,verified,products_count,created_at FROM users WHERE role='user'${dateFilter('created_at')} ORDER BY created_at DESC`);
+      rows = result.rows;
+      headers = ['Name','Handle','Email','Persona','Country','Role','Status','Verified','Products','Joined At'];
+      filename = 'users';
+    } else if (type === 'entities') {
+      const result = await q(`SELECT name,type,country,industry,stage,aum,portfolio_count,verified,website,created_at FROM entities${dateFilter('created_at') ? ' WHERE 1=1' + dateFilter('created_at') : ''} ORDER BY created_at DESC`);
+      rows = result.rows;
+      headers = ['Name','Type','Country','Industry','Stage','AUM','Portfolio','Verified','Website','Created At'];
+      filename = 'entities';
+    } else if (type === 'applications') {
+      const result = await q(`SELECT u.name AS applicant,u.email,e.name AS entity,aa.startup_name,aa.stage,aa.status,aa.notes,aa.created_at FROM accelerator_applications aa JOIN users u ON u.id=aa.applicant_id JOIN entities e ON e.id=aa.entity_id${dateFilter('aa.created_at') ? ' WHERE 1=1' + dateFilter('aa.created_at') : ''} ORDER BY aa.created_at DESC`);
+      rows = result.rows;
+      headers = ['Applicant','Email','Entity','Startup','Stage','Status','Notes','Applied At'];
+      filename = 'applications';
+    } else {
+      return res.status(400).json({ success:false, message:'Unknown export type' });
+    }
+
+    const escape = v => {
+      if (v === null || v === undefined) return '';
+      const s = String(v instanceof Date ? v.toISOString().split('T')[0] : v).replace(/"/g,'""');
+      return s.includes(',') || s.includes('"') || s.includes('\n') ? `"${s}"` : s;
+    };
+    const csv = [headers.join(','), ...rows.map(r => Object.values(r).map(escape).join(','))].join('\r\n');
+
+    res.setHeader('Content-Type', 'text/csv');
+    res.setHeader('Content-Disposition', `attachment; filename="${filename}_${new Date().toISOString().split('T')[0]}.csv"`);
+    res.send(csv);
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
 app.use('/api/admin', admin);
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
