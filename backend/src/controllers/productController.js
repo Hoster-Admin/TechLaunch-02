@@ -200,13 +200,13 @@ const updateProduct = async (req, res, next) => {
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
 
-    const keys = Object.keys(updates);
+    const keys = Object.keys(updates).filter(k => allowed.includes(k));
     if (!keys.length) return res.status(400).json({ success:false, message:'No fields to update' });
 
     const setClauses = keys.map((k, i) => `${k} = $${i+2}`).join(', ');
     const { rows: updated } = await query(
       `UPDATE products SET ${setClauses} WHERE id=$1 RETURNING *`,
-      [id, ...Object.values(updates)]
+      [id, ...keys.map(k => updates[k])]
     );
 
     res.json({ success:true, data: updated[0] });
