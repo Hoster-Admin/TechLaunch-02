@@ -745,11 +745,23 @@ export default function SettingsPage() {
   return (
     <>
       <Navbar/>
+      <style>{`
+        @media(max-width:768px){
+          .settings-layout { flex-direction:column !important; padding:16px 12px 60px !important; }
+          .settings-sidebar { width:100% !important; position:static !important; display:flex; flex-wrap:wrap; }
+          .settings-sidebar button { flex:1 1 auto; min-width:120px; }
+          .settings-form-grid { grid-template-columns:1fr !important; }
+          .settings-persona-grid { grid-template-columns:repeat(2,1fr) !important; }
+        }
+        @media(max-width:480px){
+          .settings-persona-grid { grid-template-columns:repeat(2,1fr) !important; }
+        }
+      `}</style>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
-        <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 32px 80px', display:'flex', gap:24, alignItems:'flex-start' }}>
+        <div className="settings-layout" style={{ maxWidth:1000, margin:'0 auto', padding:'32px 32px 80px', display:'flex', gap:24, alignItems:'flex-start' }}>
 
           {/* Sidebar nav */}
-          <div style={{ width:190, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, overflow:'hidden', position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
+          <div className="settings-sidebar" style={{ width:190, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, overflow:'hidden', position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
             {NAV_ITEMS.map(item => (
               <button key={item.key} onClick={()=>handleTabNav(item.key)}
                 style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'13px 16px', border:'none', borderBottom:'1px solid #f4f4f4', background:activeTab===item.key?'var(--orange-light)':'#fff', color:activeTab===item.key?'var(--orange)':'#444', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', fontFamily:'Inter,sans-serif' }}>
@@ -804,7 +816,7 @@ export default function SettingsPage() {
                 <div style={{ display:'flex', alignItems:'center', gap:8, fontSize:14, fontWeight:800, marginBottom:20, color:'#0a0a0a' }}>🪪 Identity</div>
 
                 {/* Row 1: Full Name + Handle */}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                <div className="settings-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
                   <div>
                     <label style={labelStyle}>FULL NAME</label>
                     <div style={{ border:'1.5px solid #e8e8e8', borderRadius:10, background:'#fff', display:'flex' }}
@@ -823,7 +835,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Row 2: Phone + Email */}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                <div className="settings-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
                   <div>
                     <label style={labelStyle}>PHONE NUMBER</label>
                     <div style={{ display:'flex', gap:8 }}>
@@ -868,7 +880,7 @@ export default function SettingsPage() {
                 </div>
 
                 {/* Row: Persona + Country */}
-                <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                <div className="settings-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
                   <div>
                     <label style={labelStyle}>PERSONA</label>
                     <SearchDD value={persona}
@@ -1194,7 +1206,7 @@ export default function SettingsPage() {
                       </div>
 
                       {/* Industry + Country */}
-                      <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                      <div className="settings-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
                         <div>
                           <label style={labelStyle}>INDUSTRY</label>
                           <select value={coIndustry} onChange={e=>setCoIndustry(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
