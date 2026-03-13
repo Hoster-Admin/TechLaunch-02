@@ -121,9 +121,9 @@ admin.get('/dashboard', async (req, res) => {
         q(`SELECT COALESCE(SUM(waitlist_count),0) AS total FROM products`),
         q(`SELECT al.action, al.created_at, al.details, u.name AS actor_name, u.handle AS actor_handle, u.avatar_color FROM activity_log al LEFT JOIN users u ON u.id=al.actor_id ORDER BY al.created_at DESC LIMIT 10`),
         q(`SELECT id,name,logo_emoji,industry,upvotes_count,status FROM products WHERE status='live' ORDER BY upvotes_count DESC LIMIT 5`),
-        q(`SELECT id,name,handle,persona,country,avatar_color,created_at FROM users ORDER BY created_at DESC LIMIT 8`),
+        q(`SELECT id,name,handle,persona,country,avatar_color,created_at FROM users WHERE role='user' ORDER BY created_at DESC LIMIT 8`),
         q(`SELECT TO_CHAR(DATE_TRUNC('day',created_at),'Dy') AS day, COUNT(*) AS count FROM upvotes WHERE created_at>NOW()-INTERVAL '7 days' GROUP BY DATE_TRUNC('day',created_at),day ORDER BY DATE_TRUNC('day',created_at)`),
-        q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'WW') AS week, COUNT(*) AS count FROM users WHERE created_at>NOW()-INTERVAL '8 weeks' GROUP BY DATE_TRUNC('week',created_at),week ORDER BY DATE_TRUNC('week',created_at)`),
+        q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'WW') AS week, COUNT(*) AS count FROM users WHERE role='user' AND created_at>NOW()-INTERVAL '8 weeks' GROUP BY DATE_TRUNC('week',created_at),week ORDER BY DATE_TRUNC('week',created_at)`),
       ]);
     res.json({ success:true, data: {
       stats: { products:products.rows[0], users:users.rows[0], upvotes:parseInt(upvotes.rows[0].total), apps_pending:parseInt(apps.rows[0].pending), waitlist:parseInt(waitlist.rows[0].total) },
@@ -204,12 +204,13 @@ admin.post('/users', async (req, res) => {
     const handle = customHandle?.trim()
       ? customHandle.toLowerCase().replace(/[^a-z0-9_]/g,'')
       : email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Math.floor(Math.random()*100);
+    const resolvedName = name?.trim() || handle;
     const tempPwd = Math.random().toString(36).slice(-8) + Math.random().toString(36).slice(-4).toUpperCase() + '!';
     const hash   = await bcrypt.hash(tempPwd, 10);
     const colors = ['#E15033','#2563eb','#7c3aed','#16a34a','#d97706'];
     const color  = colors[Math.floor(Math.random()*colors.length)];
     const cols   = ['name','handle','email','password_hash','role','status','verified','email_verified','avatar_color'];
-    const vals   = [name, handle, email.toLowerCase().trim(), hash, role, 'active', isTeam, isTeam, color];
+    const vals   = [resolvedName, handle, email.toLowerCase().trim(), hash, role, 'active', isTeam, isTeam, color];
     if (persona) { cols.push('persona'); vals.push(persona); }
     if (country) { cols.push('country'); vals.push(country); }
     const placeholders = vals.map((_,i)=>`$${i+1}`).join(',');

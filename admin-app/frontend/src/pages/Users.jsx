@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { SCard, Badge, Tbl, ActionBtn, EmptyState } from './shared.jsx';
 
 const FILTERS = [
-  {key:'all',label:'All'},{key:'founder',label:'Founders'},{key:'investor',label:'Investors'},
+  {key:'all',label:'All'},{key:'startup',label:'Startups'},{key:'investor',label:'Investors & VCs'},
   {key:'verified',label:'Verified ✓'},{key:'suspended',label:'Suspended'},
 ];
 const PERSONA_COLOR = { Founder:'#E15033', Investor:'#2563eb', 'Product Manager':'#7c3aed', Enthusiast:'#64748b' };
@@ -111,8 +111,8 @@ export default function Users() {
   };
 
   const filtered = users.filter(u => {
-    if (filter==='founder'   && u.persona?.toLowerCase()!=='founder')   return false;
-    if (filter==='investor'  && u.persona?.toLowerCase()!=='investor')  return false;
+    if (filter==='startup'  && !['founder','startup'].includes(u.persona?.toLowerCase()))  return false;
+    if (filter==='investor' && !['investor','vc / investor','vc/investor','accelerator','venture studio'].includes(u.persona?.toLowerCase())) return false;
     if (filter==='verified'  && !u.verified)                            return false;
     if (filter==='suspended' && u.status!=='suspended')                 return false;
     if (search) { const q=search.toLowerCase(); return u.name?.toLowerCase().includes(q)||u.handle?.toLowerCase().includes(q); }
