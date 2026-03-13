@@ -209,7 +209,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
-        <div style={{ maxWidth:900, margin:'0 auto', padding:'32px 32px 80px' }}>
+        <div className="profile-page-inner" style={{ maxWidth:900, margin:'0 auto', padding:'32px 32px 80px' }}>
 
           {/* ── Profile card ── */}
           <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, overflow:'hidden', marginBottom:20 }}>
