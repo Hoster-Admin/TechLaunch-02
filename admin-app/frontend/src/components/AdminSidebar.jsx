@@ -13,7 +13,7 @@ const NAV = [
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
 
-export default function AdminSidebar({ current, onChange, user }) {
+export default function AdminSidebar({ current, onChange, user, onLogout }) {
   const role = user?.role || 'admin';
   return (
     <div className="admin-sidebar">
@@ -69,6 +69,14 @@ export default function AdminSidebar({ current, onChange, user }) {
             <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
             <div className="admin-role">{role}</div>
           </div>
+          <button onClick={onLogout} title="Sign out"
+            style={{background:'none',border:'none',cursor:'pointer',padding:4,borderRadius:6,color:'#AAAAAA',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}
+            onMouseEnter={e=>e.currentTarget.style.color='#E15033'}
+            onMouseLeave={e=>e.currentTarget.style.color='#AAAAAA'}>
+            <svg width="16" height="16" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2">
+              <path strokeLinecap="round" strokeLinejoin="round" d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a2 2 0 01-2 2H5a2 2 0 01-2-2V7a2 2 0 012-2h6a2 2 0 012 2v1"/>
+            </svg>
+          </button>
         </div>
       </div>
     </div>

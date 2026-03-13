@@ -32,7 +32,7 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-app">
-      <AdminSidebar current={page} onChange={setPage} user={user} />
+      <AdminSidebar current={page} onChange={setPage} user={user} onLogout={logout} />
       <div className="admin-main">
         {/* Topbar */}
         <div className="topbar">
@@ -53,15 +53,6 @@ export default function AdminLayout() {
               style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid var(--gray-200)',background:'var(--gray-50)',fontSize:12,fontWeight:600,color:'var(--ink)',textDecoration:'none',whiteSpace:'nowrap'}}>
               ↗ View Site
             </a>
-            <div style={{display:'flex',alignItems:'center',gap:8}}>
-              <div style={{width:32,height:32,borderRadius:'50%',background:user?.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'#fff'}}>
-                {(user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
-              </div>
-              <button onClick={logout}
-                style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid var(--gray-200)',background:'#fff',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',color:'var(--gray-600)'}}>
-                Sign out
-              </button>
-            </div>
           </div>
         </div>
 

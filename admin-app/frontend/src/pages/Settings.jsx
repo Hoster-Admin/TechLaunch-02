@@ -1,7 +1,33 @@
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
-import { SCard } from './shared.jsx';
+import { SCard, Badge, Tbl, EmptyState } from './shared.jsx';
+
+function Modal({ title, onClose, children }) {
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
+      <div style={{background:'#fff',borderRadius:16,padding:28,width:440,maxWidth:'90vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+          <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>{title}</div>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:18,cursor:'pointer',color:'#AAAAAA',lineHeight:1}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+
+function Field({ label, children }) {
+  return (
+    <div style={{marginBottom:14}}>
+      <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:5}}>{label}</label>
+      {children}
+    </div>
+  );
+}
+
+const inputS = {width:'100%',border:'1px solid #E8E8E8',borderRadius:8,padding:'8px 10px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FAFAFA'};
+const selectS = {...inputS,cursor:'pointer'};
 
 function Toggle({ checked, onChange }) {
   return (
@@ -16,13 +42,35 @@ function Toggle({ checked, onChange }) {
 export default function Settings() {
   const [settings, setSettings] = useState({});
   const [loading, setLoading]   = useState(true);
+  const [team, setTeam]         = useState([]);
+  const [showModal, setShowModal] = useState(false);
+  const [saving, setSaving]     = useState(false);
+  const [form, setForm]         = useState({ name:'', email:'', role:'moderator' });
+
+  const loadTeam = useCallback(() => {
+    adminAPI.team().then(r => setTeam(r.data?.data || [])).catch(() => {});
+  }, []);
 
   useEffect(() => {
     adminAPI.settings()
       .then(({ data: d }) => setSettings(d.data || {}))
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, []);
+    loadTeam();
+  }, [loadTeam]);
+
+  const invite = async () => {
+    if (!form.name || !form.email) return toast.error('Name and email are required');
+    setSaving(true);
+    try {
+      const { data: d } = await adminAPI.createUser(form);
+      toast.success(d.message || 'Invite sent — team member added!');
+      setShowModal(false);
+      setForm({ name:'', email:'', role:'moderator' });
+      loadTeam();
+    } catch(e) { toast.error(e.message || 'Failed to add team member'); }
+    finally { setSaving(false); }
+  };
 
   const save = async (key, value) => {
     setSettings(s=>({...s,[key]:value}));
@@ -46,7 +94,73 @@ export default function Settings() {
   if (loading) return <div style={{textAlign:'center',padding:'60px 0',color:'#AAAAAA',fontSize:14}}>Loading settings…</div>;
 
   return (
-    <div>
+    <div style={{display:'flex',flexDirection:'column',gap:20}}>
+
+      {/* Invite Modal */}
+      {showModal && (
+        <Modal title="Invite Team Member" onClose={()=>setShowModal(false)}>
+          <Field label="Full Name">
+            <input style={inputS} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}/>
+          </Field>
+          <Field label="Email Address">
+            <input style={inputS} type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+          </Field>
+          <Field label="Role">
+            <select style={selectS} value={form.role} onChange={e=>setForm(f=>({...f,role:e.target.value}))}>
+              <option value="moderator">Moderator</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </Field>
+          <div style={{fontSize:11,color:'#AAAAAA',marginBottom:14,padding:'8px 10px',background:'#F9F9F9',borderRadius:8}}>
+            An activation email will be sent to the address above so they can set their own password.
+          </div>
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={invite} disabled={saving} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'10px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.6:1}}>
+              {saving ? 'Sending…' : 'Send Invite'}
+            </button>
+            <button onClick={()=>setShowModal(false)} style={{padding:'10px 16px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
+      {/* Team Members */}
+      <SCard
+        title="Team Members"
+        sub={`${team.length} admin & moderator account${team.length!==1?'s':''}`}
+        action={<button onClick={()=>setShowModal(true)} style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>+ Invite Member</button>}
+      >
+        {team.length === 0
+          ? <EmptyState icon="👋" title="No team members yet" sub="Invite your first team member above"/>
+          : <Tbl heads={['Member','Email','Role','Status','Joined']}>
+              {team.map(m => (
+                <tr key={m.id} style={{borderBottom:'1px solid #F4F4F4'}}
+                  onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
+                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                  <td style={{padding:'10px 16px'}}>
+                    <div style={{display:'flex',alignItems:'center',gap:10}}>
+                      <div style={{width:34,height:34,borderRadius:10,background:m.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'#fff',flexShrink:0}}>
+                        {(m.name||'T').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+                      </div>
+                      <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{m.name}</div>
+                    </div>
+                  </td>
+                  <td style={{padding:'10px 16px',fontSize:12,color:'#666'}}>{m.email}</td>
+                  <td style={{padding:'10px 16px'}}>
+                    <Badge variant={{admin:'orange',moderator:'blue',editor:'purple'}[m.role]||'gray'}>{m.role}</Badge>
+                  </td>
+                  <td style={{padding:'10px 16px'}}>
+                    <Badge variant={m.status==='active'?'green':'red'}>{m.status}</Badge>
+                  </td>
+                  <td style={{padding:'10px 16px',fontSize:11,color:'#AAAAAA'}}>{new Date(m.created_at).toLocaleDateString()}</td>
+                </tr>
+              ))}
+            </Tbl>
+        }
+      </SCard>
+
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
         <SCard title="Moderation" sub="Control how content is reviewed">
           <div style={{padding:'0 20px 8px'}}>
