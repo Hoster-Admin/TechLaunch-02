@@ -39,7 +39,7 @@ export default function AdminLayout() {
             <div className="topbar-sub">{sub}</div>
           </div>
           <div className="topbar-right">
-            <div style={{display:'flex',alignItems:'center',gap:10,border:'1.5px solid var(--gray-200)',borderRadius:10,padding:'7px 12px',background:'var(--gray-50)',width:200,transition:'border-color .15s'}}
+            <div className="topbar-search" style={{display:'flex',alignItems:'center',gap:10,border:'1.5px solid var(--gray-200)',borderRadius:10,padding:'7px 12px',background:'var(--gray-50)',width:200,transition:'border-color .15s'}}
               onFocus={e=>e.currentTarget.style.borderColor='var(--orange)'}
               onBlur={e=>e.currentTarget.style.borderColor='var(--gray-200)'}>
               <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2" style={{color:'var(--gray-400)',flexShrink:0}}>
@@ -47,7 +47,7 @@ export default function AdminLayout() {
               </svg>
               <input placeholder="Search anything…" style={{border:'none',background:'none',outline:'none',fontSize:13,fontFamily:'inherit',color:'var(--ink)',width:'100%'}}/>
             </div>
-            <a href="https://tlmena.com" target="_blank" rel="noreferrer"
+            <a href="https://tlmena.com" target="_blank" rel="noreferrer" className="topbar-view-site"
               style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid var(--gray-200)',background:'var(--gray-50)',fontSize:12,fontWeight:600,color:'var(--ink)',textDecoration:'none',whiteSpace:'nowrap'}}>
               ↗ View Site
             </a>
