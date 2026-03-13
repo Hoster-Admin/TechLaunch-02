@@ -19,12 +19,6 @@ const ARTICLES = [
   { tag:'Business',     title:"Why MENA Founders Should Launch Publicly Before They're Ready",  author:'Sara Hadid',     initials:'SH', readTime:'5 min read', date:'Mar 2', slug:'mena-founders-launch-publicly' },
   { tag:'Business',     title:'The Investor Signals That Actually Matter in a MENA Pitch Deck', author:'Omar Fares',     initials:'OF', readTime:'7 min read', date:'Feb 28', slug:'investor-signals-mena-pitch-deck' },
 ];
-const STATS = [
-  { num: '248',    label: 'Products Listed' },
-  { num: '1,840',  label: 'Founders' },
-  { num: '15',     label: 'Countries' },
-  { num: '42',     label: 'Accelerators' },
-];
 
 export default function HomePage() {
   const navigate = useNavigate();
@@ -83,14 +77,6 @@ export default function HomePage() {
             <button className="btn-hero-ghost" onClick={() => document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth' })}>
               Browse Products ↓
             </button>
-          </div>
-          <div className="hero-stats">
-            {STATS.map((s, i) => (
-              <div key={i}>
-                <div className="hero-stat-num"><span>{s.num}</span></div>
-                <div className="hero-stat-label">{s.label}</div>
-              </div>
-            ))}
           </div>
         </div>
 
