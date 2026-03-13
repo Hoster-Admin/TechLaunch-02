@@ -192,6 +192,28 @@ messagesRouter.post('/:handle',
   [body('body').trim().notEmpty().isLength({ max:2000 })], validate,
   msgCtrl.sendMessage);
 
+// ══════════════════════════════════════════════════
+// TAGS  /api/tags  (public — active tags + settings)
+// ══════════════════════════════════════════════════
+router.get('/tags', async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { rows: tags } = await dbQuery(
+      'SELECT id,name,category,color,text_color FROM tags WHERE is_active=true ORDER BY category,name');
+    const { rows: settings } = await dbQuery(
+      `SELECT key,value FROM platform_settings
+       WHERE key IN ('tags_user_enabled','tags_entity_enabled','tags_product_enabled','tags_article_enabled','tags_role_enabled')`);
+    const tagSettings = {};
+    settings.forEach(r => { tagSettings[r.key] = r.value !== 'false'; });
+    const grouped = {};
+    tags.forEach(t => {
+      if (!grouped[t.category]) grouped[t.category] = [];
+      grouped[t.category].push(t);
+    });
+    res.json({ success:true, data: grouped, settings: tagSettings });
+  } catch(err){ next(err); }
+});
+
 // ── Mount all routers
 router.use('/auth',        authRouter);
 router.use('/products',    productsRouter);

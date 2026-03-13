@@ -17,7 +17,28 @@ const getEntities = async (req, res, next) => {
        ORDER BY verified DESC, followers_count DESC
        LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     const total = rows[0]?.total || 0;
-    res.json({ success:true, data:rows.map(({total,...r})=>r), pagination:{total:parseInt(total)} });
+    const entities = rows.map(({total,...r})=>r);
+
+    if (entities.length) {
+      const ids = entities.map(e=>e.id);
+      const ph  = ids.map((_,i)=>`$${i+1}`).join(',');
+      const { rows: etRows } = await query(
+        `SELECT et.entity_id, t.id, t.name, t.color, t.text_color
+         FROM entity_tags et JOIN tags t ON t.id=et.tag_id
+         WHERE et.entity_id IN (${ph}) AND t.is_active=true`, ids);
+      const tagMap = {};
+      etRows.forEach(r => {
+        if (!tagMap[r.entity_id]) tagMap[r.entity_id] = [];
+        tagMap[r.entity_id].push({ id:r.id, name:r.name, color:r.color, text_color:r.text_color });
+      });
+      entities.forEach(e => { e.entity_tags = tagMap[e.id] || []; });
+    }
+
+    const { rows: tagSettings } = await query(
+      `SELECT key, value FROM platform_settings WHERE key='tags_entity_enabled'`);
+    const tagsEnabled = tagSettings[0]?.value !== 'false';
+
+    res.json({ success:true, data:entities, pagination:{total:parseInt(total)}, tags_entity_enabled:tagsEnabled });
   } catch(err){ next(err); }
 };
 
@@ -26,7 +47,13 @@ const getEntity = async (req, res, next) => {
   try {
     const { rows } = await query('SELECT * FROM entities WHERE slug=$1', [req.params.slug]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    res.json({ success:true, data:rows[0] });
+    const entity = rows[0];
+    const { rows: etRows } = await query(
+      `SELECT t.id, t.name, t.color, t.text_color
+       FROM tags t JOIN entity_tags et ON et.tag_id=t.id
+       WHERE et.entity_id=$1 AND t.is_active=true`, [entity.id]);
+    entity.entity_tags = etRows;
+    res.json({ success:true, data:entity });
   } catch(err){ next(err); }
 };
 

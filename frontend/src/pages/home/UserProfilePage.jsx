@@ -253,8 +253,27 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   {profile.verified && <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#eff6ff', color:'#2563eb' }}>✓ Verified</span>}
                 </div>
                 <div style={{ fontSize:13, color:'#aaa', fontWeight:600, marginBottom:8 }}>{profile.handle}</div>
-                <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--orange-light)', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, color:'var(--orange)', marginBottom:8 }}>
-                  {personaIcon} {personaLabel}
+                <div style={{ display:'flex', flexWrap:'wrap', alignItems:'center', gap:6, marginBottom:8 }}>
+                  <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--orange-light)', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, color:'var(--orange)' }}>
+                    {personaIcon} {personaLabel}
+                  </div>
+                  {profile.tag_settings?.tags_role_enabled !== false && profile.role && profile.role !== 'user' && (() => {
+                    const roleStyle = {
+                      admin:     { bg:'#FEE2E2', text:'#991B1B' },
+                      moderator: { bg:'#EDE9FE', text:'#5B21B6' },
+                      editor:    { bg:'#DBEAFE', text:'#1E40AF' },
+                    }[profile.role];
+                    return roleStyle ? (
+                      <span style={{ display:'inline-flex', alignItems:'center', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background:roleStyle.bg, color:roleStyle.text }}>
+                        {profile.role.charAt(0).toUpperCase() + profile.role.slice(1)}
+                      </span>
+                    ) : null;
+                  })()}
+                  {profile.tag_settings?.tags_user_enabled !== false && (profile.user_tags || []).map(t => (
+                    <span key={t.id} style={{ display:'inline-flex', alignItems:'center', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, background:t.color||'#E8E8E8', color:t.text_color||'#374151' }}>
+                      {t.name}
+                    </span>
+                  ))}
                 </div>
 
                 {/* Headline — always visible under username */}

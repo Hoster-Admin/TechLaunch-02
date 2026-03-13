@@ -40,6 +40,201 @@ function Toggle({ checked, onChange }) {
   );
 }
 
+// ─── TAG MANAGEMENT SECTION ──────────────────────────────────────────────────
+const CATEGORIES = [
+  { key:'role',    label:'Role Tags',    icon:'🎭', settingKey:'tags_role_enabled',    desc:'Automatically shown based on user role (Admin, Moderator, etc.)' },
+  { key:'user',    label:'User Tags',    icon:'👤', settingKey:'tags_user_enabled',    desc:'Labels assigned to user profiles' },
+  { key:'entity',  label:'Entity Tags',  icon:'🏢', settingKey:'tags_entity_enabled',  desc:'Labels assigned to companies, accelerators & investors' },
+  { key:'product', label:'Product Tags', icon:'🚀', settingKey:'tags_product_enabled', desc:'Labels assigned to product listings' },
+  { key:'article', label:'Article Tags', icon:'📰', settingKey:'tags_article_enabled', desc:'Labels shown on articles and blog posts' },
+];
+
+const PRESET_COLORS = [
+  { bg:'#FEF3C7', text:'#92400E' },
+  { bg:'#FEE2E2', text:'#991B1B' },
+  { bg:'#EDE9FE', text:'#5B21B6' },
+  { bg:'#DBEAFE', text:'#1E40AF' },
+  { bg:'#D1FAE5', text:'#065F46' },
+  { bg:'#F3E8FF', text:'#6B21A8' },
+  { bg:'#FCE7F3', text:'#9D174D' },
+  { bg:'#E8E8E8', text:'#374151' },
+  { bg:'#FED7AA', text:'#9A3412' },
+  { bg:'#CCFBF1', text:'#0F766E' },
+];
+
+function TagPill({ tag }) {
+  return (
+    <span style={{
+      display:'inline-flex', alignItems:'center', gap:4,
+      padding:'3px 10px', borderRadius:20,
+      background:tag.color||'#E8E8E8', color:tag.text_color||'#374151',
+      fontSize:12, fontWeight:700, opacity:tag.is_active?1:0.4,
+    }}>
+      {tag.name}
+    </span>
+  );
+}
+
+function TagManagement({ settings, onSettingChange, isAdmin }) {
+  const [activeTab, setActiveTab] = useState('role');
+  const [tags, setTags]           = useState([]);
+  const [loading, setLoading]     = useState(true);
+  const [newTag, setNewTag]       = useState({ name:'', color:'#FEF3C7', text_color:'#92400E' });
+  const [saving, setSaving]       = useState(false);
+
+  const loadTags = useCallback(() => {
+    adminAPI.tags()
+      .then(r => setTags(r.data?.data || []))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  useEffect(() => { loadTags(); }, [loadTags]);
+
+  const activeCat = CATEGORIES.find(c => c.key === activeTab);
+  const catTags   = tags.filter(t => t.category === activeTab);
+
+  const handleToggleTag = async (tag) => {
+    if (!isAdmin) return toast.error('Admin only');
+    const updated = tags.map(t => t.id === tag.id ? { ...t, is_active: !t.is_active } : t);
+    setTags(updated);
+    try {
+      await adminAPI.updateTag(tag.id, { is_active: !tag.is_active });
+    } catch(e) {
+      setTags(tags);
+      toast.error(e.message || 'Failed to update');
+    }
+  };
+
+  const handleDeleteTag = async (tag) => {
+    if (!isAdmin) return toast.error('Admin only');
+    if (!confirm(`Delete tag "${tag.name}"?`)) return;
+    setTags(t => t.filter(x => x.id !== tag.id));
+    try {
+      await adminAPI.deleteTag(tag.id);
+      toast.success('Tag deleted');
+    } catch(e) {
+      loadTags();
+      toast.error(e.message || 'Failed to delete');
+    }
+  };
+
+  const handleAddTag = async () => {
+    if (!isAdmin) return toast.error('Admin only');
+    if (!newTag.name.trim()) return toast.error('Tag name is required');
+    setSaving(true);
+    try {
+      const { data: d } = await adminAPI.createTag({ ...newTag, category: activeTab });
+      setTags(t => [...t, d.data]);
+      setNewTag({ name:'', color:'#FEF3C7', text_color:'#92400E' });
+      toast.success('Tag created');
+    } catch(e) { toast.error(e.message || 'Failed to create tag'); }
+    finally { setSaving(false); }
+  };
+
+  return (
+    <div>
+      {/* Category Tabs */}
+      <div style={{display:'flex',gap:4,padding:'0 20px',borderBottom:'1px solid #F4F4F4',marginBottom:0}}>
+        {CATEGORIES.map(cat => (
+          <button key={cat.key} onClick={() => setActiveTab(cat.key)}
+            style={{
+              padding:'10px 14px', border:'none', background:'none', cursor:'pointer',
+              fontSize:12, fontWeight:700, fontFamily:'inherit',
+              color:activeTab===cat.key?'var(--orange)':'#AAAAAA',
+              borderBottom:activeTab===cat.key?'2px solid var(--orange)':'2px solid transparent',
+              marginBottom:-1, transition:'color .15s',
+            }}>
+            {cat.icon} {cat.label}
+          </button>
+        ))}
+      </div>
+
+      {/* Tab Content */}
+      <div style={{padding:'16px 20px'}}>
+        {/* Category description + master toggle */}
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'#F9F9F9',borderRadius:10,marginBottom:16}}>
+          <div>
+            <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A'}}>{activeCat?.label} on Public Site</div>
+            <div style={{fontSize:11,color:'#AAAAAA',marginTop:2}}>{activeCat?.desc}</div>
+          </div>
+          <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none'}}>
+            <Toggle
+              checked={settings[activeCat?.settingKey] !== false}
+              onChange={v => onSettingChange(activeCat.settingKey, v)}
+            />
+          </div>
+        </div>
+
+        {/* Tags list */}
+        {loading ? (
+          <div style={{textAlign:'center',padding:'24px 0',color:'#AAAAAA',fontSize:13}}>Loading tags…</div>
+        ) : catTags.length === 0 ? (
+          <div style={{textAlign:'center',padding:'20px 0',color:'#AAAAAA',fontSize:13}}>No tags yet. Add one below.</div>
+        ) : (
+          <div style={{display:'flex',flexDirection:'column',gap:6,marginBottom:16}}>
+            {catTags.map(tag => (
+              <div key={tag.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:'#FAFAFA',borderRadius:10,border:'1px solid #F0F0F0'}}>
+                <div style={{width:16,height:16,borderRadius:4,background:tag.color,border:'1px solid rgba(0,0,0,.08)',flexShrink:0}}/>
+                <div style={{flex:1}}>
+                  <TagPill tag={tag}/>
+                </div>
+                <div style={{fontSize:11,color:'#AAAAAA',marginRight:4}}>{tag.is_active?'Visible':'Hidden'}</div>
+                <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none',display:'flex',alignItems:'center',gap:8}}>
+                  <Toggle checked={tag.is_active} onChange={() => handleToggleTag(tag)}/>
+                  <button onClick={() => handleDeleteTag(tag)}
+                    style={{background:'none',border:'none',cursor:'pointer',color:'#CCCCCC',fontSize:14,lineHeight:1,padding:'2px',borderRadius:4,transition:'color .15s'}}
+                    onMouseEnter={e=>e.currentTarget.style.color='#EF4444'}
+                    onMouseLeave={e=>e.currentTarget.style.color='#CCCCCC'}>
+                    ✕
+                  </button>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {/* Add new tag */}
+        {isAdmin && (
+          <div style={{borderTop:'1px solid #F4F4F4',paddingTop:14}}>
+            <div style={{fontSize:11,fontWeight:700,color:'#AAAAAA',marginBottom:10,textTransform:'uppercase',letterSpacing:'.06em'}}>Add New Tag</div>
+            <div style={{display:'flex',gap:8,alignItems:'center',flexWrap:'wrap'}}>
+              <input
+                value={newTag.name}
+                onChange={e=>setNewTag(n=>({...n,name:e.target.value}))}
+                onKeyDown={e=>e.key==='Enter'&&handleAddTag()}
+                placeholder="Tag name…"
+                style={{...inputS,flex:'1 1 140px',minWidth:100}}
+              />
+              {/* Color presets */}
+              <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                {PRESET_COLORS.map((c,i) => (
+                  <button key={i} onClick={() => setNewTag(n=>({...n,color:c.bg,text_color:c.text}))}
+                    title={c.bg}
+                    style={{
+                      width:20,height:20,borderRadius:6,background:c.bg,
+                      border:newTag.color===c.bg?'2px solid #0A0A0A':'1.5px solid rgba(0,0,0,.1)',
+                      cursor:'pointer',padding:0,transition:'transform .1s',
+                    }}
+                    onMouseEnter={e=>e.currentTarget.style.transform='scale(1.2)'}
+                    onMouseLeave={e=>e.currentTarget.style.transform='scale(1)'}
+                  />
+                ))}
+              </div>
+              {/* Preview */}
+              <TagPill tag={{name:newTag.name||'Preview',color:newTag.color,text_color:newTag.text_color,is_active:true}}/>
+              <button onClick={handleAddTag} disabled={saving}
+                style={{padding:'8px 16px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontWeight:700,fontSize:12,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.6:1,whiteSpace:'nowrap'}}>
+                {saving?'Adding…':'+ Add Tag'}
+              </button>
+            </div>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
 export default function Settings() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -172,6 +367,14 @@ export default function Settings() {
               ))}
             </Tbl>
         }
+      </SCard>
+
+      {/* Tag Management — full width */}
+      <SCard
+        title="Tag Management"
+        sub="Create and manage tags that appear on the public site"
+      >
+        <TagManagement settings={settings} onSettingChange={save} isAdmin={isAdmin}/>
       </SCard>
 
       <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>

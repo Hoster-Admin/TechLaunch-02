@@ -66,6 +66,9 @@ export default function ProductCard({ product, rank, onVote }) {
           {product.industry && <span className="meta-tag">{product.industry}</span>}
           {product.country  && <span className="meta-tag">{product.country}</span>}
           {(product.tags || []).map(t => <span key={t} className="meta-tag">{t}</span>)}
+          {(product.admin_tags || []).map(t => (
+            <span key={t.id} className="meta-tag" style={{ background: t.color, color: t.text_color, border:'none' }}>{t.name}</span>
+          ))}
         </div>
         {product.status === 'soon' && (
           <div className="product-waitlist-inline" onClick={e => e.stopPropagation()}

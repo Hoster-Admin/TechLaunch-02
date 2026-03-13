@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
@@ -103,6 +103,15 @@ const ARTICLES = [
 /* ─── Article Listing Page ─── */
 function ArticlesList() {
   const navigate = useNavigate();
+  const [articleTagsEnabled, setArticleTagsEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/tags')
+      .then(r => r.json())
+      .then(d => { if (d.success) setArticleTagsEnabled(d.settings?.tags_article_enabled !== false); })
+      .catch(() => {});
+  }, []);
+
   return (
     <>
       <Navbar/>
@@ -124,7 +133,7 @@ function ArticlesList() {
                 style={{ padding:'32px 0', borderBottom:i < ARTICLES.length-1 ? '1px solid #f0f0f0' : 'none', cursor:'pointer' }}
                 onMouseOver={e=>e.currentTarget.querySelector('.article-list-title').style.color='var(--orange)'}
                 onMouseOut={e=>e.currentTarget.querySelector('.article-list-title').style.color='#0a0a0a'}>
-                <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.07em', textTransform:'uppercase', color:'var(--orange)', marginBottom:8 }}>{a.tag}</div>
+                {articleTagsEnabled && <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.07em', textTransform:'uppercase', color:'var(--orange)', marginBottom:8 }}>{a.tag}</div>}
                 <h2 className="article-list-title" style={{ fontSize:21, fontWeight:800, letterSpacing:'-.02em', lineHeight:1.35, marginBottom:10, color:'#0a0a0a', transition:'color .15s' }}>{a.title}</h2>
                 <p style={{ fontSize:14, color:'#666', lineHeight:1.7, marginBottom:14 }}>{a.excerpt}</p>
                 <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:13, color:'#aaa' }}>
@@ -152,6 +161,14 @@ function ArticleDetail() {
   const { slug } = useParams();
   const navigate = useNavigate();
   const article  = ARTICLES.find(a => a.slug === slug);
+  const [articleTagsEnabled, setArticleTagsEnabled] = useState(true);
+
+  useEffect(() => {
+    fetch('/api/tags')
+      .then(r => r.json())
+      .then(d => { if (d.success) setArticleTagsEnabled(d.settings?.tags_article_enabled !== false); })
+      .catch(() => {});
+  }, []);
 
   if (!article) return (
     <>
@@ -179,7 +196,7 @@ function ArticleDetail() {
           </button>
 
           {/* Tag */}
-          <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'var(--orange)', marginBottom:14 }}>{article.tag}</div>
+          {articleTagsEnabled && <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'var(--orange)', marginBottom:14 }}>{article.tag}</div>}
 
           {/* Title */}
           <h1 style={{ fontSize:32, fontWeight:900, letterSpacing:'-.03em', lineHeight:1.25, marginBottom:18 }}>{article.title}</h1>

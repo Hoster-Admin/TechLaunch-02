@@ -760,6 +760,81 @@ admin.get('/export/:type', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+// ─── TAG MANAGEMENT ───────────────────────────────────────────────────────────
+admin.get('/tags', async (req, res) => {
+  try {
+    const { rows } = await q('SELECT * FROM tags ORDER BY category, sort_order, name');
+    res.json({ success:true, data:rows });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.post('/tags', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
+  try {
+    const { name, category, color, text_color } = req.body;
+    if (!name?.trim() || !category) return res.status(400).json({ success:false, message:'name and category required' });
+    if (!['user','entity','product','article','role'].includes(category))
+      return res.status(400).json({ success:false, message:'Invalid category' });
+    const { rows } = await q(
+      'INSERT INTO tags (name,category,color,text_color) VALUES ($1,$2,$3,$4) RETURNING *',
+      [name.trim(), category, color||'#E8E8E8', text_color||'#374151']
+    );
+    await logAction(req.user.id, 'tags.create', 'tag', rows[0].id, { name:name.trim(), category });
+    res.json({ success:true, data:rows[0] });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.put('/tags/:id', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
+  try {
+    const { name, color, text_color, is_active } = req.body;
+    const { rows } = await q(
+      `UPDATE tags SET
+         name       = COALESCE($1, name),
+         color      = COALESCE($2, color),
+         text_color = COALESCE($3, text_color),
+         is_active  = COALESCE($4, is_active)
+       WHERE id=$5 RETURNING *`,
+      [name||null, color||null, text_color||null, is_active!==undefined?is_active:null, req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success:false, message:'Tag not found' });
+    res.json({ success:true, data:rows[0] });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.delete('/tags/:id', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
+  try {
+    const { rows } = await q('DELETE FROM tags WHERE id=$1 RETURNING id', [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Tag not found' });
+    res.json({ success:true });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.post('/tags/:id/assign', async (req, res) => {
+  try {
+    const { item_type, item_id } = req.body;
+    const tableMap = { user:'user_tags', entity:'entity_tags', product:'product_tags' };
+    const colMap   = { user:'user_id',   entity:'entity_id',   product:'product_id'  };
+    const table = tableMap[item_type];
+    if (!table) return res.status(400).json({ success:false, message:'Invalid item_type' });
+    await q(`INSERT INTO ${table} (${colMap[item_type]},tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [item_id, req.params.id]);
+    res.json({ success:true });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.delete('/tags/:id/assign', async (req, res) => {
+  try {
+    const { item_type, item_id } = req.body;
+    const tableMap = { user:'user_tags', entity:'entity_tags', product:'product_tags' };
+    const colMap   = { user:'user_id',   entity:'entity_id',   product:'product_id'  };
+    const table = tableMap[item_type];
+    if (!table) return res.status(400).json({ success:false, message:'Invalid item_type' });
+    await q(`DELETE FROM ${table} WHERE ${colMap[item_type]}=$1 AND tag_id=$2`, [item_id, req.params.id]);
+    res.json({ success:true });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
 app.use('/api/admin', admin);
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────

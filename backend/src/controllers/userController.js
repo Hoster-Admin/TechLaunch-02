@@ -7,7 +7,7 @@ const getProfile = async (req, res, next) => {
     const handle = req.params.handle.replace('@','');
     const { rows } = await query(`
       SELECT id, name, handle, persona, headline, country, bio, website, twitter, linkedin, github,
-             avatar_url, avatar_color, verified, followers_count, following_count, created_at
+             avatar_url, avatar_color, verified, role, followers_count, following_count, created_at
       FROM users WHERE handle=$1 AND status='active'`, [handle]);
     if (!rows.length) return res.status(404).json({ success:false, message:'User not found' });
 
@@ -25,7 +25,18 @@ const getProfile = async (req, res, next) => {
       isFollowing = f.length > 0;
     }
 
-    res.json({ success:true, data:{ ...user, products, isFollowing } });
+    const { rows: userTags } = await query(`
+      SELECT t.id, t.name, t.color, t.text_color, t.category
+      FROM tags t
+      JOIN user_tags ut ON ut.tag_id = t.id
+      WHERE ut.user_id = $1 AND t.is_active = true`, [user.id]);
+
+    const { rows: tagSettings } = await query(
+      `SELECT key, value FROM platform_settings WHERE key IN ('tags_user_enabled','tags_role_enabled')`);
+    const ts = {};
+    tagSettings.forEach(r => { ts[r.key] = r.value === 'true'; });
+
+    res.json({ success:true, data:{ ...user, products, isFollowing, user_tags: userTags, tag_settings: ts } });
   } catch(err){ next(err); }
 };
 

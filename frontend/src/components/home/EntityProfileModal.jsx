@@ -71,6 +71,15 @@ export default function EntityProfileModal() {
             </div>
           </>}
 
+          {Array.isArray(e.entity_tags) && e.entity_tags.length > 0 && <>
+            <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.07em', textTransform:'uppercase', color:'#bbb', marginBottom:10 }}>Tags</div>
+            <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:20 }}>
+              {e.entity_tags.map(t => (
+                <span key={t.id} style={{ fontSize:12, fontWeight:700, padding:'4px 12px', borderRadius:20, background:t.color||'#f4f4f4', color:t.text_color||'#555' }}>{t.name}</span>
+              ))}
+            </div>
+          </>}
+
           {Array.isArray(e.programs) && e.programs.length > 0 && <>
             <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.07em', textTransform:'uppercase', color:'#bbb', marginBottom:10 }}>Programs</div>
             <div style={{ display:'flex', flexDirection:'column', gap:8, marginBottom:20 }}>

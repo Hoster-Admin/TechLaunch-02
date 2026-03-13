@@ -65,10 +65,31 @@ const getProducts = async (req, res, next) => {
 
     const { rows } = await query(sql, params);
     const total = rows.length > 0 ? parseInt(rows[0].total_count) : 0;
+    const products = rows.map(({ total_count, ...p }) => p);
+
+    if (products.length) {
+      const ids = products.map(p => p.id);
+      const ph  = ids.map((_,i) => `$${i+1}`).join(',');
+      const { rows: ptRows } = await query(
+        `SELECT pt.product_id, t.id, t.name, t.color, t.text_color
+         FROM product_tags pt JOIN tags t ON t.id=pt.tag_id
+         WHERE pt.product_id IN (${ph}) AND t.is_active=true`, ids);
+      const tagMap = {};
+      ptRows.forEach(r => {
+        if (!tagMap[r.product_id]) tagMap[r.product_id] = [];
+        tagMap[r.product_id].push({ id:r.id, name:r.name, color:r.color, text_color:r.text_color });
+      });
+      products.forEach(p => { p.admin_tags = tagMap[p.id] || []; });
+    }
+
+    const { rows: tagSettings } = await query(
+      `SELECT key, value FROM platform_settings WHERE key='tags_product_enabled'`);
+    const tagsEnabled = tagSettings[0]?.value !== 'false';
 
     res.json({
       success: true,
-      data: rows.map(({ total_count, ...p }) => p),
+      data: products,
+      tags_product_enabled: tagsEnabled,
       pagination: {
         total, page: parseInt(page), limit: parseInt(limit),
         pages: Math.ceil(total / parseInt(limit))

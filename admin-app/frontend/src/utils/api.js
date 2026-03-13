@@ -73,6 +73,12 @@ export const adminAPI = {
   saveSettings: (body)      => req('PUT',  '/admin/settings', body),
   suggestions:  (p={})      => req('GET',  '/admin/suggestions?' + new URLSearchParams(p)),
   respondSuggestion:(id,r)  => req('POST', `/admin/suggestions/${id}/respond`, { response: r }),
+  tags:         ()          => req('GET',  '/admin/tags'),
+  createTag:    (body)      => req('POST', '/admin/tags', body),
+  updateTag:    (id, body)  => req('PUT',  `/admin/tags/${id}`, body),
+  deleteTag:    (id)        => req('DELETE',`/admin/tags/${id}`),
+  assignTag:    (id, body)  => req('POST', `/admin/tags/${id}/assign`, body),
+  unassignTag:  (id, body)  => req('DELETE',`/admin/tags/${id}/assign`, body),
 };
 
 export { getToken, setToken };
