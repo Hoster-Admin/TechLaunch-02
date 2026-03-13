@@ -39,8 +39,9 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 
 ## Workflows
 
-- **Start application**: `cd frontend && npm start` — webview on port 5000
-- **Backend API**: `cd backend && node src/server.js` — console on port 3001
+- **Start application**: runs both backend (port 3001) and frontend (port 5000) concurrently
+  - Command: `cd backend && PORT=3001 node src/server.js & cd frontend && BROWSER=none PORT=5000 npm start`
+  - Frontend is the webview (port 5000); API requests are proxied to backend on port 3001
 
 ## Database
 
