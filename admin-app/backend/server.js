@@ -98,6 +98,140 @@ app.get('/api/auth/me', authenticate, requireAdmin, (req, res) => {
   res.json({ success:true, data: { user: req.user } });
 });
 
+// ─── ACCOUNT ACTIVATION ───────────────────────────────────────────────────────
+app.get('/api/auth/activate/:token', async (req, res) => {
+  try {
+    const { rows } = await q(
+      `SELECT at.id, at.user_id, at.used_at, at.expires_at, u.name, u.email
+       FROM activation_tokens at JOIN users u ON u.id = at.user_id
+       WHERE at.token = $1`, [req.params.token]
+    );
+    if (!rows.length) return res.json({ success:false, message:'Invalid or expired link' });
+    const r = rows[0];
+    if (r.used_at) return res.json({ success:false, message:'This link has already been used' });
+    if (new Date(r.expires_at) < new Date()) return res.json({ success:false, message:'This link has expired. Please ask your admin to resend the invitation.' });
+    res.json({ success:true, data:{ name: r.name, email: r.email } });
+  } catch (e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+app.post('/api/auth/activate', async (req, res) => {
+  const { token, password } = req.body;
+  if (!token || !password || password.length < 8)
+    return res.status(400).json({ success:false, message:'Password must be at least 8 characters' });
+  try {
+    const { rows } = await q(
+      `SELECT at.id, at.user_id, at.used_at, at.expires_at FROM activation_tokens at WHERE at.token = $1`,
+      [token]
+    );
+    if (!rows.length) return res.status(400).json({ success:false, message:'Invalid or expired link' });
+    const r = rows[0];
+    if (r.used_at) return res.status(400).json({ success:false, message:'This link has already been used' });
+    if (new Date(r.expires_at) < new Date()) return res.status(400).json({ success:false, message:'Link expired' });
+    const hash = await bcrypt.hash(password, 10);
+    await q(`UPDATE users SET password_hash=$1, email_verified=true, status='active' WHERE id=$2`, [hash, r.user_id]);
+    await q(`UPDATE activation_tokens SET used_at=NOW() WHERE id=$1`, [r.id]);
+    res.json({ success:true, message:'Account activated! You can now log in.' });
+  } catch (e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+app.get('/activate', (req, res) => {
+  const appUrl = process.env.APP_URL || 'https://tlmena.com';
+  const logoUrl = `${appUrl}/logo-icon.png`;
+  res.setHeader('Content-Type', 'text/html');
+  res.send(`<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8"/>
+  <meta name="viewport" content="width=device-width,initial-scale=1"/>
+  <title>Activate Account — TechLaunch MENA</title>
+  <style>
+    *{box-sizing:border-box;margin:0;padding:0}
+    body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px}
+    .card{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.09);width:100%;max-width:420px;overflow:hidden}
+    .top{background:#0a0a0a;padding:36px 40px;text-align:center}
+    .top img{height:52px;border-radius:12px;margin-bottom:16px}
+    .top h1{color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.3px}
+    .top p{color:rgba(255,255,255,0.5);font-size:13px;margin-top:4px}
+    .body{padding:36px 40px}
+    .greeting{font-size:15px;color:#374151;margin-bottom:28px;line-height:1.6;text-align:center}
+    .greeting strong{color:#111827}
+    label{display:block;font-size:12px;font-weight:700;color:#6b7280;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px}
+    input[type=password]{width:100%;padding:13px 16px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;color:#111827;outline:none;transition:border-color .2s}
+    input[type=password]:focus{border-color:#E15033}
+    .input-group{margin-bottom:20px}
+    button{width:100%;padding:14px;background:#E15033;color:#fff;font-size:15px;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:opacity .2s;margin-top:8px}
+    button:hover{opacity:.9}
+    button:disabled{opacity:.5;cursor:not-allowed}
+    .msg{display:none;padding:12px 16px;border-radius:10px;font-size:13px;margin-top:16px;text-align:center;line-height:1.5}
+    .msg.error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
+    .msg.success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
+    .hint{font-size:12px;color:#9ca3af;margin-top:6px}
+  </style>
+</head>
+<body>
+  <div class="card">
+    <div class="top">
+      <img src="${logoUrl}" alt="TechLaunch MENA"/>
+      <h1>Activate Your Account</h1>
+      <p>TechLaunch MENA</p>
+    </div>
+    <div class="body">
+      <p class="greeting" id="greeting">Loading your invitation&hellip;</p>
+      <div id="form-area" style="display:none">
+        <div class="input-group">
+          <label>New Password</label>
+          <input type="password" id="pw1" placeholder="At least 8 characters" autocomplete="new-password"/>
+        </div>
+        <div class="input-group">
+          <label>Confirm Password</label>
+          <input type="password" id="pw2" placeholder="Repeat your password" autocomplete="new-password"/>
+        </div>
+        <button id="btn" onclick="activate()">Activate My Account</button>
+      </div>
+      <div class="msg" id="msg"></div>
+    </div>
+  </div>
+  <script>
+    const token = new URLSearchParams(location.search).get('token');
+    const msg = document.getElementById('msg');
+    const formArea = document.getElementById('form-area');
+    const greeting = document.getElementById('greeting');
+    function show(text, type) { msg.textContent = text; msg.className = 'msg ' + type; msg.style.display = 'block'; }
+    if (!token) { greeting.textContent = 'No activation token found.'; }
+    else {
+      fetch('/api/auth/activate/' + token)
+        .then(r => r.json())
+        .then(data => {
+          if (!data.success) { greeting.innerHTML = '<span style="color:#b91c1c">' + data.message + '</span>'; }
+          else {
+            greeting.innerHTML = 'Hi <strong>' + data.data.name + '</strong>, set a password to complete your account setup.';
+            formArea.style.display = 'block';
+          }
+        })
+        .catch(() => { greeting.innerHTML = '<span style="color:#b91c1c">Could not load invitation. Please try again.</span>'; });
+    }
+    async function activate() {
+      const pw1 = document.getElementById('pw1').value;
+      const pw2 = document.getElementById('pw2').value;
+      const btn = document.getElementById('btn');
+      if (!pw1 || pw1.length < 8) return show('Password must be at least 8 characters.', 'error');
+      if (pw1 !== pw2) return show('Passwords do not match.', 'error');
+      btn.disabled = true; btn.textContent = 'Activating…';
+      try {
+        const res = await fetch('/api/auth/activate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token, password: pw1 }) });
+        const data = await res.json();
+        if (data.success) {
+          formArea.style.display = 'none';
+          greeting.textContent = '';
+          show('Your account is active! You can now log in.', 'success');
+        } else { show(data.message || 'Something went wrong.', 'error'); btn.disabled = false; btn.textContent = 'Activate My Account'; }
+      } catch { show('Network error. Please try again.', 'error'); btn.disabled = false; btn.textContent = 'Activate My Account'; }
+    }
+  </script>
+</body>
+</html>`);
+});
+
 // ─── ADMIN ROUTES ─────────────────────────────────────────────────────────────
 const admin = express.Router();
 admin.use(authenticate, requireAdmin);
