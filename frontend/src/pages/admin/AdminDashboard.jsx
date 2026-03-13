@@ -44,10 +44,10 @@ export default function AdminDashboard() {
   const newUsers = data?.newUsers || [];
 
   const statCards = [
-    { icon:'🛍️', label:'Live Products',  value: s.products?.live  ?? '—', sub:`${s.products?.pending??0} pending review`, color:'#E15033' },
-    { icon:'👥', label:'Active Users',    value: s.users?.active   ?? '—', sub:`${s.users?.total??0} total registered`, color:'#2563eb' },
-    { icon:'🎉', label:'Total Upvotes',   value: s.upvotes?.total  ?? '—', sub:'Across all products', color:'#16a34a' },
-    { icon:'📋', label:'Pending Apps',    value: s.products?.pending ?? '—', sub:'Products awaiting review', color:'#d97706' },
+    { icon:'🚀', label:'Live Products',  value: s.products?.live  ?? '—', delta:`↑ ${s.products?.pending??0} pending review`, deltaUp:true,  color:'#E15033', colorKey:'orange' },
+    { icon:'👥', label:'Registered Users', value: s.users?.total ?? '—',  delta:`${s.users?.active??0} active now`,           deltaUp:true,  color:'#16a34a', colorKey:'green'  },
+    { icon:'🎉', label:'Total Upvotes',   value: s.upvotes?.total  ?? '—', delta:'Across all products',                       deltaUp:true,  color:'#2563eb', colorKey:'blue'   },
+    { icon:'⏳', label:'Pending Review',  value: s.products?.pending ?? '—', delta: (s.products?.pending??0) > 0 ? '↑ needs attention' : 'Queue is clear', deltaUp:false, color:'#d97706', colorKey:'purple' },
   ];
 
   const maxUpvote = Math.max(...UPVOTE_CHART.map(d => d.v));
@@ -57,14 +57,11 @@ export default function AdminDashboard() {
       {/* Stat cards */}
       <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
         {statCards.map((c, i) => (
-          <div key={i} style={{background:'#fff',borderRadius:16,border:'1px solid #E8E8E8',padding:'18px 20px',position:'relative',overflow:'hidden'}}>
-            <div style={{position:'absolute',bottom:-10,right:-10,fontSize:52,opacity:.07,lineHeight:1}}>{c.icon}</div>
-            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:8}}>
-              <div style={{width:36,height:36,borderRadius:10,background:`${c.color}18`,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18}}>{c.icon}</div>
-              <div style={{fontSize:26,fontWeight:900,color:c.color}}>{c.value?.toLocaleString?.() ?? c.value}</div>
-            </div>
-            <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{c.label}</div>
-            <div style={{fontSize:11,color:'#AAAAAA',marginTop:2}}>{c.sub}</div>
+          <div key={i} style={{background:'#fff',borderRadius:16,border:'1.5px solid #E8E8E8',padding:'20px 22px',position:'relative',overflow:'hidden'}}>
+            <div style={{width:36,height:36,borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:17,marginBottom:12,background:`${c.color}15`}}>{c.icon}</div>
+            <div style={{fontSize:28,fontWeight:800,letterSpacing:'-.04em',color:'#0A0A0A',lineHeight:1}}>{c.value?.toLocaleString?.() ?? c.value}</div>
+            <div style={{fontSize:12,color:'#737373',fontWeight:500,marginTop:4}}>{c.label}</div>
+            <div style={{display:'inline-flex',alignItems:'center',gap:3,fontSize:11,fontWeight:700,marginTop:6,color:c.deltaUp?'#16a34a':'#d97706'}}>{c.delta}</div>
           </div>
         ))}
       </div>
