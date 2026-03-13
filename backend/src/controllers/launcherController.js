@@ -146,4 +146,70 @@ const deletePost = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getPosts, createPost, toggleLike, getComments, addComment, deletePost };
+// ── GET /api/launcher/:id  — single post with viewer's like status
+const getPost = async (req, res, next) => {
+  try {
+    const userId = req.user?.id || null;
+    const { rows } = await query(`
+      SELECT
+        lp.id, lp.content, lp.tag, lp.likes_count, lp.comments_count, lp.created_at,
+        u.id   AS user_id,
+        u.name AS author,
+        u.handle AS author_handle,
+        u.avatar_color,
+        u.avatar_url,
+        u.verified,
+        CASE WHEN $2::uuid IS NOT NULL
+             THEN EXISTS(SELECT 1 FROM launcher_post_likes WHERE post_id=lp.id AND user_id=$2)
+             ELSE false
+        END AS liked
+      FROM launcher_posts lp
+      JOIN users u ON u.id = lp.user_id
+      WHERE lp.id=$1
+    `, [req.params.id, userId]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Post not found' });
+    res.json({ success: true, data: rows[0] });
+  } catch (err) { next(err); }
+};
+
+// ── GET /api/launcher/:id/comments  (with liked status per comment)
+const getCommentsWithLikes = async (req, res, next) => {
+  try {
+    const userId = req.user?.id || null;
+    const { rows } = await query(`
+      SELECT c.id, c.body, c.created_at, c.likes_count,
+             u.name AS author, u.handle AS author_handle, u.avatar_color, u.avatar_url,
+             CASE WHEN $2::uuid IS NOT NULL
+                  THEN EXISTS(SELECT 1 FROM launcher_comment_likes WHERE comment_id=c.id AND user_id=$2)
+                  ELSE false
+             END AS liked
+      FROM launcher_post_comments c
+      JOIN users u ON u.id = c.user_id
+      WHERE c.post_id=$1
+      ORDER BY c.created_at ASC
+    `, [req.params.id, userId]);
+    res.json({ success: true, data: rows });
+  } catch (err) { next(err); }
+};
+
+// ── POST /api/launcher/comments/:id/like  — toggle like on a comment
+const toggleCommentLike = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(
+      'SELECT 1 FROM launcher_comment_likes WHERE comment_id=$1 AND user_id=$2',
+      [id, req.user.id]
+    );
+    if (rows.length) {
+      await query('DELETE FROM launcher_comment_likes WHERE comment_id=$1 AND user_id=$2', [id, req.user.id]);
+      await query('UPDATE launcher_post_comments SET likes_count=GREATEST(0,likes_count-1) WHERE id=$1', [id]);
+      res.json({ success: true, data: { liked: false } });
+    } else {
+      await query('INSERT INTO launcher_comment_likes (comment_id, user_id) VALUES ($1,$2)', [id, req.user.id]);
+      await query('UPDATE launcher_post_comments SET likes_count=likes_count+1 WHERE id=$1', [id]);
+      res.json({ success: true, data: { liked: true } });
+    }
+  } catch (err) { next(err); }
+};
+
+module.exports = { getPosts, getPost, createPost, toggleLike, getComments: getCommentsWithLikes, addComment, deletePost, toggleCommentLike };

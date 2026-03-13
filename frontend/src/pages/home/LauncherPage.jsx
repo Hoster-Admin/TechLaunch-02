@@ -147,7 +147,11 @@ function PostCard({ post, onDeleted, currentUser }) {
         )}
       </div>
 
-      <p style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: '0 0 16px' }}>{post.content}</p>
+      <p
+        style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: '0 0 16px', cursor: 'pointer' }}
+        onClick={() => navigate(`/launcher/posts/${post.id}`)}
+        title="Open post"
+      >{post.content}</p>
 
       <div style={{ display: 'flex', gap: 20 }}>
         <button onClick={handleLike}

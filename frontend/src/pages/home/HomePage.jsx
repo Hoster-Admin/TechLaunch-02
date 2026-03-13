@@ -183,25 +183,6 @@ export default function HomePage() {
 
           {/* Sidebar */}
           <div className="sidebar" style={{ display: 'block' }}>
-            {/* From the Community */}
-            <div className="sidebar-card">
-              <div className="sidebar-title">✍️ From the Community</div>
-              {ARTICLES.map((a, i) => (
-                <div key={i} className="article-card" onClick={() => navigate(`/articles/${a.slug}`)} style={{ cursor:'pointer' }}>
-                  <div className="article-tag">{a.tag}</div>
-                  <div className="article-title">{a.title}</div>
-                  <div className="article-meta">
-                    <span className="article-author-dot">{a.initials}</span>
-                    {a.author}
-                    <span>·</span>
-                    {a.readTime}
-                    <span>·</span>
-                    {a.date}
-                  </div>
-                </div>
-              ))}
-            </div>
-
             {/* Top Industries */}
             <div className="sidebar-card">
               <div className="sidebar-title">🏭 Top Industries</div>

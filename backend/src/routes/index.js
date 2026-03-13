@@ -286,16 +286,18 @@ pitchRouter.post('/',
 // LAUNCHER POSTS  /api/launcher
 // ══════════════════════════════════════════════════
 const launcherRouter = express.Router();
-launcherRouter.get ('/',             optionalAuth, launcherCtrl.getPosts);
-launcherRouter.post('/',             authenticate,
+launcherRouter.get ('/',                       optionalAuth, launcherCtrl.getPosts);
+launcherRouter.post('/',                       authenticate,
   [body('content').trim().notEmpty().isLength({ max:2000 })],
   validate, launcherCtrl.createPost);
-launcherRouter.post('/:id/like',     authenticate, launcherCtrl.toggleLike);
-launcherRouter.delete('/:id',        authenticate, launcherCtrl.deletePost);
-launcherRouter.get ('/:id/comments', optionalAuth, launcherCtrl.getComments);
-launcherRouter.post('/:id/comments', authenticate,
+launcherRouter.get ('/:id',                    optionalAuth, launcherCtrl.getPost);
+launcherRouter.post('/:id/like',               authenticate, launcherCtrl.toggleLike);
+launcherRouter.delete('/:id',                  authenticate, launcherCtrl.deletePost);
+launcherRouter.get ('/:id/comments',           optionalAuth, launcherCtrl.getComments);
+launcherRouter.post('/:id/comments',           authenticate,
   [body('body').trim().notEmpty().isLength({ max:2000 })],
   validate, launcherCtrl.addComment);
+launcherRouter.post('/comments/:id/like',      authenticate, launcherCtrl.toggleCommentLike);
 
 // ── Mount all routers
 router.use('/auth',         authRouter);
