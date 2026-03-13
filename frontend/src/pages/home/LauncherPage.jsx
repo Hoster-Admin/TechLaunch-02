@@ -1,0 +1,219 @@
+import React, { useState } from 'react';
+import { useNavigate } from 'react-router-dom';
+import Navbar from '../../components/layout/Navbar';
+import Footer from '../../components/home/Footer';
+import { ARTICLES } from './ArticlesPage';
+
+const TABS = ['All', 'Articles', 'Posts'];
+
+const COMMUNITY_POSTS = [
+  {
+    id: 'post-1',
+    type: 'post',
+    author: 'Sara Al-Mahmoud',
+    authorHandle: 'sara_builds',
+    initials: 'SA',
+    date: 'March 12, 2026',
+    content: 'Just crossed 500 users on EduMENA without spending a single dirham on ads. Organic growth through product communities like this one is real — keep building in public.',
+    likes: 42,
+    replies: 11,
+    tag: 'Milestone',
+  },
+  {
+    id: 'post-2',
+    type: 'post',
+    author: 'Yousef Al-Otaibi',
+    authorHandle: 'yousef_vc',
+    initials: 'YA',
+    date: 'March 10, 2026',
+    content: 'What sectors are MENA founders building in right now? Seeing a lot of fintech and edtech but feels like climate tech is underrepresented compared to global trends.',
+    likes: 28,
+    replies: 19,
+    tag: 'Discussion',
+  },
+  {
+    id: 'post-3',
+    type: 'post',
+    author: 'Reem Al-Zahrani',
+    authorHandle: 'reem_founder',
+    initials: 'RA',
+    date: 'March 9, 2026',
+    content: 'Tip for MENA founders: localise your onboarding copy in Arabic, even a basic version. We saw a 2x increase in activation rate from Saudi users after doing this.',
+    likes: 63,
+    replies: 8,
+    tag: 'Tip',
+  },
+];
+
+const TAG_COLORS = {
+  Guide: { bg: '#f0f7ff', color: '#2563eb' },
+  'Founder Story': { bg: '#fff7ed', color: '#ea580c' },
+  Report: { bg: '#f0fdf4', color: '#16a34a' },
+  Milestone: { bg: '#fdf4ff', color: '#9333ea' },
+  Discussion: { bg: '#eff6ff', color: '#2563eb' },
+  Tip: { bg: '#f0fdf4', color: '#15803d' },
+};
+
+function ArticleCard({ article, onClick }) {
+  const tagStyle = TAG_COLORS[article.tag] || { bg: '#f4f4f4', color: '#555' };
+  return (
+    <div
+      onClick={onClick}
+      style={{
+        background: '#fff',
+        border: '1.5px solid #f0f0f0',
+        borderRadius: 16,
+        padding: '22px 24px',
+        cursor: 'pointer',
+        transition: 'border-color .15s, box-shadow .15s',
+      }}
+      onMouseOver={e => { e.currentTarget.style.borderColor = 'var(--orange)'; e.currentTarget.style.boxShadow = '0 4px 20px rgba(225,80,51,.08)'; }}
+      onMouseOut={e => { e.currentTarget.style.borderColor = '#f0f0f0'; e.currentTarget.style.boxShadow = 'none'; }}
+    >
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 12 }}>
+        <span style={{
+          fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase',
+          padding: '3px 9px', borderRadius: 20, background: tagStyle.bg, color: tagStyle.color,
+        }}>{article.tag}</span>
+        <span style={{ fontSize: 12, color: '#bbb' }}>Article</span>
+      </div>
+
+      <div style={{ fontSize: 17, fontWeight: 800, letterSpacing: '-.02em', lineHeight: 1.35, marginBottom: 8, color: '#0a0a0a' }}>
+        {article.title}
+      </div>
+      <div style={{ fontSize: 13, color: '#777', lineHeight: 1.6, marginBottom: 16 }}>
+        {article.excerpt}
+      </div>
+
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+        <div style={{
+          width: 32, height: 32, borderRadius: 9, background: 'var(--orange)',
+          color: '#fff', display: 'grid', placeItems: 'center', fontSize: 11, fontWeight: 800, flexShrink: 0,
+        }}>{article.initials}</div>
+        <div>
+          <div style={{ fontSize: 12, fontWeight: 700, color: '#333' }}>{article.author}</div>
+          <div style={{ fontSize: 11, color: '#bbb' }}>{article.date} · {article.readTime}</div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+function PostCard({ post }) {
+  const [liked, setLiked] = useState(false);
+  const tagStyle = TAG_COLORS[post.tag] || { bg: '#f4f4f4', color: '#555' };
+  return (
+    <div style={{
+      background: '#fff',
+      border: '1.5px solid #f0f0f0',
+      borderRadius: 16,
+      padding: '22px 24px',
+    }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+        <div style={{
+          width: 36, height: 36, borderRadius: 10, background: '#0a0a0a',
+          color: '#fff', display: 'grid', placeItems: 'center', fontSize: 12, fontWeight: 800, flexShrink: 0,
+        }}>{post.initials}</div>
+        <div style={{ flex: 1 }}>
+          <div style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>{post.author}</div>
+          <div style={{ fontSize: 11, color: '#bbb' }}>@{post.authorHandle} · {post.date}</div>
+        </div>
+        <span style={{
+          fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase',
+          padding: '3px 9px', borderRadius: 20, background: tagStyle.bg, color: tagStyle.color,
+        }}>{post.tag}</span>
+      </div>
+
+      <p style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: '0 0 16px' }}>{post.content}</p>
+
+      <div style={{ display: 'flex', gap: 20 }}>
+        <button
+          onClick={() => setLiked(v => !v)}
+          style={{
+            display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700,
+            color: liked ? 'var(--orange)' : '#888', background: 'none', border: 'none', cursor: 'pointer',
+            padding: 0, fontFamily: "'DM Sans',sans-serif", transition: 'color .15s',
+          }}
+        >
+          <svg width="14" height="14" viewBox="0 0 24 24" fill={liked ? 'currentColor' : 'none'} stroke="currentColor" strokeWidth="2.2">
+            <path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78l1.06 1.06L12 21.23l7.78-7.78 1.06-1.06a5.5 5.5 0 0 0 0-7.78z"/>
+          </svg>
+          {post.likes + (liked ? 1 : 0)}
+        </button>
+        <span style={{ display: 'flex', alignItems: 'center', gap: 5, fontSize: 12, fontWeight: 700, color: '#888' }}>
+          <svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.2">
+            <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
+          </svg>
+          {post.replies}
+        </span>
+      </div>
+    </div>
+  );
+}
+
+export default function LauncherPage() {
+  const navigate = useNavigate();
+  const [activeTab, setActiveTab] = useState('All');
+
+  const allItems = [
+    ...COMMUNITY_POSTS.map(p => ({ ...p, _sort: p.date })),
+    ...ARTICLES.map(a => ({ ...a, type: 'article', _sort: a.date })),
+  ].sort((a, b) => new Date(b._sort) - new Date(a._sort));
+
+  const filtered = activeTab === 'All'
+    ? allItems
+    : activeTab === 'Articles'
+      ? allItems.filter(i => i.type === 'article')
+      : allItems.filter(i => i.type === 'post');
+
+  return (
+    <>
+      <Navbar/>
+      <div style={{ paddingTop: 'var(--nav-h)', minHeight: '100vh', background: '#fafafa' }}>
+
+        <div className="page-header-section">
+          <div className="page-header-inner">
+            <h2>🚀 Launcher</h2>
+            <p>Community activity from founders, investors, and builders across MENA.</p>
+          </div>
+        </div>
+
+        <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 24px 80px' }}>
+
+          <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '1.5px solid #ebebeb', paddingBottom: 0 }}>
+            {TABS.map(tab => (
+              <button
+                key={tab}
+                onClick={() => setActiveTab(tab)}
+                style={{
+                  padding: '8px 18px', fontSize: 13, fontWeight: 700,
+                  background: 'none', border: 'none', cursor: 'pointer',
+                  color: activeTab === tab ? 'var(--orange)' : '#888',
+                  borderBottom: activeTab === tab ? '2px solid var(--orange)' : '2px solid transparent',
+                  marginBottom: -1.5, transition: 'color .15s',
+                  fontFamily: "'DM Sans',sans-serif",
+                }}
+              >{tab}</button>
+            ))}
+          </div>
+
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+            {filtered.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Nothing here yet</div>
+                <div style={{ fontSize: 13, color: '#aaa' }}>Community activity will show up here.</div>
+              </div>
+            ) : filtered.map(item =>
+              item.type === 'article'
+                ? <ArticleCard key={item.slug} article={item} onClick={() => navigate(`/articles/${item.slug}`)}/>
+                : <PostCard key={item.id} post={item}/>
+            )}
+          </div>
+
+        </div>
+      </div>
+      <Footer/>
+    </>
+  );
+}

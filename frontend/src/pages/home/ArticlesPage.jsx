@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
@@ -153,6 +153,8 @@ function ArticleDetail() {
   const navigate = useNavigate();
   const article  = ARTICLES.find(a => a.slug === slug);
 
+  useEffect(() => { window.scrollTo(0, 0); }, [slug]);
+
   if (!article) return (
     <>
       <Navbar/>
@@ -227,4 +229,4 @@ function ArticleDetail() {
 }
 
 /* ─── Exports ─── */
-export { ArticlesList, ArticleDetail };
+export { ArticlesList, ArticleDetail, ARTICLES };

@@ -45,10 +45,10 @@ function SuggestionBox() {
   if (sent) {
     return (
       <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, padding:'56px 32px', textAlign:'center' }}>
-        <div style={{ fontSize:56, marginBottom:20 }}>🎉</div>
-        <h2 style={{ fontSize:22, fontWeight:800, marginBottom:10 }}>Suggestion received!</h2>
+        <div style={{ fontSize:56, marginBottom:20 }}>🙏</div>
+        <h2 style={{ fontSize:22, fontWeight:800, marginBottom:10 }}>Thank you for helping us develop more</h2>
         <p style={{ color:'#888', lineHeight:1.7, marginBottom:28 }}>
-          Thanks for sharing your recommendation with us. Our team reviews all suggestions and will respond if we have follow-up questions.
+          We read every suggestion. Your feedback helps us make the platform better for the whole community.
         </p>
         <button onClick={() => { setSent(false); setText(''); }}
           style={{ padding:'10px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
@@ -110,27 +110,6 @@ function SuggestionBox() {
 }
 
 export function WriteForUsPage() {
-  const { user } = useAuth();
-  const [form, setForm] = useState({ title:'', type:'', summary:'', name: user?.name||'', email: user?.email||'', linkedin:'' });
-  const [submitted, setSubmitted] = useState(false);
-  const [loading, setLoading] = useState(false);
-
-  const set = (k, v) => setForm(f => ({ ...f, [k]: v }));
-  const fo = e => { e.target.style.borderColor='var(--orange)'; };
-  const bl = e => { e.target.style.borderColor='#e8e8e8'; };
-
-  const handleSubmit = async () => {
-    if (!form.title.trim()) { toast.error('Article title is required'); return; }
-    if (!form.type) { toast.error('Please select an article type'); return; }
-    if (!form.summary.trim()) { toast.error('Please provide a brief outline'); return; }
-    if (!form.name.trim() || !form.email.trim()) { toast.error('Name and email are required'); return; }
-    setLoading(true);
-    await new Promise(r => setTimeout(r, 900));
-    setLoading(false);
-    setSubmitted(true);
-    toast.success('Pitch received! We\'ll be in touch within 5 days.');
-  };
-
   return (
     <>
       <Navbar/>
@@ -138,124 +117,17 @@ export function WriteForUsPage() {
 
         <div className="page-header-section">
           <div className="page-header-inner">
-            <h2>✍️ Write for Tech Launch MENA</h2>
-            <p>Share your expertise with the MENA tech community. We publish guides, interviews, and opinions from founders, investors, and builders.</p>
+            <h2>💡 Help improve the platform</h2>
+            <p>Have an idea, feature request, or feedback? We read every suggestion and use them to make Tech Launch better for everyone.</p>
           </div>
         </div>
 
-        <div style={{ maxWidth:980, margin:'0 auto', padding:'48px 32px 80px', display:'grid', gridTemplateColumns:'1fr 300px', gap:40, alignItems:'start' }} className="contact-grid">
-
-          {/* Submission form */}
-          {submitted ? (
-            <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, padding:'56px 32px', textAlign:'center' }}>
-              <div style={{ width:72, height:72, borderRadius:'50%', background:'#f0fdf4', display:'grid', placeItems:'center', fontSize:36, margin:'0 auto 20px' }}>✅</div>
-              <h2 style={{ fontSize:22, fontWeight:800, marginBottom:10 }}>Pitch received!</h2>
-              <p style={{ color:'#666', fontSize:14, lineHeight:1.7, maxWidth:380, margin:'0 auto 20px' }}>
-                Thanks for pitching <strong>{form.title}</strong>. Our editorial team will review your submission and get back to you at <strong>{form.email}</strong> within 5 business days.
-              </p>
-              <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'#f0fdf4', padding:'8px 20px', borderRadius:20, fontSize:13, fontWeight:700, color:'#16a34a', marginBottom:24 }}>
-                Under editorial review
-              </div>
-              <br/>
-              <button onClick={() => { setSubmitted(false); setForm({ title:'', type:'', summary:'', name: user?.name||'', email: user?.email||'', linkedin:'' }); }}
-                style={{ padding:'10px 28px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', marginTop:8 }}>
-                Submit Another Pitch
-              </button>
-            </div>
-          ) : (
-            <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, padding:'32px 28px' }}>
-              <div style={{ fontSize:16, fontWeight:800, marginBottom:20, color:'#0a0a0a' }}>Submit your article pitch</div>
-
-              <div style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 }}>ARTICLE TITLE *</label>
-                <input value={form.title} onChange={e=>set('title',e.target.value)} placeholder="e.g. How We Scaled to $1M ARR in the GCC"
-                  style={{ ...inputStyle }} onFocus={fo} onBlur={bl}/>
-              </div>
-
-              <div style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 }}>ARTICLE TYPE *</label>
-                <select value={form.type} onChange={e=>set('type',e.target.value)} style={{ ...inputStyle, cursor:'pointer' }} onFocus={fo} onBlur={bl}>
-                  <option value="">Select type…</option>
-                  {['Founder Story','How-To Guide','Market Analysis','Product Review','Investor Perspective','Opinion / Op-Ed','Interview','Industry News'].map(t=><option key={t}>{t}</option>)}
-                </select>
-              </div>
-
-              <div style={{ marginBottom:16 }}>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 }}>ARTICLE SUMMARY / OUTLINE *</label>
-                <textarea value={form.summary} onChange={e=>set('summary',e.target.value)} rows={5}
-                  placeholder="Give us a brief summary of what your article covers, the key takeaways, and why it matters to the MENA tech community..."
-                  style={{ ...inputStyle, resize:'vertical', lineHeight:1.6 }} onFocus={fo} onBlur={bl}/>
-              </div>
-
-              <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 }}>YOUR NAME *</label>
-                  <input value={form.name} onChange={e=>set('name',e.target.value)} placeholder="Ahmad Al-Rashid" style={{ ...inputStyle }} onFocus={fo} onBlur={bl}/>
-                </div>
-                <div>
-                  <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 }}>EMAIL *</label>
-                  <input type="email" value={form.email} onChange={e=>set('email',e.target.value)} placeholder="ahmad@startup.com" style={{ ...inputStyle }} onFocus={fo} onBlur={bl}/>
-                </div>
-              </div>
-
-              <div style={{ marginBottom:24 }}>
-                <label style={{ display:'block', fontSize:11, fontWeight:700, color:'#aaa', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 }}>LINKEDIN / PERSONAL WEBSITE</label>
-                <input value={form.linkedin} onChange={e=>set('linkedin',e.target.value)} placeholder="https://linkedin.com/in/..." style={{ ...inputStyle }} onFocus={fo} onBlur={bl}/>
-              </div>
-
-              <button onClick={handleSubmit} disabled={loading}
-                style={{ width:'100%', padding:'13px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:15, fontWeight:700, cursor:loading?'not-allowed':'pointer', opacity:loading?.7:1 }}>
-                {loading ? 'Submitting…' : 'Submit Pitch'}
-              </button>
-            </div>
-          )}
-
-          {/* Sidebar */}
-          <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
-            <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:'24px 20px' }}>
-              <div style={{ fontSize:13, fontWeight:800, marginBottom:14, color:'#1a1a1a' }}>📝 Topics we cover</div>
-              {[
-                ['🚀','Startup journeys & founder stories'],
-                ['💰','Fundraising & investor insights'],
-                ['🌍','MENA market analysis & trends'],
-                ['🛠️','Product building & growth tactics'],
-                ['🤖','AI, Web3, and emerging tech'],
-                ['🏢','Company culture & leadership'],
-              ].map(([icon, text]) => (
-                <div key={text} style={{ display:'flex', gap:10, marginBottom:10, alignItems:'flex-start' }}>
-                  <span style={{ fontSize:15 }}>{icon}</span>
-                  <span style={{ fontSize:13, color:'#555', lineHeight:1.5 }}>{text}</span>
-                </div>
-              ))}
-            </div>
-
-            <div style={{ background:'var(--orange-light)', border:'1px solid rgba(232,98,26,.15)', borderRadius:16, padding:'20px' }}>
-              <div style={{ fontSize:13, fontWeight:800, color:'var(--orange)', marginBottom:8 }}>📬 Editorial process</div>
-              <ul style={{ fontSize:12, color:'#555', lineHeight:1.9, paddingLeft:16, margin:0 }}>
-                <li>We review every pitch within 5 days</li>
-                <li>Accepted authors get editorial support</li>
-                <li>Articles are published with full byline</li>
-                <li>Promoted across our newsletter & socials</li>
-              </ul>
-            </div>
-
-            <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:'20px' }}>
-              <div style={{ fontSize:13, fontWeight:800, marginBottom:10, color:'#1a1a1a' }}>✅ What makes a great pitch</div>
-              <ul style={{ fontSize:12, color:'#555', lineHeight:1.9, paddingLeft:16, margin:0 }}>
-                <li>Specific & actionable advice</li>
-                <li>MENA-region relevance</li>
-                <li>Author has first-hand experience</li>
-                <li>800–2,000 words when written</li>
-              </ul>
-            </div>
-          </div>
-
+        <div style={{ maxWidth:600, margin:'0 auto', padding:'48px 24px 80px' }}>
+          <SuggestionBox/>
         </div>
+
       </div>
       <Footer/>
-      <style>{`
-        @media(max-width:800px){ .contact-grid{ grid-template-columns:1fr !important; } }
-      `}</style>
     </>
   );
 }

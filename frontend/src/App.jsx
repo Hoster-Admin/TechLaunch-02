@@ -24,6 +24,7 @@ import AboutPage   from './pages/home/AboutPage';
 import PrivacyPage from './pages/home/PrivacyPage';
 import TermsPage   from './pages/home/TermsPage';
 import ContactPage, { WriteForUsPage } from './pages/home/ContactPage';
+import LauncherPage from './pages/home/LauncherPage';
 
 import AdminDashboard    from './pages/admin/AdminDashboard';
 import AdminProducts    from './pages/admin/AdminProducts';
@@ -146,6 +147,7 @@ function AppRoutes() {
         <Route path="/people"       element={<WithAuthCallbacks Component={PeoplePage}/>}/>
         <Route path="/u/:handle"    element={<WithAuthCallbacks Component={UserProfilePage}/>}/>
         <Route path="/settings"          element={<RequireAuth><SettingsPage/></RequireAuth>}/>
+        <Route path="/launcher"           element={<LauncherPage/>}/>
         <Route path="/articles"          element={<ArticlesList/>}/>
         <Route path="/articles/:slug"    element={<ArticleDetail/>}/>
         <Route path="/about"             element={<AboutPage/>}/>
