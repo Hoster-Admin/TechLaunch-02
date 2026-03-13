@@ -1,7 +1,8 @@
-import React, { useState } from 'react';
-import { Link, useNavigate, useLocation } from 'react-router-dom';
+import React, { useState, useEffect } from 'react';
+import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import api from '../../utils/api';
 
 const PERSONAS  = ['Founder','Investor','Product Manager','Accelerator','Enthusiast'];
 const COUNTRIES = ['Saudi Arabia','UAE','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain','Tunisia','Other'];
@@ -235,6 +236,170 @@ export function RegisterPage() {
           </form>
           <p style={{ textAlign:'center', fontSize:13, color:'#888', marginTop:20 }}>
             Already have an account?{' '}
+            <Link to="/login" style={{ color:'var(--orange)', fontWeight:700, textDecoration:'none' }}>Sign in</Link>
+          </p>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
+// ACTIVATE PAGE
+// ══════════════════════════════════════════════
+export function ActivatePage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token') || '';
+
+  const [status, setStatus]   = useState('loading'); // loading | valid | invalid | success
+  const [userData, setUserData] = useState(null);
+  const [form, setForm]         = useState({ password: '', confirm: '' });
+  const [errors, setErrors]     = useState({});
+  const [loading, setLoading]   = useState(false);
+
+  useEffect(() => {
+    if (!token) { setStatus('invalid'); return; }
+    api.get(`/auth/activate/${token}`)
+      .then(res => { setUserData(res.data.data); setStatus('valid'); })
+      .catch(err => {
+        const msg = err.response?.data?.message || 'Invalid link';
+        setErrors({ general: msg });
+        setStatus('invalid');
+      });
+  }, [token]);
+
+  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (form.password.length < 8)         errs.password = 'Minimum 8 characters';
+    if (form.password !== form.confirm)   errs.confirm  = 'Passwords do not match';
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+    setLoading(true);
+    try {
+      await api.post('/auth/activate', { token, password: form.password });
+      setStatus('success');
+    } catch (err) {
+      setErrors({ general: err.response?.data?.message || 'Activation failed. Please try again.' });
+    } finally { setLoading(false); }
+  };
+
+  const Logo = () => (
+    <Link to="/" style={{ display:'inline-flex', alignItems:'center', gap:10, textDecoration:'none', marginBottom:20 }}>
+      <div style={{ width:38, height:38, borderRadius:10, background:'#0a0a0a', display:'grid', placeItems:'center' }}>
+        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+          <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+        </svg>
+      </div>
+      <span style={{ fontSize:18, fontWeight:800, color:'#0a0a0a', letterSpacing:'-.03em' }}>Tech Launch</span>
+    </Link>
+  );
+
+  if (status === 'loading') {
+    return (
+      <div style={pageStyle}>
+        <div style={{ textAlign:'center' }}>
+          <div style={{ width:40, height:40, border:'3px solid #e8e8e8', borderTopColor:'var(--orange)', borderRadius:'50%', margin:'0 auto 16px', animation:'spin 0.8s linear infinite' }}/>
+          <p style={{ color:'#888', fontSize:15 }}>Verifying your link…</p>
+          <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'invalid') {
+    return (
+      <div style={pageStyle}>
+        <div style={{ width:'100%', maxWidth:440, textAlign:'center' }}>
+          <Logo/>
+          <div style={{ ...cardStyle, textAlign:'center' }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>🔗</div>
+            <h2 style={{ fontSize:20, fontWeight:800, color:'#0a0a0a', marginBottom:8 }}>Link unavailable</h2>
+            <p style={{ fontSize:14, color:'#888', marginBottom:24, lineHeight:1.6 }}>
+              {errors.general || 'This activation link is invalid or has expired.'}
+            </p>
+            <Link to="/login" style={{ display:'inline-block', padding:'12px 28px', borderRadius:12, background:'var(--orange)', color:'#fff', fontSize:14, fontWeight:700, textDecoration:'none' }}>
+              Go to Sign In
+            </Link>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  if (status === 'success') {
+    return (
+      <div style={pageStyle}>
+        <div style={{ width:'100%', maxWidth:440, textAlign:'center' }}>
+          <Logo/>
+          <div style={{ ...cardStyle, textAlign:'center' }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
+            <h2 style={{ fontSize:22, fontWeight:800, color:'#0a0a0a', marginBottom:8 }}>Account activated!</h2>
+            <p style={{ fontSize:14, color:'#888', marginBottom:28, lineHeight:1.6 }}>
+              Your password has been set. Sign in with your email to get started.
+            </p>
+            {userData && (
+              <p style={{ fontSize:13, color:'#555', background:'#f9fafb', borderRadius:8, padding:'10px 14px', marginBottom:24 }}>
+                Signing in as <strong>{userData.email}</strong>
+              </p>
+            )}
+            <button
+              onClick={() => navigate('/login', { state: { email: userData?.email } })}
+              style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', fontFamily:"'DM Sans',sans-serif" }}>
+              Sign In Now →
+            </button>
+          </div>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={pageStyle}>
+      <div style={{ width:'100%', maxWidth:440 }}>
+        <div style={{ textAlign:'center', marginBottom:28 }}>
+          <Logo/>
+          <h1 style={{ fontSize:24, fontWeight:800, color:'#0a0a0a', letterSpacing:'-.02em', marginBottom:6 }}>Activate your account</h1>
+          <p style={{ fontSize:14, color:'#888' }}>
+            {userData ? `Welcome, ${userData.name}! ` : ''}Set a password to get started.
+          </p>
+        </div>
+        <div style={cardStyle}>
+          {errors.general && (
+            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'12px 16px', borderRadius:10, marginBottom:20, fontWeight:500 }}>
+              {errors.general}
+            </div>
+          )}
+          <form onSubmit={handleSubmit}>
+            <div style={{ marginBottom:16 }}>
+              <label style={labelStyle}>New Password</label>
+              <input
+                type="password" value={form.password} onChange={set('password')}
+                placeholder="Minimum 8 characters" autoComplete="new-password"
+                style={inputStyle(errors.password)}
+                onFocus={e => e.target.style.borderColor='var(--orange)'}
+                onBlur={e => e.target.style.borderColor=errors.password?'#dc2626':'#e8e8e8'}/>
+              {errors.password && <div style={errStyle}>{errors.password}</div>}
+            </div>
+            <div style={{ marginBottom:28 }}>
+              <label style={labelStyle}>Confirm Password</label>
+              <input
+                type="password" value={form.confirm} onChange={set('confirm')}
+                placeholder="Re-enter your password" autoComplete="new-password"
+                style={inputStyle(errors.confirm)}
+                onFocus={e => e.target.style.borderColor='var(--orange)'}
+                onBlur={e => e.target.style.borderColor=errors.confirm?'#dc2626':'#e8e8e8'}/>
+              {errors.confirm && <div style={errStyle}>{errors.confirm}</div>}
+            </div>
+            <button type="submit" disabled={loading}
+              style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', opacity:loading?0.75:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>
+              {loading ? 'Activating…' : 'Activate Account'}
+            </button>
+          </form>
+          <p style={{ textAlign:'center', fontSize:13, color:'#888', marginTop:20 }}>
+            Already activated?{' '}
             <Link to="/login" style={{ color:'var(--orange)', fontWeight:700, textDecoration:'none' }}>Sign in</Link>
           </p>
         </div>

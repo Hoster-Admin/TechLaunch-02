@@ -139,9 +139,51 @@ const logout = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── GET /api/auth/activate/:token  — validate token, return name+email
+const checkActivationToken = async (req, res, next) => {
+  try {
+    const { token } = req.params;
+    const { rows } = await query(
+      `SELECT at.id, at.user_id, at.used_at, at.expires_at, u.name, u.email
+       FROM activation_tokens at JOIN users u ON u.id = at.user_id
+       WHERE at.token = $1`, [token]
+    );
+    if (!rows.length)        return res.status(404).json({ success:false, message:'Invalid activation link' });
+    if (rows[0].used_at)     return res.status(410).json({ success:false, message:'This link has already been used' });
+    if (new Date(rows[0].expires_at) < new Date())
+      return res.status(410).json({ success:false, message:'This activation link has expired' });
+    const { id, user_id, used_at, expires_at, ...safe } = rows[0];
+    res.json({ success:true, data: safe });
+  } catch (err) { next(err); }
+};
+
+// ── POST /api/auth/activate  — set password, mark token used
+const activateAccount = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password || password.length < 8)
+      return res.status(400).json({ success:false, message:'Token and a password of at least 8 characters are required' });
+
+    const { rows } = await query(
+      `SELECT at.id, at.user_id, at.used_at, at.expires_at
+       FROM activation_tokens at WHERE at.token = $1`, [token]
+    );
+    if (!rows.length)    return res.status(404).json({ success:false, message:'Invalid activation link' });
+    if (rows[0].used_at) return res.status(410).json({ success:false, message:'This link has already been used' });
+    if (new Date(rows[0].expires_at) < new Date())
+      return res.status(410).json({ success:false, message:'This activation link has expired' });
+
+    const hash = await bcrypt.hash(password, 12);
+    await query('UPDATE users SET password_hash=$1, email_verified=true WHERE id=$2', [hash, rows[0].user_id]);
+    await query('UPDATE activation_tokens SET used_at=NOW() WHERE id=$1', [rows[0].id]);
+
+    res.json({ success:true, message:'Account activated. You can now sign in.' });
+  } catch (err) { next(err); }
+};
+
 // ── GET /api/auth/me
 const getMe = async (req, res) => {
   res.json({ success:true, data: req.user });
 };
 
-module.exports = { register, login, refresh, logout, getMe };
+module.exports = { register, login, refresh, logout, getMe, checkActivationToken, activateAccount };

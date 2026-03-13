@@ -12,12 +12,11 @@ const { Resend } = require('resend');
 const _resend = new Resend(process.env.RESEND_API_KEY);
 const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'TechLaunch MENA <onboarding@resend.dev>';
 
-const sendAccountCreatedEmail = async ({ to, name, email, tempPassword, role }) => {
+const sendAccountCreatedEmail = async ({ to, name, role, activationLink }) => {
   const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
-  const appUrl = process.env.APP_URL || 'https://techlauchmena.com';
   const html = `<!DOCTYPE html>
 <html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>Your TechLaunch MENA Account</title></head>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>You're invited to TechLaunch MENA</title></head>
 <body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
   <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
     <tr><td align="center">
@@ -25,51 +24,36 @@ const sendAccountCreatedEmail = async ({ to, name, email, tempPassword, role }) 
         <tr>
           <td style="background:linear-gradient(135deg,#E15033 0%,#c73e20 100%);padding:36px 40px;text-align:center;">
             <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">TechLaunch MENA</h1>
-            <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">Your account has been created</p>
+            <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">You've been invited to join the team</p>
           </td>
         </tr>
         <tr>
           <td style="padding:40px 40px 32px;">
-            <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Hello, ${name}!</h2>
-            <p style="margin:0 0 24px;color:#4b5563;font-size:15px;line-height:1.6;">
-              An account has been created for you on <strong>TechLaunch MENA</strong> with the role of <strong>${roleLabel}</strong>. Use the credentials below to sign in for the first time.
+            <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Welcome, ${name}! 👋</h2>
+            <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.6;">
+              You've been added to <strong>TechLaunch MENA</strong> as a <strong>${roleLabel}</strong>. Click the button below to activate your account and set your password.
             </p>
-            <table cellpadding="0" cellspacing="0" style="background:#f9fafb;border:1px solid #e5e7eb;border-radius:10px;width:100%;margin:0 0 24px;">
-              <tr><td style="padding:24px 28px;">
-                <p style="margin:0 0 14px;color:#6b7280;font-size:12px;font-weight:600;text-transform:uppercase;letter-spacing:0.8px;">Your Login Credentials</p>
-                <table cellpadding="0" cellspacing="0" width="100%">
-                  <tr>
-                    <td style="padding:6px 0;color:#374151;font-size:14px;width:110px;font-weight:600;">Email:</td>
-                    <td style="padding:6px 0;color:#111827;font-size:14px;font-family:monospace;">${email}</td>
-                  </tr>
-                  <tr>
-                    <td style="padding:6px 0;color:#374151;font-size:14px;font-weight:600;">Password:</td>
-                    <td style="padding:6px 0;">
-                      <span style="background:#E15033;color:#ffffff;font-family:monospace;font-size:14px;padding:3px 10px;border-radius:5px;letter-spacing:1px;">${tempPassword}</span>
-                    </td>
-                  </tr>
-                </table>
-              </td></tr>
-            </table>
-            <table cellpadding="0" cellspacing="0" style="background:#fffbeb;border-left:4px solid #f59e0b;border-radius:0 8px 8px 0;width:100%;margin:0 0 28px;">
+            <table cellpadding="0" cellspacing="0" style="background:#fef7f5;border-left:4px solid #E15033;border-radius:0 8px 8px 0;width:100%;margin:0 0 28px;">
               <tr><td style="padding:14px 18px;">
-                <p style="margin:0;color:#92400e;font-size:13px;line-height:1.5;">
-                  ⚠️ &nbsp;This is a temporary password. Please change it immediately after signing in.
+                <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">
+                  This activation link expires in <strong>72 hours</strong>. If you did not expect this invitation, you can ignore this email.
                 </p>
               </td></tr>
             </table>
-            <table cellpadding="0" cellspacing="0" style="width:100%;">
+            <table cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 28px;">
               <tr><td align="center">
-                <a href="${appUrl}/login" style="display:inline-block;background:#E15033;color:#ffffff;text-decoration:none;font-size:15px;font-weight:600;padding:14px 36px;border-radius:8px;">Sign In Now →</a>
+                <a href="${activationLink}" style="display:inline-block;background:#E15033;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:16px 40px;border-radius:10px;letter-spacing:0.2px;">Activate My Account →</a>
               </td></tr>
             </table>
+            <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center;">
+              Or copy this link into your browser:<br>
+              <span style="color:#6b7280;word-break:break-all;">${activationLink}</span>
+            </p>
           </td>
         </tr>
         <tr>
           <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center;">
             <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
-              This account was created by the TechLaunch MENA team.<br>
-              If you did not expect this, please contact support.<br>
               © 2025 TechLaunch MENA. All rights reserved.
             </p>
           </td>
@@ -80,9 +64,9 @@ const sendAccountCreatedEmail = async ({ to, name, email, tempPassword, role }) 
 </body>
 </html>`;
   try {
-    const { data, error } = await _resend.emails.send({ from: RESEND_FROM, to, subject: 'Your TechLaunch MENA account is ready', html });
+    const { data, error } = await _resend.emails.send({ from: RESEND_FROM, to, subject: `You're invited to TechLaunch MENA`, html });
     if (error) console.error('[Email] sendAccountCreatedEmail error:', error);
-    else console.log('[Email] Account created email sent to', to, '| id:', data.id);
+    else console.log('[Email] Invitation email sent to', to, '| id:', data.id);
   } catch (err) {
     console.error('[Email] sendAccountCreatedEmail exception:', err.message);
   }
@@ -296,8 +280,12 @@ admin.post('/users', async (req, res) => {
     const placeholders = vals.map((_,i)=>`$${i+1}`).join(',');
     const { rows } = await q(`INSERT INTO users (${cols.join(',')}) VALUES (${placeholders}) RETURNING id,name,email,role`, vals);
     await logAction(req.user.id, 'user.created', 'user', rows[0].id, { name:rows[0].name, role:rows[0].role });
-    // Send account credentials email (non-blocking)
-    sendAccountCreatedEmail({ to: rows[0].email, name: rows[0].name, email: rows[0].email, tempPassword: tempPwd, role: rows[0].role }).catch(() => {});
+    // Generate activation token and send invitation email (non-blocking)
+    const crypto = require('crypto');
+    const activationToken = crypto.randomBytes(32).toString('hex');
+    const appUrl = process.env.APP_URL || 'https://tlmena.com';
+    q(`INSERT INTO activation_tokens (user_id, token) VALUES ($1, $2)`, [rows[0].id, activationToken]).catch(e => console.error('[Token] Failed to store activation token:', e.message));
+    sendAccountCreatedEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${appUrl}/activate?token=${activationToken}` }).catch(() => {});
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });

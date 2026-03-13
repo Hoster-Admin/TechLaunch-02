@@ -36,9 +36,11 @@ authRouter.post('/login',
   validate, authCtrl.login
 );
 
-authRouter.post('/refresh',   authCtrl.refresh);
-authRouter.post('/logout',    authCtrl.logout);
-authRouter.get ('/me',        authenticate, authCtrl.getMe);
+authRouter.post('/refresh',         authCtrl.refresh);
+authRouter.post('/logout',          authCtrl.logout);
+authRouter.get ('/me',              authenticate, authCtrl.getMe);
+authRouter.get ('/activate/:token', authCtrl.checkActivationToken);
+authRouter.post('/activate',        authCtrl.activateAccount);
 
 // ══════════════════════════════════════════════════
 // PRODUCTS  /api/products

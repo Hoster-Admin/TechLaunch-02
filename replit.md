@@ -63,6 +63,26 @@ Run migrations: `cd backend && node src/migrations/run.js`
 - Backend `.env`: DB_HOST=helium, DB_PORT=5432, DB_NAME=heliumdb, DB_USER=postgres, PORT=3001
 - Frontend `.env`: PORT=5000, HOST=0.0.0.0, DANGEROUSLY_DISABLE_HOST_CHECK=true
 
+## Email (Resend)
+
+- **Package**: `resend` installed in both `backend/` and root `node_modules`
+- **Service**: `backend/src/services/emailService.js` — `sendWelcomeEmail`, `sendAdminCreatedAccountEmail`
+- **Triggers**:
+  - `authController.js` — welcome email on public registration
+  - `admin-app/backend/server.js` — invitation email with activation link on admin user creation
+- **Secrets**: `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (hello@tlmena.com), `APP_URL` (https://tlmena.com)
+
+## Account Activation Flow
+
+When admin creates a user via the admin panel:
+1. A 72-hour token is generated and stored in `activation_tokens` table
+2. An invitation email is sent with an "Activate My Account" button linking to `APP_URL/activate?token=...`
+3. User sets their own password at `/activate?token=...` (ActivatePage in AuthPages.jsx)
+4. On success, user is redirected to `/login` to sign in normally
+
+- **Backend routes**: `GET /api/auth/activate/:token` (validate), `POST /api/auth/activate` (set password)
+- **Frontend page**: `/activate` — `ActivatePage` in `frontend/src/pages/home/AuthPages.jsx`
+
 ## Production Deployment
 
 - Build: `cd frontend && npm run build`

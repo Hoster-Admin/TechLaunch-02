@@ -58,3 +58,4 @@ build = ["npm", "run", "build"]
 
 [userenv.shared]
 RESEND_FROM_EMAIL = "TechLaunch MENA <hello@tlmena.com>"
+APP_URL = "https://tlmena.com"
