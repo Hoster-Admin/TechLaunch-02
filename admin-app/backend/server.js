@@ -13,6 +13,13 @@ const app  = express();
 const PORT = process.env.PORT || process.env.ADMIN_PORT || 5000;
 const JWT_SECRET = process.env.JWT_SECRET || 'tlmena_dev_secret';
 
+const getAdminUrl = () => {
+  if (process.env.ADMIN_URL) return process.env.ADMIN_URL;
+  if (process.env.REPLIT_DOMAINS) return 'https://' + process.env.REPLIT_DOMAINS.split(',')[0].trim();
+  if (process.env.REPLIT_DEV_DOMAIN) return 'https://' + process.env.REPLIT_DEV_DOMAIN;
+  return `http://localhost:${PORT}`;
+};
+
 // ─── DATABASE ─────────────────────────────────────────────────────────────────
 const dbUrl = process.env.NEON_DATABASE_URL || process.env.DATABASE_URL;
 const pool = new Pool(
@@ -135,7 +142,7 @@ app.post('/api/auth/activate', async (req, res) => {
 });
 
 app.get('/activate', (req, res) => {
-  const adminUrl = process.env.ADMIN_URL || ('https://' + (process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'));
+  const adminUrl = getAdminUrl();
   const publicUrl = process.env.APP_URL || 'https://tlmena.com';
   const logoUrl = `${adminUrl}/logo-icon.png`;
   res.setHeader('Content-Type', 'text/html');
@@ -391,9 +398,8 @@ admin.post('/users', async (req, res) => {
     // Generate activation token and send invitation email (non-blocking)
     const crypto = require('crypto');
     const activationToken = crypto.randomBytes(32).toString('hex');
-    const adminUrl = process.env.ADMIN_URL || ('https://' + (process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'));
     q(`INSERT INTO activation_tokens (user_id, token) VALUES ($1, $2)`, [rows[0].id, activationToken]).catch(e => console.error('[Token] Failed to store activation token:', e.message));
-    sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${adminUrl}/activate?token=${activationToken}` }).catch(() => {});
+    sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${getAdminUrl()}/activate?token=${activationToken}` }).catch(() => {});
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
