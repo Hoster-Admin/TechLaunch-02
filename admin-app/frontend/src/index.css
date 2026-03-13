@@ -42,6 +42,7 @@ html, body, #root {
 .admin-app {
   display: flex;
   height: 100vh;
+  width: 100vw;
   overflow: hidden;
 }
 
@@ -189,6 +190,7 @@ nav { flex: 1; padding: 8px 0; overflow-y: auto; }
 /* ── Main area ────────────────────────────────────────── */
 .admin-main {
   flex: 1;
+  min-width: 0;
   display: flex;
   flex-direction: column;
   overflow: hidden;
@@ -368,4 +370,30 @@ tr:hover td { background: var(--gray-50); }
 
 /* ── Focus ────────────────────────────────────────────── */
 input:focus, textarea:focus, button:focus { outline: none; }
+
+/* ── Responsive ───────────────────────────────────────── */
+@media (max-width: 1024px) {
+  :root { --sidebar-w: 200px; }
+}
+
+@media (max-width: 768px) {
+  :root { --sidebar-w: 60px; }
+
+  .sidebar-logo-text,
+  .sidebar-badge,
+  .nav-item span:last-child,
+  .nav-section,
+  .sidebar-admin-user .user-info { display: none; }
+
+  .sidebar-logo { padding: 16px 12px; justify-content: center; }
+  .sidebar-logo-top { justify-content: center; }
+  .nav-item { justify-content: center; padding: 10px; }
+  .nav-icon { margin: 0; }
+  .sidebar-footer { padding: 12px; justify-content: center; }
+  .sidebar-admin-user { justify-content: center; }
+
+  .topbar { padding: 0 16px; }
+  .admin-content { padding: 16px; }
+  .topbar-search { display: none; }
+}
 button:focus-visible { box-shadow: 0 0 0 3px rgba(225,80,51,.35); }
