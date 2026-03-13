@@ -651,6 +651,7 @@ admin.post('/users/bulk', async (req, res) => {
   try {
     const { ids, action } = req.body;
     if (!ids?.length || !action) return res.status(400).json({ success:false, message:'ids and action required' });
+    if (!ids.every(id => Number.isInteger(id) && id > 0)) return res.status(400).json({ success:false, message:'ids must be positive integers' });
     const placeholders = ids.map((_,i)=>`$${i+1}`).join(',');
     if (action === 'verify') {
       await q(`UPDATE users SET verified=true, updated_at=NOW() WHERE id IN (${placeholders})`, ids);
