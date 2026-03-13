@@ -219,8 +219,10 @@ export default function LauncherPage() {
 
         <div className="page-header-section">
           <div className="page-header-inner">
-            <h2>🚀 Launcher</h2>
-            <p>Community activity from founders, investors, and builders across MENA.</p>
+            <div>
+              <h2>🚀 Launcher</h2>
+              <p>Community activity from founders, investors, and builders across MENA.</p>
+            </div>
           </div>
         </div>
 

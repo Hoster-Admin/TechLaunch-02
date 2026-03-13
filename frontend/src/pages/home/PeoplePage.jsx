@@ -237,12 +237,18 @@ export default function PeoplePage({ onSignIn }) {
   return (
     <div style={{ minHeight:'100vh', background:'#f8f8f8' }}>
       <Navbar/>
-      <div style={{ maxWidth:1100, margin:'0 auto', padding:'calc(var(--nav-h) + 32px) 20px 80px' }}>
-        <div style={{ marginBottom:28 }}>
-          <h1 style={{ fontSize:28, fontWeight:800, letterSpacing:'-.03em', marginBottom:6 }}>People</h1>
-          <p style={{ fontSize:14, color:'#888' }}>Discover founders, investors, builders and makers across MENA</p>
+      <div style={{ paddingTop:'var(--nav-h)' }}>
+        <div className="page-header-section">
+          <div className="page-header-inner">
+            <div>
+              <h1>👥 People</h1>
+              <p>Discover founders, investors, builders and makers across MENA</p>
+            </div>
+          </div>
         </div>
-        <PeopleContent/>
+        <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px clamp(16px,3vw,32px) 80px' }}>
+          <PeopleContent/>
+        </div>
       </div>
       <Footer/>
     </div>

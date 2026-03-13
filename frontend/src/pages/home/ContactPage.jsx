@@ -117,8 +117,10 @@ export function WriteForUsPage() {
 
         <div className="page-header-section">
           <div className="page-header-inner">
-            <h2>💡 Help improve the platform</h2>
-            <p>Have an idea, feature request, or feedback? We read every suggestion and use them to make Tech Launch better for everyone.</p>
+            <div>
+              <h2>💡 Help improve the platform</h2>
+              <p>Have an idea, feature request, or feedback? We read every suggestion and use them to make Tech Launch better for everyone.</p>
+            </div>
           </div>
         </div>
 
@@ -140,8 +142,10 @@ export default function ContactPage() {
 
         <div className="page-header-section">
           <div className="page-header-inner">
-            <h2>📬 Contact Us</h2>
-            <p>Have a question, partnership idea, or feedback? We'd love to hear from you.</p>
+            <div>
+              <h2>📬 Contact Us</h2>
+              <p>Have a question, partnership idea, or feedback? We'd love to hear from you.</p>
+            </div>
           </div>
         </div>
 

@@ -99,11 +99,11 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#fafafa', fontFamily:"'DM Sans',sans-serif" }}>
 
-        <div style={{ maxWidth:1100, margin:'0 auto', padding:'40px 32px 80px' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px clamp(16px,3vw,32px) 80px' }}>
 
           {/* Header */}
           <div style={{ marginBottom:28 }}>
-            <h1 style={{ fontSize:28, fontWeight:900, letterSpacing:'-.03em', marginBottom:6 }}>
+            <h1 style={{ fontSize:'clamp(20px,4vw,28px)', fontWeight:900, letterSpacing:'-.03em', marginBottom:6, lineHeight:1.2 }}>
               All Products <span style={{ color:'var(--orange)' }}>on Tech Launch</span>
             </h1>
             <p style={{ fontSize:14, color:'#aaa', fontWeight:500 }}>

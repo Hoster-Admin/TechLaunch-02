@@ -286,23 +286,20 @@ export default function ListingPage() {
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#fff' }}>
 
         {/* Page header */}
-        <div style={{ borderBottom:'1px solid #f0f0f0', background:'#fff', padding:'36px 40px 28px' }}>
-          <div style={{ maxWidth:1140, margin:'0 auto', display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:20 }}>
+        <div className="page-header-section">
+          <div className="page-header-inner">
             <div>
-              <h1 style={{ fontSize:28, fontWeight:800, letterSpacing:'-.03em', marginBottom:6, display:'flex', alignItems:'center', gap:10 }}>
-                {config.emoji} {config.title}
-              </h1>
-              <p style={{ fontSize:14, color:'#777', margin:0 }}>{config.desc}</p>
+              <h1>{config.emoji} {config.title}</h1>
+              <p>{config.desc}</p>
             </div>
-            <button onClick={() => setAuthModal('signup')}
-              style={{ flexShrink:0, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', boxShadow:'0 2px 12px rgba(232,98,26,.25)', whiteSpace:'nowrap' }}>
+            <button onClick={() => setAuthModal('signup')} className="page-header-cta">
               + {config.cta}
             </button>
           </div>
         </div>
 
         {/* Filters */}
-        <div style={{ borderBottom:'1px solid #f0f0f0', background:'#fff', padding:'14px 40px' }}>
+        <div style={{ borderBottom:'1px solid #f0f0f0', background:'#fff', padding:'14px clamp(16px,4vw,40px)' }}>
           <div style={{ maxWidth:1140, margin:'0 auto', display:'flex', alignItems:'center', gap:10, flexWrap:'wrap' }}>
             {config.filters.includes('stage') && (
               <FilterDropdown label="Stage Focus" icon="📊" options={STAGE_OPTIONS}
@@ -326,7 +323,7 @@ export default function ListingPage() {
         </div>
 
         {/* Cards grid */}
-        <div style={{ maxWidth:1140, margin:'0 auto', padding:'32px 40px 80px' }}>
+        <div style={{ maxWidth:1140, margin:'0 auto', padding:'32px clamp(16px,4vw,40px) 80px' }}>
           {loading ? (
             <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:20 }}>
               {[1,2,3,4,5,6].map(i => (
