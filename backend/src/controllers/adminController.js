@@ -1,5 +1,7 @@
 const { query } = require('../config/database');
 const bcrypt = require('bcryptjs');
+const { v4: uuid } = require('uuid');
+const { sendInviteEmail } = require('../services/emailService');
 
 // ═══════════════════════════════════════════════
 // DASHBOARD
@@ -478,6 +480,49 @@ const respondSuggestion = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ═══════════════════════════════════════════════
+// INVITE USER (admin creates user, sends invite email)
+// ═══════════════════════════════════════════════
+const inviteUser = async (req, res, next) => {
+  try {
+    const { name, email, role = 'user', persona = 'Founder', country } = req.body;
+
+    if (!name || !email) {
+      return res.status(400).json({ success: false, message: 'Name and email are required' });
+    }
+
+    const { rows: existing } = await query(
+      'SELECT id FROM users WHERE email=$1', [email]
+    );
+    if (existing.length) {
+      return res.status(409).json({ success: false, message: 'A user with this email already exists' });
+    }
+
+    const inviteToken = uuid();
+    const handle = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') + '_' + Math.random().toString(36).slice(2, 6);
+
+    const { rows } = await query(
+      `INSERT INTO users (name, handle, email, role, persona, country, invite_token, invite_token_expires_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW() + INTERVAL '48 hours')
+       RETURNING id, name, email, role, handle, created_at`,
+      [name, handle, email, role, persona, country || null, inviteToken]
+    );
+
+    await sendInviteEmail({ name, email, token: inviteToken, role });
+
+    await query(
+      'INSERT INTO activity_log (actor_id, action, entity, entity_id) VALUES ($1,$2,$3,$4)',
+      [req.user.id, 'admin.invite_user', 'users', rows[0].id]
+    );
+
+    res.status(201).json({
+      success: true,
+      message: `Invite sent to ${email}`,
+      data: { user: rows[0] },
+    });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getDashboard,
   adminGetProducts, approveProduct, rejectProduct, toggleFeatured,
@@ -489,4 +534,5 @@ module.exports = {
   getReports,
   getPlatformPosts, createPlatformPost, deletePlatformPost,
   getSuggestions, respondSuggestion,
+  inviteUser,
 };

@@ -28,7 +28,8 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 │   │   ├── config/      (database.js - pg Pool, uses NEON_DATABASE_URL if set)
 │   │   ├── controllers/ (auth, products, entities, users, admin)
 │   │   ├── middleware/  (auth JWT, error handling)
-│   │   ├── migrations/  (001_schema.sql)
+│   │   ├── migrations/  (001_schema.sql, 002_invite_tokens.sql)
+│   │   ├── services/    (emailService.js - Resend transactional email)
 │   │   └── routes/
 │   └── .env             (PORT=5000 in production, DB credentials)
 │

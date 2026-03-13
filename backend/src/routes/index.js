@@ -36,9 +36,10 @@ authRouter.post('/login',
   validate, authCtrl.login
 );
 
-authRouter.post('/refresh',   authCtrl.refresh);
-authRouter.post('/logout',    authCtrl.logout);
-authRouter.get ('/me',        authenticate, authCtrl.getMe);
+authRouter.post('/refresh',      authCtrl.refresh);
+authRouter.post('/logout',       authCtrl.logout);
+authRouter.get ('/me',           authenticate, authCtrl.getMe);
+authRouter.post('/set-password', authCtrl.setPassword);
 
 // ══════════════════════════════════════════════════
 // PRODUCTS  /api/products
@@ -153,11 +154,12 @@ adminRouter.post  ('/products/:id/reject',    requireMod,    adminCtrl.rejectPro
 adminRouter.post  ('/products/:id/featured',  requireEditor, adminCtrl.toggleFeatured);
 
 // Users
-adminRouter.get ('/users',           requireMod, adminCtrl.adminGetUsers);
-adminRouter.get ('/users/:id',       requireMod, adminCtrl.adminGetUser);
-adminRouter.post('/users/:id/verify',   requireMod, adminCtrl.verifyUser);
-adminRouter.post('/users/:id/suspend',  requireMod, adminCtrl.suspendUser);
-adminRouter.post('/users/:id/reinstate',requireMod, adminCtrl.reinstateUser);
+adminRouter.get ('/users',                requireMod,   adminCtrl.adminGetUsers);
+adminRouter.post('/users/invite',         requireAdmin, adminCtrl.inviteUser);
+adminRouter.get ('/users/:id',            requireMod,   adminCtrl.adminGetUser);
+adminRouter.post('/users/:id/verify',     requireMod,   adminCtrl.verifyUser);
+adminRouter.post('/users/:id/suspend',    requireMod,   adminCtrl.suspendUser);
+adminRouter.post('/users/:id/reinstate',  requireMod,   adminCtrl.reinstateUser);
 
 // Entities
 adminRouter.get ('/entities',        requireMod,    adminCtrl.adminGetEntities);

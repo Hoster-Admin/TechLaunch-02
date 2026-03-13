@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { query } = require('../config/database');
+const { sendWelcomeEmail } = require('../services/emailService');
 
 // ── Helper: generate tokens
 const generateTokens = (userId) => {
@@ -48,6 +49,9 @@ const register = async (req, res, next) => {
       'INSERT INTO activity_log (actor_id, action, entity, entity_id) VALUES ($1,$2,$3,$4)',
       [user.id, 'user.signup', 'users', user.id]
     );
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail({ name: user.name, email: user.email });
 
     res.status(201).json({
       success: true,
@@ -140,4 +144,50 @@ const getMe = async (req, res) => {
   res.json({ success:true, data: req.user });
 };
 
-module.exports = { register, login, refresh, logout, getMe };
+// ── POST /api/auth/set-password  (used by admin-invited users)
+const setPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success:false, message:'Token and password are required' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success:false, message:'Password must be at least 8 characters' });
+    }
+
+    const { rows } = await query(
+      `SELECT id, name, email, role, status, invite_token_expires_at
+       FROM users
+       WHERE invite_token = $1 AND invite_token_expires_at > NOW()`,
+      [token]
+    );
+
+    if (!rows.length) {
+      return res.status(400).json({ success:false, message:'Invalid or expired invite link' });
+    }
+
+    const user = rows[0];
+    const hash = await bcrypt.hash(password, 12);
+
+    await query(
+      `UPDATE users
+       SET password_hash = $1, invite_token = NULL, invite_token_expires_at = NULL, updated_at = NOW()
+       WHERE id = $2`,
+      [hash, user.id]
+    );
+
+    const { accessToken, refreshToken } = generateTokens(user.id);
+    await query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
+      [user.id, refreshToken]
+    );
+
+    res.json({
+      success: true,
+      message: 'Password set successfully',
+      data: { accessToken, refreshToken },
+    });
+  } catch (err) { next(err); }
+};
+
+module.exports = { register, login, refresh, logout, getMe, setPassword };
