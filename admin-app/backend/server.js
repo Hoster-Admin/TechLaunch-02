@@ -7,7 +7,7 @@ const jwt      = require('jsonwebtoken');
 const bcrypt   = require('bcryptjs');
 const { Pool } = require('pg');
 const path     = require('path');
-const { sendAdminCreatedAccountEmail } = require('../../backend/src/services/emailService');
+const { sendAdminCreatedAccountEmail, sendPublicInvitationEmail } = require('../../backend/src/services/emailService');
 
 const app  = express();
 const PORT = process.env.PORT || process.env.ADMIN_PORT || 5000;
@@ -399,7 +399,12 @@ admin.post('/users', async (req, res) => {
     const crypto = require('crypto');
     const activationToken = crypto.randomBytes(32).toString('hex');
     q(`INSERT INTO activation_tokens (user_id, token) VALUES ($1, $2)`, [rows[0].id, activationToken]).catch(e => console.error('[Token] Failed to store activation token:', e.message));
-    sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${getAdminUrl()}/activate?token=${activationToken}` }).catch(() => {});
+    const activationLink = `${getAdminUrl()}/activate?token=${activationToken}`;
+    if (rows[0].role === 'user') {
+      sendPublicInvitationEmail({ to: rows[0].email, name: rows[0].name, activationLink }).catch(() => {});
+    } else {
+      sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink }).catch(() => {});
+    }
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
