@@ -190,14 +190,73 @@ messagesRouter.post('/:handle',
   [body('body').trim().notEmpty().isLength({ max:2000 })], validate,
   msgCtrl.sendMessage);
 
+// ══════════════════════════════════════════════════
+// APPLICATIONS  /api/applications
+// ══════════════════════════════════════════════════
+const { query: dbQuery } = require('../config/database');
+
+const applyRouter = express.Router();
+applyRouter.post('/',
+  authenticate,
+  [
+    body('entity_name').trim().notEmpty().withMessage('Entity name required'),
+    body('startup_name').trim().notEmpty().withMessage('Startup name required'),
+    body('stage').trim().notEmpty().withMessage('Stage required'),
+    body('pitch').trim().notEmpty().isLength({ max:2000 }).withMessage('Pitch required (max 2000 chars)'),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { entity_name, startup_name, stage, pitch } = req.body;
+      const { rows: ents } = await dbQuery('SELECT id FROM entities WHERE LOWER(name)=LOWER($1) LIMIT 1', [entity_name]);
+      const entity_id = ents[0]?.id || null;
+      const { rows } = await dbQuery(
+        `INSERT INTO accelerator_applications (applicant_id, entity_id, startup_name, stage, pitch, notes, status)
+         VALUES ($1,$2,$3,$4,$5,$6,'pending') RETURNING id`,
+        [req.user.id, entity_id, startup_name, stage, pitch, entity_name]
+      );
+      res.json({ success:true, data:{ id: rows[0].id } });
+    } catch(err){ next(err); }
+  }
+);
+
+// ══════════════════════════════════════════════════
+// PITCHES  /api/pitches
+// ══════════════════════════════════════════════════
+const pitchRouter = express.Router();
+pitchRouter.post('/',
+  authenticate,
+  [
+    body('entity_name').trim().notEmpty().withMessage('Entity name required'),
+    body('ask_amount').trim().notEmpty().withMessage('Ask amount required'),
+    body('description').trim().notEmpty().isLength({ max:2000 }).withMessage('Description required (max 2000 chars)'),
+  ],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { entity_name, ask_amount, pitch_deck, description } = req.body;
+      const { rows: ents } = await dbQuery('SELECT id FROM entities WHERE LOWER(name)=LOWER($1) LIMIT 1', [entity_name]);
+      const investor_id = ents[0]?.id || null;
+      const { rows } = await dbQuery(
+        `INSERT INTO investor_pitches (founder_id, investor_id, ask_amount, pitch_deck, description, status)
+         VALUES ($1,$2,$3,$4,$5,'pending') RETURNING id`,
+        [req.user.id, investor_id, ask_amount, pitch_deck || null, description]
+      );
+      res.json({ success:true, data:{ id: rows[0].id } });
+    } catch(err){ next(err); }
+  }
+);
+
 // ── Mount all routers
-router.use('/auth',        authRouter);
-router.use('/products',    productsRouter);
-router.use('/entities',    entitiesRouter);
-router.use('/users',       usersRouter);
-router.use('/messages',    messagesRouter);
-router.use('/suggestions', suggestionsRouter);
-router.use('/admin',       adminRouter);
+router.use('/auth',         authRouter);
+router.use('/products',     productsRouter);
+router.use('/entities',     entitiesRouter);
+router.use('/users',        usersRouter);
+router.use('/messages',     messagesRouter);
+router.use('/suggestions',  suggestionsRouter);
+router.use('/admin',        adminRouter);
+router.use('/applications', applyRouter);
+router.use('/pitches',      pitchRouter);
 
 // Health check
 router.get('/health', (req, res) => {

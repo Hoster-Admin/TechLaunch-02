@@ -21,6 +21,7 @@ export const UIProvider = ({ children }) => {
   const [inboxOpen,      setInboxOpen]      = useState(false);
   const [inboxTarget,    setInboxTarget]    = useState(null);
   const [entityModal,    setEntityModal]    = useState(null);
+  const [applyModal,     setApplyModal]     = useState(null);
   const [waitlistModal,  setWaitlistModal]  = useState(null);
   const [authModal,      setAuthModal]      = useState(null);
   const [searchQuery,    setSearchQuery]    = useState('');
@@ -120,6 +121,7 @@ export const UIProvider = ({ children }) => {
       profiles,
       submitOpen, setSubmitOpen,
       entityModal, setEntityModal,
+      applyModal, setApplyModal,
       waitlistModal, setWaitlistModal,
       authModal, setAuthModal,
       searchQuery, setSearchQuery,

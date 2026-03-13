@@ -36,6 +36,7 @@ import {
 import SubmitProductModal from './components/home/SubmitProductModal';
 import InboxModal         from './components/home/InboxModal';
 import EntityProfileModal from './components/home/EntityProfileModal';
+import ApplyModal         from './components/home/ApplyModal';
 import WaitlistModal      from './components/home/WaitlistModal';
 import AuthModal          from './components/home/AuthModal';
 
@@ -97,6 +98,7 @@ function GlobalModals() {
       <SubmitProductModal open={submitOpen} onClose={() => setSubmitOpen(false)}/>
       <InboxModal/>
       <EntityProfileModal/>
+      <ApplyModal/>
       <WaitlistModal product={waitlistModal} onClose={() => setWaitlistModal(null)}/>
     </>
   );

@@ -2,6 +2,9 @@ import React, { useState } from 'react';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 
+const APPLY_TYPES    = new Set(['Accelerator', 'Venture Studio']);
+const INVESTOR_TYPES = new Set(['Investor']);
+
 const TYPE_COLOR = {
   'Accelerator':    { bg:'#f5f3ff', color:'#7c3aed' },
   'Investor':       { bg:'#eff6ff', color:'#2563eb' },
@@ -41,7 +44,7 @@ const TYPE_HIGHLIGHTS = {
 };
 
 export default function EntityProfileModal() {
-  const { entityModal, setEntityModal, openDM } = useUI();
+  const { entityModal, setEntityModal, setApplyModal, setAuthModal, openDM } = useUI();
   const { user } = useAuth();
   const [followed, setFollowed] = useState(false);
   const [copied,   setCopied]   = useState(false);
@@ -137,6 +140,26 @@ export default function EntityProfileModal() {
                 onMouseOver={ev=>ev.currentTarget.style.opacity='.88'} onMouseOut={ev=>ev.currentTarget.style.opacity='1'}>
                 Visit Website 🔗
               </a>
+            )}
+            {APPLY_TYPES.has(e.type) && (
+              <button
+                onClick={() => {
+                  if (!user) { setEntityModal(null); setAuthModal('gate'); return; }
+                  setApplyModal({ mode:'apply', entity:e, typeColor:tc });
+                }}
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, background:tc.bg, color:tc.color, border:`1.5px solid ${tc.color}33`, fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
+                🚀 Apply Now
+              </button>
+            )}
+            {INVESTOR_TYPES.has(e.type) && (
+              <button
+                onClick={() => {
+                  if (!user) { setEntityModal(null); setAuthModal('gate'); return; }
+                  setApplyModal({ mode:'pitch', entity:e, typeColor:tc });
+                }}
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, background:tc.bg, color:tc.color, border:`1.5px solid ${tc.color}33`, fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
+                💼 Pitch Us
+              </button>
             )}
             <button onClick={handleFollow}
               style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, border:`1.5px solid ${followed?'var(--orange)':'#e8e8e8'}`, background:followed?'var(--orange-light)':'#fff', color:followed?'var(--orange)':'#0a0a0a', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
