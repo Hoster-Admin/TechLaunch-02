@@ -301,7 +301,7 @@ app.use('/api/admin', admin);
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 const DIST = path.join(__dirname, '..', 'frontend', 'dist');
 app.use(express.static(DIST));
-app.get('*', (req, res) => {
+app.get('/{*path}', (req, res) => {
   res.sendFile(path.join(DIST, 'index.html'));
 });
 

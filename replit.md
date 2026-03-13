@@ -39,9 +39,11 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 
 ## Workflows
 
-- **Start application**: runs both backend (port 3001) and frontend (port 5000) concurrently
-  - Command: `cd backend && PORT=3001 node src/server.js & cd frontend && BROWSER=none PORT=5000 npm start`
-  - Frontend is the webview (port 5000); API requests are proxied to backend on port 3001
+- **Start application**: runs the admin panel in production mode on port 5000 (webview)
+  - Command: `ADMIN_PORT=5000 NODE_ENV=production node admin-app/backend/server.js`
+  - Serves the built admin Vite frontend from `admin-app/frontend/dist`
+  - To rebuild the admin frontend: `cd admin-app/frontend && npm run build`
+  - To run the public site instead: `cd backend && PORT=3001 node src/server.js & cd frontend && BROWSER=none PORT=5000 npm start`
 
 ## Database
 
