@@ -4,6 +4,8 @@
   "description": "MENA's premier product discovery platform. A full-stack web application built with Node.js, React, and PostgreSQL following the MVC pattern.",
   "main": "index.js",
   "scripts": {
+    "build": "cd admin-app/frontend && npm install && npm run build",
+    "start": "NODE_ENV=production node admin-app/backend/server.js",
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "keywords": [],
