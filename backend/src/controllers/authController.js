@@ -2,6 +2,7 @@ const bcrypt = require('bcryptjs');
 const jwt    = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { query } = require('../config/database');
+const { sendWelcomeEmail } = require('../services/emailService');
 
 // ── Helper: generate tokens
 const generateTokens = (userId) => {
@@ -48,6 +49,9 @@ const register = async (req, res, next) => {
       'INSERT INTO activity_log (actor_id, action, entity, entity_id) VALUES ($1,$2,$3,$4)',
       [user.id, 'user.signup', 'users', user.id]
     );
+
+    // Send welcome email (non-blocking)
+    sendWelcomeEmail({ to: user.email, name: user.name, handle: user.handle }).catch(() => {});
 
     res.status(201).json({
       success: true,
