@@ -7,8 +7,24 @@ import { usersAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const MENA_COUNTRIES = [
-  'Saudi Arabia','UAE','Kuwait','Qatar','Bahrain','Oman','Jordan','Lebanon',
-  'Egypt','Morocco','Tunisia','Algeria','Libya','Iraq','Syria','Yemen','Palestine','Sudan',
+  { value:'Saudi Arabia', label:'🇸🇦 Saudi Arabia' },
+  { value:'UAE',          label:'🇦🇪 UAE'           },
+  { value:'Egypt',        label:'🇪🇬 Egypt'         },
+  { value:'Jordan',       label:'🇯🇴 Jordan'        },
+  { value:'Kuwait',       label:'🇰🇼 Kuwait'        },
+  { value:'Qatar',        label:'🇶🇦 Qatar'         },
+  { value:'Bahrain',      label:'🇧🇭 Bahrain'       },
+  { value:'Oman',         label:'🇴🇲 Oman'          },
+  { value:'Morocco',      label:'🇲🇦 Morocco'       },
+  { value:'Tunisia',      label:'🇹🇳 Tunisia'       },
+  { value:'Lebanon',      label:'🇱🇧 Lebanon'       },
+  { value:'Iraq',         label:'🇮🇶 Iraq'          },
+  { value:'Palestine',    label:'🇵🇸 Palestine'     },
+  { value:'Libya',        label:'🇱🇾 Libya'         },
+  { value:'Algeria',      label:'🇩🇿 Algeria'       },
+  { value:'Sudan',        label:'🇸🇩 Sudan'         },
+  { value:'Yemen',        label:'🇾🇪 Yemen'         },
+  { value:'Syria',        label:'🇸🇾 Syria'         },
 ];
 
 const PERSONAS = [
@@ -168,8 +184,8 @@ export function PeopleContent() {
 
         <select value={country} onChange={e => setCountry(e.target.value)}
           style={{ padding:'8px 12px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:13, fontFamily:'inherit', outline:'none', background:'#fff', cursor:'pointer' }}>
-          <option value="">All Countries</option>
-          {MENA_COUNTRIES.map(c => <option key={c} value={c}>{c}</option>)}
+          <option value="">🌍 All Countries</option>
+          {MENA_COUNTRIES.map(c => <option key={c.value} value={c.value}>{c.label}</option>)}
         </select>
 
         <button type="submit" style={{ padding:'8px 20px', borderRadius:10, border:'none', background:'var(--orange)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
