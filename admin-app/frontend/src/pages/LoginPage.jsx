@@ -24,7 +24,7 @@ export default function LoginPage() {
   };
 
   return (
-    <div style={{minHeight:'100vh',background:'var(--black)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20,fontFamily:"'DM Sans',sans-serif"}}>
+    <div style={{minHeight:'100vh',background:'var(--black)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20,fontFamily:"'Inter',sans-serif"}}>
       {/* Logo */}
       <div style={{marginBottom:32,textAlign:'center'}}>
         <img src="/logo.png" alt="Tech Launch MENA" style={{width:52,height:52,borderRadius:14,margin:'0 auto 14px',display:'block'}} />

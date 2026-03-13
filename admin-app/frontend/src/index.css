@@ -31,7 +31,7 @@
 
 html, body, #root {
   height: 100%;
-  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
   background: var(--gray-50);
