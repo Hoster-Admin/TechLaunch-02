@@ -419,19 +419,26 @@ admin.post('/users/:id/verify', async (req, res) => {
 
 admin.post('/users/:id/suspend', async (req, res) => {
   try {
-    const { rows } = await q(`UPDATE users SET status='suspended' WHERE id=$1 AND role='user' RETURNING name`, [req.params.id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await logAction(req.user.id, 'user.suspended', 'user', req.params.id, { name:rows[0].name });
-    res.json({ success:true, message:`${rows[0].name} suspended` });
+    if (req.params.id === req.user.id) return res.status(400).json({ success:false, message:'Cannot suspend yourself' });
+    const { rows: target } = await q(`SELECT id,name,role FROM users WHERE id=$1`, [req.params.id]);
+    if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
+    if (target[0].role === 'admin') return res.status(403).json({ success:false, message:'Cannot suspend an admin account' });
+    if (target[0].role !== 'user' && req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can suspend team members' });
+    await q(`UPDATE users SET status='suspended', updated_at=NOW() WHERE id=$1`, [req.params.id]);
+    await logAction(req.user.id, 'user.suspended', 'user', req.params.id, { name:target[0].name });
+    res.json({ success:true, message:`${target[0].name} suspended` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
 admin.post('/users/:id/reinstate', async (req, res) => {
   try {
-    const { rows } = await q(`UPDATE users SET status='active' WHERE id=$1 RETURNING name`, [req.params.id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await logAction(req.user.id, 'user.reinstated', 'user', req.params.id, { name:rows[0].name });
-    res.json({ success:true, message:`${rows[0].name} reinstated` });
+    if (req.params.id === req.user.id) return res.status(400).json({ success:false, message:'Cannot reinstate yourself' });
+    const { rows: target } = await q(`SELECT id,name,role FROM users WHERE id=$1`, [req.params.id]);
+    if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
+    if (target[0].role !== 'user' && req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can reinstate team members' });
+    await q(`UPDATE users SET status='active', updated_at=NOW() WHERE id=$1`, [req.params.id]);
+    await logAction(req.user.id, 'user.reinstated', 'user', req.params.id, { name:target[0].name });
+    res.json({ success:true, message:`${target[0].name} reinstated` });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
@@ -534,6 +541,7 @@ admin.get('/settings', async (req, res) => {
 });
 
 admin.put('/settings', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can change platform settings' });
   try {
     for (const [key, value] of Object.entries(req.body)) {
       await q(`INSERT INTO platform_settings (key,value,type,updated_by,updated_at) VALUES ($1,$2,'boolean',$3,NOW()) ON CONFLICT (key) DO UPDATE SET value=$2,updated_by=$3,updated_at=NOW()`, [key,String(value),req.user.id]);

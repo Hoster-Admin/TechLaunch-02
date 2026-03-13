@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
 import { SCard, Badge, Tbl, EmptyState } from './shared.jsx';
+import { useAuth } from '../App.jsx';
 
 function Modal({ title, onClose, children }) {
   return (
@@ -40,6 +41,8 @@ function Toggle({ checked, onChange }) {
 }
 
 export default function Settings() {
+  const { user } = useAuth();
+  const isAdmin = user?.role === 'admin';
   const [settings, setSettings] = useState({});
   const [loading, setLoading]   = useState(true);
   const [team, setTeam]         = useState([]);
@@ -73,9 +76,10 @@ export default function Settings() {
   };
 
   const save = async (key, value) => {
+    if (!isAdmin) { toast.error('Only admins can change platform settings'); return; }
     setSettings(s=>({...s,[key]:value}));
     try { await adminAPI.saveSettings({ [key]: value }); toast.success('Setting saved'); }
-    catch { toast.error('Failed to save'); }
+    catch(e) { toast.error(e?.response?.data?.message || 'Failed to save'); }
   };
 
   function SettingRow({ label, sub, settingKey, fallback=false }) {
@@ -83,10 +87,12 @@ export default function Settings() {
     return (
       <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'14px 0',borderBottom:'1px solid #F4F4F4'}}>
         <div>
-          <div style={{fontSize:13,fontWeight:600,color:'#0A0A0A'}}>{label}</div>
+          <div style={{fontSize:13,fontWeight:600,color:isAdmin?'#0A0A0A':'#666'}}>{label}</div>
           {sub && <div style={{fontSize:11,color:'#AAAAAA',marginTop:2}}>{sub}</div>}
         </div>
-        <Toggle checked={val} onChange={v=>save(settingKey,v)}/>
+        <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none'}} title={isAdmin?undefined:'Admin access required'}>
+          <Toggle checked={val} onChange={v=>save(settingKey,v)}/>
+        </div>
       </div>
     );
   }
@@ -95,6 +101,13 @@ export default function Settings() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+
+      {!isAdmin && (
+        <div style={{background:'#FFF7ED',border:'1px solid #FED7AA',borderRadius:10,padding:'10px 16px',fontSize:12,color:'#92400E',display:'flex',gap:8,alignItems:'center'}}>
+          <span>🔒</span>
+          <span>Settings are <strong>read-only</strong> for your role. Only admins can change platform configuration.</span>
+        </div>
+      )}
 
       {/* Invite Modal */}
       {showModal && (

@@ -42,6 +42,17 @@ export default function Reports() {
 
   const { kpis={}, country_breakdown=[], industry_breakdown=[], persona_breakdown=[], signup_trend=[] } = data;
 
+  const COUNTRY_NAMES = {
+    AE:'UAE', SA:'Saudi Arabia', EG:'Egypt', KW:'Kuwait', QA:'Qatar',
+    BH:'Bahrain', OM:'Oman', JO:'Jordan', LB:'Lebanon', IQ:'Iraq',
+    YE:'Yemen', PS:'Palestine', SY:'Syria', LY:'Libya', TN:'Tunisia',
+    MA:'Morocco', DZ:'Algeria', SD:'Sudan', SO:'Somalia', DJ:'Djibouti',
+    KM:'Comoros', MR:'Mauritania', US:'United States', GB:'United Kingdom',
+    DE:'Germany', FR:'France', CA:'Canada', AU:'Australia', IN:'India',
+    PK:'Pakistan', TR:'Turkey', NG:'Nigeria', ZA:'South Africa',
+  };
+  const countryName = code => COUNTRY_NAMES[code] || code;
+
   const KPI_CARDS = [
     { icon:'🚀', label:'Live Products',   value: kpis.live_products,  color:'#E15033' },
     { icon:'👥', label:'Active Users',    value: kpis.active_users,   color:'#16a34a' },
@@ -118,7 +129,7 @@ export default function Reports() {
             {country_breakdown.map((r,i)=>(
               <div key={i} style={{marginTop:10}}>
                 <div style={{display:'flex',justifyContent:'space-between',fontSize:12,fontWeight:600,marginBottom:4}}>
-                  <span>{r.country}</span><span style={{color:'var(--orange)',fontWeight:800}}>{r.count}</span>
+                  <span>{countryName(r.country)}</span><span style={{color:'var(--orange)',fontWeight:800}}>{r.count}</span>
                 </div>
                 <div style={{height:6,borderRadius:99,background:'#F4F4F4'}}>
                   <div style={{height:'100%',borderRadius:99,background:'var(--orange)',width:`${Math.round((parseInt(r.count)/maxCountry)*100)}%`}}/>
