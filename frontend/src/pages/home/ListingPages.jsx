@@ -22,53 +22,45 @@ const STAGE_COLORS = {
   'Angel':       { bg:'#fdf4ff', color:'#9333ea' },
 };
 
-const STARTUPS = [
-  { id:1,  icon:'💳', name:'Tabby',          country:'UAE',          flag:'🇦🇪', stage:'Growth',      industry:'Fintech',     tags:['BNPL','Payments','Consumer'],         employees:'200+', followers:1240, verified:true,  founded:2019, about:'Buy now, pay later platform serving millions of shoppers across UAE, Saudi Arabia, and the broader MENA region.' },
-  { id:2,  icon:'📚', name:'Noon Academy',   country:'Saudi Arabia', flag:'🇸🇦', stage:'Growth',      industry:'Edtech',      tags:['Education','Social','Mobile'],         employees:'100+', followers:980,  verified:true,  founded:2017, about:'Social learning app connecting students and teachers across the Arab world with live and on-demand classes.' },
-  { id:3,  icon:'🏥', name:'Vezeeta',        country:'Egypt',        flag:'🇪🇬', stage:'Series A+',   industry:'Healthtech',  tags:['Healthcare','Booking','SaaS'],         employees:'500+', followers:1560, verified:true,  founded:2012, about:'Leading digital health platform for booking doctors and managing patient records across Egypt and the MENA region.' },
-  { id:4,  icon:'📈', name:'Baraka',         country:'UAE',          flag:'🇦🇪', stage:'Early Stage', industry:'Fintech',     tags:['Investing','Stocks','Mobile'],         employees:'50+',  followers:670,  verified:false, founded:2020, about:'Commission-free investing app making global stock markets accessible to Arab retail investors in the GCC.' },
-  { id:5,  icon:'🛍️', name:'Tamara',         country:'Saudi Arabia', flag:'🇸🇦', stage:'Series A+',   industry:'Fintech',     tags:['BNPL','Islamic Finance','B2B'],        employees:'300+', followers:1100, verified:true,  founded:2020, about:'BNPL and embedded finance platform for Saudi consumers and merchants with Sharia-compliant products.' },
-  { id:6,  icon:'🤖', name:'Kader AI',       country:'Jordan',       flag:'🇯🇴', stage:'Ideation Stage',industry:'AI & ML',     tags:['HR','AI','Arabic NLP'],                employees:'15',   followers:290,  verified:false, founded:2023, about:'AI-powered HR automation platform built specifically for MENA enterprise HR workflows and Arabic language.' },
-  { id:7,  icon:'🚛', name:'Trella',         country:'Egypt',        flag:'🇪🇬', stage:'Series A',    industry:'Logistics',   tags:['Freight','B2B','Marketplace'],         employees:'150+', followers:520,  verified:true,  founded:2018, about:'Digital freight marketplace reducing empty miles and logistics costs across Egypt and the MENA region.' },
-  { id:8,  icon:'🍽️', name:'Foodics',        country:'Saudi Arabia', flag:'🇸🇦', stage:'Series B',    industry:'Foodtech',    tags:['POS','Restaurant','SaaS'],             employees:'300+', followers:890,  verified:true,  founded:2014, about:'Restaurant POS and management system used by over 20,000 restaurants and food businesses across MENA.' },
-  { id:9,  icon:'🏠', name:'Property Finder',country:'UAE',          flag:'🇦🇪', stage:'Series C',    industry:'Proptech',    tags:['Real Estate','Marketplace','Mobile'],  employees:'400+', followers:2100, verified:true,  founded:2007, about:"MENA's leading property portal connecting buyers, renters, and agents across the Gulf region." },
-  { id:10, icon:'🎓', name:'Almentor',       country:'Egypt',        flag:'🇪🇬', stage:'Series A',    industry:'Edtech',      tags:['E-Learning','Arabic','Content'],       employees:'80+',  followers:460,  verified:false, founded:2016, about:'Arabic online learning platform with thousands of video courses for Arab professionals and students.' },
-  { id:11, icon:'🏦', name:'Fawry',          country:'Egypt',        flag:'🇪🇬', stage:'Pre-IPO',     industry:'Fintech',     tags:['Payments','E-Commerce','B2B'],         employees:'2000+',followers:3200, verified:true,  founded:2008, about:"Egypt's largest fintech company powering digital payments for over 30 million users across Egypt." },
-  { id:12, icon:'🔬', name:'Cura',           country:'Saudi Arabia', flag:'🇸🇦', stage:'Seed',        industry:'Healthtech',  tags:['Mental Health','Therapy','Online'],    employees:'30+',  followers:210,  verified:false, founded:2022, about:'Mental health therapy online for MENA — connecting patients with licensed therapists in Arabic and English.' },
-];
+const COUNTRY_FLAGS = {
+  'Saudi Arabia':'🇸🇦','UAE':'🇦🇪','Egypt':'🇪🇬','Jordan':'🇯🇴',
+  'Kuwait':'🇰🇼','Qatar':'🇶🇦','Bahrain':'🇧🇭','Oman':'🇴🇲',
+  'Morocco':'🇲🇦','Tunisia':'🇹🇳','Lebanon':'🇱🇧','Iraq':'🇮🇶',
+  'Palestine':'🇵🇸','Libya':'🇱🇾','Algeria':'🇩🇿','Sudan':'🇸🇩',
+  'Yemen':'🇾🇪','Syria':'🇸🇾','Turkey':'🇹🇷','Pakistan':'🇵🇰',
+  'Pan-Arab':'🌍', 'MENA':'🌍',
+};
 
-const INVESTORS = [
-  { id:1, icon:'💼', name:'STV',              country:'Saudi Arabia', flag:'🇸🇦', stage:'Series A', type:'VC Fund',  tags:['Series A','Tech','Saudi'],            portfolio:45, aum:'$500M+', verified:true,  founded:'2017', about:'Saudi Technology Ventures — the largest dedicated tech VC in MENA. Backed by Saudi Aramco and STC.' },
-  { id:2, icon:'🌟', name:'Wamda Capital',    country:'UAE',          flag:'🇦🇪', stage:'Seed',     type:'VC Fund',  tags:['Seed','Early Stage','MENA'],          portfolio:60, aum:'$75M',   verified:true,  founded:'2012', about:'Pioneering MENA VC investing in early-stage tech startups with strong founder ecosystem focus.' },
-  { id:3, icon:'🔢', name:'500 Global MENA', country:'UAE',          flag:'🇦🇪', stage:'Pre-Seed', type:'Micro VC', tags:['Pre-Seed','Seed','Global'],           portfolio:120,aum:'$30M',   verified:true,  founded:'2015', about:'Regional arm of 500 Global investing in pre-seed and seed-stage MENA startups at high volume.' },
-  { id:4, icon:'⚡', name:"Wa'ed Ventures",  country:'Saudi Arabia', flag:'🇸🇦', stage:'Seed',     type:'CVC',      tags:['Energy Tech','Deep Tech','Industrial'],portfolio:38, aum:'$200M',  verified:true,  founded:'2011', about:"Aramco's entrepreneurship arm investing in Saudi and MENA energy tech and deep tech startups." },
-  { id:5, icon:'🔬', name:'Algebra Ventures', country:'Egypt',        flag:'🇪🇬', stage:'Seed',     type:'VC Fund',  tags:['Egypt','Seed','Series A'],            portfolio:30, aum:'$54M',   verified:true,  founded:'2016', about:'Egypt-focused VC fund backing ambitious tech founders from pre-seed to Series A.' },
-  { id:6, icon:'🏔️', name:'BECO Capital',    country:'UAE',          flag:'🇦🇪', stage:'Series A', type:'VC Fund',  tags:['Series A','B2B','SaaS'],              portfolio:25, aum:'$120M',  verified:true,  founded:'2012', about:'Dubai-based VC investing in high-growth MENA tech companies at Series A and B with hands-on support.' },
-];
+const TYPE_LABELS = {
+  accelerator:    'Accelerator',
+  investor:       'Investor',
+  venture_studio: 'Venture Studio',
+  startup:        'Startup',
+  company:        'Company',
+};
 
-const ACCELERATORS = [
-  { id:1, icon:'🚀', name:'Flat6Labs',           country:'Egypt',        flag:'🇪🇬', stage:'Pre-Seed', type:'Accelerator', tags:['Fintech','Edtech','Healthtech'],   programs:6,  portfolio:400, followers:2100, verified:true,  founded:'2011', about:"MENA's largest startup accelerator with programs in Cairo, Tunis, Abu Dhabi, Riyadh, Jeddah, and Bahrain." },
-  { id:2, icon:'⚡', name:'OQAL Angel Network',  country:'Saudi Arabia', flag:'🇸🇦', stage:'Angel',    type:'Angel Network',tags:['Fintech','Healthtech','Edtech'],   programs:1,  portfolio:130, followers:980,  verified:true,  founded:'2010', about:"Saudi Arabia's largest angel investment network connecting high-potential startups with accredited investors." },
-  { id:3, icon:'🌍', name:'Wamda Accelerator',   country:'UAE',          flag:'🇦🇪', stage:'Pre-Seed', type:'Accelerator', tags:['Media','Fintech','Logistics'],     programs:3,  portfolio:80,  followers:1560, verified:true,  founded:'2012', about:'Pan-regional accelerator focused on building the MENA entrepreneurship ecosystem through programs and events.' },
-  { id:4, icon:'🏛️', name:'Hub71',              country:'UAE',          flag:'🇦🇪', stage:'Seed',     type:'Tech Hub',    tags:['Fintech','AI & ML','Smart Cities'],programs:4,  portfolio:200, followers:3400, verified:true,  founded:'2019', about:"Abu Dhabi's global tech ecosystem built on world-class infrastructure, capital, and talent pipelines." },
-  { id:5, icon:'💡', name:'MIT Enterprise Forum', country:'Saudi Arabia', flag:'🇸🇦', stage:'Pre-Seed', type:'Accelerator', tags:['Deeptech','AI & ML','Cleantech'],  programs:2,  portfolio:60,  followers:740,  verified:false, founded:'2014', about:'Global innovation programs bringing MIT expertise and networks to MENA\'s most ambitious entrepreneurs.' },
-  { id:6, icon:'🔬', name:'AUC Venture Lab',     country:'Egypt',        flag:'🇪🇬', stage:'Pre-Seed', type:'University',  tags:['Edtech','Healthtech','Cleantech'], programs:3,  portfolio:90,  followers:620,  verified:false, founded:'2013', about:"Egypt's premier university-based accelerator at the American University in Cairo, backing deep-tech founders." },
-];
+function normalizeEntity(e) {
+  const flag = COUNTRY_FLAGS[e.country] || '🌍';
+  const tags = [e.industry, e.focus, e.stage].filter(Boolean).slice(0, 3);
+  return {
+    ...e,
+    icon:       e.logo_emoji || '🏢',
+    flag,
+    about:      e.description || '',
+    portfolio:  e.portfolio_count || null,
+    founded:    e.founded_year || null,
+    industries: e.industry ? [e.industry] : [],
+    tags,
+    type:       TYPE_LABELS[e.type] || e.type,
+  };
+}
 
-const VENTURES = [
-  { id:1, icon:'🏗️', name:'Beco Capital',  country:'UAE', flag:'🇦🇪', stage:'Seed–B',    type:'Venture Studio', tags:['Fintech','Edtech','SaaS'],          portfolio:40, aum:'–',    verified:true,  founded:'2018', about:'Regional VC and studio building next-generation digital platforms across MENA with hands-on operator support.' },
-  { id:2, icon:'🏭', name:'Turn8',          country:'UAE', flag:'🇦🇪', stage:'Pre-Seed',  type:'Corp Studio',    tags:['Logistics','Proptech','Dev Tools'], portfolio:60, aum:'–',    verified:true,  founded:'2013', about:'Backed by DP World, Turn8 co-builds startups in trade and logistics infrastructure for the MENA region.' },
-  { id:3, icon:'🛠️', name:'Creative Dock',  country:'UAE', flag:'🇦🇪', stage:'Pre-Seed',  type:'Global Studio',  tags:['Fintech','Insurtech','Proptech'],   portfolio:25, aum:'–',    verified:false, founded:'2013', about:'Global venture studio with MENA office, co-founding companies from idea to scale with corporate partners.' },
-  { id:4, icon:'⚡', name:'DTEC Ventures',  country:'UAE', flag:'🇦🇪', stage:'Pre-Seed',  type:'Deep Tech',      tags:['AI & ML','Dev Tools','Cybersecurity'],portfolio:30, aum:'–',   verified:false, founded:'2015', about:"Dubai Silicon Oasis's venture studio incubating deep tech startups with access to global R&D networks." },
-];
-
-const STARTUP_CONFIG = { title:'Companies', emoji:'🚀', desc:'Browse MENA startups across all industries and countries.', data:STARTUPS, cta:'List Your Company', filters:['country','industry'], cardType:'startup' };
 const PAGE_CONFIG = {
-  startup:     STARTUP_CONFIG,
-  company:     STARTUP_CONFIG,
-  accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your startup across MENA.',       data:ACCELERATORS, cta:'List Your Program',  filters:['country','industry'], cardType:'entity' },
-  investor:    { title:'Investment Firms',          emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA startups.',      data:INVESTORS,    cta:'List Your Firm',     filters:['stage','country'],   cardType:'entity' },
-  venture:     { title:'Venture Studios',           emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA startups.',     data:VENTURES,     cta:'List Your Studio',   filters:['stage','country'],   cardType:'entity' },
+  startup:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA startups and companies.',                                     cta:'List Your Company', filters:['country','industry'], cardType:'startup',  apiType:'startup'        },
+  company:     { title:'Companies',               emoji:'🚀', desc:'Browse MENA startups and companies.',                                     cta:'List Your Company', filters:['country','industry'], cardType:'startup',  apiType:'startup'        },
+  accelerator: { title:'Accelerators & Incubators',emoji:'🏢', desc:'Find the right program to launch and scale your startup across MENA.',  cta:'List Your Program', filters:['country','industry'], cardType:'entity',   apiType:'accelerator'    },
+  investor:    { title:'Investment Firms',         emoji:'💰', desc:'Discover the VCs and investment firms actively backing MENA startups.',  cta:'List Your Firm',    filters:['stage','country'],   cardType:'entity',   apiType:'investor'       },
+  venture:     { title:'Venture Studios',          emoji:'🎯', desc:'Studios building and co-founding the next generation of MENA startups.', cta:'List Your Studio',  filters:['stage','country'],   cardType:'entity',   apiType:'venture_studio' },
 };
 
 function FilterDropdown({ label, icon, options, selected, onToggle, onReset }) {
@@ -218,24 +210,27 @@ function EntityCard({ item, type, teamMembers, onClick }) {
   );
 }
 
-const TYPE_MAP = {
-  accelerator: 'Accelerator',
-  investor:    'Investor',
-  venture:     'Venture Studio',
-  startup:     'Startup',
-  company:     'Startup',
-};
-
 export default function ListingPage() {
   const { type } = useParams();
   const { setEntityModal, setAuthModal } = useUI();
-  const config  = PAGE_CONFIG[type] || PAGE_CONFIG.startup;
-  const typeStr = TYPE_MAP[type] || config.title.split(' ')[0];
+  const config = PAGE_CONFIG[type] || PAGE_CONFIG.startup;
 
+  const [rawData,       setRawData]       = useState([]);
+  const [loading,       setLoading]       = useState(true);
   const [selCountries,  setSelCountries]  = useState([]);
   const [selIndustries, setSelIndustries] = useState([]);
   const [selStages,     setSelStages]     = useState([]);
   const [members,       setMembers]       = useState({});
+
+  useEffect(() => {
+    setLoading(true);
+    setRawData([]);
+    fetch(`/api/entities?type=${config.apiType}&limit=200`)
+      .then(r => r.json())
+      .then(d => { if (d.success) setRawData(d.data.map(normalizeEntity)); })
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, [config.apiType]);
 
   useEffect(() => {
     fetch('/api/users/entity-members/all')
@@ -255,7 +250,7 @@ export default function ListingPage() {
 
   const toggle = (arr, setArr, val) => setArr(arr.includes(val) ? arr.filter(x=>x!==val) : [...arr, val]);
 
-  const data = config.data.filter(item => {
+  const data = rawData.filter(item => {
     const inds  = item.industries || (item.industry ? [item.industry] : []);
     const stage = item.stage || '';
     const matchC = !selCountries.length  || selCountries.includes(item.country);
@@ -264,14 +259,13 @@ export default function ListingPage() {
     return matchC && matchI && matchS;
   });
 
-  const allCountries  = [...new Set(config.data.map(i => i.country))].sort();
-  const allIndustries = [...new Set(config.data.flatMap(i => i.industries || (i.industry?[i.industry]:[])))].sort();
-  const allStages     = [...new Set(config.data.map(i => i.stage))].filter(Boolean).sort();
+  const allCountries  = [...new Set(rawData.map(i => i.country))].sort();
+  const allIndustries = [...new Set(rawData.flatMap(i => i.industries || (i.industry?[i.industry]:[])))].sort();
+  const allStages     = [...new Set(rawData.map(i => i.stage))].filter(Boolean).sort();
   const hasFilters    = selCountries.length + selIndustries.length + selStages.length > 0;
 
   const openModal = (item) => setEntityModal({
     ...item,
-    type: typeStr,
     links: item.website ? [{ icon:'🌐', label:'Website', url:item.website }] : [],
     teamMembers: members[(item.name||'').toLowerCase()] || [],
   });
@@ -321,11 +315,17 @@ export default function ListingPage() {
 
         {/* Cards grid */}
         <div style={{ maxWidth:1140, margin:'0 auto', padding:'32px 40px 80px' }}>
-          {!data.length ? (
+          {loading ? (
+            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(320px,1fr))', gap:20 }}>
+              {[1,2,3,4,5,6].map(i => (
+                <div key={i} style={{ background:'#f5f5f5', borderRadius:16, height:220, animation:'pulse 1.5s ease-in-out infinite' }}/>
+              ))}
+            </div>
+          ) : !data.length ? (
             <div style={{ textAlign:'center', padding:'80px 20px' }}>
               <div style={{ fontSize:44, marginBottom:16 }}>📂</div>
               <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>Nothing here yet</div>
-              <p style={{ color:'#888', marginBottom:24 }}>Be the first to list your {type || 'company'}!</p>
+              <p style={{ color:'#888', marginBottom:24 }}>Check back soon — new listings are added regularly.</p>
               <button onClick={() => setAuthModal('signup')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
                 + {config.cta}
               </button>

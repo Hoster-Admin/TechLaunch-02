@@ -3,12 +3,13 @@ const { query } = require('../config/database');
 // ── GET /api/entities
 const getEntities = async (req, res, next) => {
   try {
-    const { type, country, search, page=1, limit=20 } = req.query;
+    const { type, country, search, status, page=1, limit=20 } = req.query;
     const params = [];
     const conditions = [];
     if (type)    { params.push(type);         conditions.push(`type=$${params.length}`); }
     if (country) { params.push(country);      conditions.push(`country=$${params.length}`); }
     if (search)  { params.push(`%${search}%`);conditions.push(`name ILIKE $${params.length}`); }
+    if (status)  { params.push(status);       conditions.push(`status=$${params.length}`); }
     const where = conditions.length ? 'WHERE '+conditions.join(' AND ') : '';
     const offset=(parseInt(page)-1)*parseInt(limit);
     params.push(parseInt(limit), offset);
@@ -83,7 +84,7 @@ const createEntity = async (req, res, next) => {
     const { rows } = await query(`
       INSERT INTO entities (name, slug, type, description, website, country, industry,
         stage, employees, founded_year, aum, focus, logo_emoji, created_by, verified, status)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,false,'pending')
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,false,'approved')
       RETURNING *`,
       [name, slug, type, description||null, website||null, country||null, industry||null,
        stage||null, employees||null, founded_year||null, aum||null, focus||null,

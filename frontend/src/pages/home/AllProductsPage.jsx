@@ -8,20 +8,6 @@ import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
 import toast from 'react-hot-toast';
 
-const MOCK_PRODUCTS = [
-  { id:1,  name:'Tabby',        tagline:'Buy now, pay later for MENA shoppers', logo_emoji:'💳', industry:'Fintech',     country:'UAE',          status:'live', upvotes_count:342, badge:'top',  tags:['BNPL','Fintech'] },
-  { id:2,  name:'Noon Academy', tagline:'Social learning platform for students', logo_emoji:'📚', industry:'Edtech',      country:'Saudi Arabia',  status:'live', upvotes_count:287, badge:'top',  tags:['Edtech','Social'] },
-  { id:3,  name:'Vezeeta',      tagline:'Book doctors and healthcare services',  logo_emoji:'🏥', industry:'Healthtech',  country:'Egypt',         status:'live', upvotes_count:256, badge:null,   tags:['Health','Booking'] },
-  { id:4,  name:'Baraka',       tagline:'Invest in global stocks from the GCC',  logo_emoji:'📈', industry:'Fintech',     country:'UAE',           status:'live', upvotes_count:231, badge:'new',  tags:['Investing','Stocks'] },
-  { id:5,  name:'Tamara',       tagline:'BNPL shopping for Saudi consumers',     logo_emoji:'🛒', industry:'Fintech',     country:'Saudi Arabia',  status:'live', upvotes_count:198, badge:null,   tags:['BNPL','Saudi'] },
-  { id:6,  name:'Kader AI',     tagline:'AI-powered job matching for MENA',      logo_emoji:'🤖', industry:'AI & ML',     country:'Jordan',        status:'soon', upvotes_count:0,   badge:'soon', tags:['AI','Jobs'] },
-  { id:7,  name:'Trella',       tagline:'Digital freight marketplace in MENA',   logo_emoji:'🚛', industry:'Logistics',   country:'Egypt',         status:'live', upvotes_count:154, badge:null,   tags:['Freight','Logistics'] },
-  { id:8,  name:'Foodics',      tagline:'Restaurant management system for F&B',  logo_emoji:'🍽️', industry:'Foodtech',    country:'Saudi Arabia',  status:'live', upvotes_count:143, badge:null,   tags:['F&B','POS'] },
-  { id:9,  name:'Waffarha',     tagline:'Discount coupons and deals platform',   logo_emoji:'🎟️', industry:'E-Commerce',  country:'Egypt',         status:'live', upvotes_count:128, badge:null,   tags:['Deals','Coupons'] },
-  { id:10, name:'Cura',         tagline:'Mental health therapy online for MENA', logo_emoji:'🧠', industry:'Healthtech',  country:'Saudi Arabia',  status:'soon', upvotes_count:0,   badge:'soon', tags:['Mental Health','Therapy'] },
-  { id:11, name:'Nowlun',       tagline:'Smart home solutions for MENA',         logo_emoji:'🏠', industry:'Proptech',    country:'UAE',           status:'live', upvotes_count:89,  badge:'new',  tags:['Smart Home','IoT'] },
-  { id:12, name:'Lean',         tagline:'Open banking API platform for MENA',    logo_emoji:'🔗', industry:'Fintech',     country:'Saudi Arabia',  status:'live', upvotes_count:176, badge:null,   tags:['Open Banking','API'] },
-];
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
 const COUNTRIES = [
@@ -45,8 +31,8 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
   const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { bookmarks, toggleBookmark, votes, toggleVote, setWaitlistModal } = useUI();
-  const [products, setProducts] = useState(MOCK_PRODUCTS);
-  const [loading, setLoading] = useState(false);
+  const [products, setProducts] = useState([]);
+  const [loading, setLoading] = useState(true);
   const [searchQ, setSearchQ] = useState(searchParams.get('q') || '');
 
   const [selIndustries, setSelIndustries] = useState(searchParams.get('industry') ? [searchParams.get('industry')] : []);
@@ -60,9 +46,11 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
   const ctryRef = useRef(null);
 
   useEffect(() => {
-    productsAPI.list({ sort:'top', limit:50 }).then(({ data }) => {
-      if (data.data?.length > 0) setProducts(data.data);
-    }).catch(() => {});
+    setLoading(true);
+    productsAPI.list({ sort:'top', limit:50 })
+      .then(({ data }) => { setProducts(data.data || []); })
+      .catch(() => { setProducts([]); })
+      .finally(() => setLoading(false));
   }, []);
 
   useEffect(() => {
