@@ -212,7 +212,7 @@ const getPeople = async (req, res, next) => {
   try {
     const { persona, country, search, page=1, limit=24 } = req.query;
     const params = [];
-    const conditions = ["status='active'"];
+    const conditions = ["status='active'", "role='user'"];
     if (persona)  { params.push(persona);      conditions.push(`persona ILIKE $${params.length}`); }
     if (country)  { params.push(country);      conditions.push(`country=$${params.length}`); }
     if (search)   { params.push(`%${search}%`);conditions.push(`(name ILIKE $${params.length} OR handle ILIKE $${params.length} OR headline ILIKE $${params.length})`); }
