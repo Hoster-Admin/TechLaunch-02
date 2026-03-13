@@ -51,7 +51,7 @@ export default function AdminSidebar({ pendingCount = 0, appsCount = 0, usersCou
     <aside className="admin-sidebar">
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
-          <div className="sidebar-logo-icon">🚀</div>
+          <img src="/logo.png" alt="Tech Launch" className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,display:'block'}} />
           <span className="sidebar-logo-text">Tech Launch</span>
         </div>
         <div className="sidebar-badge">⚙ Admin Panel</div>

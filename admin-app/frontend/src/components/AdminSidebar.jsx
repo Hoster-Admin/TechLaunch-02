@@ -19,7 +19,7 @@ export default function AdminSidebar({ current, onChange, user }) {
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
-          <div className="sidebar-logo-icon">📡</div>
+          <img src="/logo.png" alt="Tech Launch MENA" className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,display:'block'}} />
           <div className="sidebar-logo-text">TL MENA</div>
         </div>
         <span className="sidebar-badge">Admin Panel</span>

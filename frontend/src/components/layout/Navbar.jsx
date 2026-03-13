@@ -96,11 +96,7 @@ export default function Navbar() {
         <div className="nav-left">
           <Link to="/" className="logo">
             <span className="logo-icon">
-              <svg viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-                <line x1="18" y1="20" x2="18" y2="10"/>
-                <line x1="12" y1="20" x2="12" y2="4"/>
-                <line x1="6"  y1="20" x2="6"  y2="14"/>
-              </svg>
+              <img src="/logo.png" alt="Tech Launch" style={{width:'100%',height:'100%',borderRadius:8,display:'block'}} />
             </span>
             <span className="logo-en" style={{ fontSize:18, fontWeight:800, letterSpacing:'-.03em', color:'var(--black)' }}>Tech Launch</span>
           </Link>

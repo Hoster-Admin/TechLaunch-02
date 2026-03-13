@@ -27,7 +27,7 @@ export default function LoginPage() {
     <div style={{minHeight:'100vh',background:'var(--black)',display:'flex',flexDirection:'column',alignItems:'center',justifyContent:'center',padding:20,fontFamily:"'DM Sans',sans-serif"}}>
       {/* Logo */}
       <div style={{marginBottom:32,textAlign:'center'}}>
-        <div style={{width:52,height:52,borderRadius:14,background:'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,margin:'0 auto 14px'}}>📡</div>
+        <img src="/logo.png" alt="Tech Launch MENA" style={{width:52,height:52,borderRadius:14,margin:'0 auto 14px',display:'block'}} />
         <div style={{color:'#fff',fontSize:22,fontWeight:800,letterSpacing:'-.03em'}}>Tech Launch MENA</div>
         <div style={{color:'rgba(255,255,255,.35)',fontSize:13,marginTop:4,fontWeight:500}}>admin.tlmena.com — Restricted Access</div>
       </div>
