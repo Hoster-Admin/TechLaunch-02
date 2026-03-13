@@ -105,6 +105,38 @@ usersRouter.get ('/:handle/activity', optionalAuth, userCtrl.getUserActivity);
 usersRouter.get ('/:handle',    optionalAuth, userCtrl.getProfile);
 usersRouter.post('/:id/follow', authenticate, userCtrl.toggleFollow);
 
+// Entity association
+usersRouter.put('/me/entity', authenticate,
+  [body('entity_name').trim()],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { entity_name } = req.body;
+      if (!entity_name) {
+        await dbQuery('UPDATE users SET entity_id=NULL WHERE id=$1', [req.user.id]);
+        return res.json({ success:true, data:null });
+      }
+      const { rows } = await dbQuery('SELECT id,name,type,slug FROM entities WHERE LOWER(name)=LOWER($1) LIMIT 1', [entity_name]);
+      if (!rows.length) return res.status(404).json({ success:false, message:'Entity not found' });
+      await dbQuery('UPDATE users SET entity_id=$1 WHERE id=$2', [rows[0].id, req.user.id]);
+      res.json({ success:true, data:rows[0] });
+    } catch(err){ next(err); }
+  }
+);
+
+usersRouter.get('/entity-members/all', optionalAuth, async (req, res, next) => {
+  try {
+    const { rows } = await dbQuery(
+      `SELECT u.id, u.name, u.handle, u.avatar_color, u.verified,
+              e.name AS entity_name, e.type AS entity_type
+       FROM users u
+       JOIN entities e ON e.id = u.entity_id
+       WHERE u.entity_id IS NOT NULL`
+    );
+    res.json({ success:true, data:rows });
+  } catch(err){ next(err); }
+});
+
 // ══════════════════════════════════════════════════
 // ADMIN  /api/admin  (all require authentication + admin/mod role)
 // ══════════════════════════════════════════════════

@@ -141,30 +141,32 @@ export default function EntityProfileModal() {
                 Visit Website 🔗
               </a>
             )}
-            {APPLY_TYPES.has(e.type) && (
+            {APPLY_TYPES.has(e.type) ? (
               <button
                 onClick={() => {
                   if (!user) { setEntityModal(null); setAuthModal('gate'); return; }
                   setApplyModal({ mode:'apply', entity:e, typeColor:tc });
                 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, background:tc.bg, color:tc.color, border:`1.5px solid ${tc.color}33`, fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 22px', borderRadius:12, background:tc.color, color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', transition:'opacity .15s' }}
+                onMouseOver={ev=>ev.currentTarget.style.opacity='.88'} onMouseOut={ev=>ev.currentTarget.style.opacity='1'}>
                 🚀 Apply Now
               </button>
-            )}
-            {INVESTOR_TYPES.has(e.type) && (
+            ) : INVESTOR_TYPES.has(e.type) ? (
               <button
                 onClick={() => {
                   if (!user) { setEntityModal(null); setAuthModal('gate'); return; }
                   setApplyModal({ mode:'pitch', entity:e, typeColor:tc });
                 }}
-                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, background:tc.bg, color:tc.color, border:`1.5px solid ${tc.color}33`, fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 22px', borderRadius:12, background:tc.color, color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', transition:'opacity .15s' }}
+                onMouseOver={ev=>ev.currentTarget.style.opacity='.88'} onMouseOut={ev=>ev.currentTarget.style.opacity='1'}>
                 💼 Pitch Us
               </button>
+            ) : (
+              <button onClick={handleFollow}
+                style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, border:`1.5px solid ${followed?'var(--orange)':'#e8e8e8'}`, background:followed?'var(--orange-light)':'#fff', color:followed?'var(--orange)':'#0a0a0a', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
+                {followed ? '✓ Following' : '＋ Follow'}
+              </button>
             )}
-            <button onClick={handleFollow}
-              style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, border:`1.5px solid ${followed?'var(--orange)':'#e8e8e8'}`, background:followed?'var(--orange-light)':'#fff', color:followed?'var(--orange)':'#0a0a0a', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
-              {followed ? '✓ Following' : '＋ Follow'}
-            </button>
             {e.contact && (
               <button onClick={() => { setEntityModal(null); openDM(e.contact, e.name, logo); }}
                 style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#fff', color:'#0a0a0a', fontSize:14, fontWeight:700, cursor:'pointer' }}>
@@ -249,6 +251,30 @@ export default function EntityProfileModal() {
                 {industries.map((ind, i) => (
                   <span key={i} style={{ fontSize:13, fontWeight:700, padding:'7px 14px', borderRadius:99, background:tc.bg, color:tc.color }}>{ind}</span>
                 ))}
+              </div>
+            </div>
+          )}
+
+          {/* Associated Accounts / Team */}
+          {Array.isArray(e.teamMembers) && e.teamMembers.length > 0 && (
+            <div style={{ marginBottom:36 }}>
+              <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', marginBottom:14 }}>👤 Associated Accounts</div>
+              <div style={{ display:'flex', flexWrap:'wrap', gap:10 }}>
+                {e.teamMembers.map(u => {
+                  const colorMap = { sky:'#0ea5e9', violet:'#7c3aed', emerald:'#059669', orange:'#E15033', pink:'#ec4899', amber:'#d97706' };
+                  const bg = colorMap[u.avatar_color] || '#E15033';
+                  const initials = (u.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+                  return (
+                    <div key={u.id} style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', borderRadius:12, background:'#f8f8f8', border:'1px solid #f0f0f0' }}>
+                      <div style={{ width:34, height:34, borderRadius:'50%', background:bg, color:'#fff', fontSize:12, fontWeight:800, display:'grid', placeItems:'center', flexShrink:0 }}>{initials}</div>
+                      <div>
+                        <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{u.name}</div>
+                        <div style={{ fontSize:11, color:'#aaa' }}>@{u.handle}</div>
+                      </div>
+                      {u.verified && <span style={{ fontSize:11, padding:'2px 7px', borderRadius:99, background:'var(--orange-light)', color:'var(--orange)', fontWeight:700 }}>✓</span>}
+                    </div>
+                  );
+                })}
               </div>
             </div>
           )}

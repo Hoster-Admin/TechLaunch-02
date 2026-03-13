@@ -540,6 +540,54 @@ export default function SettingsPage() {
   const [settingsSending, setSettingsSending] = useState(false);
   const settingsMsgScrollRef = React.useRef(null);
 
+  const [assocQ,         setAssocQ]         = useState('');
+  const [assocResults,   setAssocResults]   = useState([]);
+  const [assocSelected,  setAssocSelected]  = useState(null);
+  const [assocSaving,    setAssocSaving]    = useState(false);
+  const [assocCurrent,   setAssocCurrent]   = useState(user?.entity_name || null);
+
+  const searchAssocEntities = async (q) => {
+    setAssocQ(q);
+    if (!q.trim()) { setAssocResults([]); return; }
+    try {
+      const r = await fetch(`/api/entities?search=${encodeURIComponent(q)}&limit=8`);
+      const d = await r.json();
+      if (d.success) setAssocResults(d.data || []);
+    } catch {}
+  };
+
+  const getToken = () => { try { return localStorage.getItem('accessToken'); } catch { return null; } };
+
+  const saveEntityAssoc = async () => {
+    if (!assocSelected) return;
+    setAssocSaving(true);
+    try {
+      const r = await fetch('/api/users/me/entity', {
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${getToken()}` },
+        body: JSON.stringify({ entity_name: assocSelected.name }),
+      });
+      const d = await r.json();
+      if (d.success) { setAssocCurrent(assocSelected.name); setAssocSelected(null); setAssocQ(''); setAssocResults([]); toast.success('Entity linked to your profile!'); }
+      else toast.error(d.message || 'Could not link entity');
+    } catch { toast.error('Something went wrong'); }
+    finally { setAssocSaving(false); }
+  };
+
+  const removeEntityAssoc = async () => {
+    setAssocSaving(true);
+    try {
+      const r = await fetch('/api/users/me/entity', {
+        method:'PUT',
+        headers:{ 'Content-Type':'application/json', 'Authorization':`Bearer ${getToken()}` },
+        body: JSON.stringify({ entity_name: '' }),
+      });
+      const d = await r.json();
+      if (d.success) { setAssocCurrent(null); toast.success('Entity unlinked'); }
+    } catch {}
+    finally { setAssocSaving(false); }
+  };
+
   const fileInputRef = useRef(null);
   const cropImgRef   = useRef(null);
   const [avatarImg, setAvatarImg] = useState(() => {
@@ -1092,6 +1140,78 @@ export default function SettingsPage() {
               const selStyle = { ...inpStyle, background:'#fff', cursor:'pointer' };
               const fo = e => { e.target.style.borderColor='var(--orange)'; };
               const bl = e => { e.target.style.borderColor='#e8e8e8'; };
+
+              const assocSection = (
+                <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:24 }}>
+                  <div style={{ fontSize:18, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>🏢 My Associated Entity</div>
+                  <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>Link your account to an existing entity on the platform — your profile will appear as an associated account on their card.</div>
+
+                  {assocCurrent ? (
+                    <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, background:'#f8f8f8', borderRadius:14, padding:'16px 20px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                        <div style={{ width:40, height:40, borderRadius:12, background:'var(--orange-light)', display:'grid', placeItems:'center', fontSize:20 }}>🏢</div>
+                        <div>
+                          <div style={{ fontSize:15, fontWeight:800, color:'#0a0a0a' }}>{assocCurrent}</div>
+                          <div style={{ fontSize:12, color:'#aaa' }}>Currently linked entity</div>
+                        </div>
+                      </div>
+                      <button onClick={removeEntityAssoc} disabled={assocSaving}
+                        style={{ padding:'8px 16px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', color:'#e11d48', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                        {assocSaving ? 'Removing…' : 'Unlink'}
+                      </button>
+                    </div>
+                  ) : (
+                    <div>
+                      <div style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#888', marginBottom:6 }}>Search Entity</div>
+                      <div style={{ position:'relative' }}>
+                        <input
+                          type="text"
+                          placeholder="Type entity name e.g. Flat6Labs, STV…"
+                          value={assocQ}
+                          onChange={e => searchAssocEntities(e.target.value)}
+                          style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, outline:'none', boxSizing:'border-box' }}
+                          onFocus={e => e.target.style.borderColor='var(--orange)'}
+                          onBlur={e => e.target.style.borderColor='#e8e8e8'}
+                        />
+                        {assocResults.length > 0 && !assocSelected && (
+                          <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:500, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', overflow:'hidden' }}>
+                            {assocResults.map(ent => (
+                              <button key={ent.id} onClick={() => { setAssocSelected(ent); setAssocQ(ent.name); setAssocResults([]); }}
+                                style={{ width:'100%', display:'flex', alignItems:'center', gap:12, padding:'12px 16px', border:'none', borderBottom:'1px solid #f5f5f5', background:'#fff', cursor:'pointer', textAlign:'left' }}
+                                onMouseOver={e=>e.currentTarget.style.background='#fff5f3'}
+                                onMouseOut={e=>e.currentTarget.style.background='#fff'}>
+                                <div style={{ width:32, height:32, borderRadius:8, background:'#f5f5f5', display:'grid', placeItems:'center', fontSize:16, flexShrink:0 }}>🏢</div>
+                                <div>
+                                  <div style={{ fontSize:14, fontWeight:700, color:'#0a0a0a' }}>{ent.name}</div>
+                                  <div style={{ fontSize:11, color:'#aaa', textTransform:'capitalize' }}>{(ent.type||'').replace('_',' ')} · {ent.country||'MENA'}</div>
+                                </div>
+                              </button>
+                            ))}
+                          </div>
+                        )}
+                      </div>
+                      {assocSelected && (
+                        <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', gap:12, marginTop:12, background:'#fff5f3', border:'1.5px solid var(--orange)', borderRadius:12, padding:'12px 16px' }}>
+                          <div>
+                            <div style={{ fontSize:14, fontWeight:800, color:'#0a0a0a' }}>{assocSelected.name}</div>
+                            <div style={{ fontSize:11, color:'#aaa', textTransform:'capitalize' }}>{(assocSelected.type||'').replace('_',' ')} · {assocSelected.country||'MENA'}</div>
+                          </div>
+                          <div style={{ display:'flex', gap:8 }}>
+                            <button onClick={() => { setAssocSelected(null); setAssocQ(''); }}
+                              style={{ padding:'8px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', color:'#888', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                              Clear
+                            </button>
+                            <button onClick={saveEntityAssoc} disabled={assocSaving}
+                              style={{ padding:'8px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                              {assocSaving ? 'Linking…' : 'Link Entity'}
+                            </button>
+                          </div>
+                        </div>
+                      )}
+                    </div>
+                  )}
+                </div>
+              );
               const yearOpts = Array.from({length:2026-1990+1},(_,i)=>2026-i);
               const ENTITY_TYPES = ['Company','Accelerator/Incubator','Venture Studio','Investment Firm'];
               const isInvFirm = coType === 'Investment Firm';
@@ -1113,6 +1233,8 @@ export default function SettingsPage() {
 
               return (
                 <div>
+                  {assocSection}
+
                   <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>Create Entity Page</div>
                   <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>List your company or organization on Tech Launch MENA's directory.</div>
 

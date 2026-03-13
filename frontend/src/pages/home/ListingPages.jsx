@@ -156,20 +156,25 @@ function StartupCard({ item, onClick }) {
   );
 }
 
-function EntityCard({ item, type, onClick }) {
-  const meta = type === 'investor'
-    ? `${item.flag} ${item.country} · ${item.type}`
-    : type === 'venture'
-    ? `${item.flag} ${item.country} · ${item.type}`
-    : `${item.flag} ${item.country} · ${item.type}`;
+function MemberAvatar({ u }) {
+  const colors = { sky:'#0ea5e9', violet:'#7c3aed', emerald:'#059669', orange:'#E15033', pink:'#ec4899', amber:'#d97706' };
+  const bg = colors[u.avatar_color] || '#E15033';
+  const initials = (u.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+  return (
+    <div title={`${u.name} (@${u.handle})`} style={{ width:26, height:26, borderRadius:'50%', background:bg, color:'#fff', fontSize:11, fontWeight:800, display:'grid', placeItems:'center', border:'2px solid #fff', flexShrink:0 }}>
+      {initials}
+    </div>
+  );
+}
+
+function EntityCard({ item, type, teamMembers, onClick }) {
+  const meta = `${item.flag} ${item.country} · ${item.type}`;
   return (
     <div className="entity-card" onClick={onClick}>
       <div className="entity-card-top">
         <div className="entity-logo">{item.icon}</div>
         <div className="entity-name-row">
-          <div className="entity-name">
-            {item.name}
-          </div>
+          <div className="entity-name">{item.name}</div>
           <div className="entity-meta">{meta}</div>
         </div>
       </div>
@@ -179,6 +184,21 @@ function EntityCard({ item, type, onClick }) {
       <div className="entity-tags">
         {item.tags.map(t => <span key={t} className="meta-tag">{t}</span>)}
       </div>
+
+      {teamMembers && teamMembers.length > 0 && (
+        <div style={{ display:'flex', alignItems:'center', gap:8, padding:'10px 0 0', borderTop:'1px solid #f5f5f5', marginTop:8 }}>
+          <div style={{ display:'flex' }}>
+            {teamMembers.slice(0,4).map((u,i) => (
+              <div key={u.id} style={{ marginLeft: i>0 ? -8 : 0 }}>
+                <MemberAvatar u={u}/>
+              </div>
+            ))}
+          </div>
+          <span style={{ fontSize:11, fontWeight:600, color:'#888' }}>
+            {teamMembers[0].name}{teamMembers.length > 1 ? ` +${teamMembers.length-1} more` : ''} · Associated Account{teamMembers.length > 1 ? 's' : ''}
+          </span>
+        </div>
+      )}
 
       <div className="entity-card-footer">
         <div style={{ display:'flex', gap:16 }}>
@@ -198,14 +218,40 @@ function EntityCard({ item, type, onClick }) {
   );
 }
 
+const TYPE_MAP = {
+  accelerator: 'Accelerator',
+  investor:    'Investor',
+  venture:     'Venture Studio',
+  startup:     'Startup',
+  company:     'Startup',
+};
+
 export default function ListingPage() {
   const { type } = useParams();
   const { setEntityModal, setAuthModal } = useUI();
-  const config = PAGE_CONFIG[type] || PAGE_CONFIG.startup;
+  const config  = PAGE_CONFIG[type] || PAGE_CONFIG.startup;
+  const typeStr = TYPE_MAP[type] || config.title.split(' ')[0];
 
   const [selCountries,  setSelCountries]  = useState([]);
   const [selIndustries, setSelIndustries] = useState([]);
   const [selStages,     setSelStages]     = useState([]);
+  const [members,       setMembers]       = useState({});
+
+  useEffect(() => {
+    fetch('/api/users/entity-members/all')
+      .then(r => r.json())
+      .then(d => {
+        if (!d.success) return;
+        const map = {};
+        d.data.forEach(u => {
+          const key = (u.entity_name || '').toLowerCase();
+          if (!map[key]) map[key] = [];
+          map[key].push(u);
+        });
+        setMembers(map);
+      })
+      .catch(() => {});
+  }, []);
 
   const toggle = (arr, setArr, val) => setArr(arr.includes(val) ? arr.filter(x=>x!==val) : [...arr, val]);
 
@@ -225,8 +271,9 @@ export default function ListingPage() {
 
   const openModal = (item) => setEntityModal({
     ...item,
-    type: config.title.split(' ')[0],
+    type: typeStr,
     links: item.website ? [{ icon:'🌐', label:'Website', url:item.website }] : [],
+    teamMembers: members[(item.name||'').toLowerCase()] || [],
   });
 
   return (
@@ -288,7 +335,7 @@ export default function ListingPage() {
               {data.map(item =>
                 config.cardType === 'startup'
                   ? <StartupCard key={item.id} item={item} onClick={() => openModal(item)}/>
-                  : <EntityCard  key={item.id} item={item} type={type} onClick={() => openModal(item)}/>
+                  : <EntityCard  key={item.id} item={item} type={type} teamMembers={members[(item.name||'').toLowerCase()]||[]} onClick={() => openModal(item)}/>
               )}
             </div>
           )}
