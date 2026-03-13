@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import { launcherAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
+import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
 
 const TAG_COLORS = {
@@ -36,6 +37,7 @@ function Avatar({ name, avatarUrl, color, size = 36 }) {
 /* ─── single comment (with inline reply dropdown) ─────────────── */
 function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
   const navigate = useNavigate();
+  const { setAuthModal } = useUI();
   const [liked, setLiked] = useState(comment.liked);
   const [likesCount, setLikesCount] = useState(parseInt(comment.likes_count) || 0);
   const [showReply, setShowReply] = useState(false);
@@ -44,7 +46,7 @@ function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
   const replyRef = useRef(null);
 
   const handleLike = async () => {
-    if (!user) { toast.error('Sign in to like'); return; }
+    if (!user) { setAuthModal('login'); return; }
     setLiked(v => !v);
     setLikesCount(c => liked ? c - 1 : c + 1);
     try { await launcherAPI.likeComment(comment.id); }
@@ -235,6 +237,7 @@ export default function PostDetailPage() {
   const { id } = useParams();
   const navigate = useNavigate();
   const { user } = useAuth();
+  const { setAuthModal } = useUI();
 
   const [post, setPost] = useState(null);
   const [comments, setComments] = useState([]);
@@ -267,7 +270,7 @@ export default function PostDetailPage() {
   useEffect(() => { load(); }, [load]);
 
   const handleLike = async () => {
-    if (!user) { toast.error('Sign in to like'); return; }
+    if (!user) { setAuthModal('login'); return; }
     setLiked(v => !v);
     setLikesCount(c => liked ? c - 1 : c + 1);
     try { await launcherAPI.like(id); }
@@ -404,7 +407,7 @@ export default function PostDetailPage() {
               </button>
 
               <button
-                onClick={user ? focusCommentBox : () => toast.error('Sign in to comment')}
+                onClick={user ? focusCommentBox : () => setAuthModal('login')}
                 style={{
                   display: 'flex', alignItems: 'center', gap: 6,
                   background: '#f8fafc', border: '1.5px solid #e2e8f0',
@@ -443,7 +446,7 @@ export default function PostDetailPage() {
               </span>
               {!user && (
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                  <a href="/login" style={{ color: '#e15033', fontWeight: 600, textDecoration: 'none' }}>Sign in</a> to comment
+                  <span onClick={() => setAuthModal('login')} style={{ color: '#e15033', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Sign in</span> to comment
                 </span>
               )}
             </div>
@@ -552,7 +555,7 @@ export default function PostDetailPage() {
               </p>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
                 <button
-                  onClick={() => navigate('/login')}
+                  onClick={() => setAuthModal('login')}
                   style={{
                     padding: '8px 22px', borderRadius: 8, border: '1.5px solid #e2e8f0',
                     background: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
@@ -562,7 +565,7 @@ export default function PostDetailPage() {
                   Sign In
                 </button>
                 <button
-                  onClick={() => navigate('/register')}
+                  onClick={() => setAuthModal('signup')}
                   style={{
                     padding: '8px 22px', borderRadius: 8, border: 'none',
                     background: '#e15033', color: '#fff',
@@ -570,7 +573,7 @@ export default function PostDetailPage() {
                     fontFamily: 'Inter,sans-serif',
                   }}
                 >
-                  Join Launcher
+                  🚀 Join Launcher
                 </button>
               </div>
             </div>
