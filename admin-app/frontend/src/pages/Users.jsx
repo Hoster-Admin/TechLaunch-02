@@ -10,6 +10,30 @@ const FILTERS = [
 const PERSONA_COLOR = { Founder:'#E15033', Investor:'#2563eb', 'Product Manager':'#7c3aed', Enthusiast:'#64748b' };
 const ROLE_COLOR    = { admin:'#E15033', moderator:'#2563eb', editor:'#7c3aed' };
 
+function Modal({ title, onClose, children }) {
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
+      <div style={{background:'#fff',borderRadius:16,padding:28,width:440,maxWidth:'90vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)'}} onClick={e=>e.stopPropagation()}>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+          <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>{title}</div>
+          <button onClick={onClose} style={{background:'none',border:'none',fontSize:18,cursor:'pointer',color:'#AAAAAA',lineHeight:1}}>✕</button>
+        </div>
+        {children}
+      </div>
+    </div>
+  );
+}
+function Field({ label, children }) {
+  return (
+    <div style={{marginBottom:14}}>
+      <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:5,textTransform:'uppercase',letterSpacing:'.04em'}}>{label}</label>
+      {children}
+    </div>
+  );
+}
+const iS = {width:'100%',border:'1px solid #E8E8E8',borderRadius:8,padding:'9px 11px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FAFAFA'};
+const sS = {...iS,cursor:'pointer'};
+
 export default function Users() {
   const [users, setUsers]     = useState([]);
   const [filter, setFilter]   = useState('all');
@@ -19,6 +43,9 @@ export default function Users() {
   const [selected, setSelected]   = useState(new Set());
   const [bulking, setBulking]     = useState(false);
   const [exporting, setExporting] = useState(false);
+  const [showAdd, setShowAdd]     = useState(false);
+  const [saving, setSaving]       = useState(false);
+  const [form, setForm]           = useState({ name:'', email:'', persona:'Founder', country:'' });
 
   const load = useCallback(() => {
     setLoading(true);
@@ -29,6 +56,19 @@ export default function Users() {
   }, []);
 
   useEffect(() => { load(); }, [load]);
+
+  const addUser = async () => {
+    if (!form.name || !form.email) return toast.error('Name and email are required');
+    setSaving(true);
+    try {
+      const { data: d } = await adminAPI.createUser({ ...form, role: 'user' });
+      toast.success(`${form.name} added successfully!`);
+      setShowAdd(false);
+      setForm({ name:'', email:'', persona:'Founder', country:'' });
+      load();
+    } catch(e) { toast.error(e.message || 'Failed to add user'); }
+    finally { setSaving(false); }
+  };
 
   const act = async (id, fn, msg) => {
     setActing(p=>({...p,[id]:true}));
@@ -81,9 +121,45 @@ export default function Users() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+
+      {showAdd && (
+        <Modal title="Add Platform User" onClose={()=>setShowAdd(false)}>
+          <Field label="Full Name">
+            <input style={iS} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} autoFocus/>
+          </Field>
+          <Field label="Email Address">
+            <input style={iS} type="email" value={form.email} onChange={e=>setForm(f=>({...f,email:e.target.value}))}/>
+          </Field>
+          <Field label="Persona">
+            <select style={sS} value={form.persona} onChange={e=>setForm(f=>({...f,persona:e.target.value}))}>
+              <option>Founder</option>
+              <option>Investor</option>
+              <option>Product Manager</option>
+              <option>Enthusiast</option>
+            </select>
+          </Field>
+          <Field label="Country (optional)">
+            <input style={iS} value={form.country} onChange={e=>setForm(f=>({...f,country:e.target.value}))}/>
+          </Field>
+          <div style={{display:'flex',gap:8,marginTop:4}}>
+            <button onClick={addUser} disabled={saving} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'10px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.6:1}}>
+              {saving ? 'Adding…' : 'Add User'}
+            </button>
+            <button onClick={()=>setShowAdd(false)} style={{padding:'10px 16px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* Platform Users */}
-      <SCard title="Platform Users" sub={`${users.length} registered users`}
-        action={<button onClick={doExport} disabled={exporting} style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',color:'#555',opacity:exporting?0.6:1}}>{exporting?'…':'↓ Export CSV'}</button>}>
+      <SCard title="Platform Users" sub={`${users.length} registered user${users.length!==1?'s':''}`}
+        action={
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={()=>setShowAdd(true)} style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>+ Add User</button>
+            <button onClick={doExport} disabled={exporting} style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',color:'#555',opacity:exporting?0.6:1}}>{exporting?'…':'↓ Export CSV'}</button>
+          </div>
+        }>
         <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'14px 20px',borderBottom:'1px solid #F4F4F4'}}>
           {FILTERS.map(f=>(
             <button key={f.key} onClick={()=>{setFilter(f.key);setSelected(new Set());}} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:filter===f.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:filter===f.key?'var(--orange)':'#E8E8E8',background:filter===f.key?'var(--orange)':'#fff',color:filter===f.key?'#fff':'#666'}}>{f.label}</button>
