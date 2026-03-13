@@ -50,7 +50,7 @@ outputType = "webview"
 
 [[workflows.workflow.tasks]]
 task = "shell.exec"
-args = "cd backend && node src/server.js"
+args = "ADMIN_PORT=5000 node admin-app/backend/server.js"
 waitForPort = 5000
 
 [[workflows.workflow]]
