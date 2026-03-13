@@ -10,6 +10,12 @@ import { Spinner } from '../../components/ui';
 
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
+const INDUSTRY_ICONS = {
+  'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥',
+  'E-Commerce':'🛒','Logistics':'🚚','Foodtech':'🍔','Proptech':'🏠',
+  'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
+  'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
+};
 const COUNTRIES  = [
   ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],
   ['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['bh','🇧🇭 Bahrain'],
@@ -131,6 +137,7 @@ export default function HomePage() {
                         <input type="checkbox" checked={selectedIndustries.includes(ind)}
                           onChange={e => setIndustries(prev => e.target.checked ? [...prev, ind] : prev.filter(i => i !== ind))}
                           style={{ accentColor: 'var(--orange)', width: 15, height: 15 }}/>
+                        <span style={{ fontSize: 15 }}>{INDUSTRY_ICONS[ind] || '🏭'}</span>
                         {ind}
                       </label>
                     ))}
