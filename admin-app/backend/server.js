@@ -243,6 +243,35 @@ admin.get('/applications', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+admin.patch('/applications/accelerator/:id', async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const fields = [], vals = [];
+    if (status) { fields.push(`status=$${fields.length+1}::app_status`); vals.push(status); }
+    if (notes !== undefined) { fields.push(`notes=$${fields.length+1}`); vals.push(notes); }
+    if (status) { fields.push(`reviewed_by=$${fields.length+1}`, `reviewed_at=NOW()`); vals.push(req.user.id); }
+    fields.push(`updated_at=NOW()`);
+    if (fields.length === 1) return res.json({ success:true });
+    vals.push(req.params.id);
+    await q(`UPDATE accelerator_applications SET ${fields.join(',')} WHERE id=$${vals.length}`, vals);
+    res.json({ success:true });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.patch('/applications/pitches/:id', async (req, res) => {
+  try {
+    const { status, notes } = req.body;
+    const fields = [], vals = [];
+    if (status) { fields.push(`status=$${fields.length+1}::pitch_status`); vals.push(status); }
+    if (notes !== undefined) { fields.push(`notes=$${fields.length+1}`); vals.push(notes); }
+    fields.push(`updated_at=NOW()`);
+    if (fields.length === 1) return res.json({ success:true });
+    vals.push(req.params.id);
+    await q(`UPDATE investor_pitches SET ${fields.join(',')} WHERE id=$${vals.length}`, vals);
+    res.json({ success:true });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
 // Settings
 admin.get('/settings', async (req, res) => {
   try {

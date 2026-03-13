@@ -1,0 +1,43 @@
+Context for Admin Panel — Tech Launch MENA
+
+Hey, here's a summary of everything the public site (tlmena.com) has been doing so we stay aligned.
+
+What the public site is:
+A Product Hunt-style platform for the MENA startup ecosystem. Users can discover, upvote, comment on, and bookmark tech products submitted by founders. It also has a directory of MENA ecosystem entities — accelerators, investors, and venture studios.
+
+Public site tech stack:
+
+React (Create React App) frontend, served from frontend/build/
+Express.js backend on port 5000 (backend/src/server.js)
+PostgreSQL database (local Replit DB via DATABASE_URL)
+Production uses Neon DB (NEON_DATABASE_URL)
+Key database tables the admin panel needs to manage:
+
+products — startup products (status: pending / approved / rejected / featured)
+users — registered users (roles: user / admin / moderator / editor)
+comments, upvotes, bookmarks — engagement
+entities — the 20 MENA ecosystem entities (accelerators, investors, venture studios) — type column values are: accelerator, investor, venture_studio
+accelerator_applications — applications submitted through the site (status: pending / reviewed / accepted / rejected)
+investor_pitches — pitches submitted to investors (status: pending / reviewed / accepted / rejected)
+suggestions — user-submitted suggestions
+waitlist — users who joined the waitlist for a product
+What we just added (needs admin panel support):
+
+Users can now apply to accelerators/venture studios via a form → saved to accelerator_applications (fields: applicant_id, entity_id, startup_name, stage, pitch, notes, status)
+Users can pitch to investors → saved to investor_pitches (fields: founder_id, investor_id, ask_amount, pitch_deck, description, status)
+What the admin panel should be able to do with these:
+
+View all incoming applications and pitches
+See status (pending / reviewed / accepted / rejected) and update it
+See which user applied and to which entity
+Add internal notes
+API base URL: same backend — /api/applications (POST) and /api/pitches (POST) are now live. The admin panel's own backend (separate Neon DB) may need matching tables if it syncs data independently.
+
+Demo credentials (public site):
+
+Admin: admin@tlmena.com / Admin1234
+Moderator: reem@example.com / Admin1234
+Regular users: sara@example.com / password123, omar@example.com / password123
+Let me know if you need the full DB schema or API route list.
+
+That covers everything for alignment. The most important new pieces for the admin panel are the two new submission tables (accelerator_applications and investor_pitches) that will now start receiving real data from users.

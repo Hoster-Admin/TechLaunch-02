@@ -41,6 +41,8 @@ export const adminAPI = {
   entities:     (p={})      => req('GET',  '/admin/entities?' + new URLSearchParams(p)),
   verifyEntity: (id)        => req('POST', `/admin/entities/${id}/verify`),
   applications: ()          => req('GET',  '/admin/applications'),
+  updateAccelApp: (id, body)=> req('PATCH', `/admin/applications/accelerator/${id}`, body),
+  updatePitch:    (id, body)=> req('PATCH', `/admin/applications/pitches/${id}`, body),
   reports:      ()          => req('GET',  '/admin/reports'),
   settings:     ()          => req('GET',  '/admin/settings'),
   saveSettings: (body)      => req('PUT',  '/admin/settings', body),

@@ -47,10 +47,14 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 
 ## Database
 
-Uses Replit's built-in PostgreSQL. Schema includes:
-- users, products, entities, comments, upvotes, bookmarks
-- accelerator_applications, investor_pitches, notifications
-- platform_settings, team_members, activity_log, refresh_tokens
+Uses both Replit built-in PostgreSQL (heliumdb) and Neon (NEON_DATABASE_URL). The admin panel uses Neon (same DB as public site). Schema includes:
+- `users` — roles: user/admin/moderator/editor; status: active/suspended/banned/pending_verification; persona: Founder/Investor/Product Manager/etc.
+- `products` — status enum: pending/live/soon/rejected/draft
+- `entities` — type enum: accelerator/investor/venture_studio
+- `accelerator_applications` — status enum (app_status): pending/reviewing/accepted/rejected; fields: applicant_id, entity_id, product_id, startup_name, stage, pitch, notes, reviewed_by, reviewed_at
+- `investor_pitches` — status enum (pitch_status): sent/reviewing/interested/follow-up/rejected/funded; fields: founder_id, investor_id, product_id, ask_amount, pitch_deck, description, notes
+- `waitlist_signups` — product_id, email, user_id
+- `comments, upvotes, bookmarks, suggestions, notifications, platform_settings, team_members, activity_log, refresh_tokens`
 
 Run migrations: `cd backend && node src/migrations/run.js`
 
