@@ -8,25 +8,49 @@ const NAV = [
   { key:'applications', icon:'📋', label:'Applications' },
   { key:'featured',     icon:'⭐', label:'Featured' },
   { key:'reports',      icon:'📈', label:'Reports' },
-  { key:'settings',     icon:'⚙️', label:'Settings' },
+  { key:'settings',     icon:'⚙️',  label:'Settings' },
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
 
-export default function AdminSidebar({ current, onChange, user, onLogout }) {
+export default function AdminSidebar({ current, onChange, user }) {
+  const role = user?.role || 'admin';
   return (
     <div className="admin-sidebar">
+      {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
           <div className="sidebar-logo-icon">📡</div>
           <div className="sidebar-logo-text">TL MENA</div>
         </div>
-        <div className="sidebar-badge">Admin Panel</div>
+        <span className="sidebar-badge">Admin Panel</span>
       </div>
 
-      <nav style={{ flex:1, padding:'8px 0', overflowY:'auto' }}>
-        {NAV.map(item => (
+      {/* Nav */}
+      <nav>
+        <div className="nav-section">Platform</div>
+        {NAV.slice(0,3).map(item => (
           <div key={item.key}
-            className={`nav-item${current === item.key ? ' active' : ''}`}
+            className={`nav-item${current===item.key?' active':''}`}
+            onClick={() => onChange(item.key)}>
+            <span className="nav-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </div>
+        ))}
+
+        <div className="nav-section">Content</div>
+        {NAV.slice(3,6).map(item => (
+          <div key={item.key}
+            className={`nav-item${current===item.key?' active':''}`}
+            onClick={() => onChange(item.key)}>
+            <span className="nav-icon">{item.icon}</span>
+            <span>{item.label}</span>
+          </div>
+        ))}
+
+        <div className="nav-section">System</div>
+        {NAV.slice(6).map(item => (
+          <div key={item.key}
+            className={`nav-item${current===item.key?' active':''}`}
             onClick={() => onChange(item.key)}>
             <span className="nav-icon">{item.icon}</span>
             <span>{item.label}</span>
@@ -34,14 +58,15 @@ export default function AdminSidebar({ current, onChange, user, onLogout }) {
         ))}
       </nav>
 
+      {/* Footer */}
       <div className="sidebar-footer">
         <div className="sidebar-admin-user">
-          <div className="admin-avatar" style={{ background: user?.avatar_color || 'var(--orange)' }}>
-            {(user?.name || 'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+          <div className="admin-avatar" style={{background:user?.avatar_color||'var(--orange)'}}>
+            {(user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
           </div>
-          <div>
-            <div className="admin-name">{user?.name || 'Admin'}</div>
-            <div className="admin-role">{user?.role || 'admin'}</div>
+          <div style={{flex:1,minWidth:0}}>
+            <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
+            <div className="admin-role">{role}</div>
           </div>
         </div>
       </div>
