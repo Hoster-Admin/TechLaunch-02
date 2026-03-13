@@ -44,7 +44,7 @@ export default function LoginPage() {
               type="email"
               value={form.email}
               onChange={e=>setForm(f=>({...f,email:e.target.value}))}
-              placeholder="admin@tlmena.com"
+              placeholder="admin@techlaunch.io"
               autoComplete="email"
               required
               style={{width:'100%',padding:'11px 14px',border:'1.5px solid var(--gray-200)',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'var(--ink)',outline:'none',boxSizing:'border-box',transition:'border-color .15s'}}

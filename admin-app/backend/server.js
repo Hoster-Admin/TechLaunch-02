@@ -184,6 +184,35 @@ admin.get('/users', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+admin.post('/users', async (req, res) => {
+  try {
+    const { name, email, password, role='moderator', persona } = req.body;
+    if (!name || !email || !password) return res.status(400).json({ success:false, message:'name, email and password are required' });
+    const allowed = ['admin','moderator','editor'];
+    if (!allowed.includes(role)) return res.status(400).json({ success:false, message:'Role must be admin, moderator, or editor' });
+    const handle = email.split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'_') + '_' + Math.floor(Math.random()*100);
+    const hash   = await bcrypt.hash(password, 10);
+    const colors = ['#E15033','#2563eb','#7c3aed','#16a34a','#d97706'];
+    const color  = colors[Math.floor(Math.random()*colors.length)];
+    const cols   = ['name','handle','email','password_hash','role','status','verified','email_verified','avatar_color'];
+    const vals   = [name, handle, email.toLowerCase().trim(), hash, role, 'active', true, true, color];
+    if (persona) { cols.push('persona'); vals.push(persona); }
+    const placeholders = vals.map((_,i)=>`$${i+1}`).join(',');
+    const { rows } = await q(`INSERT INTO users (${cols.join(',')}) VALUES (${placeholders}) RETURNING id,name,email,role`, vals);
+    res.json({ success:true, data:rows[0], message:`${rows[0].name} added as ${role}` });
+  } catch(e) {
+    if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
+    res.status(500).json({ success:false, message:e.message });
+  }
+});
+
+admin.get('/users/team', async (req, res) => {
+  try {
+    const { rows } = await q(`SELECT id,name,handle,email,role,status,verified,avatar_color,created_at FROM users WHERE role IN ('admin','moderator','editor') ORDER BY created_at ASC`);
+    res.json({ success:true, data:rows });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
 admin.post('/users/:id/verify', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE users SET verified=true WHERE id=$1 RETURNING name`, [req.params.id]);
@@ -221,6 +250,26 @@ admin.get('/entities', async (req, res) => {
     const { rows } = await q(`SELECT *,COUNT(*) OVER() AS total_count FROM entities ${where} ORDER BY created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data:rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.post('/entities', async (req, res) => {
+  try {
+    const { name, type, country, description, website, stage, industry, aum, portfolio_count, employees, founded_year, logo_emoji='🏢', focus } = req.body;
+    if (!name || !type || !country) return res.status(400).json({ success:false, message:'name, type and country are required' });
+    const validTypes = ['accelerator','investor','venture_studio'];
+    if (!validTypes.includes(type)) return res.status(400).json({ success:false, message:'type must be accelerator, investor, or venture_studio' });
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const slug = `${base}-${Date.now().toString(36)}`;
+    const { rows } = await q(`
+      INSERT INTO entities (name,slug,type,country,description,website,stage,industry,aum,portfolio_count,employees,founded_year,logo_emoji,focus,verified,created_by)
+      VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,false,$15)
+      RETURNING id,name,type,country`,
+      [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,portfolio_count||null,employees||null,founded_year||null,logo_emoji,focus||null,req.user.id]);
+    res.json({ success:true, data:rows[0], message:`${rows[0].name} created` });
+  } catch(e) {
+    if (e.code==='23505') return res.status(409).json({ success:false, message:'Entity with this name already exists' });
+    res.status(500).json({ success:false, message:e.message });
+  }
 });
 
 admin.post('/entities/:id/verify', async (req, res) => {
@@ -285,7 +334,7 @@ admin.get('/settings', async (req, res) => {
 admin.put('/settings', async (req, res) => {
   try {
     for (const [key, value] of Object.entries(req.body)) {
-      await q(`UPDATE platform_settings SET value=$1,updated_by=$2,updated_at=NOW() WHERE key=$3`, [String(value),req.user.id,key]);
+      await q(`INSERT INTO platform_settings (key,value,type,updated_by,updated_at) VALUES ($1,$2,'boolean',$3,NOW()) ON CONFLICT (key) DO UPDATE SET value=$2,updated_by=$3,updated_at=NOW()`, [key,String(value),req.user.id]);
     }
     res.json({ success:true, message:'Settings updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
