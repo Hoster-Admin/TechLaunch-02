@@ -102,7 +102,7 @@ app.get('/api/auth/me', authenticate, requireAdmin, (req, res) => {
 app.get('/api/auth/activate/:token', async (req, res) => {
   try {
     const { rows } = await q(
-      `SELECT at.id, at.user_id, at.used_at, at.expires_at, u.name, u.email
+      `SELECT at.id, at.user_id, at.used_at, at.expires_at, u.name, u.email, u.role
        FROM activation_tokens at JOIN users u ON u.id = at.user_id
        WHERE at.token = $1`, [req.params.token]
     );
@@ -110,7 +110,7 @@ app.get('/api/auth/activate/:token', async (req, res) => {
     const r = rows[0];
     if (r.used_at) return res.json({ success:false, message:'This link has already been used' });
     if (new Date(r.expires_at) < new Date()) return res.json({ success:false, message:'This link has expired. Please ask your admin to resend the invitation.' });
-    res.json({ success:true, data:{ name: r.name, email: r.email } });
+    res.json({ success:true, data:{ name: r.name, email: r.email, role: r.role } });
   } catch (e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
@@ -135,8 +135,9 @@ app.post('/api/auth/activate', async (req, res) => {
 });
 
 app.get('/activate', (req, res) => {
-  const appUrl = process.env.APP_URL || 'https://tlmena.com';
-  const logoUrl = `${appUrl}/logo-icon.png`;
+  const adminUrl = process.env.ADMIN_URL || ('https://' + (process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'));
+  const publicUrl = process.env.APP_URL || 'https://tlmena.com';
+  const logoUrl = `${adminUrl}/logo-icon.png`;
   res.setHeader('Content-Type', 'text/html');
   res.send(`<!DOCTYPE html>
 <html lang="en">
@@ -147,69 +148,90 @@ app.get('/activate', (req, res) => {
   <style>
     *{box-sizing:border-box;margin:0;padding:0}
     body{min-height:100vh;display:flex;align-items:center;justify-content:center;background:#f3f4f6;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;padding:24px}
-    .card{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.09);width:100%;max-width:420px;overflow:hidden}
-    .top{background:#0a0a0a;padding:36px 40px;text-align:center}
-    .top img{height:52px;border-radius:12px;margin-bottom:16px}
-    .top h1{color:#fff;font-size:20px;font-weight:700;letter-spacing:-0.3px}
-    .top p{color:rgba(255,255,255,0.5);font-size:13px;margin-top:4px}
-    .body{padding:36px 40px}
-    .greeting{font-size:15px;color:#374151;margin-bottom:28px;line-height:1.6;text-align:center}
+    .wrap{width:100%;max-width:420px}
+    .logo-bar{text-align:center;margin-bottom:24px}
+    .logo-bar img{height:52px;border-radius:14px}
+    .card{background:#fff;border-radius:20px;box-shadow:0 4px 24px rgba(0,0,0,0.09);overflow:hidden}
+    .card-top{background:#0a0a0a;padding:32px 36px;text-align:center}
+    .card-top h1{color:#fff;font-size:20px;font-weight:800;letter-spacing:-0.3px;margin:0}
+    .card-top p{color:rgba(255,255,255,0.4);font-size:13px;margin:6px 0 0}
+    .card-body{padding:32px 36px}
+    .greeting{font-size:15px;color:#374151;line-height:1.6;text-align:center;margin-bottom:28px}
     .greeting strong{color:#111827}
-    label{display:block;font-size:12px;font-weight:700;color:#6b7280;letter-spacing:0.8px;text-transform:uppercase;margin-bottom:8px}
-    input[type=password]{width:100%;padding:13px 16px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;color:#111827;outline:none;transition:border-color .2s}
-    input[type=password]:focus{border-color:#E15033}
-    .input-group{margin-bottom:20px}
-    button{width:100%;padding:14px;background:#E15033;color:#fff;font-size:15px;font-weight:700;border:none;border-radius:10px;cursor:pointer;transition:opacity .2s;margin-top:8px}
-    button:hover{opacity:.9}
-    button:disabled{opacity:.5;cursor:not-allowed}
-    .msg{display:none;padding:12px 16px;border-radius:10px;font-size:13px;margin-top:16px;text-align:center;line-height:1.5}
+    label{display:block;font-size:11px;font-weight:700;color:#9ca3af;letter-spacing:1px;text-transform:uppercase;margin-bottom:8px}
+    input[type=password]{width:100%;padding:13px 16px;border:1.5px solid #e5e7eb;border-radius:10px;font-size:15px;color:#111827;outline:none;transition:border-color .15s;background:#fff}
+    input[type=password]:focus{border-color:#E15033;box-shadow:0 0 0 3px rgba(225,80,51,0.1)}
+    .field{margin-bottom:18px}
+    .submit-btn{width:100%;padding:14px;background:#E15033;color:#fff;font-size:15px;font-weight:700;border:none;border-radius:10px;cursor:pointer;margin-top:8px;letter-spacing:0.1px;transition:opacity .15s}
+    .submit-btn:hover:not(:disabled){opacity:.9}
+    .submit-btn:disabled{opacity:.45;cursor:not-allowed}
+    .msg{display:none;padding:14px 16px;border-radius:10px;font-size:14px;margin-top:18px;text-align:center;line-height:1.5}
     .msg.error{background:#fef2f2;color:#b91c1c;border:1px solid #fecaca}
     .msg.success{background:#f0fdf4;color:#15803d;border:1px solid #bbf7d0}
-    .hint{font-size:12px;color:#9ca3af;margin-top:6px}
+    .redirect-note{font-size:13px;color:#6b7280;text-align:center;margin-top:14px}
+    .redirect-note a{color:#E15033;text-decoration:none;font-weight:600}
   </style>
 </head>
 <body>
-  <div class="card">
-    <div class="top">
-      <img src="${logoUrl}" alt="TechLaunch MENA"/>
-      <h1>Activate Your Account</h1>
-      <p>TechLaunch MENA</p>
-    </div>
-    <div class="body">
-      <p class="greeting" id="greeting">Loading your invitation&hellip;</p>
-      <div id="form-area" style="display:none">
-        <div class="input-group">
-          <label>New Password</label>
-          <input type="password" id="pw1" placeholder="At least 8 characters" autocomplete="new-password"/>
-        </div>
-        <div class="input-group">
-          <label>Confirm Password</label>
-          <input type="password" id="pw2" placeholder="Repeat your password" autocomplete="new-password"/>
-        </div>
-        <button id="btn" onclick="activate()">Activate My Account</button>
+  <div class="wrap">
+    <div class="logo-bar"><img src="${logoUrl}" alt="TechLaunch MENA"/></div>
+    <div class="card">
+      <div class="card-top">
+        <h1>Activate Your Account</h1>
+        <p>TechLaunch MENA</p>
       </div>
-      <div class="msg" id="msg"></div>
+      <div class="card-body">
+        <p class="greeting" id="greeting">Loading your invitation&hellip;</p>
+        <div id="form-area" style="display:none">
+          <div class="field">
+            <label>New Password</label>
+            <input type="password" id="pw1" placeholder="At least 8 characters" autocomplete="new-password"/>
+          </div>
+          <div class="field">
+            <label>Confirm Password</label>
+            <input type="password" id="pw2" placeholder="Repeat your password" autocomplete="new-password"/>
+          </div>
+          <button class="submit-btn" id="btn" onclick="activate()">Activate My Account</button>
+        </div>
+        <div class="msg" id="msg"></div>
+        <div class="redirect-note" id="redirect-note" style="display:none"></div>
+      </div>
     </div>
   </div>
   <script>
+    const ADMIN_URL  = '${adminUrl}';
+    const PUBLIC_URL = '${publicUrl}';
     const token = new URLSearchParams(location.search).get('token');
-    const msg = document.getElementById('msg');
+    const msg      = document.getElementById('msg');
     const formArea = document.getElementById('form-area');
     const greeting = document.getElementById('greeting');
-    function show(text, type) { msg.textContent = text; msg.className = 'msg ' + type; msg.style.display = 'block'; }
-    if (!token) { greeting.textContent = 'No activation token found.'; }
-    else {
+    const redirectNote = document.getElementById('redirect-note');
+    let userRole = null;
+
+    function show(text, type) {
+      msg.textContent = text; msg.className = 'msg ' + type; msg.style.display = 'block';
+    }
+
+    if (!token) {
+      greeting.innerHTML = '<span style="color:#b91c1c">No activation token found in this link.</span>';
+    } else {
       fetch('/api/auth/activate/' + token)
         .then(r => r.json())
         .then(data => {
-          if (!data.success) { greeting.innerHTML = '<span style="color:#b91c1c">' + data.message + '</span>'; }
-          else {
-            greeting.innerHTML = 'Hi <strong>' + data.data.name + '</strong>, set a password to complete your account setup.';
+          if (!data.success) {
+            greeting.innerHTML = '<span style="color:#b91c1c">' + data.message + '</span>';
+          } else {
+            userRole = data.data.role;
+            const isTeam = userRole !== 'user';
+            greeting.innerHTML = 'Hi <strong>' + data.data.name + '</strong>! Set a password to activate your ' + (isTeam ? 'admin' : '') + ' account.';
             formArea.style.display = 'block';
           }
         })
-        .catch(() => { greeting.innerHTML = '<span style="color:#b91c1c">Could not load invitation. Please try again.</span>'; });
+        .catch(() => {
+          greeting.innerHTML = '<span style="color:#b91c1c">Could not load invitation. Please try again.</span>';
+        });
     }
+
     async function activate() {
       const pw1 = document.getElementById('pw1').value;
       const pw2 = document.getElementById('pw2').value;
@@ -218,14 +240,29 @@ app.get('/activate', (req, res) => {
       if (pw1 !== pw2) return show('Passwords do not match.', 'error');
       btn.disabled = true; btn.textContent = 'Activating…';
       try {
-        const res = await fetch('/api/auth/activate', { method:'POST', headers:{'Content-Type':'application/json'}, body: JSON.stringify({ token, password: pw1 }) });
+        const res  = await fetch('/api/auth/activate', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ token, password: pw1 })
+        });
         const data = await res.json();
         if (data.success) {
           formArea.style.display = 'none';
           greeting.textContent = '';
-          show('Your account is active! You can now log in.', 'success');
-        } else { show(data.message || 'Something went wrong.', 'error'); btn.disabled = false; btn.textContent = 'Activate My Account'; }
-      } catch { show('Network error. Please try again.', 'error'); btn.disabled = false; btn.textContent = 'Activate My Account'; }
+          const isTeam = userRole !== 'user';
+          const loginUrl = isTeam ? ADMIN_URL + '/' : PUBLIC_URL + '/login';
+          show('Account activated! Redirecting you to sign in…', 'success');
+          redirectNote.innerHTML = 'Not redirecting? <a href="' + loginUrl + '">Click here to log in</a>';
+          redirectNote.style.display = 'block';
+          setTimeout(() => { window.location.href = loginUrl; }, 2500);
+        } else {
+          show(data.message || 'Something went wrong.', 'error');
+          btn.disabled = false; btn.textContent = 'Activate My Account';
+        }
+      } catch {
+        show('Network error. Please try again.', 'error');
+        btn.disabled = false; btn.textContent = 'Activate My Account';
+      }
     }
   </script>
 </body>
@@ -354,9 +391,9 @@ admin.post('/users', async (req, res) => {
     // Generate activation token and send invitation email (non-blocking)
     const crypto = require('crypto');
     const activationToken = crypto.randomBytes(32).toString('hex');
-    const appUrl = process.env.APP_URL || 'https://tlmena.com';
+    const adminUrl = process.env.ADMIN_URL || ('https://' + (process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'));
     q(`INSERT INTO activation_tokens (user_id, token) VALUES ($1, $2)`, [rows[0].id, activationToken]).catch(e => console.error('[Token] Failed to store activation token:', e.message));
-    sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${appUrl}/activate?token=${activationToken}` }).catch(() => {});
+    sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${adminUrl}/activate?token=${activationToken}` }).catch(() => {});
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });

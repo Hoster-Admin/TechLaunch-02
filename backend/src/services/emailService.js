@@ -1,9 +1,10 @@
 const { Resend } = require('resend');
 
-const resend   = new Resend(process.env.RESEND_API_KEY);
-const FROM     = process.env.RESEND_FROM_EMAIL || 'TechLaunch MENA <hello@tlmena.com>';
-const APP_URL  = process.env.APP_URL || 'https://tlmena.com';
-const LOGO_URL = `${APP_URL}/logo-icon.png`;
+const resend    = new Resend(process.env.RESEND_API_KEY);
+const FROM      = process.env.RESEND_FROM_EMAIL || 'TechLaunch MENA <hello@tlmena.com>';
+const APP_URL   = process.env.APP_URL   || 'https://tlmena.com';
+const ADMIN_URL = process.env.ADMIN_URL || ('https://' + (process.env.REPLIT_DEV_DOMAIN || 'localhost:5000'));
+const LOGO_URL  = `${ADMIN_URL}/logo-icon.png`;
 
 const send = async (to, subject, html, tag) => {
   try {
