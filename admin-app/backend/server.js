@@ -197,7 +197,7 @@ admin.get('/users', async (req, res) => {
 admin.post('/users', async (req, res) => {
   try {
     const { name, email, role='moderator', persona, country, handle: customHandle } = req.body;
-    if (!name || !email) return res.status(400).json({ success:false, message:'name and email are required' });
+    if (!email) return res.status(400).json({ success:false, message:'Email is required' });
     const allowed = ['admin','moderator','editor','user'];
     if (!allowed.includes(role)) return res.status(400).json({ success:false, message:'Invalid role' });
     const isTeam = role !== 'user';

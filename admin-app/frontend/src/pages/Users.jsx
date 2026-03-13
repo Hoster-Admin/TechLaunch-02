@@ -58,11 +58,11 @@ export default function Users() {
   useEffect(() => { load(); }, [load]);
 
   const addUser = async () => {
-    if (!form.name || !form.email) return toast.error('Name and email are required');
+    if (!form.handle || !form.email) return toast.error('Handle and email are required');
     setSaving(true);
     try {
       await adminAPI.createUser({ ...form, persona: form.entityType, role: 'user' });
-      toast.success(`${form.name} added successfully!`);
+      toast.success(`@${form.handle} added successfully!`);
       setShowAdd(false);
       setForm({ name:'', handle:'', email:'', entityType:'Startup', country:'' });
       load();
@@ -141,8 +141,8 @@ export default function Users() {
               <option>Startup</option>
               <option>VC / Investor</option>
               <option>Accelerator</option>
+              <option>Venture Studio</option>
               <option>Corporate</option>
-              <option>Media</option>
               <option>Individual</option>
             </select>
           </Field>
