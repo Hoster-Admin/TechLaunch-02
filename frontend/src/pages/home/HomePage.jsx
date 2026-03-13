@@ -8,18 +8,6 @@ import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
 
-const MOCK_PRODUCTS = [
-  { id:1,  name:'Tabby',        tagline:'Buy now, pay later for MENA shoppers', logo_emoji:'💳', industry:'Fintech',     country:'UAE',          status:'live', badge:'top',  upvotes_count:342, tags:['BNPL','Fintech'] },
-  { id:2,  name:'Noon Academy', tagline:'Social learning platform for students', logo_emoji:'📚', industry:'Edtech',      country:'Saudi Arabia',  status:'live', badge:'top',  upvotes_count:287, tags:['Edtech','Social'] },
-  { id:3,  name:'Vezeeta',      tagline:'Book doctors and healthcare services',  logo_emoji:'🏥', industry:'Healthtech',  country:'Egypt',         status:'live', badge:null,   upvotes_count:256, tags:['Health','Booking'] },
-  { id:4,  name:'Baraka',       tagline:'Invest in global stocks from the GCC',  logo_emoji:'📈', industry:'Fintech',     country:'UAE',           status:'live', badge:'new',  upvotes_count:231, tags:['Investing','Stocks'] },
-  { id:5,  name:'Tamara',       tagline:'BNPL shopping for Saudi consumers',     logo_emoji:'🛒', industry:'Fintech',     country:'Saudi Arabia',  status:'live', badge:null,   upvotes_count:198, tags:['BNPL','Saudi'] },
-  { id:6,  name:'Kader AI',     tagline:'AI-powered job matching for MENA',      logo_emoji:'🤖', industry:'AI & ML',     country:'Jordan',        status:'soon', badge:'soon', upvotes_count:0,   tags:['AI','Jobs'] },
-  { id:7,  name:'Trella',       tagline:'Digital freight marketplace in MENA',   logo_emoji:'🚛', industry:'Logistics',   country:'Egypt',         status:'live', badge:null,   upvotes_count:154, tags:['Freight','Logistics'] },
-  { id:8,  name:'Foodics',      tagline:'Restaurant management system for F&B',  logo_emoji:'🍽️', industry:'Foodtech',    country:'Saudi Arabia',  status:'live', badge:null,   upvotes_count:143, tags:['F&B','POS'] },
-  { id:9,  name:'Waffarha',     tagline:'Discount coupons and deals platform',   logo_emoji:'🎟️', industry:'E-Commerce',  country:'Egypt',         status:'live', badge:null,   upvotes_count:128, tags:['Deals','Coupons'] },
-  { id:10, name:'Cura',         tagline:'Mental health therapy online for MENA', logo_emoji:'🧠', industry:'Healthtech',  country:'Saudi Arabia',  status:'soon', badge:'soon', upvotes_count:0,   tags:['Mental Health'] },
-];
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
 const COUNTRIES  = [['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['lb','🇱🇧 Lebanon'],['bh','🇧🇭 Bahrain'],['tn','🇹🇳 Tunisia']];
@@ -42,8 +30,8 @@ export default function HomePage() {
   const navigate = useNavigate();
   const { user } = useAuth();
   const { setSubmitOpen, setAuthModal } = useUI();
-  const [products, setProducts]       = useState(MOCK_PRODUCTS);
-  const [loading,  setLoading]        = useState(false);
+  const [products, setProducts]       = useState([]);
+  const [loading,  setLoading]        = useState(true);
   const [feedType, setFeedType]       = useState('all');
   const [countryDDOpen, setCountryDD] = useState(false);
   const [industryDDOpen, setIndDD]    = useState(false);
@@ -57,8 +45,8 @@ export default function HomePage() {
       feedType === 'new'  ? { status: 'live', sort: 'newest', limit: 20 } :
                             { status: 'live', sort: 'top',    limit: 20 };
     productsAPI.list(params)
-      .then(({ data }) => { if (data.data?.length) setProducts(data.data); })
-      .catch(() => {})
+      .then(({ data }) => { setProducts(data.data || []); })
+      .catch(() => { setProducts([]); })
       .finally(() => setLoading(false));
   }, [feedType]);
 

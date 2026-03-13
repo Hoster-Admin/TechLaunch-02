@@ -19,18 +19,6 @@ const REASONS_MAP = {
   'Foodtech':   ['🍽️ Used by 20K+ MENA restaurants','📊 Real-time sales & inventory analytics','💳 Integrated POS & online ordering','🧾 Multi-branch management made easy','🤝 Dedicated 24/7 local support'],
 };
 
-const MOCK_PRODUCTS = [
-  { id:1,  name:'Tabby',         tagline:'Buy now, pay later for the MENA region',   logo_emoji:'💳', industry:'Fintech',    country:'UAE',          status:'live', upvotes_count:343, website:'https://tabby.ai',         description:"Tabby is MENA's leading Buy Now Pay Later platform. Split purchases into 4 interest-free payments or pay in 14 days — with zero fees, zero interest. The platform serves thousands of users across the MENA region with a focus on providing accessible, innovative technology solutions tailored to the Arab market.\n\nThe team is focused on expanding across the region while maintaining the highest standards of product quality and customer experience. With strong local market knowledge and a world-class engineering team, Tabby is poised to become a regional leader.", tags:['Fintech','BNPL','Payments'] },
-  { id:2,  name:'Noon Academy',  tagline:'Social learning platform for Arab students',logo_emoji:'📚', industry:'Edtech',     country:'Saudi Arabia', status:'live', upvotes_count:287, website:'https://noonacademy.com',   description:"Noon Academy is a social learning app connecting millions of K-12 students with top tutors and peers across the Arab world for live interactive classes.\n\nThe team is focused on expanding across the region while maintaining the highest standards of content quality and student experience.", tags:['Edtech','Social','Learning'] },
-  { id:3,  name:'Vezeeta',       tagline:'Book doctors and healthcare services',       logo_emoji:'🏥', industry:'Healthtech', country:'Egypt',        status:'live', upvotes_count:256, website:'https://vezeeta.com',       description:"Vezeeta is MENA's largest digital healthcare platform connecting patients with 30,000+ doctors and clinics for instant booking and telemedicine.\n\nWith operations across Egypt, Saudi Arabia, Jordan, and more, Vezeeta is building the digital health infrastructure for the entire region.", tags:['Health','Booking','Egypt'] },
-  { id:4,  name:'Baraka',        tagline:'Invest in global stocks from the GCC',       logo_emoji:'📈', industry:'Fintech',    country:'UAE',          status:'live', upvotes_count:231, website:'https://getbaraka.com',     description:'Baraka is a zero-commission stock trading app built for GCC investors. Trade US stocks and ETFs with fractional shares starting from $1.', tags:['Investing','Stocks','Fintech'] },
-  { id:5,  name:'Tamara',        tagline:'BNPL shopping for Saudi consumers',          logo_emoji:'🛒', industry:'Fintech',    country:'Saudi Arabia', status:'live', upvotes_count:198, website:'https://tamara.co',         description:"Tamara is Saudi Arabia's leading Buy Now Pay Later solution, enabling shoppers to split purchases into 3 installments at 0% interest.", tags:['BNPL','Saudi','Shopping'] },
-  { id:6,  name:'Kader AI',      tagline:'AI-powered job matching for MENA',           logo_emoji:'🤖', industry:'AI & ML',   country:'Jordan',       status:'soon', upvotes_count:0,   website:'',                          description:'Kader AI uses machine learning to match MENA job seekers with relevant opportunities in real time, supporting Arabic and English CVs.', tags:['AI','Jobs','Recruitment'] },
-  { id:7,  name:'Trella',        tagline:'Digital freight marketplace in MENA',        logo_emoji:'🚛', industry:'Logistics',  country:'Egypt',        status:'live', upvotes_count:154, website:'https://trella.app',        description:'Trella is a digital freight marketplace connecting shippers and carriers across MENA, reducing empty miles and improving logistics efficiency.', tags:['Freight','Logistics','Marketplace'] },
-  { id:8,  name:'Foodics',       tagline:'Restaurant management system for F&B',       logo_emoji:'🍽️', industry:'Foodtech',  country:'Saudi Arabia', status:'live', upvotes_count:143, website:'https://foodics.com',       description:'Foodics is a cloud-based restaurant management and POS system serving 20,000+ restaurants across MENA with ordering, inventory, and analytics.', tags:['F&B','POS','Restaurant'] },
-  { id:9,  name:'Waffarha',      tagline:'Discount coupons and deals platform',        logo_emoji:'🎟️', industry:'E-Commerce', country:'Egypt',        status:'live', upvotes_count:128, website:'https://waffarha.com',      description:"Waffarha is Egypt and MENA's leading coupon and cashback platform, helping shoppers save money at hundreds of top brands.", tags:['Deals','Coupons','Egypt'] },
-  { id:10, name:'Cura',          tagline:'Arabic mental health therapy online',        logo_emoji:'🧠', industry:'Healthtech', country:'Saudi Arabia', status:'soon', upvotes_count:0,   website:'',                          description:'Cura connects Arabic speakers to licensed therapists for online mental health sessions — fully private, in Arabic, and accessible from anywhere.', tags:['Mental Health','Arabic','Therapy'] },
-];
 
 function timeAgo(dateStr) {
   const d = new Date(dateStr);
@@ -163,10 +151,9 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
   useEffect(() => {
     setLoading(true);
     productsAPI.get(id).then(({ data }) => {
-      setProduct(data.data); setLoading(false);
+      setProduct(data.data || null); setLoading(false);
     }).catch(() => {
-      const found = MOCK_PRODUCTS.find(p => String(p.id) === id) || null;
-      setProduct(found);
+      setProduct(null);
       setLoading(false);
     });
   }, [id]);
