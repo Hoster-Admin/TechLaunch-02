@@ -7,70 +7,7 @@ const jwt      = require('jsonwebtoken');
 const bcrypt   = require('bcryptjs');
 const { Pool } = require('pg');
 const path     = require('path');
-const { Resend } = require('resend');
-
-const _resend = new Resend(process.env.RESEND_API_KEY);
-const RESEND_FROM = process.env.RESEND_FROM_EMAIL || 'TechLaunch MENA <onboarding@resend.dev>';
-
-const sendAccountCreatedEmail = async ({ to, name, role, activationLink }) => {
-  const roleLabel = role.charAt(0).toUpperCase() + role.slice(1);
-  const html = `<!DOCTYPE html>
-<html lang="en">
-<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"><title>You're invited to TechLaunch MENA</title></head>
-<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif;">
-  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0;">
-    <tr><td align="center">
-      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
-        <tr>
-          <td style="background:linear-gradient(135deg,#E15033 0%,#c73e20 100%);padding:36px 40px;text-align:center;">
-            <h1 style="margin:0;color:#ffffff;font-size:26px;font-weight:700;letter-spacing:-0.5px;">TechLaunch MENA</h1>
-            <p style="margin:6px 0 0;color:rgba(255,255,255,0.85);font-size:14px;">You've been invited to join the team</p>
-          </td>
-        </tr>
-        <tr>
-          <td style="padding:40px 40px 32px;">
-            <h2 style="margin:0 0 12px;color:#111827;font-size:22px;font-weight:600;">Welcome, ${name}! 👋</h2>
-            <p style="margin:0 0 20px;color:#4b5563;font-size:15px;line-height:1.6;">
-              You've been added to <strong>TechLaunch MENA</strong> as a <strong>${roleLabel}</strong>. Click the button below to activate your account and set your password.
-            </p>
-            <table cellpadding="0" cellspacing="0" style="background:#fef7f5;border-left:4px solid #E15033;border-radius:0 8px 8px 0;width:100%;margin:0 0 28px;">
-              <tr><td style="padding:14px 18px;">
-                <p style="margin:0;color:#374151;font-size:14px;line-height:1.5;">
-                  This activation link expires in <strong>72 hours</strong>. If you did not expect this invitation, you can ignore this email.
-                </p>
-              </td></tr>
-            </table>
-            <table cellpadding="0" cellspacing="0" style="width:100%;margin:0 0 28px;">
-              <tr><td align="center">
-                <a href="${activationLink}" style="display:inline-block;background:#E15033;color:#ffffff;text-decoration:none;font-size:15px;font-weight:700;padding:16px 40px;border-radius:10px;letter-spacing:0.2px;">Activate My Account →</a>
-              </td></tr>
-            </table>
-            <p style="margin:0;color:#9ca3af;font-size:12px;text-align:center;">
-              Or copy this link into your browser:<br>
-              <span style="color:#6b7280;word-break:break-all;">${activationLink}</span>
-            </p>
-          </td>
-        </tr>
-        <tr>
-          <td style="background:#f9fafb;border-top:1px solid #e5e7eb;padding:24px 40px;text-align:center;">
-            <p style="margin:0;color:#9ca3af;font-size:12px;line-height:1.6;">
-              © 2025 TechLaunch MENA. All rights reserved.
-            </p>
-          </td>
-        </tr>
-      </table>
-    </td></tr>
-  </table>
-</body>
-</html>`;
-  try {
-    const { data, error } = await _resend.emails.send({ from: RESEND_FROM, to, subject: `You're invited to TechLaunch MENA`, html });
-    if (error) console.error('[Email] sendAccountCreatedEmail error:', error);
-    else console.log('[Email] Invitation email sent to', to, '| id:', data.id);
-  } catch (err) {
-    console.error('[Email] sendAccountCreatedEmail exception:', err.message);
-  }
-};
+const { sendAdminCreatedAccountEmail } = require('../../backend/src/services/emailService');
 
 const app  = express();
 const PORT = process.env.PORT || process.env.ADMIN_PORT || 5000;
@@ -285,7 +222,7 @@ admin.post('/users', async (req, res) => {
     const activationToken = crypto.randomBytes(32).toString('hex');
     const appUrl = process.env.APP_URL || 'https://tlmena.com';
     q(`INSERT INTO activation_tokens (user_id, token) VALUES ($1, $2)`, [rows[0].id, activationToken]).catch(e => console.error('[Token] Failed to store activation token:', e.message));
-    sendAccountCreatedEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${appUrl}/activate?token=${activationToken}` }).catch(() => {});
+    sendAdminCreatedAccountEmail({ to: rows[0].email, name: rows[0].name, role: rows[0].role, activationLink: `${appUrl}/activate?token=${activationToken}` }).catch(() => {});
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
