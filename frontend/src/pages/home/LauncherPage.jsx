@@ -3,8 +3,9 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { ARTICLES } from './ArticlesPage';
+import { PeopleContent } from './PeoplePage';
 
-const TABS = ['All', 'Articles', 'Posts'];
+const TABS = ['All', 'Articles', 'Posts', 'People'];
 
 const COMMUNITY_POSTS = [
   {
@@ -164,7 +165,9 @@ export default function LauncherPage() {
     ? allItems
     : activeTab === 'Articles'
       ? allItems.filter(i => i.type === 'article')
-      : allItems.filter(i => i.type === 'post');
+      : activeTab === 'Posts'
+        ? allItems.filter(i => i.type === 'post')
+        : [];
 
   return (
     <>
@@ -178,7 +181,7 @@ export default function LauncherPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth: 720, margin: '0 auto', padding: '32px 24px 80px' }}>
+        <div style={{ maxWidth: activeTab === 'People' ? 1100 : 720, margin: '0 auto', padding: '32px 24px 80px', transition: 'max-width .2s' }}>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '1.5px solid #ebebeb', paddingBottom: 0 }}>
             {TABS.map(tab => (
@@ -197,19 +200,23 @@ export default function LauncherPage() {
             ))}
           </div>
 
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            {filtered.length === 0 ? (
-              <div style={{ textAlign: 'center', padding: '60px 0' }}>
-                <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
-                <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Nothing here yet</div>
-                <div style={{ fontSize: 13, color: '#aaa' }}>Community activity will show up here.</div>
-              </div>
-            ) : filtered.map(item =>
-              item.type === 'article'
-                ? <ArticleCard key={item.slug} article={item} onClick={() => navigate(`/articles/${item.slug}`)}/>
-                : <PostCard key={item.id} post={item}/>
-            )}
-          </div>
+          {activeTab === 'People' ? (
+            <PeopleContent/>
+          ) : (
+            <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
+              {filtered.length === 0 ? (
+                <div style={{ textAlign: 'center', padding: '60px 0' }}>
+                  <div style={{ fontSize: 40, marginBottom: 12 }}>📭</div>
+                  <div style={{ fontSize: 16, fontWeight: 800, marginBottom: 6 }}>Nothing here yet</div>
+                  <div style={{ fontSize: 13, color: '#aaa' }}>Community activity will show up here.</div>
+                </div>
+              ) : filtered.map(item =>
+                item.type === 'article'
+                  ? <ArticleCard key={item.slug} article={item} onClick={() => navigate(`/articles/${item.slug}`)}/>
+                  : <PostCard key={item.id} post={item}/>
+              )}
+            </div>
+          )}
 
         </div>
       </div>
