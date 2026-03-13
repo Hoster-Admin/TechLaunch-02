@@ -440,15 +440,12 @@ export default function PostDetailPage() {
           </div>
 
           {/* ── COMMENTS SECTION ────────────────────────────────── */}
-          <div style={{
-            background: '#fff', borderRadius: 18, border: '1px solid #e2e8f0',
-            padding: '6px 0 4px', marginBottom: 16,
-          }}>
+          <div style={{ marginBottom: 16 }}>
 
             {/* section label */}
             <div style={{
-              padding: '10px 22px 12px',
-              borderBottom: comments.length > 0 ? '1px solid #f1f5f9' : 'none',
+              padding: '4px 0 14px',
+              borderBottom: '1px solid #f1f5f9',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em' }}>
@@ -456,14 +453,14 @@ export default function PostDetailPage() {
               </span>
               {!user && (
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>
-                  <span onClick={() => setAuthModal('login')} style={{ color: '#e15033', fontWeight: 600, textDecoration: 'none', cursor: 'pointer' }}>Sign in</span> to comment
+                  <span onClick={() => setAuthModal('login')} style={{ color: '#e15033', fontWeight: 600, cursor: 'pointer' }}>Sign in</span> to comment
                 </span>
               )}
             </div>
 
             {/* comment list */}
             {comments.length > 0 && (
-              <div style={{ padding: '4px 22px 8px' }}>
+              <div style={{ paddingTop: 4 }}>
                 {comments.map((c, i) => (
                   <div key={c.id} style={{ paddingTop: 14, paddingBottom: i < comments.length - 1 ? 14 : 6, borderBottom: i < comments.length - 1 ? '1px solid #f4f6f8' : 'none' }}>
                     <CommentBubble
@@ -479,10 +476,10 @@ export default function PostDetailPage() {
             )}
 
             {comments.length === 0 && (
-              <div style={{ padding: '28px 22px', textAlign: 'center' }}>
+              <div style={{ padding: '32px 0', textAlign: 'center' }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#cbd5e1' }}>No comments yet</div>
-                <div style={{ fontSize: 12, color: '#e2e8f0', marginTop: 4 }}>
+                <div style={{ fontSize: 12, color: '#c8d3de', marginTop: 4 }}>
                   {user ? 'Be the first to share your thoughts' : 'Sign in to start the conversation'}
                 </div>
               </div>
@@ -556,11 +553,8 @@ export default function PostDetailPage() {
           )}
 
           {!user && (
-            <div style={{
-              background: '#fff', borderRadius: 18, border: '1px solid #e2e8f0',
-              padding: '18px 22px', textAlign: 'center',
-            }}>
-              <p style={{ margin: '0 0 12px', fontSize: 14, color: '#64748b' }}>
+            <div style={{ padding: '16px 0', textAlign: 'center' }}>
+              <p style={{ margin: '0 0 12px', fontSize: 14, color: '#94a3b8' }}>
                 Join the conversation
               </p>
               <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
