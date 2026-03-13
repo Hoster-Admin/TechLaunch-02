@@ -85,7 +85,7 @@ export default function HomePage() {
           <h1>Discover the <span>Next Big Thing</span><br/>from the MENA Region</h1>
           <p>The home for MENA companies, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
           <div className="hero-actions">
-            <button className="btn-hero-primary" onClick={handleSubmitProduct}>🚀 Join Launcher</button>
+            <button className="btn-hero-primary" onClick={() => navigate('/launcher')}>🚀 Join Launcher</button>
           </div>
         </div>
 
