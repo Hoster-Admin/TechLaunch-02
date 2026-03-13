@@ -28,6 +28,7 @@ export default function Navbar() {
   const [notifOpen,   setNotifOpen]   = useState(false);
   const [searchFocus, setSearchFocus] = useState(false);
   const [copied,      setCopied]      = useState(false);
+  const [mobileOpen,  setMobileOpen]  = useState(false);
   const listRef    = useRef(null);
   const userRef    = useRef(null);
   const avatarRef  = useRef(null);
@@ -45,8 +46,18 @@ export default function Navbar() {
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
+  useEffect(() => {
+    if (mobileOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = '';
+    }
+    return () => { document.body.style.overflow = ''; };
+  }, [mobileOpen]);
+
   const handleLogout = async () => {
     setUserOpen(false);
+    setMobileOpen(false);
     await logout();
     toast.success('Logged out');
     navigate('/');
@@ -59,6 +70,8 @@ export default function Navbar() {
     setCopied(true);
     setTimeout(() => setCopied(false), 1800);
   };
+
+  const navGo = (path) => { navigate(path); setMobileOpen(false); };
 
   const initials = user?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || '?';
   const rawPersona = user?.persona || 'enthusiast';
@@ -92,7 +105,7 @@ export default function Navbar() {
             <span className="logo-en" style={{ fontSize:18, fontWeight:800, letterSpacing:'-.03em', color:'var(--black)' }}>Tech Launch</span>
           </Link>
 
-          <div className="nav-links">
+          <div className="nav-links nav-links-desktop">
             <Link to="/" className="nav-link">Home</Link>
             <Link to="/people" className="nav-link">People</Link>
 
@@ -125,8 +138,8 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Centre search */}
-        <div ref={searchWrap} style={{ flex:1, display:'flex', justifyContent:'center', padding:'0 16px', maxWidth:420, margin:'0 auto', position:'relative' }}>
+        {/* Centre search — hidden on mobile */}
+        <div ref={searchWrap} className="nav-search-wrap">
           <div style={{ position:'relative', width:'100%' }}>
             <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none', zIndex:1 }}
               width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2.2">
@@ -154,13 +167,12 @@ export default function Navbar() {
           </div>
         </div>
 
-        {/* Right nav */}
-        <div className="nav-right">
+        {/* Right nav — desktop */}
+        <div className="nav-right nav-right-desktop">
           {user ? (
             <>
               <button className="btn-nav-primary" onClick={() => setSubmitOpen(true)}>+ Submit Product</button>
 
-              {/* Bell */}
               <div className="nav-bell-wrap" onClick={handleBellClick} title="Notifications">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
                   <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
@@ -171,7 +183,6 @@ export default function Navbar() {
                 )}
               </div>
 
-              {/* Avatar */}
               <div ref={avatarRef} className="user-avatar"
                 style={{ background:user.avatar_color||'var(--orange)', cursor:'pointer' }}
                 onClick={() => setUserOpen(v => !v)}>
@@ -235,7 +246,105 @@ export default function Navbar() {
             </>
           )}
         </div>
+
+        {/* Mobile right: bell + avatar/signin + hamburger */}
+        <div className="nav-mobile-right">
+          {user ? (
+            <>
+              <div className="nav-bell-wrap" onClick={handleBellClick}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M18 8A6 6 0 006 8c0 7-3 9-3 9h18s-3-2-3-9"/>
+                  <path d="M13.73 21a2 2 0 01-3.46 0"/>
+                </svg>
+                {unreadCount > 0 && <span className="notif-dot">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+              </div>
+            </>
+          ) : (
+            <button className="btn-nav-ghost" style={{ fontSize:13, padding:'7px 14px' }} onClick={() => setAuthModal('login')}>Sign In</button>
+          )}
+          <button className="nav-hamburger" onClick={() => setMobileOpen(v => !v)} aria-label="Menu">
+            {mobileOpen ? (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg>
+            ) : (
+              <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round"><line x1="3" y1="6" x2="21" y2="6"/><line x1="3" y1="12" x2="21" y2="12"/><line x1="3" y1="18" x2="21" y2="18"/></svg>
+            )}
+          </button>
+        </div>
       </nav>
+
+      {/* Mobile slide-down menu */}
+      {mobileOpen && (
+        <div className="mobile-menu">
+          {/* Search */}
+          <div style={{ padding:'16px 16px 8px' }}>
+            <div style={{ position:'relative' }}>
+              <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }}
+                width="15" height="15" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2.2">
+                <circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/>
+              </svg>
+              <input
+                type="text"
+                placeholder="Search products, people…"
+                value={searchQuery}
+                onChange={e => setSearchQuery(e.target.value)}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' && searchQuery.trim()) {
+                    navigate(`/products?q=${encodeURIComponent(searchQuery.trim())}`);
+                    setMobileOpen(false); setSearchQuery('');
+                  }
+                }}
+                style={{ width:'100%', padding:'10px 36px', borderRadius:12, border:'1.5px solid #ebebeb', fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', background:'#f8f8f8', color:'#0a0a0a' }}
+              />
+            </div>
+          </div>
+
+          {/* Nav links */}
+          <div className="mobile-menu-links">
+            <div className="mobile-menu-item" onClick={() => navGo('/')}>🏠 Home</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/people')}>👥 People</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/products')}>🔍 All Products</div>
+            <div style={{ height:1, background:'#f0f0f0', margin:'4px 16px' }}/>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/startup')}>🚀 List as Startup</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/accelerator')}>🏢 List as Accelerator</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/investor')}>💰 List as Investor</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/list/venture')}>🎯 List as Venture Studio</div>
+          </div>
+
+          {/* User section */}
+          {user ? (
+            <div style={{ padding:'8px 16px 24px' }}>
+              <div style={{ height:1, background:'#f0f0f0', margin:'4px 0 12px' }}/>
+              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:16 }}>
+                <div style={{ width:44, height:44, borderRadius:'50%', background:user.avatar_color||'var(--orange)', color:'#fff', fontSize:16, fontWeight:900, display:'grid', placeItems:'center', flexShrink:0 }}>
+                  {initials}
+                </div>
+                <div>
+                  <div style={{ fontSize:14, fontWeight:800 }}>{user.name}</div>
+                  <div style={{ fontSize:12, color:'var(--orange)', fontWeight:700 }}>@{handle}</div>
+                </div>
+              </div>
+              <button className="btn-full" style={{ marginBottom:8 }} onClick={() => { handleSubmit(); setMobileOpen(false); }}>+ Submit Product</button>
+              <div className="mobile-menu-item" onClick={() => navGo(`/u/${handle}`)}>👁 Public Profile</div>
+              <div className="mobile-menu-item" onClick={() => navGo('/bookmarks')}>🔖 Bookmarks</div>
+              <div className="mobile-menu-item" onClick={() => navGo('/settings')}>⚙️ Settings</div>
+              {(user?.role === 'admin' || user?.role === 'moderator') && (
+                <div className="mobile-menu-item" onClick={() => navGo('/admin')}>🛠 Admin Panel</div>
+              )}
+              <div style={{ height:1, background:'#f0f0f0', margin:'8px 0' }}/>
+              <div className="mobile-menu-item" style={{ color:'var(--red)' }} onClick={handleLogout}>↩ Sign Out</div>
+            </div>
+          ) : (
+            <div style={{ padding:'8px 16px 24px' }}>
+              <div style={{ height:1, background:'#f0f0f0', margin:'4px 0 12px' }}/>
+              <button className="btn-full" style={{ marginBottom:10 }} onClick={() => { setAuthModal('signup'); setMobileOpen(false); }}>Create Free Account 🚀</button>
+              <button onClick={() => { setAuthModal('login'); setMobileOpen(false); }}
+                style={{ width:'100%', padding:'13px', borderRadius:12, fontSize:15, fontWeight:800, border:'1.5px solid #e8e8e8', background:'#fff', color:'#0a0a0a', cursor:'pointer' }}>
+                Sign In
+              </button>
+            </div>
+          )}
+        </div>
+      )}
 
       <NotificationsPanel open={notifOpen} onClose={() => setNotifOpen(false)}/>
     </>
