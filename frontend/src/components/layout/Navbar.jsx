@@ -171,7 +171,7 @@ export default function Navbar() {
         <div className="nav-right nav-right-desktop">
           {user ? (
             <>
-              <button className="btn-nav-primary" onClick={() => setSubmitOpen(true)}>+ Submit Product</button>
+              <button className="btn-nav-primary" onClick={() => navGo('/launcher')}>🚀 Join Launcher</button>
 
               <div className="nav-bell-wrap" onClick={handleBellClick} title="Notifications">
                 <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
@@ -242,7 +242,7 @@ export default function Navbar() {
           ) : (
             <>
               <button className="btn-nav-ghost" onClick={() => setAuthModal('login')}>Sign In</button>
-              <button className="btn-nav-primary" onClick={handleSubmit}>Submit Product</button>
+              <button className="btn-nav-primary" onClick={() => navGo('/launcher')}>🚀 Join Launcher</button>
             </>
           )}
         </div>
@@ -323,7 +323,7 @@ export default function Navbar() {
                   <div style={{ fontSize:12, color:'var(--orange)', fontWeight:700 }}>@{handle}</div>
                 </div>
               </div>
-              <button className="btn-full" style={{ marginBottom:8 }} onClick={() => { handleSubmit(); setMobileOpen(false); }}>+ Submit Product</button>
+              <button className="btn-full" style={{ marginBottom:8 }} onClick={() => { navGo('/launcher'); setMobileOpen(false); }}>🚀 Join Launcher</button>
               <div className="mobile-menu-item" onClick={() => navGo(`/u/${handle}`)}>👁 Public Profile</div>
               <div className="mobile-menu-item" onClick={() => navGo('/bookmarks')}>🔖 Bookmarks</div>
               <div className="mobile-menu-item" onClick={() => navGo('/settings')}>⚙️ Settings</div>
