@@ -35,6 +35,7 @@ const ALLOWED_ORIGINS = [
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin || ALLOWED_ORIGINS.some(o => origin.startsWith(o)) ||
+        origin.endsWith('.replit.dev') || origin.endsWith('.repl.co') ||
         (process.env.NODE_ENV !== 'production')) {
       cb(null, true);
     } else {
