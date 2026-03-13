@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { ARTICLES } from './ArticlesPage';
@@ -421,7 +421,9 @@ function CreatePostModal({ onClose, onCreated }) {
 export default function LauncherPage() {
   const navigate  = useNavigate();
   const { user }  = useAuth();
-  const [activeTab, setActiveTab] = useState('All');
+  const [searchParams, setSearchParams] = useSearchParams();
+  const activeTab = searchParams.get('tab') || 'All';
+  const setActiveTab = (tab) => setSearchParams(tab === 'All' ? {} : { tab });
 
   const [posts, setPosts]           = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);

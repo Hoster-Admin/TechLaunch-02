@@ -3,7 +3,6 @@ import { Link, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { useUI } from '../../context/UIContext';
 import { usersAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -57,7 +56,6 @@ function AvatarCircle({ user, size = 48 }) {
 }
 
 function PersonCard({ person, currentUser }) {
-  const { openDM } = useUI();
   const [following, setFollowing] = useState(false);
   const [loadingFollow, setLoadingFollow] = useState(false);
 
@@ -71,12 +69,6 @@ function PersonCard({ person, currentUser }) {
       setFollowing(res.data?.data?.following ?? !following);
     } catch { toast.error('Failed to follow'); }
     finally { setLoadingFollow(false); }
-  };
-
-  const handleMessage = (e) => {
-    e.preventDefault();
-    if (!currentUser) { toast.error('Sign in to send messages'); return; }
-    openDM(person.handle, person.name, person.avatar_url || null);
   };
 
   const isMe = currentUser?.id === person.id;
@@ -101,13 +93,6 @@ function PersonCard({ person, currentUser }) {
           </div>
           {!isMe && (
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-              <button onClick={handleMessage}
-                style={{ padding:'5px 10px', borderRadius:20, fontSize:12, fontWeight:700,
-                  border:'1.5px solid #e8e8e8', background:'#f8f8f8',
-                  color:'#555', cursor:'pointer', transition:'all .15s' }}
-                title="Send message">
-                💬
-              </button>
               <button onClick={handleFollow} disabled={loadingFollow}
                 style={{ padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:700,
                   border:`1.5px solid ${following?'#e8e8e8':'var(--orange)'}`,
