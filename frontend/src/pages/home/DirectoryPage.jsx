@@ -59,21 +59,20 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
   useEffect(() => {
     statsAPI.directory().then(res => {
       const data = res.data?.data || {};
+      const indCounts = Object.fromEntries((data.industries || []).map(r => [r.name, r.count]));
+      const ctrCounts = Object.fromEntries((data.countries  || []).map(r => [r.code,  r.count]));
 
-      const inds = (data.industries || []).map(row => ({
-        name:  row.name,
-        count: row.count,
-        icon:  INDUSTRY_META[row.name]?.icon  || '📦',
-        desc:  INDUSTRY_META[row.name]?.desc  || '',
-      }));
-      setIndustries(inds);
+      setIndustries(Object.entries(INDUSTRY_META).map(([name, meta]) => ({
+        name, icon: meta.icon, desc: meta.desc, count: indCounts[name] || 0,
+      })));
 
-      const ctrs = (data.countries || []).map(row => {
-        const meta = COUNTRY_META[row.code] || {};
-        return { code: row.code, count: row.count, flag: meta.flag || '🌍', name: meta.name || row.code.toUpperCase(), desc: meta.desc || '' };
-      });
-      setCountries(ctrs);
-    }).catch(() => {}).finally(() => setLoading(false));
+      setCountries(Object.entries(COUNTRY_META).map(([code, meta]) => ({
+        code, flag: meta.flag, name: meta.name, desc: meta.desc, count: ctrCounts[code] || 0,
+      })));
+    }).catch(() => {
+      setIndustries(Object.entries(INDUSTRY_META).map(([name, meta]) => ({ name, ...meta, count: 0 })));
+      setCountries(Object.entries(COUNTRY_META).map(([code, meta]) => ({ code, ...meta, count: 0 })));
+    }).finally(() => setLoading(false));
   }, []);
 
   const filteredIndustries = industries.filter(i => !searchQ
@@ -125,28 +124,21 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
                     Industries <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'Inter,sans-serif', marginLeft:8 }}>{filteredIndustries.length}</span>
                   </div>
                 </div>
-                {filteredIndustries.length === 0 ? (
-                  <div style={{ textAlign:'center', padding:'60px 0', color:'#aaa' }}>
-                    <div style={{ fontSize:36, marginBottom:12 }}>📭</div>
-                    <div>No products listed yet. Be the first to submit one!</div>
-                  </div>
-                ) : (
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:14 }}>
-                    {filteredIndustries.map(ind => (
-                      <div key={ind.name} onClick={() => navigate(`/products?industry=${encodeURIComponent(ind.name)}`)}
-                        style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'20px 20px 18px', cursor:'pointer', transition:'all .15s' }}
-                        onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(232,98,26,.1)'; e.currentTarget.style.transform='translateY(-2px)'; }}
-                        onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='none'; }}>
-                        <div style={{ fontSize:32, marginBottom:10 }}>{ind.icon}</div>
-                        <div style={{ fontSize:14, fontWeight:800, marginBottom:4 }}>{ind.name}</div>
-                        <div style={{ fontSize:12, color:'#888', marginBottom:10, lineHeight:1.4 }}>{ind.desc}</div>
-                        <div style={{ fontSize:12, fontWeight:700, color:'var(--orange)', display:'flex', alignItems:'center', gap:4 }}>
-                          <span style={{ fontFamily:'Inter,sans-serif' }}>{ind.count}</span> {ind.count === 1 ? 'product' : 'products'} →
-                        </div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(220px,1fr))', gap:14 }}>
+                  {filteredIndustries.map(ind => (
+                    <div key={ind.name} onClick={() => navigate(`/products?industry=${encodeURIComponent(ind.name)}`)}
+                      style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'20px 20px 18px', cursor:'pointer', transition:'all .15s' }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(232,98,26,.1)'; e.currentTarget.style.transform='translateY(-2px)'; }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; e.currentTarget.style.transform='none'; }}>
+                      <div style={{ fontSize:32, marginBottom:10 }}>{ind.icon}</div>
+                      <div style={{ fontSize:14, fontWeight:800, marginBottom:4 }}>{ind.name}</div>
+                      <div style={{ fontSize:12, color:'#888', marginBottom:10, lineHeight:1.4 }}>{ind.desc}</div>
+                      <div style={{ fontSize:12, fontWeight:700, color: ind.count > 0 ? 'var(--orange)' : '#bbb', display:'flex', alignItems:'center', gap:4 }}>
+                        <span style={{ fontFamily:'Inter,sans-serif' }}>{ind.count}</span> {ind.count === 1 ? 'product' : 'products'} {ind.count > 0 ? '→' : ''}
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
               </>}
 
               {activeTab === 'countries' && <>
@@ -155,28 +147,23 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
                     Countries <span style={{ fontSize:13, color:'#aaa', fontWeight:500, fontFamily:'Inter,sans-serif', marginLeft:8 }}>{filteredCountries.length}</span>
                   </div>
                 </div>
-                {filteredCountries.length === 0 ? (
-                  <div style={{ textAlign:'center', padding:'60px 0', color:'#aaa' }}>
-                    <div style={{ fontSize:36, marginBottom:12 }}>🌍</div>
-                    <div>No products with country tags yet.</div>
-                  </div>
-                ) : (
-                  <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:14 }}>
-                    {filteredCountries.map(c => (
-                      <div key={c.code} onClick={() => navigate(`/products?country=${c.code}`)}
-                        style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'20px 20px 18px', cursor:'pointer', transition:'all .15s', display:'flex', gap:16, alignItems:'flex-start' }}
-                        onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(232,98,26,.1)'; }}
-                        onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
-                        <div style={{ fontSize:40, lineHeight:1, flexShrink:0 }}>{c.flag}</div>
-                        <div style={{ flex:1 }}>
-                          <div style={{ fontSize:15, fontWeight:800, marginBottom:4 }}>{c.name}</div>
-                          <div style={{ fontSize:12, color:'#888', marginBottom:8, lineHeight:1.4 }}>{c.desc}</div>
-                          <div style={{ fontSize:12, fontWeight:700, color:'var(--orange)' }}>{c.count} {c.count === 1 ? 'product' : 'products'} →</div>
+                <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(260px,1fr))', gap:14 }}>
+                  {filteredCountries.map(c => (
+                    <div key={c.code} onClick={() => navigate(`/products?country=${c.code}`)}
+                      style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'20px 20px 18px', cursor:'pointer', transition:'all .15s', display:'flex', gap:16, alignItems:'flex-start' }}
+                      onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 4px 20px rgba(232,98,26,.1)'; }}
+                      onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
+                      <div style={{ fontSize:40, lineHeight:1, flexShrink:0 }}>{c.flag}</div>
+                      <div style={{ flex:1 }}>
+                        <div style={{ fontSize:15, fontWeight:800, marginBottom:4 }}>{c.name}</div>
+                        <div style={{ fontSize:12, color:'#888', marginBottom:8, lineHeight:1.4 }}>{c.desc}</div>
+                        <div style={{ fontSize:12, fontWeight:700, color: c.count > 0 ? 'var(--orange)' : '#bbb' }}>
+                          {c.count} {c.count === 1 ? 'product' : 'products'} {c.count > 0 ? '→' : ''}
                         </div>
                       </div>
-                    ))}
-                  </div>
-                )}
+                    </div>
+                  ))}
+                </div>
               </>}
             </>
           )}
