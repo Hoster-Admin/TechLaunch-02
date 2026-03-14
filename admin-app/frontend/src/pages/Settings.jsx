@@ -234,6 +234,150 @@ function TagManagement({ settings, onSettingChange, isAdmin }) {
   );
 }
 
+function PlatformProfileCard({ isAdmin }) {
+  const BLANK = { name:'', headline:'', bio:'', website:'', twitter:'', linkedin:'', avatar_url:'' };
+  const [profile, setProfile]     = useState(null);
+  const [form, setForm]           = useState(BLANK);
+  const [saving, setSaving]       = useState(false);
+  const [uploading, setUploading] = useState(false);
+  const [dirty, setDirty]         = useState(false);
+  const fileRef = React.useRef();
+
+  useEffect(() => {
+    adminAPI.platformProfile()
+      .then(r => {
+        const d = r.data?.data || {};
+        setProfile(d);
+        setForm({
+          name:       d.name       || '',
+          headline:   d.headline   || '',
+          bio:        d.bio        || '',
+          website:    d.website    || '',
+          twitter:    d.twitter    || '',
+          linkedin:   d.linkedin   || '',
+          avatar_url: d.avatar_url || '',
+        });
+      })
+      .catch(() => {});
+  }, []);
+
+  const handleChange = (field, val) => {
+    setForm(f => ({ ...f, [field]: val }));
+    setDirty(true);
+  };
+
+  const handleUpload = async (file) => {
+    if (!file) return;
+    setUploading(true);
+    try {
+      const fd = new FormData();
+      fd.append('file', file);
+      const token = localStorage.getItem('tlmena_admin_token');
+      const res = await fetch('/api/upload', { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd });
+      const data = await res.json();
+      if (!res.ok) throw new Error(data.message || 'Upload failed');
+      handleChange('avatar_url', data.url);
+      toast.success('Avatar uploaded');
+    } catch(e) { toast.error(e.message || 'Upload failed'); }
+    finally { setUploading(false); }
+  };
+
+  const handleSave = async () => {
+    if (!isAdmin) return toast.error('Admin only');
+    setSaving(true);
+    try {
+      await adminAPI.savePlatformProfile(form);
+      setDirty(false);
+      toast.success('Platform profile updated');
+    } catch(e) { toast.error(e.message || 'Failed to save'); }
+    finally { setSaving(false); }
+  };
+
+  if (!profile) return <div style={{padding:'20px',textAlign:'center',color:'#AAAAAA',fontSize:13}}>Loading profile…</div>;
+
+  const avatarSrc = form.avatar_url;
+
+  return (
+    <div style={{padding:'16px 20px',display:'flex',flexDirection:'column',gap:16}}>
+      {/* Avatar + Identity */}
+      <div style={{display:'flex',gap:16,alignItems:'flex-start'}}>
+        <div style={{flexShrink:0,textAlign:'center'}}>
+          <div style={{
+            width:72, height:72, borderRadius:16,
+            background: avatarSrc ? 'transparent' : '#E15033',
+            border:'2px solid #F0F0F0',
+            overflow:'hidden',
+            display:'flex',alignItems:'center',justifyContent:'center',
+            fontSize:22, fontWeight:800, color:'#fff',
+          }}>
+            {avatarSrc
+              ? <img src={avatarSrc} alt="Avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+              : 'TL'}
+          </div>
+          {isAdmin && (
+            <>
+              <input type="file" ref={fileRef} style={{display:'none'}} accept="image/*"
+                onChange={e => handleUpload(e.target.files[0])}/>
+              <button onClick={() => fileRef.current?.click()} disabled={uploading}
+                style={{marginTop:6,background:'none',border:'1px solid #E8E8E8',borderRadius:7,padding:'4px 10px',fontSize:11,fontWeight:600,cursor:'pointer',color:'#666',fontFamily:'inherit',opacity:uploading?0.6:1}}>
+                {uploading ? 'Uploading…' : 'Change'}
+              </button>
+            </>
+          )}
+        </div>
+
+        <div style={{flex:1,display:'flex',flexDirection:'column',gap:10}}>
+          <Field label="Display Name">
+            <input style={inputS} value={form.name} disabled={!isAdmin}
+              onChange={e=>handleChange('name',e.target.value)} placeholder="TechLaunch MENA"/>
+          </Field>
+          <Field label="Tagline / Headline">
+            <input style={inputS} value={form.headline} disabled={!isAdmin}
+              onChange={e=>handleChange('headline',e.target.value)} placeholder="MENA's Product Discovery Platform"/>
+          </Field>
+        </div>
+      </div>
+
+      <Field label="Bio">
+        <textarea style={{...inputS, height:72, resize:'vertical'}} value={form.bio} disabled={!isAdmin}
+          onChange={e=>handleChange('bio',e.target.value)} placeholder="Short description shown on the public profile…"/>
+      </Field>
+
+      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
+        <Field label="Website">
+          <input style={inputS} value={form.website} disabled={!isAdmin}
+            onChange={e=>handleChange('website',e.target.value)} placeholder="https://tlmena.com"/>
+        </Field>
+        <Field label="Twitter Handle">
+          <input style={inputS} value={form.twitter} disabled={!isAdmin}
+            onChange={e=>handleChange('twitter',e.target.value)} placeholder="@techlaunchmena"/>
+        </Field>
+        <Field label="LinkedIn URL">
+          <input style={inputS} value={form.linkedin} disabled={!isAdmin}
+            onChange={e=>handleChange('linkedin',e.target.value)} placeholder="company/techlaunch-mena"/>
+        </Field>
+        <div style={{display:'flex',flexDirection:'column',justifyContent:'flex-end',paddingBottom:0}}>
+          <div style={{fontSize:11,color:'#AAAAAA',marginBottom:4}}>
+            <span style={{fontWeight:700,color:'#0A0A0A'}}>{profile.followers_count?.toLocaleString() || 0}</span> followers
+            &nbsp;·&nbsp; handle: <span style={{fontFamily:'monospace'}}>@{profile.handle}</span>
+          </div>
+        </div>
+      </div>
+
+      {isAdmin && (
+        <div style={{display:'flex',justifyContent:'flex-end'}}>
+          <button onClick={handleSave} disabled={saving||!dirty}
+            style={{padding:'9px 22px',borderRadius:10,background: dirty ? 'var(--orange)':'#E8E8E8',
+              color: dirty ? '#fff':'#AAAAAA',border:'none',fontWeight:700,fontSize:13,
+              cursor: dirty ? 'pointer':'default', fontFamily:'inherit', transition:'all .15s'}}>
+            {saving ? 'Saving…' : 'Save Profile'}
+          </button>
+        </div>
+      )}
+    </div>
+  );
+}
+
 export default function Settings() {
   const { user } = useAuth();
   const isAdmin = user?.role === 'admin';
@@ -344,6 +488,14 @@ export default function Settings() {
           </div>
         </Modal>
       )}
+
+      {/* Platform Profile */}
+      <SCard
+        title="Platform Profile"
+        sub="Manage the public TechLaunch MENA account that all users see and follow"
+      >
+        <PlatformProfileCard isAdmin={isAdmin}/>
+      </SCard>
 
       {/* Team Members */}
       <SCard

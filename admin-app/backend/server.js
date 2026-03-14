@@ -575,6 +575,36 @@ admin.put('/settings', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+// Platform Profile (TechLaunch public account)
+admin.get('/platform-profile', async (req, res) => {
+  try {
+    const { rows } = await q(
+      `SELECT id,name,handle,headline,bio,website,twitter,linkedin,avatar_url,avatar_color,verified,followers_count
+       FROM users WHERE handle='techlaunchmena' LIMIT 1`
+    );
+    if (!rows.length) return res.status(404).json({ success:false, message:'Platform profile not found' });
+    res.json({ success:true, data: rows[0] });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
+admin.put('/platform-profile', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
+  try {
+    const { name, headline, bio, website, twitter, linkedin, avatar_url } = req.body;
+    const { rows } = await q(
+      `UPDATE users SET
+         name=COALESCE($1,name), headline=COALESCE($2,headline), bio=COALESCE($3,bio),
+         website=COALESCE($4,website), twitter=COALESCE($5,twitter), linkedin=COALESCE($6,linkedin),
+         avatar_url=COALESCE($7,avatar_url), updated_at=NOW()
+       WHERE handle='techlaunchmena'
+       RETURNING id,name,handle,headline,bio,website,twitter,linkedin,avatar_url`,
+      [name||null, headline||null, bio||null, website||null, twitter||null, linkedin||null, avatar_url||null]
+    );
+    await logAction(req.user.id, 'platform_profile.updated', 'user', rows[0].id, { name:rows[0].name });
+    res.json({ success:true, data: rows[0], message:'Platform profile updated' });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
 // Reports
 admin.get('/reports', async (req, res) => {
   try {
@@ -849,6 +879,40 @@ admin.delete('/tags/:id/assign', async (req, res) => {
 });
 
 app.use('/api/admin', admin);
+
+// ─── FILE UPLOADS ─────────────────────────────────────────────────────────────
+const multer = require('multer');
+const fs     = require('fs');
+const uploadsDir = path.join(__dirname, '../../backend/uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const uploadStorage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename:    (req, file, cb) => {
+    const ext  = path.extname(file.originalname).toLowerCase() || '.jpg';
+    cb(null, Date.now() + '-' + Math.random().toString(36).slice(2,8) + ext);
+  },
+});
+const adminUpload = multer({
+  storage: uploadStorage,
+  limits:  { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /image\/(jpeg|jpg|png|gif|webp|svg\+xml)/.test(file.mimetype);
+    cb(ok ? null : new Error('Only image files allowed'), ok);
+  },
+});
+
+app.post('/api/upload', authenticate, adminUpload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success:false, message:'No file uploaded' });
+  const base = process.env.REPLIT_DOMAINS
+    ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0].trim()
+    : `${req.protocol}://${req.get('host').replace(':5000', ':3001')}`;
+  const url = `${base}/uploads/${req.file.filename}`;
+  res.json({ success:true, url, filename: req.file.filename });
+});
+
+// Serve uploaded files (forwarded from public backend at port 3001, but also reachable here)
+app.use('/uploads', express.static(uploadsDir, { maxAge:'7d', immutable:true }));
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 const DIST = path.join(__dirname, '..', 'frontend', 'dist');

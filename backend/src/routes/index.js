@@ -11,6 +11,31 @@ const userCtrl    = require('../controllers/userController');
 const adminCtrl   = require('../controllers/adminController');
 const msgCtrl     = require('../controllers/messageController');
 
+const multer = require('multer');
+const path   = require('path');
+const fs     = require('fs');
+
+// ── File upload (multer)
+const uploadsDir = path.join(__dirname, '../../uploads');
+if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
+
+const storage = multer.diskStorage({
+  destination: (req, file, cb) => cb(null, uploadsDir),
+  filename:    (req, file, cb) => {
+    const ext  = path.extname(file.originalname).toLowerCase() || '.jpg';
+    const name = Date.now() + '-' + Math.random().toString(36).slice(2,8) + ext;
+    cb(null, name);
+  },
+});
+const upload = multer({
+  storage,
+  limits: { fileSize: 5 * 1024 * 1024 },
+  fileFilter: (req, file, cb) => {
+    const ok = /image\/(jpeg|jpg|png|gif|webp|svg\+xml)/.test(file.mimetype);
+    cb(ok ? null : new Error('Only image files allowed'), ok);
+  },
+});
+
 const router = express.Router();
 
 // ══════════════════════════════════════════════════
@@ -211,6 +236,50 @@ router.get('/tags', async (req, res, next) => {
       grouped[t.category].push(t);
     });
     res.json({ success:true, data: grouped, settings: tagSettings });
+  } catch(err){ next(err); }
+});
+
+// ══════════════════════════════════════════════════
+// UPLOAD  POST /api/upload  (authenticated)
+// ══════════════════════════════════════════════════
+router.post('/upload', authenticate, upload.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success:false, message:'No file uploaded' });
+  const protocol = req.protocol;
+  const host     = req.get('host');
+  const url      = `${protocol}://${host}/uploads/${req.file.filename}`;
+  res.json({ success:true, url, filename: req.file.filename });
+});
+
+// ══════════════════════════════════════════════════
+// PLATFORM PROFILE  /api/platform-profile  (public read, admin write)
+// ══════════════════════════════════════════════════
+router.get('/platform-profile', async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { rows } = await dbQuery(
+      `SELECT id,name,handle,headline,bio,website,twitter,linkedin,avatar_url,avatar_color,
+              verified,followers_count,products_count,created_at
+       FROM users WHERE handle='techlaunchmena' LIMIT 1`
+    );
+    if (!rows.length) return res.status(404).json({ success:false, message:'Platform profile not found' });
+    res.json({ success:true, data: rows[0] });
+  } catch(err){ next(err); }
+});
+
+router.put('/platform-profile', authenticate, requireAdmin, async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { name, headline, bio, website, twitter, linkedin, avatar_url } = req.body;
+    const { rows } = await dbQuery(
+      `UPDATE users SET
+        name=COALESCE($1,name), headline=COALESCE($2,headline), bio=COALESCE($3,bio),
+        website=COALESCE($4,website), twitter=COALESCE($5,twitter), linkedin=COALESCE($6,linkedin),
+        avatar_url=COALESCE($7,avatar_url), updated_at=NOW()
+       WHERE handle='techlaunchmena'
+       RETURNING id,name,handle,headline,bio,website,twitter,linkedin,avatar_url`,
+      [name||null, headline||null, bio||null, website||null, twitter||null, linkedin||null, avatar_url||null]
+    );
+    res.json({ success:true, data: rows[0] });
   } catch(err){ next(err); }
 });
 

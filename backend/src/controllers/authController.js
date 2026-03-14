@@ -50,6 +50,19 @@ const register = async (req, res, next) => {
       [user.id, 'user.signup', 'users', user.id]
     );
 
+    // Auto-follow TechLaunch MENA platform profile
+    query(
+      `INSERT INTO follows (follower_id, following_id)
+       SELECT $1, id FROM users WHERE handle='techlaunchmena'
+       ON CONFLICT DO NOTHING`,
+      [user.id]
+    ).catch(() => {});
+
+    // Update TechLaunch followers_count
+    query(
+      `UPDATE users SET followers_count = followers_count + 1 WHERE handle='techlaunchmena'`
+    ).catch(() => {});
+
     // Send welcome email (non-blocking)
     sendWelcomeEmail({ to: user.email, name: user.name, handle: user.handle })
       .catch(err => console.error('[Email] Welcome email failed for', user.email, ':', err.message));

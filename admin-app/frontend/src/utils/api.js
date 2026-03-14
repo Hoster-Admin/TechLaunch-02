@@ -69,9 +69,11 @@ export const adminAPI = {
       });
     });
   },
-  reports:      (p={})      => req('GET',  '/admin/reports?' + new URLSearchParams(p)),
-  settings:     ()          => req('GET',  '/admin/settings'),
-  saveSettings: (body)      => req('PUT',  '/admin/settings', body),
+  reports:          (p={})   => req('GET',  '/admin/reports?' + new URLSearchParams(p)),
+  settings:         ()       => req('GET',  '/admin/settings'),
+  saveSettings:     (body)   => req('PUT',  '/admin/settings', body),
+  platformProfile:  ()       => req('GET',  '/admin/platform-profile'),
+  savePlatformProfile:(body) => req('PUT',  '/admin/platform-profile', body),
   suggestions:  (p={})      => req('GET',  '/admin/suggestions?' + new URLSearchParams(p)),
   respondSuggestion:(id,r)  => req('POST', `/admin/suggestions/${id}/respond`, { response: r }),
   tags:         ()          => req('GET',  '/admin/tags'),

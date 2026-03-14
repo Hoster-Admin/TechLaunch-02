@@ -63,6 +63,24 @@ Run migrations: `cd backend && node src/migrations/run.js`
 - Backend `.env`: DB_HOST=helium, DB_PORT=5432, DB_NAME=heliumdb, DB_USER=postgres, PORT=3001
 - Frontend `.env`: PORT=5000, HOST=0.0.0.0, DANGEROUSLY_DISABLE_HOST_CHECK=true
 
+## File Uploads
+
+- **Endpoint**: `POST /api/upload` — authenticated, accepts `multipart/form-data` with field `file` (images only, max 5MB)
+- **Storage**: `backend/uploads/` directory (shared by both servers)
+- **Served at**: `/uploads/<filename>` on both the public API (port 3001) and admin panel (port 5000)
+- **Used for**: entity logos, user avatars, product images
+- **Available in**: public backend (`routes/index.js`) and admin backend (`admin-app/backend/server.js`)
+
+## Platform Profile (TechLaunch MENA Account)
+
+- **DB record**: user with `handle='techlaunchmena'`, `role='user'`, `verified=true`
+- **ID**: `e0cb08b1-3c3d-4db5-8e39-70a099d4f77d`
+- **Purpose**: Official platform account; all new users auto-follow it on registration
+- **Auto-follow**: Added to `authController.js` `register` function — inserts into `follows` table after user creation
+- **Public endpoint**: `GET /api/platform-profile` (read-only, public)
+- **Admin endpoint**: `GET/PUT /api/admin/platform-profile` (admin-only write)
+- **Admin UI**: "Platform Profile" card in Settings page — edits name, headline, bio, website, twitter, linkedin, avatar
+
 ## Email (Resend)
 
 - **Package**: `resend` installed in both `backend/` and root `node_modules`
