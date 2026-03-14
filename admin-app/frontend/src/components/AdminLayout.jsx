@@ -10,6 +10,7 @@ import AdminReports      from '../pages/Reports.jsx';
 import AdminSettings     from '../pages/Settings.jsx';
 import AdminSuggestions  from '../pages/Suggestions.jsx';
 import AdminActivityLog  from '../pages/ActivityLog.jsx';
+import PlatformProfile   from '../pages/PlatformProfile.jsx';
 import { useAuth } from '../App.jsx';
 
 const PAGES = {
@@ -22,7 +23,8 @@ const PAGES = {
   reports:      { title:'Reports & Analytics',     sub:'Platform performance metrics',          Component: AdminReports },
   activity:     { title:'Audit Log',               sub:'Full history of admin actions',         Component: AdminActivityLog },
   settings:     { title:'Platform Settings',       sub:'Configure platform behaviour',          Component: AdminSettings },
-  suggestions:  { title:'Suggestions',             sub:'User feedback and feature requests',    Component: AdminSuggestions },
+  suggestions:      { title:'Suggestions',             sub:'User feedback and feature requests',    Component: AdminSuggestions },
+  platformprofile:  { title:'Platform Profile',        sub:'Manage TechLaunch public account',      Component: PlatformProfile },
 };
 
 export default function AdminLayout() {

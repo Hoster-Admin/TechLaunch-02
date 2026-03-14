@@ -1,16 +1,23 @@
 import React from 'react';
 
-const NAV = [
+const NAV_PLATFORM = [
   { key:'dashboard',    icon:'📊', label:'Dashboard' },
   { key:'products',     icon:'🚀', label:'Products' },
   { key:'users',        icon:'👥', label:'Users' },
+];
+const NAV_CONTENT = [
   { key:'entities',     icon:'🏢', label:'Entities' },
   { key:'applications', icon:'📋', label:'Applications' },
   { key:'featured',     icon:'⭐', label:'Featured' },
+];
+const NAV_SYSTEM = [
   { key:'reports',      icon:'📈', label:'Reports' },
   { key:'activity',     icon:'📝', label:'Audit Log' },
   { key:'settings',     icon:'⚙️',  label:'Settings' },
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
+];
+const NAV_PROFILE = [
+  { key:'platformprofile', icon:'🌐', label:'Platform Profile' },
 ];
 
 function CollapseIcon({ collapsed }) {
@@ -74,7 +81,7 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
       {/* Nav */}
       <nav>
         <div className="nav-section">Platform</div>
-        {NAV.slice(0,3).map(item => (
+        {NAV_PLATFORM.map(item => (
           <div key={item.key}
             className={`nav-item${current===item.key?' active':''}`}
             onClick={() => onChange(item.key)}
@@ -85,7 +92,7 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
         ))}
 
         <div className="nav-section">Content</div>
-        {NAV.slice(3,6).map(item => (
+        {NAV_CONTENT.map(item => (
           <div key={item.key}
             className={`nav-item${current===item.key?' active':''}`}
             onClick={() => onChange(item.key)}
@@ -96,7 +103,18 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
         ))}
 
         <div className="nav-section">System</div>
-        {NAV.slice(6).map(item => (
+        {NAV_SYSTEM.map(item => (
+          <div key={item.key}
+            className={`nav-item${current===item.key?' active':''}`}
+            onClick={() => onChange(item.key)}
+            title={collapsed ? item.label : undefined}>
+            <span className="nav-icon">{item.icon}</span>
+            <span className="nav-label">{item.label}</span>
+          </div>
+        ))}
+
+        <div className="nav-section">Account</div>
+        {NAV_PROFILE.map(item => (
           <div key={item.key}
             className={`nav-item${current===item.key?' active':''}`}
             onClick={() => onChange(item.key)}

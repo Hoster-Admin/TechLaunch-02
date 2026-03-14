@@ -605,6 +605,159 @@ admin.put('/platform-profile', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+// ── Platform Profile: Activity Feed ──────────────────────────────────────────
+const TLMENA_ID = 'e0cb08b1-3c3d-4db5-8e39-70a099d4f77d';
+
+admin.get('/platform-profile/activity', async (req, res) => {
+  try {
+    const { type = 'all', limit = 40, offset = 0 } = req.query;
+    const results = [];
+
+    if (type === 'all' || type === 'posts') {
+      const { rows } = await q(
+        `SELECT pp.id, 'post' AS kind, pp.type AS post_type, pp.body, pp.likes, pp.created_at,
+                NULL AS product_id, NULL AS product_name, NULL AS product_slug
+         FROM platform_posts pp
+         WHERE pp.author_id = $1
+         ORDER BY pp.created_at DESC LIMIT $2 OFFSET $3`,
+        [TLMENA_ID, limit, offset]
+      );
+      results.push(...rows);
+    }
+
+    if (type === 'all' || type === 'comments') {
+      const { rows } = await q(
+        `SELECT c.id, 'comment' AS kind, NULL AS post_type, c.body, c.likes, c.created_at,
+                p.id AS product_id, p.name AS product_name, p.slug AS product_slug
+         FROM comments c
+         JOIN products p ON p.id = c.product_id
+         WHERE c.user_id = $1
+         ORDER BY c.created_at DESC LIMIT $2 OFFSET $3`,
+        [TLMENA_ID, limit, offset]
+      );
+      results.push(...rows);
+    }
+
+    if (type === 'all' || type === 'upvotes') {
+      const { rows } = await q(
+        `SELECT u.id, 'upvote' AS kind, NULL AS post_type, NULL AS body, NULL AS likes, u.created_at,
+                p.id AS product_id, p.name AS product_name, p.slug AS product_slug
+         FROM upvotes u
+         JOIN products p ON p.id = u.product_id
+         WHERE u.user_id = $1
+         ORDER BY u.created_at DESC LIMIT $2 OFFSET $3`,
+        [TLMENA_ID, limit, offset]
+      );
+      results.push(...rows);
+    }
+
+    results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    res.json({ success: true, data: { activity: results.slice(0, Number(limit)) } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ── Platform Profile: Create Post (platform_posts) ───────────────────────────
+admin.post('/platform-profile/post', async (req, res) => {
+  try {
+    const { type = 'update', body } = req.body;
+    if (!body?.trim()) return res.status(400).json({ success: false, message: 'Body required' });
+    const validTypes = ['update', 'milestone', 'feature', 'news'];
+    const postType = validTypes.includes(type) ? type : 'update';
+    const { rows } = await q(
+      `INSERT INTO platform_posts (type, body, author_id) VALUES ($1, $2, $3)
+       RETURNING id, type, body, likes, created_at`,
+      [postType, body.trim(), TLMENA_ID]
+    );
+    await logAction(req.user.id, 'platform_profile.post.created', 'platform_post', rows[0].id, { type: postType });
+    res.status(201).json({ success: true, data: { post: { ...rows[0], kind: 'post', post_type: rows[0].type } } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ── Platform Profile: Delete Post ─────────────────────────────────────────────
+admin.delete('/platform-profile/post/:id', async (req, res) => {
+  try {
+    await q('DELETE FROM platform_posts WHERE id=$1 AND author_id=$2', [req.params.id, TLMENA_ID]);
+    await logAction(req.user.id, 'platform_profile.post.deleted', 'platform_post', req.params.id, {});
+    res.json({ success: true, message: 'Post deleted' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ── Platform Profile: Search Products ────────────────────────────────────────
+admin.get('/platform-profile/products/search', async (req, res) => {
+  try {
+    const { q: search = '' } = req.query;
+    const { rows } = await q(
+      `SELECT id, name, slug, logo_emoji, logo_url, industry
+       FROM products
+       WHERE status='live'
+         AND (name ILIKE $1 OR tagline ILIKE $1)
+       ORDER BY upvotes_count DESC
+       LIMIT 10`,
+      [`%${search}%`]
+    );
+    res.json({ success: true, data: { products: rows } });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ── Platform Profile: Comment on a product ────────────────────────────────────
+admin.post('/platform-profile/comment', async (req, res) => {
+  try {
+    const { product_id, body } = req.body;
+    if (!product_id) return res.status(400).json({ success: false, message: 'product_id required' });
+    if (!body?.trim()) return res.status(400).json({ success: false, message: 'body required' });
+
+    const prodCheck = await q('SELECT id, name, slug FROM products WHERE id=$1 AND status=\'live\'', [product_id]);
+    if (!prodCheck.rows.length) return res.status(404).json({ success: false, message: 'Product not found or not live' });
+
+    const { rows } = await q(
+      `INSERT INTO comments (product_id, user_id, body)
+       VALUES ($1, $2, $3)
+       RETURNING id, product_id, body, likes, created_at`,
+      [product_id, TLMENA_ID, body.trim()]
+    );
+    await q('UPDATE products SET comments_count = comments_count + 1 WHERE id=$1', [product_id]);
+    await logAction(req.user.id, 'platform_profile.comment.created', 'comment', rows[0].id, { product_id });
+    res.status(201).json({
+      success: true,
+      data: {
+        comment: {
+          ...rows[0], kind: 'comment',
+          product_name: prodCheck.rows[0].name,
+          product_slug: prodCheck.rows[0].slug,
+        }
+      }
+    });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ── Platform Profile: Delete comment ─────────────────────────────────────────
+admin.delete('/platform-profile/comment/:id', async (req, res) => {
+  try {
+    const { rows } = await q('DELETE FROM comments WHERE id=$1 AND user_id=$2 RETURNING product_id', [req.params.id, TLMENA_ID]);
+    if (rows.length) await q('UPDATE products SET comments_count = GREATEST(0, comments_count - 1) WHERE id=$1', [rows[0].product_id]);
+    await logAction(req.user.id, 'platform_profile.comment.deleted', 'comment', req.params.id, {});
+    res.json({ success: true, message: 'Comment deleted' });
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+// ── Platform Profile: Toggle upvote ──────────────────────────────────────────
+admin.post('/platform-profile/upvote/:productId', async (req, res) => {
+  try {
+    const { productId } = req.params;
+    const existing = await q('SELECT id FROM upvotes WHERE user_id=$1 AND product_id=$2', [TLMENA_ID, productId]);
+    if (existing.rows.length) {
+      await q('DELETE FROM upvotes WHERE user_id=$1 AND product_id=$2', [TLMENA_ID, productId]);
+      await q('UPDATE products SET upvotes_count = GREATEST(0, upvotes_count - 1) WHERE id=$1', [productId]);
+      res.json({ success: true, data: { upvoted: false } });
+    } else {
+      await q('INSERT INTO upvotes (user_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [TLMENA_ID, productId]);
+      await q('UPDATE products SET upvotes_count = upvotes_count + 1 WHERE id=$1', [productId]);
+      await logAction(req.user.id, 'platform_profile.upvoted', 'product', productId, {});
+      res.json({ success: true, data: { upvoted: true } });
+    }
+  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
 // Reports
 admin.get('/reports', async (req, res) => {
   try {
