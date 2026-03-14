@@ -235,7 +235,7 @@ export default function EntityProfileModal() {
               </div>
             ) : (
               <div style={{ minWidth:240, height:150, borderRadius:14, background:'#f8f8f8', border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
-                <div style={{ fontSize:32 }}>{logo}</div>
+                <div style={{ fontSize:32 }}>{logoEmoji}</div>
                 <div style={{ fontSize:11, color:'#aaa', fontWeight:600 }}>{e.type}</div>
               </div>
             )}
