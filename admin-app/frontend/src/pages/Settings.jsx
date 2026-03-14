@@ -242,6 +242,7 @@ export default function Settings() {
   const [team, setTeam]         = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [saving, setSaving]     = useState(false);
+  const [deleting, setDeleting] = useState({});
   const [form, setForm]         = useState({ name:'', email:'', role:'moderator' });
 
   const loadTeam = useCallback(() => {
@@ -267,6 +268,17 @@ export default function Settings() {
       loadTeam();
     } catch(e) { toast.error(e.message || 'Failed to add team member'); }
     finally { setSaving(false); }
+  };
+
+  const deleteMember = async (m) => {
+    if (!window.confirm(`Remove ${m.name} from the team? This cannot be undone.`)) return;
+    setDeleting(p => ({...p, [m.id]: true}));
+    try {
+      const { data: d } = await adminAPI.deleteTeamMember(m.id);
+      toast.success(d.message || `${m.name} removed`);
+      loadTeam();
+    } catch(e) { toast.error(e.message || 'Failed to remove team member'); }
+    finally { setDeleting(p => ({...p, [m.id]: false})); }
   };
 
   const save = async (key, value) => {
@@ -341,29 +353,49 @@ export default function Settings() {
       >
         {team.length === 0
           ? <EmptyState icon="👋" title="No team members yet" sub="Invite your first team member above"/>
-          : <Tbl heads={['Member','Email','Role','Status','Joined']}>
-              {team.map(m => (
-                <tr key={m.id} style={{borderBottom:'1px solid #F4F4F4'}}
-                  onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
-                  onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
-                  <td style={{padding:'10px 16px'}}>
-                    <div style={{display:'flex',alignItems:'center',gap:10}}>
-                      <div style={{width:34,height:34,borderRadius:10,background:m.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'#fff',flexShrink:0}}>
-                        {(m.name||'T').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+          : <Tbl heads={['Member','Email','Role','Status','Joined',...(isAdmin?['']:[]) ]}>
+              {team.map(m => {
+                const isSelf    = m.id === user?.id;
+                const canDelete = isAdmin && !isSelf && m.role !== 'admin';
+                return (
+                  <tr key={m.id} style={{borderBottom:'1px solid #F4F4F4'}}
+                    onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
+                    onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                    <td style={{padding:'10px 16px'}}>
+                      <div style={{display:'flex',alignItems:'center',gap:10}}>
+                        <div style={{width:34,height:34,borderRadius:10,background:m.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:12,fontWeight:800,color:'#fff',flexShrink:0}}>
+                          {(m.name||'T').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+                        </div>
+                        <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>
+                          {m.name}
+                          {isSelf && <span style={{fontSize:10,fontWeight:600,color:'#AAAAAA',marginLeft:6}}>(you)</span>}
+                        </div>
                       </div>
-                      <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{m.name}</div>
-                    </div>
-                  </td>
-                  <td style={{padding:'10px 16px',fontSize:12,color:'#666'}}>{m.email}</td>
-                  <td style={{padding:'10px 16px'}}>
-                    <Badge variant={{admin:'orange',moderator:'blue',editor:'purple'}[m.role]||'gray'}>{m.role}</Badge>
-                  </td>
-                  <td style={{padding:'10px 16px'}}>
-                    <Badge variant={m.status==='active'?'green':'red'}>{m.status}</Badge>
-                  </td>
-                  <td style={{padding:'10px 16px',fontSize:11,color:'#AAAAAA'}}>{new Date(m.created_at).toLocaleDateString()}</td>
-                </tr>
-              ))}
+                    </td>
+                    <td style={{padding:'10px 16px',fontSize:12,color:'#666'}}>{m.email}</td>
+                    <td style={{padding:'10px 16px'}}>
+                      <Badge variant={{admin:'orange',moderator:'blue',editor:'purple'}[m.role]||'gray'}>{m.role}</Badge>
+                    </td>
+                    <td style={{padding:'10px 16px'}}>
+                      <Badge variant={m.status==='active'?'green':'red'}>{m.status}</Badge>
+                    </td>
+                    <td style={{padding:'10px 16px',fontSize:11,color:'#AAAAAA'}}>{new Date(m.created_at).toLocaleDateString()}</td>
+                    {isAdmin && (
+                      <td style={{padding:'10px 16px'}}>
+                        {canDelete && (
+                          <button
+                            onClick={()=>deleteMember(m)}
+                            disabled={deleting[m.id]}
+                            title="Remove from team"
+                            style={{background:'none',border:'1px solid #FECACA',borderRadius:7,padding:'4px 9px',cursor:'pointer',color:'#DC2626',fontSize:13,fontWeight:700,opacity:deleting[m.id]?0.5:1,lineHeight:1,display:'flex',alignItems:'center',gap:4}}>
+                            {deleting[m.id] ? '…' : '🗑'}
+                          </button>
+                        )}
+                      </td>
+                    )}
+                  </tr>
+                );
+              })}
             </Tbl>
         }
       </SCard>

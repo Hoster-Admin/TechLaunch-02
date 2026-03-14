@@ -453,6 +453,19 @@ admin.post('/users/:id/reinstate', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+admin.delete('/users/:id', async (req, res) => {
+  try {
+    if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can delete team members' });
+    if (req.params.id === req.user.id) return res.status(400).json({ success:false, message:'You cannot delete your own account' });
+    const { rows: target } = await q(`SELECT id,name,role FROM users WHERE id=$1`, [req.params.id]);
+    if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
+    if (target[0].role === 'admin') return res.status(403).json({ success:false, message:'Cannot delete another admin account' });
+    await q(`DELETE FROM users WHERE id=$1`, [req.params.id]);
+    await logAction(req.user.id, 'user.deleted', 'user', req.params.id, { name:target[0].name, role:target[0].role });
+    res.json({ success:true, message:`${target[0].name} has been removed from the team` });
+  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+});
+
 // Entities
 admin.get('/entities', async (req, res) => {
   try {

@@ -40,6 +40,7 @@ export const adminAPI = {
   verifyUser:   (id)        => req('POST', `/admin/users/${id}/verify`),
   suspendUser:  (id)        => req('POST', `/admin/users/${id}/suspend`),
   reinstateUser:(id)        => req('POST', `/admin/users/${id}/reinstate`),
+  deleteTeamMember:(id)     => req('DELETE', `/admin/users/${id}`),
   entities:     (p={})      => req('GET',  '/admin/entities?' + new URLSearchParams(p)),
   createEntity: (body)      => req('POST', '/admin/entities', body),
   verifyEntity: (id)        => req('POST', `/admin/entities/${id}/verify`),
