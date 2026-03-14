@@ -31,6 +31,26 @@ function postTypeIcon(t) {
   return POST_TYPES.find(p => p.value === t)?.emoji || '📢';
 }
 
+function AvatarDisplay({ src, size = 72, borderRadius = 20, fontSize = 24, fallback = 'TL' }) {
+  const [imgError, setImgError] = useState(false);
+
+  useEffect(() => { setImgError(false); }, [src]);
+
+  if (src && !imgError) {
+    return (
+      <img
+        src={src}
+        alt="Platform avatar"
+        style={{ width: '100%', height: '100%', objectFit: 'cover', display: 'block' }}
+        onError={() => setImgError(true)}
+      />
+    );
+  }
+  return (
+    <span style={{ fontSize, fontWeight: 700, color: '#fff', userSelect: 'none' }}>{fallback}</span>
+  );
+}
+
 export default function PlatformProfile() {
   const [profile,   setProfile]   = useState(null);
   const [activity,  setActivity]  = useState([]);
@@ -47,6 +67,12 @@ export default function PlatformProfile() {
   const [posting,  setPosting]  = useState(false);
   const [postError, setPostError] = useState('');
   const [actLoading, setActLoading] = useState(false);
+
+  const [editMode,   setEditMode]   = useState(false);
+  const [editData,   setEditData]   = useState({});
+  const [saving,     setSaving]     = useState(false);
+  const [saveError,  setSaveError]  = useState('');
+  const [saveSuccess,setSaveSuccess]= useState(false);
 
   const searchRef  = useRef(null);
   const searchTimer = useRef(null);
@@ -126,6 +152,32 @@ export default function PlatformProfile() {
     loadActivity(tab);
   };
 
+  const openEdit = () => {
+    setEditData({
+      name:       profile?.name       || '',
+      headline:   profile?.headline   || '',
+      bio:        profile?.bio        || '',
+      avatar_url: profile?.avatar_url || '',
+      website:    profile?.website    || '',
+      twitter:    profile?.twitter    || '',
+      linkedin:   profile?.linkedin   || '',
+    });
+    setSaveError('');
+    setSaveSuccess(false);
+    setEditMode(true);
+  };
+
+  const handleSave = async () => {
+    setSaving(true); setSaveError(''); setSaveSuccess(false);
+    try {
+      const { data: d } = await adminAPI.savePlatformProfile(editData);
+      setProfile(prev => ({ ...prev, ...d.data }));
+      setSaveSuccess(true);
+      setTimeout(() => { setEditMode(false); setSaveSuccess(false); }, 800);
+    } catch (e) { setSaveError(e.message || 'Failed to save'); }
+    finally { setSaving(false); }
+  };
+
   if (loading) return (
     <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 80, color: 'var(--gray-400)', fontSize: 14 }}>
       Loading platform profile…
@@ -151,11 +203,13 @@ export default function PlatformProfile() {
           {/* Avatar row */}
           <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -36 }}>
             <div style={{ width: 72, height: 72, borderRadius: 20, border: '3px solid #fff', overflow: 'hidden', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-              {avatarUrl
-                ? <img src={avatarUrl} alt="TechLaunch MENA" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} />
-                : 'TL'}
+              <AvatarDisplay src={avatarUrl} fallback="TL" />
             </div>
             <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
+              <button onClick={openEdit}
+                style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1.5px solid var(--orange)', background: 'rgba(225,80,51,.07)', color: 'var(--orange)', fontWeight: 600, cursor: 'pointer' }}>
+                ✏️ Edit Profile
+              </button>
               <a href="https://tlmena.com/u/techlaunchmena" target="_blank" rel="noreferrer"
                 style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1.5px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
                 ↗ View Public Profile
@@ -194,11 +248,72 @@ export default function PlatformProfile() {
         </div>
       </div>
 
+      {/* ── Edit Profile Panel ──────────────────────────────────── */}
+      {editMode && (
+        <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--orange)', padding: 24, marginBottom: 20 }}>
+          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>✏️ Edit Platform Profile</h3>
+            <button onClick={() => setEditMode(false)}
+              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-400)', lineHeight: 1 }}>×</button>
+          </div>
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
+            {[
+              { key: 'name',       label: 'Display Name',  placeholder: 'TechLaunch MENA' },
+              { key: 'headline',   label: 'Headline',      placeholder: 'Short tagline shown under your name' },
+              { key: 'avatar_url', label: 'Avatar URL',    placeholder: 'https://…/photo.jpg' },
+              { key: 'website',    label: 'Website',       placeholder: 'https://tlmena.com' },
+              { key: 'twitter',    label: 'Twitter / X handle', placeholder: 'techlaunchmena' },
+              { key: 'linkedin',   label: 'LinkedIn URL',  placeholder: 'https://linkedin.com/company/…' },
+            ].map(({ key, label, placeholder }) => (
+              <div key={key}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>{label}</label>
+                <input
+                  value={editData[key] || ''}
+                  onChange={e => setEditData(prev => ({ ...prev, [key]: e.target.value }))}
+                  placeholder={placeholder}
+                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--orange)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ gridColumn: '1 / -1', marginTop: 14 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>Bio</label>
+            <textarea
+              value={editData.bio || ''}
+              onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
+              placeholder="Tell the community about the platform…"
+              rows={3}
+              style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: 1.55, transition: 'border-color .15s' }}
+              onFocus={e => e.target.style.borderColor = 'var(--orange)'}
+              onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
+            />
+          </div>
+
+          {saveError && <div style={{ marginTop: 10, fontSize: 12, color: '#E15033' }}>{saveError}</div>}
+          {saveSuccess && <div style={{ marginTop: 10, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</div>}
+
+          <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+            <button onClick={() => setEditMode(false)}
+              style={{ padding: '8px 18px', borderRadius: 9, border: '1.5px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--gray-600)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              Cancel
+            </button>
+            <button onClick={handleSave} disabled={saving}
+              style={{ padding: '8px 22px', borderRadius: 9, border: 'none', background: saving ? 'var(--gray-200)' : 'var(--orange)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', transition: 'background .15s' }}>
+              {saving ? 'Saving…' : 'Save Changes'}
+            </button>
+          </div>
+        </div>
+      )}
+
       {/* ── Compose Box ─────────────────────────────────────────── */}
       <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-200)', padding: 20, marginBottom: 20 }}>
         <div style={{ display: 'flex', gap: 10, marginBottom: 14 }}>
           <div style={{ width: 36, height: 36, borderRadius: 10, overflow: 'hidden', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 13, flexShrink: 0 }}>
-            {avatarUrl ? <img src={avatarUrl} alt="" style={{ width: '100%', height: '100%', objectFit: 'cover' }} onError={e => e.target.style.display = 'none'} /> : 'TL'}
+            <AvatarDisplay src={avatarUrl} fontSize={13} fallback="TL" />
           </div>
           <div style={{ fontSize: 13, color: 'var(--gray-500)' }}>
             <strong style={{ color: 'var(--ink)' }}>Posting as @techlaunchmena</strong>
