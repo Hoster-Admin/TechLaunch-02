@@ -413,7 +413,6 @@ export default function Settings() {
           <div style={{padding:'0 20px 8px'}}>
             <SettingRow label="Auto-approve Products" sub="Skip manual review for trusted submitters" settingKey="auto_approve"/>
             <SettingRow label="Spam Filter"            sub="Auto-flag suspicious activity"            settingKey="spam_filter" fallback={true}/>
-            <SettingRow label="Require Email Verification" sub="Users must verify email to submit"   settingKey="require_email_verification" fallback={true}/>
           </div>
         </SCard>
 
