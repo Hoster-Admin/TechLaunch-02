@@ -202,47 +202,6 @@ export default function EntityProfileModal() {
             </button>
           </div>
 
-          {/* Visual stats carousel — same 3-card layout as product screenshots */}
-          <div style={{ display:'flex', gap:12, overflowX:'auto', paddingBottom:20, marginBottom:36, scrollbarWidth:'none' }}>
-            {/* Card 1 — dark branded */}
-            <div style={{ minWidth:240, height:150, borderRadius:14, background:'linear-gradient(135deg,#0a0a0a,#1a1a1a)', border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:10 }}>
-              <div style={{ width:52, height:52, borderRadius:14, background:tc.color, display:'grid', placeItems:'center', fontSize:26, overflow:'hidden' }}>
-                {logoUrl
-                  ? <img src={logoUrl} alt={e.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:14 }} onError={ev=>ev.currentTarget.style.display='none'} />
-                  : logoEmoji}
-              </div>
-              <div style={{ fontSize:13, fontWeight:800, color:'#fff' }}>{e.name}</div>
-              <div style={{ fontSize:10, color:'rgba(255,255,255,.45)' }}>{e.type} · {e.country||'MENA'}</div>
-            </div>
-            {/* Card 2 — stats grid */}
-            {stats.length > 0 ? (
-              <div style={{ minWidth:240, height:150, borderRadius:14, background:'#f8f8f8', border:'1px solid #e8e8e8', flexShrink:0, padding:16, display:'grid', gridTemplateColumns:'1fr 1fr', gap:8, alignContent:'center' }}>
-                {stats.slice(0,4).map((s,i) => (
-                  <div key={i} style={{ background:'#fff', borderRadius:10, padding:'10px 12px', border:'1px solid #f0f0f0' }}>
-                    <div style={{ fontSize:15, fontWeight:900, color:'#0a0a0a' }}>{s.val}</div>
-                    <div style={{ fontSize:10, color:'#aaa', fontWeight:600, marginTop:1 }}>{s.lbl}</div>
-                  </div>
-                ))}
-              </div>
-            ) : (
-              <div style={{ minWidth:240, height:150, borderRadius:14, background:'#f8f8f8', border:'1px solid #e8e8e8', flexShrink:0, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', gap:6 }}>
-                <div style={{ fontSize:32 }}>{logoEmoji}</div>
-                <div style={{ fontSize:11, color:'#aaa', fontWeight:600 }}>{e.type}</div>
-              </div>
-            )}
-            {/* Card 3 — industry focus / highlight */}
-            <div style={{ minWidth:240, height:150, borderRadius:14, background:`linear-gradient(135deg,${tc.bg},#fff)`, border:`1.5px solid ${tc.color}22`, flexShrink:0, padding:16, display:'flex', flexDirection:'column', justifyContent:'center', gap:8 }}>
-              <div style={{ fontSize:11, fontWeight:800, color:tc.color, letterSpacing:'.06em', textTransform:'uppercase' }}>{e.type}</div>
-              {e.verified && <div style={{ fontSize:12, fontWeight:700, color:'#0a0a0a' }}>✓ Verified Entity</div>}
-              {industries?.slice(0,3).map((ind,i) => (
-                <div key={i} style={{ fontSize:11, fontWeight:700, padding:'3px 10px', borderRadius:99, background:'#fff', color:tc.color, display:'inline-block', width:'fit-content', border:`1px solid ${tc.color}33` }}>{ind}</div>
-              ))}
-              {!industries && e.stage && (
-                <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>Stage: {e.stage}</div>
-              )}
-            </div>
-          </div>
-
           {/* About */}
           {(e.about || e.description) && (
             <div style={{ marginBottom:36 }}>
