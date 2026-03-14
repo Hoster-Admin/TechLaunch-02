@@ -116,14 +116,23 @@ function FilterDropdown({ label, icon, options, selected, onToggle, onReset, get
   );
 }
 
+function LogoBox({ item, size=56, radius=16, fontSize=28 }) {
+  return (
+    <div style={{ width:size, height:size, borderRadius:radius, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize, flexShrink:0, overflow:'hidden' }}>
+      {item.logo_url
+        ? <img src={item.logo_url} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={ev => { ev.currentTarget.style.display='none'; ev.currentTarget.nextSibling.style.display='block'; }} />
+        : null}
+      <span style={{ display: item.logo_url ? 'none' : 'block' }}>{item.icon}</span>
+    </div>
+  );
+}
+
 function StartupCard({ item, onClick }) {
   const sc = STAGE_COLORS[item.stage] || { bg:'#f4f4f4', color:'#666' };
   return (
     <div className="startup-card" onClick={onClick}>
       <div style={{ display:'flex', alignItems:'flex-start', gap:14, marginBottom:16 }}>
-        <div style={{ width:56, height:56, borderRadius:16, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize:28, flexShrink:0 }}>
-          {item.icon}
-        </div>
+        <LogoBox item={item} size={56} radius={16} fontSize={28} />
         <div style={{ flex:1, minWidth:0 }}>
           <div style={{ display:'flex', alignItems:'center', gap:7, flexWrap:'wrap', marginBottom:3 }}>
             <span style={{ fontSize:15, fontWeight:900, letterSpacing:'-.02em' }}>{item.name}</span>
@@ -174,7 +183,12 @@ function EntityCard({ item, type, teamMembers, onClick }) {
   return (
     <div className="entity-card" onClick={onClick}>
       <div className="entity-card-top">
-        <div className="entity-logo">{item.icon}</div>
+        <div className="entity-logo" style={{ overflow:'hidden' }}>
+          {item.logo_url
+            ? <img src={item.logo_url} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }} onError={ev => { ev.currentTarget.style.display='none'; ev.currentTarget.nextSibling.style.display='block'; }} />
+            : null}
+          <span style={{ display: item.logo_url ? 'none' : 'block' }}>{item.icon}</span>
+        </div>
         <div className="entity-name-row">
           <div className="entity-name">{item.name}</div>
           <div className="entity-meta">{meta}</div>
