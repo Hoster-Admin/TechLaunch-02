@@ -50,7 +50,7 @@ const TYPE_LABELS = {
 
 function normalizeEntity(e) {
   const flag = COUNTRY_FLAGS[e.country] || '🌍';
-  const tags = [e.industry, e.focus, e.stage].filter(Boolean).slice(0, 3);
+  const tags = [e.stage].filter(Boolean).slice(0, 1);
   return {
     ...e,
     icon:       e.logo_emoji || '🏢',
