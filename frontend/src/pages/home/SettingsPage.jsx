@@ -1329,7 +1329,9 @@ export default function SettingsPage() {
                     {coName && (
                       <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'20px 24px', marginBottom:20, display:'flex', alignItems:'flex-start', gap:16 }}>
                         <div style={{ width:56, height:56, borderRadius:14, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize:28, flexShrink:0, overflow:'hidden' }}>
-                          <span style={{ fontSize:22, color:'#bbb' }}>?</span>
+                          {coLogoImg
+                            ? <img src={coLogoImg} alt="logo" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                            : <span style={{ fontSize:22, color:'#bbb' }}>?</span>}
                         </div>
                         <div style={{ flex:1, minWidth:0 }}>
                           <div style={{ fontSize:16, fontWeight:800, color:'#0a0a0a' }}>{coName}</div>
@@ -1369,6 +1371,23 @@ export default function SettingsPage() {
                           <option value="">Select entity type</option>
                           {ENTITY_TYPES.map(t => <option key={t} value={t}>{t}</option>)}
                         </select>
+                      </div>
+
+                      {/* Logo upload */}
+                      <div style={{ marginBottom:16 }}>
+                        <label style={labelStyle}>COMPANY LOGO</label>
+                        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                          <div style={{ width:52, height:52, borderRadius:14, background:'#f5f5f5', border:'1.5px solid #e8e8e8', display:'grid', placeItems:'center', overflow:'hidden', flexShrink:0 }}>
+                            {coLogoImg
+                              ? <img src={coLogoImg} alt="logo" style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                              : <span style={{ fontSize:22, color:'#ccc' }}>?</span>}
+                          </div>
+                          <label style={{ padding:'9px 18px', borderRadius:10, border:'1.5px solid #e8e8e8', fontSize:13, fontWeight:600, color:'#333', cursor:'pointer', background:'#fafafa', whiteSpace:'nowrap' }}>
+                            Upload company logo
+                            <input type="file" accept="image/*" onChange={handleCoLogoUpload} style={{ display:'none' }}/>
+                          </label>
+                          <span style={{ fontSize:12, color:'#bbb' }}>PNG, JPG up to 2MB</span>
+                        </div>
                       </div>
 
                       {/* Entity name */}
