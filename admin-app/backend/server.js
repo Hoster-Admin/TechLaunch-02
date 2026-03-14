@@ -825,6 +825,7 @@ admin.post('/products/bulk', async (req, res) => {
   try {
     const { ids, action, reason } = req.body;
     if (!ids?.length || !action) return res.status(400).json({ success:false, message:'ids and action required' });
+    if (!ids.every(id => Number.isInteger(id) && id > 0)) return res.status(400).json({ success:false, message:'ids must be positive integers' });
     const placeholders = ids.map((_,i)=>`$${i+1}`).join(',');
     if (action === 'approve') {
       await q(`UPDATE products SET status='live', approved_by=$${ids.length+1}, approved_at=NOW(), updated_at=NOW() WHERE id IN (${placeholders}) AND status='pending'`, [...ids, req.user.id]);
