@@ -2,6 +2,8 @@ import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
+import { useAuth } from '../../context/AuthContext';
+import SubmitPostModal from '../../components/home/SubmitPostModal';
 
 const ARTICLES = [
   {
@@ -101,8 +103,16 @@ const ARTICLES = [
 ];
 
 /* ─── Article Listing Page ─── */
-function ArticlesList() {
+function ArticlesList({ onSignIn }) {
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [submitOpen, setSubmitOpen] = useState(false);
+
+  const handleSubmit = () => {
+    if (!user) { onSignIn?.(); return; }
+    setSubmitOpen(true);
+  };
+
   return (
     <>
       <Navbar/>
@@ -216,7 +226,7 @@ function ArticleDetail() {
           <div style={{ marginTop:48, padding:'28px 32px', background:'#0a0a0a', borderRadius:20, textAlign:'center' }}>
             <div style={{ fontSize:16, fontWeight:800, color:'#fff', marginBottom:8 }}>Want to write for the community?</div>
             <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', marginBottom:18 }}>Share your insights with thousands of MENA founders, investors, and builders.</p>
-            <button onClick={() => navigate('/write-for-us')} style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
+            <button onClick={handleSubmit} style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
               Submit Your Article →
             </button>
           </div>
@@ -224,6 +234,7 @@ function ArticleDetail() {
         </div>
       </div>
       <Footer/>
+      {submitOpen && <SubmitPostModal onClose={() => setSubmitOpen(false)} defaultType="article"/>}
     </>
   );
 }

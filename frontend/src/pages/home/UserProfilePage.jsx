@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from 'react';
-import { useParams, useNavigate } from 'react-router-dom';
+import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
@@ -27,6 +27,7 @@ function timeAgo(dateStr) {
 export default function UserProfilePage({ onSignIn, onSignUp }) {
   const { handle } = useParams();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
   const { user } = useAuth();
   const { following, toggleFollow, followingIds, toggleFollowId, openDM } = useUI();
   const [activeTab, setActiveTab] = useState('activity');
@@ -38,6 +39,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [followList, setFollowList]         = useState([]);
   const [loadingFollowList, setLoadingFollowList] = useState(false);
   const [deletingId, setDeletingId]         = useState(null);
+  const [showWelcome, setShowWelcome]       = useState(searchParams.get('welcome') === '1');
 
   // tab data
   const [profileProducts, setProfileProducts] = useState([]);
@@ -235,6 +237,30 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   return (
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
+
+      {/* ── First-time welcome popup ── */}
+      {showWelcome && isOwn && (
+        <div style={{ position:'fixed', inset:0, zIndex:3500, background:'rgba(0,0,0,.5)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
+          <div style={{ background:'#fff', borderRadius:24, padding:'36px 32px', width:'100%', maxWidth:440, textAlign:'center', boxShadow:'0 32px 80px rgba(0,0,0,.25)', animation:'modalIn .25s ease' }}>
+            <div style={{ fontSize:48, marginBottom:16 }}>🎉</div>
+            <h2 style={{ fontSize:22, fontWeight:900, color:'#0a0a0a', marginBottom:10 }}>Welcome to Tech Launch!</h2>
+            <p style={{ fontSize:14, color:'#888', lineHeight:1.7, marginBottom:28 }}>
+              You're in. Set up your profile to let the MENA community know who you are and what you're building.
+            </p>
+            <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+              <button onClick={() => { setShowWelcome(false); navigate('/settings'); }}
+                style={{ padding:'13px', borderRadius:14, border:'none', background:'var(--orange)', color:'#fff', fontSize:14, fontWeight:800, cursor:'pointer' }}>
+                Let's do it →
+              </button>
+              <button onClick={() => setShowWelcome(false)}
+                style={{ padding:'11px', borderRadius:14, border:'1.5px solid #e8e8e8', background:'#fff', color:'#aaa', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                Skip for now
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
         <div className="profile-page-inner" style={{ maxWidth:900, margin:'0 auto', padding:'24px 32px 80px' }}>
 

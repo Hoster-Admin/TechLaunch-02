@@ -141,7 +141,7 @@ export function RegisterPage() {
     try {
       await register(form);
       toast.success('Welcome to Tech Launch!');
-      navigate('/');
+      navigate(`/u/${form.handle}?welcome=1`);
     } catch (err) {
       setErrors({ general: err.response?.data?.message || 'Registration failed' });
     } finally { setLoading(false); }

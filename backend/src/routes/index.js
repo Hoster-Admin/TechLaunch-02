@@ -35,6 +35,7 @@ const userCtrl      = require('../controllers/userController');
 const adminCtrl     = require('../controllers/adminController');
 const msgCtrl       = require('../controllers/messageController');
 const launcherCtrl  = require('../controllers/launcherController');
+const communityCtrl = require('../controllers/communityController');
 
 const router = express.Router();
 
@@ -200,6 +201,11 @@ adminRouter.get('/settings',     requireAdmin, adminCtrl.getSettings);
 adminRouter.put('/settings',     requireAdmin,
   [body().isObject()], adminCtrl.updateSettings);
 
+// Community Tags (admin-controlled)
+adminRouter.get   ('/community-tags',     requireMod,   communityCtrl.getTags);
+adminRouter.post  ('/community-tags',     requireMod,   communityCtrl.createTag);
+adminRouter.delete('/community-tags/:id', requireMod,   communityCtrl.deleteTag);
+
 // Team
 adminRouter.get   ('/team',          requireAdmin, adminCtrl.getTeam);
 adminRouter.post  ('/team',          requireAdmin,
@@ -350,6 +356,17 @@ router.use('/suggestions',  suggestionsRouter);
 router.use('/admin',        adminRouter);
 router.use('/applications', applyRouter);
 router.use('/pitches',      pitchRouter);
+
+// COMMUNITY POSTS & TAGS
+const communityRouter = express.Router();
+communityRouter.get('/tags',             communityCtrl.getTags);
+communityRouter.get('/my-drafts',        authenticate, communityCtrl.getMyDrafts);
+communityRouter.get('/:id',              optionalAuth, communityCtrl.getPost);
+communityRouter.get('/',                 optionalAuth, communityCtrl.getPosts);
+communityRouter.post('/',                authenticate, communityCtrl.createPost);
+communityRouter.put('/:id',              authenticate, communityCtrl.updatePost);
+communityRouter.delete('/:id',           authenticate, communityCtrl.deletePost);
+router.use('/community-posts',  communityRouter);
 
 // ── Stats endpoints
 router.get('/stats/summary', async (req, res, next) => {

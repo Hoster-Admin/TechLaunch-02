@@ -192,3 +192,16 @@ export const statsAPI = {
   summary:   () => api.get('/stats/summary'),
   directory: () => api.get('/stats/directory'),
 };
+
+export const communityAPI = {
+  tags:        ()         => api.get('/community-posts/tags'),
+  posts:       (params)   => api.get('/community-posts', { params }),
+  getPost:     (id)       => api.get(`/community-posts/${id}`),
+  myDrafts:    ()         => api.get('/community-posts/my-drafts'),
+  create:      (data)     => api.post('/community-posts', data),
+  update:      (id, data) => api.put(`/community-posts/${id}`, data),
+  delete:      (id)       => api.delete(`/community-posts/${id}`),
+  adminTags:   ()         => api.get('/admin/community-tags'),
+  createTag:   (data)     => api.post('/admin/community-tags', data),
+  deleteTag:   (id)       => api.delete(`/admin/community-tags/${id}`),
+};
