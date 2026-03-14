@@ -184,3 +184,8 @@ export const launcherAPI = {
   addComment:      (id, b)   => api.post(`/launcher/${id}/comments`, { body: b }),
   likeComment:     (cid)     => api.post(`/launcher/comments/${cid}/like`),
 };
+
+export const statsAPI = {
+  summary:   () => api.get('/stats/summary'),
+  directory: () => api.get('/stats/directory'),
+};

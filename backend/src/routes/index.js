@@ -346,6 +346,34 @@ router.use('/admin',        adminRouter);
 router.use('/applications', applyRouter);
 router.use('/pitches',      pitchRouter);
 
+// ── Stats endpoints
+router.get('/stats/summary', async (req, res, next) => {
+  try {
+    const [products, founders, countries, accelerators] = await Promise.all([
+      dbQuery(`SELECT COUNT(*)::int AS c FROM products WHERE status='live'`),
+      dbQuery(`SELECT COUNT(*)::int AS c FROM users WHERE role='user' AND status='active'`),
+      dbQuery(`SELECT COUNT(DISTINCT c)::int AS c FROM (SELECT UNNEST(countries) AS c FROM products WHERE status='live' AND countries IS NOT NULL) sub`),
+      dbQuery(`SELECT COUNT(*)::int AS c FROM entities WHERE type='accelerator' AND status='approved'`),
+    ]);
+    res.json({ success:true, data:{
+      products:     products.rows[0].c,
+      founders:     founders.rows[0].c,
+      countries:    countries.rows[0].c,
+      accelerators: accelerators.rows[0].c,
+    }});
+  } catch(err){ next(err); }
+});
+
+router.get('/stats/directory', async (req, res, next) => {
+  try {
+    const [industryRows, countryRows] = await Promise.all([
+      dbQuery(`SELECT industry AS name, COUNT(*)::int AS count FROM products WHERE status='live' AND industry IS NOT NULL GROUP BY industry ORDER BY count DESC`),
+      dbQuery(`SELECT UNNEST(countries) AS code, COUNT(*)::int AS count FROM products WHERE status='live' AND countries IS NOT NULL GROUP BY code ORDER BY count DESC`),
+    ]);
+    res.json({ success:true, data:{ industries: industryRows.rows, countries: countryRows.rows }});
+  } catch(err){ next(err); }
+});
+
 // Health check
 router.get('/health', (req, res) => {
   res.json({ success:true, message:'Tech Launch API is running', timestamp: new Date().toISOString() });

@@ -1,7 +1,8 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
+import { statsAPI } from '../../utils/api';
 
 const TEAM = [
   { name:'Adam Al-Rashidi',   role:'Co-Founder & CEO',    initials:'AA', color:'#E15033', bio:'Serial entrepreneur. Previously founded two B2B SaaS startups in the GCC. Passionate about MENA tech ecosystems.' },
@@ -17,8 +18,27 @@ const VALUES = [
   { icon:'🔒', title:'Trust & Quality',   desc:'We verify companies, moderate listings, and ensure the platform stays high-quality. Spam and low-effort submissions are removed.' },
 ];
 
+function formatNum(n) {
+  if (n === null || n === undefined) return '…';
+  if (n >= 1000) return (n / 1000).toFixed(1).replace(/\.0$/, '') + 'K';
+  return String(n);
+}
+
 export default function AboutPage() {
   const navigate = useNavigate();
+  const [stats, setStats] = useState(null);
+
+  useEffect(() => {
+    statsAPI.summary().then(res => setStats(res.data?.data)).catch(() => {});
+  }, []);
+
+  const statItems = [
+    [formatNum(stats?.products),     'Products Listed'],
+    [formatNum(stats?.founders),     'Founders'],
+    [formatNum(stats?.countries),    'Countries'],
+    [formatNum(stats?.accelerators), 'Accelerators'],
+  ];
+
   return (
     <>
       <Navbar/>
@@ -31,10 +51,10 @@ export default function AboutPage() {
             The home for MENA's best<br/><span style={{ color:'var(--orange)' }}>products, startups & builders</span>
           </h1>
           <p style={{ fontSize:16, color:'rgba(255,255,255,.55)', lineHeight:1.75, maxWidth:580, margin:'0 auto 32px' }}>
-            Tech Launch MENA is the Middle East and North Africa's leading product discovery platform — connecting founders, investors, and builders across 15+ countries.
+            Tech Launch MENA is the Middle East and North Africa's leading product discovery platform — connecting founders, investors, and builders across {stats?.countries ? `${stats.countries}+` : 'MENA'} countries.
           </p>
           <div style={{ display:'flex', justifyContent:'center', gap:40, flexWrap:'wrap' }}>
-            {[['248','Products Listed'],['1,840','Founders'],['15','Countries'],['42','Accelerators']].map(([n,l]) => (
+            {statItems.map(([n,l]) => (
               <div key={l} style={{ textAlign:'center' }}>
                 <div style={{ fontSize:32, fontWeight:900, color:'var(--orange)', letterSpacing:'-.03em' }}>{n}</div>
                 <div style={{ fontSize:12, fontWeight:600, color:'rgba(255,255,255,.4)', textTransform:'uppercase', letterSpacing:'.06em', marginTop:4 }}>{l}</div>
