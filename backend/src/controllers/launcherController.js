@@ -100,12 +100,12 @@ const getComments = async (req, res, next) => {
 // ── POST /api/launcher/:id/comments
 const addComment = async (req, res, next) => {
   try {
-    const { body } = req.body;
+    const { body, parent_id = null } = req.body;
     const { rows } = await query(`
-      INSERT INTO launcher_post_comments (post_id, user_id, body)
-      VALUES ($1, $2, $3)
-      RETURNING id, body, created_at
-    `, [req.params.id, req.user.id, body.trim()]);
+      INSERT INTO launcher_post_comments (post_id, user_id, body, parent_id)
+      VALUES ($1, $2, $3, $4)
+      RETURNING id, body, created_at, parent_id
+    `, [req.params.id, req.user.id, body.trim(), parent_id || null]);
     await query(
       'UPDATE launcher_posts SET comments_count=comments_count+1 WHERE id=$1',
       [req.params.id]
@@ -177,7 +177,7 @@ const getCommentsWithLikes = async (req, res, next) => {
   try {
     const userId = req.user?.id || null;
     const { rows } = await query(`
-      SELECT c.id, c.body, c.created_at, c.likes_count,
+      SELECT c.id, c.body, c.created_at, c.likes_count, c.parent_id,
              u.name AS author, u.handle AS author_handle, u.avatar_color, u.avatar_url,
              CASE WHEN $2::uuid IS NOT NULL
                   THEN EXISTS(SELECT 1 FROM launcher_comment_likes WHERE comment_id=c.id AND user_id=$2)

@@ -181,7 +181,7 @@ export const launcherAPI = {
   like:            (id)      => api.post(`/launcher/${id}/like`),
   deletePost:      (id)      => api.delete(`/launcher/${id}`),
   comments:        (id)      => api.get(`/launcher/${id}/comments`),
-  addComment:      (id, b)   => api.post(`/launcher/${id}/comments`, { body: b }),
+  addComment:      (id, b, parentId = null) => api.post(`/launcher/${id}/comments`, { body: b, parent_id: parentId || undefined }),
   likeComment:     (cid)     => api.post(`/launcher/comments/${cid}/like`),
 };
 

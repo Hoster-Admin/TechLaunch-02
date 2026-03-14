@@ -34,15 +34,32 @@ function Avatar({ name, avatarUrl, color, size = 36 }) {
   return <div style={base}>{initials}</div>;
 }
 
-/* ─── single comment (with inline reply dropdown) ─────────────── */
-function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
+function CommentBody({ body }) {
+  if (!body.startsWith('@')) return <>{body}</>;
+  const spaceIdx = body.indexOf(' ');
+  const mention = spaceIdx > 0 ? body.slice(0, spaceIdx) : body;
+  const rest = spaceIdx > 0 ? body.slice(spaceIdx + 1) : '';
+  return (
+    <>
+      <span style={{
+        display: 'inline-block', background: '#dbeafe', color: '#2563eb',
+        borderRadius: 6, padding: '1px 7px', fontSize: 12, fontWeight: 600, marginRight: 6,
+      }}>{mention}</span>
+      {rest}
+    </>
+  );
+}
+
+/* ─── single comment ───────────────────────────────────────────── */
+function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply = false }) {
   const navigate = useNavigate();
   const { setAuthModal } = useUI();
-  const [liked, setLiked] = useState(comment.liked);
+  const [liked, setLiked]           = useState(comment.liked);
   const [likesCount, setLikesCount] = useState(parseInt(comment.likes_count) || 0);
-  const [showReply, setShowReply] = useState(false);
-  const [replyText, setReplyText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [showReplyBox, setShowReplyBox] = useState(false);
+  const [showReplies, setShowReplies]   = useState(false);
+  const [replyText, setReplyText]       = useState('');
+  const [submitting, setSubmitting]     = useState(false);
   const replyRef = useRef(null);
 
   const handleLike = async () => {
@@ -54,7 +71,8 @@ function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
   };
 
   const openReply = () => {
-    setShowReply(true);
+    if (!user) { setAuthModal('login'); return; }
+    setShowReplyBox(true);
     setTimeout(() => replyRef.current?.focus(), 60);
   };
 
@@ -62,31 +80,27 @@ function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
     if (!replyText.trim() || submitting) return;
     setSubmitting(true);
     try {
-      await launcherAPI.addComment(postId, `@${comment.author_handle} ${replyText.trim()}`);
+      await launcherAPI.addComment(postId, `@${comment.author_handle} ${replyText.trim()}`, comment.id);
       setReplyText('');
-      setShowReply(false);
-      onUpdate();
+      setShowReplyBox(false);
+      setShowReplies(true);
+      await onUpdate();
       toast.success('Reply posted!');
     } catch { toast.error('Failed to reply'); }
     finally { setSubmitting(false); }
   };
 
+  const replyCount = replies.length;
+
   return (
     <div style={{ display: 'flex', gap: 10, position: 'relative' }}>
-      {/* avatar + thread line */}
+      {/* avatar column */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
-        <div
-          style={{ cursor: 'pointer' }}
-          onClick={() => navigate(`/u/${comment.author_handle}`)}
-        >
-          <Avatar
-            name={comment.author}
-            avatarUrl={comment.avatar_url}
-            color={comment.avatar_color}
-            size={isReply ? 30 : 36}
-          />
+        <div style={{ cursor: 'pointer' }} onClick={() => navigate(`/u/${comment.author_handle}`)}>
+          <Avatar name={comment.author} avatarUrl={comment.avatar_url} color={comment.avatar_color} size={isReply ? 28 : 36} />
         </div>
-        {showReply && (
+        {/* vertical thread line — shown when reply box is open OR replies exist and are shown */}
+        {(showReplyBox || (showReplies && replyCount > 0)) && (
           <div style={{ width: 2, flex: 1, minHeight: 12, background: '#e2e8f0', borderRadius: 2, marginTop: 4 }} />
         )}
       </div>
@@ -98,9 +112,7 @@ function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
           <span
             style={{ fontWeight: 700, fontSize: isReply ? 12 : 13, color: '#0f172a', cursor: 'pointer' }}
             onClick={() => navigate(`/u/${comment.author_handle}`)}
-          >
-            {comment.author}
-          </span>
+          >{comment.author}</span>
           <span style={{ fontSize: 11, color: '#94a3b8' }}>@{comment.author_handle}</span>
           <span style={{ fontSize: 11, color: '#cbd5e1' }}>·</span>
           <span style={{ fontSize: 11, color: '#94a3b8' }}>{timeAgo(comment.created_at)}</span>
@@ -113,77 +125,64 @@ function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
           borderRadius: isReply ? '4px 16px 16px 16px' : '4px 18px 18px 18px',
           padding: isReply ? '10px 14px' : '12px 16px',
           fontSize: isReply ? 13 : 14,
-          color: '#1e293b',
-          lineHeight: 1.65,
+          color: '#1e293b', lineHeight: 1.65,
         }}>
-          {/* show @mention in a highlighted pill */}
-          {comment.body.startsWith('@') ? (() => {
-            const spaceIdx = comment.body.indexOf(' ');
-            const mention = spaceIdx > 0 ? comment.body.slice(0, spaceIdx) : comment.body;
-            const rest = spaceIdx > 0 ? comment.body.slice(spaceIdx + 1) : '';
-            return (
-              <>
-                <span style={{
-                  display: 'inline-block', background: '#dbeafe', color: '#2563eb',
-                  borderRadius: 6, padding: '1px 7px', fontSize: 12, fontWeight: 600, marginRight: 6,
-                }}>{mention}</span>
-                {rest}
-              </>
-            );
-          })() : comment.body}
+          <CommentBody body={comment.body} />
         </div>
 
         {/* action row */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginTop: 6 }}>
-          <button
-            onClick={handleLike}
-            style={{
-              display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none',
-              cursor: 'pointer', padding: '2px 0', fontSize: 12,
-              color: liked ? '#e15033' : '#94a3b8',
-              fontWeight: liked ? 700 : 500,
-              fontFamily: 'Inter,sans-serif',
-              transition: 'color .15s',
-            }}
-          >
+          {/* like */}
+          <button onClick={handleLike} style={{
+            display: 'flex', alignItems: 'center', gap: 4, background: 'none', border: 'none',
+            cursor: 'pointer', padding: '2px 0', fontSize: 12,
+            color: liked ? '#e15033' : '#94a3b8', fontWeight: liked ? 700 : 500,
+            fontFamily: 'Inter,sans-serif', transition: 'color .15s',
+          }}>
             <span style={{ fontSize: 14, filter: liked ? 'none' : 'grayscale(1)', transition: 'filter .2s' }}>🎉</span>
             {likesCount > 0 && <span>{likesCount}</span>}
           </button>
 
-          {user && !isReply && (
-            <button
-              onClick={showReply ? () => setShowReply(false) : openReply}
-              style={{
-                background: 'none', border: 'none', cursor: 'pointer',
-                fontSize: 12, color: showReply ? '#e15033' : '#94a3b8',
-                fontWeight: 600, padding: '2px 0', fontFamily: 'Inter,sans-serif',
-                transition: 'color .15s',
-              }}
-            >
-              {showReply ? '✕ Cancel' : '↩ Reply'}
+          {/* reply — only on top-level comments */}
+          {!isReply && (
+            <button onClick={showReplyBox ? () => { setShowReplyBox(false); setReplyText(''); } : openReply} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 12, color: showReplyBox ? '#e15033' : '#94a3b8',
+              fontWeight: 600, padding: '2px 0', fontFamily: 'Inter,sans-serif', transition: 'color .15s',
+            }}>
+              {showReplyBox ? '✕ Cancel' : '↩ Reply'}
+            </button>
+          )}
+
+          {/* show/hide replies toggle */}
+          {!isReply && replyCount > 0 && (
+            <button onClick={() => setShowReplies(v => !v)} style={{
+              background: 'none', border: 'none', cursor: 'pointer',
+              fontSize: 12, color: '#64748b', fontWeight: 600, padding: '2px 0',
+              fontFamily: 'Inter,sans-serif', display: 'flex', alignItems: 'center', gap: 4,
+              transition: 'color .15s',
+            }}>
+              <span style={{
+                display: 'inline-block', transition: 'transform .18s',
+                transform: showReplies ? 'rotate(90deg)' : 'rotate(0deg)',
+                fontSize: 10,
+              }}>▶</span>
+              {showReplies ? `Hide ${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}` : `${replyCount} ${replyCount === 1 ? 'reply' : 'replies'}`}
             </button>
           )}
         </div>
 
-        {/* inline reply dropdown */}
-        {showReply && (
+        {/* inline reply box */}
+        {showReplyBox && (
           <div style={{
             marginTop: 10,
-            background: '#fff',
-            border: '1.5px solid #e2e8f0',
-            borderRadius: 12,
-            padding: '12px 14px',
-            display: 'flex',
-            gap: 10,
-            alignItems: 'flex-start',
+            background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 12,
+            padding: '12px 14px', display: 'flex', gap: 10, alignItems: 'flex-start',
             animation: 'slideDown .18s ease',
           }}>
-            {user && <Avatar name={user.name} avatarUrl={user.avatar_url} color={user.avatar_color} size={28} />}
+            {user && <Avatar name={user.name} avatarUrl={user.avatar_url} color={user.avatar_color} size={26} />}
             <div style={{ flex: 1 }}>
-              <div style={{
-                fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 6,
-                textTransform: 'uppercase', letterSpacing: '.04em',
-              }}>
+              <div style={{ fontSize: 11, fontWeight: 600, color: '#94a3b8', marginBottom: 6, textTransform: 'uppercase', letterSpacing: '.04em' }}>
                 Replying to <span style={{ color: '#2563eb' }}>@{comment.author_handle}</span>
               </div>
               <textarea
@@ -200,31 +199,45 @@ function CommentBubble({ comment, user, postId, onUpdate, isReply = false }) {
                 }}
               />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
-                <button
-                  onClick={() => setShowReply(false)}
-                  style={{
-                    padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
-                    background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer',
-                    fontFamily: 'Inter,sans-serif', fontWeight: 600,
-                  }}
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleReply}
-                  disabled={submitting || !replyText.trim()}
-                  style={{
-                    padding: '6px 16px', borderRadius: 8, border: 'none',
-                    background: replyText.trim() ? '#e15033' : '#f1f5f9',
-                    color: replyText.trim() ? '#fff' : '#94a3b8',
-                    fontSize: 12, fontWeight: 700, cursor: replyText.trim() ? 'pointer' : 'default',
-                    fontFamily: 'Inter,sans-serif', transition: 'all .15s',
-                  }}
-                >
+                <button onClick={() => { setShowReplyBox(false); setReplyText(''); }} style={{
+                  padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
+                  background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer',
+                  fontFamily: 'Inter,sans-serif', fontWeight: 600,
+                }}>Cancel</button>
+                <button onClick={handleReply} disabled={submitting || !replyText.trim()} style={{
+                  padding: '6px 16px', borderRadius: 8, border: 'none',
+                  background: replyText.trim() ? '#e15033' : '#f1f5f9',
+                  color: replyText.trim() ? '#fff' : '#94a3b8',
+                  fontSize: 12, fontWeight: 700, cursor: replyText.trim() ? 'pointer' : 'default',
+                  fontFamily: 'Inter,sans-serif', transition: 'all .15s',
+                }}>
                   {submitting ? 'Posting…' : 'Post Reply'}
                 </button>
               </div>
             </div>
+          </div>
+        )}
+
+        {/* nested replies (collapsed by default) */}
+        {!isReply && showReplies && replyCount > 0 && (
+          <div style={{
+            marginTop: 10, paddingLeft: 2,
+            borderLeft: '2px solid #e2e8f0',
+            paddingTop: 6, paddingBottom: 2,
+            display: 'flex', flexDirection: 'column', gap: 12,
+            animation: 'slideDown .18s ease',
+          }}>
+            {replies.map(r => (
+              <div key={r.id} style={{ paddingLeft: 12 }}>
+                <CommentBubble
+                  comment={r}
+                  user={user}
+                  postId={postId}
+                  onUpdate={onUpdate}
+                  isReply={true}
+                />
+              </div>
+            ))}
           </div>
         )}
       </div>
@@ -239,16 +252,18 @@ export default function PostDetailPage() {
   const { user } = useAuth();
   const { setAuthModal } = useUI();
 
-  const [post, setPost] = useState(null);
-  const [comments, setComments] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [liked, setLiked] = useState(false);
-  const [likesCount, setLikesCount] = useState(0);
+  const [post, setPost]               = useState(null);
+  const [topComments, setTopComments] = useState([]);
+  const [repliesMap, setRepliesMap]   = useState({});
+  const [loading, setLoading]         = useState(true);
+  const [liked, setLiked]             = useState(false);
+  const [likesCount, setLikesCount]   = useState(0);
   const [commentText, setCommentText] = useState('');
-  const [submitting, setSubmitting] = useState(false);
+  const [submitting, setSubmitting]   = useState(false);
   const [commentFocused, setCommentFocused] = useState(false);
+  const [totalComments, setTotalComments]   = useState(0);
   const commentAreaRef = useRef(null);
-  const commentBoxRef = useRef(null);
+  const commentBoxRef  = useRef(null);
 
   const load = useCallback(async () => {
     try {
@@ -259,7 +274,24 @@ export default function PostDetailPage() {
       setPost(pr.data.data);
       setLiked(pr.data.data.liked);
       setLikesCount(parseInt(pr.data.data.likes_count) || 0);
-      setComments(cr.data.data || []);
+
+      const all = cr.data.data || [];
+      setTotalComments(all.length);
+
+      // Build threaded structure
+      const top = [];
+      const rMap = {};
+      all.forEach(c => {
+        if (!c.parent_id) {
+          top.push(c);
+          rMap[c.id] = rMap[c.id] || [];
+        } else {
+          if (!rMap[c.parent_id]) rMap[c.parent_id] = [];
+          rMap[c.parent_id].push(c);
+        }
+      });
+      setTopComments(top);
+      setRepliesMap(rMap);
     } catch {
       toast.error('Could not load post');
     } finally {
@@ -330,23 +362,18 @@ export default function PostDetailPage() {
         {/* sticky top bar */}
         <div style={{ background: '#fff', borderBottom: '1px solid #e8edf2', position: 'sticky', top: 0, zIndex: 100 }}>
           <div style={{ maxWidth: 680, margin: '0 auto', padding: '0 20px', height: 54, display: 'flex', alignItems: 'center', gap: 10 }}>
-            <button
-              onClick={() => navigate(-1)}
-              style={{
-                display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none',
-                cursor: 'pointer', fontSize: 14, color: '#334155', fontWeight: 700,
-                fontFamily: 'Inter,sans-serif', padding: '6px 10px 6px 6px', borderRadius: 8,
-              }}
-            >
-              ← Back
-            </button>
+            <button onClick={() => navigate(-1)} style={{
+              display: 'flex', alignItems: 'center', gap: 5, background: 'none', border: 'none',
+              cursor: 'pointer', fontSize: 14, color: '#334155', fontWeight: 700,
+              fontFamily: 'Inter,sans-serif', padding: '6px 10px 6px 6px', borderRadius: 8,
+            }}>← Back</button>
             <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Post</span>
           </div>
         </div>
 
         <div style={{ maxWidth: 680, margin: '0 auto', padding: '20px 20px 0' }}>
 
-          {/* ── THE POST ────────────────────────────────────────── */}
+          {/* ── THE POST ── */}
           <div style={{
             background: '#fff', borderRadius: 18, border: '1px solid #e2e8f0',
             padding: '22px 26px 18px', marginBottom: 3,
@@ -357,10 +384,8 @@ export default function PostDetailPage() {
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
-                  <span
-                    style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', cursor: 'pointer' }}
-                    onClick={() => navigate(`/u/${post.author_handle}`)}
-                  >
+                  <span style={{ fontWeight: 800, fontSize: 15, color: '#0f172a', cursor: 'pointer' }}
+                    onClick={() => navigate(`/u/${post.author_handle}`)}>
                     {post.author}
                   </span>
                   {post.verified && <span style={{ fontSize: 12, color: '#3b82f6' }}>✓</span>}
@@ -373,83 +398,63 @@ export default function PostDetailPage() {
                 padding: '4px 11px', borderRadius: 999, fontSize: 10, fontWeight: 800,
                 letterSpacing: '.07em', textTransform: 'uppercase',
                 background: tagStyle.bg, color: tagStyle.color, flexShrink: 0,
-              }}>
-                {post.tag}
-              </span>
+              }}>{post.tag}</span>
             </div>
 
             <p style={{
               margin: `0 0 ${post.image_url ? '14px' : '18px'}`, fontSize: 16, color: '#1e293b',
               lineHeight: 1.75, whiteSpace: 'pre-wrap', fontWeight: 400,
-            }}>
-              {post.content}
-            </p>
+            }}>{post.content}</p>
 
             {post.image_url && (
               <div style={{ marginBottom: 18, borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                <img
-                  src={post.image_url}
-                  alt="Post image"
-                  style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }}
-                />
+                <img src={post.image_url} alt="Post image" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }} />
               </div>
             )}
 
             {/* post actions */}
-            <div style={{
-              display: 'flex', alignItems: 'center', gap: 10,
-              paddingTop: 14, borderTop: '1px solid #f1f5f9',
-            }}>
-              <button
-                onClick={handleLike}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: liked ? '#fff5f2' : '#f8fafc',
-                  border: `1.5px solid ${liked ? '#fbc4b4' : '#e2e8f0'}`,
-                  color: liked ? '#e15033' : '#64748b',
-                  borderRadius: 999, padding: '6px 16px',
-                  cursor: 'pointer', fontWeight: 700, fontSize: 13,
-                  transition: 'all .15s', fontFamily: 'Inter,sans-serif',
-                }}
-              >
+            <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>
+              <button onClick={handleLike} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: liked ? '#fff5f2' : '#f8fafc',
+                border: `1.5px solid ${liked ? '#fbc4b4' : '#e2e8f0'}`,
+                color: liked ? '#e15033' : '#64748b',
+                borderRadius: 999, padding: '6px 16px',
+                cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                transition: 'all .15s', fontFamily: 'Inter,sans-serif',
+              }}>
                 <span style={{ fontSize: 15, filter: liked ? 'none' : 'grayscale(1)', transition: 'filter .2s' }}>🎉</span>
                 {likesCount}
               </button>
 
-              <button
-                onClick={user ? focusCommentBox : () => setAuthModal('login')}
-                style={{
-                  display: 'flex', alignItems: 'center', gap: 6,
-                  background: '#f8fafc', border: '1.5px solid #e2e8f0',
-                  color: '#64748b', borderRadius: 999, padding: '6px 16px',
-                  cursor: 'pointer', fontWeight: 700, fontSize: 13,
-                  transition: 'all .15s', fontFamily: 'Inter,sans-serif',
-                }}
-              >
+              <button onClick={user ? focusCommentBox : () => setAuthModal('login')} style={{
+                display: 'flex', alignItems: 'center', gap: 6,
+                background: '#f8fafc', border: '1.5px solid #e2e8f0',
+                color: '#64748b', borderRadius: 999, padding: '6px 16px',
+                cursor: 'pointer', fontWeight: 700, fontSize: 13,
+                transition: 'all .15s', fontFamily: 'Inter,sans-serif',
+              }}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5">
                   <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"/>
                 </svg>
-                {comments.length} {comments.length === 1 ? 'comment' : 'comments'}
+                {totalComments} {totalComments === 1 ? 'comment' : 'comments'}
               </button>
             </div>
           </div>
 
-          {/* connector line from post to comments */}
+          {/* connector line */}
           <div style={{ display: 'flex', justifyContent: 'flex-start', padding: '0 0 0 39px' }}>
             <div style={{ width: 2, height: 20, background: '#e2e8f0', borderRadius: 2 }} />
           </div>
 
-          {/* ── COMMENTS SECTION ────────────────────────────────── */}
+          {/* ── COMMENTS SECTION ── */}
           <div style={{ marginBottom: 16 }}>
-
-            {/* section label */}
             <div style={{
-              padding: '4px 0 14px',
-              borderBottom: '1px solid #f1f5f9',
+              padding: '4px 0 14px', borderBottom: '1px solid #f1f5f9',
               display: 'flex', alignItems: 'center', justifyContent: 'space-between',
             }}>
               <span style={{ fontSize: 12, fontWeight: 700, color: '#94a3b8', textTransform: 'uppercase', letterSpacing: '.06em' }}>
-                {comments.length} {comments.length === 1 ? 'Comment' : 'Comments'}
+                {topComments.length} {topComments.length === 1 ? 'Comment' : 'Comments'}
               </span>
               {!user && (
                 <span style={{ fontSize: 12, color: '#94a3b8' }}>
@@ -458,24 +463,25 @@ export default function PostDetailPage() {
               )}
             </div>
 
-            {/* comment list */}
-            {comments.length > 0 && (
+            {topComments.length > 0 ? (
               <div style={{ paddingTop: 4 }}>
-                {comments.map((c, i) => (
-                  <div key={c.id} style={{ paddingTop: 14, paddingBottom: i < comments.length - 1 ? 14 : 6, borderBottom: i < comments.length - 1 ? '1px solid #f4f6f8' : 'none' }}>
+                {topComments.map((c, i) => (
+                  <div key={c.id} style={{
+                    paddingTop: 14,
+                    paddingBottom: i < topComments.length - 1 ? 14 : 6,
+                    borderBottom: i < topComments.length - 1 ? '1px solid #f4f6f8' : 'none',
+                  }}>
                     <CommentBubble
                       comment={c}
                       user={user}
                       postId={id}
                       onUpdate={load}
-                      isReply={c.body.startsWith('@')}
+                      replies={repliesMap[c.id] || []}
                     />
                   </div>
                 ))}
               </div>
-            )}
-
-            {comments.length === 0 && (
+            ) : (
               <div style={{ padding: '32px 0', textAlign: 'center' }}>
                 <div style={{ fontSize: 28, marginBottom: 8 }}>💬</div>
                 <div style={{ fontSize: 14, fontWeight: 600, color: '#cbd5e1' }}>No comments yet</div>
@@ -486,17 +492,13 @@ export default function PostDetailPage() {
             )}
           </div>
 
-          {/* ── ADD COMMENT (at the bottom, like a chat) ─────────── */}
+          {/* ── ADD COMMENT ── */}
           {user && (
-            <div
-              ref={commentAreaRef}
-              style={{
-                background: '#fff', borderRadius: 18, border: `1.5px solid ${commentFocused ? '#e15033' : '#e2e8f0'}`,
-                padding: '14px 18px',
-                transition: 'border-color .2s',
-                animation: 'fadeIn .2s ease',
-              }}
-            >
+            <div ref={commentAreaRef} style={{
+              background: '#fff', borderRadius: 18,
+              border: `1.5px solid ${commentFocused ? '#e15033' : '#e2e8f0'}`,
+              padding: '14px 18px', transition: 'border-color .2s', animation: 'fadeIn .2s ease',
+            }}>
               <div style={{ display: 'flex', gap: 10, alignItems: 'flex-start' }}>
                 <Avatar name={user.name} avatarUrl={user.avatar_url} color={user.avatar_color} size={34} />
                 <div style={{ flex: 1 }}>
@@ -521,28 +523,19 @@ export default function PostDetailPage() {
                   />
                   {(commentFocused || commentText) && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
-                      <button
-                        onClick={() => { setCommentText(''); setCommentFocused(false); }}
-                        style={{
-                          padding: '7px 16px', borderRadius: 8, border: '1px solid #e2e8f0',
-                          background: '#fff', fontSize: 13, color: '#64748b', cursor: 'pointer',
-                          fontFamily: 'Inter,sans-serif', fontWeight: 600,
-                        }}
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        onClick={handleComment}
-                        disabled={submitting || !commentText.trim()}
-                        style={{
-                          padding: '7px 20px', borderRadius: 8, border: 'none',
-                          background: commentText.trim() ? '#e15033' : '#f1f5f9',
-                          color: commentText.trim() ? '#fff' : '#94a3b8',
-                          fontWeight: 700, fontSize: 13,
-                          cursor: commentText.trim() ? 'pointer' : 'default',
-                          fontFamily: 'Inter,sans-serif', transition: 'all .15s',
-                        }}
-                      >
+                      <button onClick={() => { setCommentText(''); setCommentFocused(false); }} style={{
+                        padding: '7px 16px', borderRadius: 8, border: '1px solid #e2e8f0',
+                        background: '#fff', fontSize: 13, color: '#64748b', cursor: 'pointer',
+                        fontFamily: 'Inter,sans-serif', fontWeight: 600,
+                      }}>Cancel</button>
+                      <button onClick={handleComment} disabled={submitting || !commentText.trim()} style={{
+                        padding: '7px 20px', borderRadius: 8, border: 'none',
+                        background: commentText.trim() ? '#e15033' : '#f1f5f9',
+                        color: commentText.trim() ? '#fff' : '#94a3b8',
+                        fontSize: 13, fontWeight: 700,
+                        cursor: commentText.trim() ? 'pointer' : 'default',
+                        fontFamily: 'Inter,sans-serif', transition: 'all .15s',
+                      }}>
                         {submitting ? 'Posting…' : 'Post Comment'}
                       </button>
                     </div>
@@ -553,33 +546,18 @@ export default function PostDetailPage() {
           )}
 
           {!user && (
-            <div style={{ padding: '16px 0', textAlign: 'center' }}>
-              <p style={{ margin: '0 0 12px', fontSize: 14, color: '#94a3b8' }}>
+            <div style={{
+              background: '#fff', borderRadius: 18, border: '1.5px solid #e2e8f0',
+              padding: '20px 22px', textAlign: 'center',
+            }}>
+              <p style={{ fontSize: 14, color: '#64748b', margin: '0 0 12px' }}>
                 Join the conversation
               </p>
-              <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
-                <button
-                  onClick={() => setAuthModal('login')}
-                  style={{
-                    padding: '8px 22px', borderRadius: 8, border: '1.5px solid #e2e8f0',
-                    background: '#fff', fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    fontFamily: 'Inter,sans-serif', color: '#334155',
-                  }}
-                >
-                  Sign In
-                </button>
-                <button
-                  onClick={() => setAuthModal('signup')}
-                  style={{
-                    padding: '8px 22px', borderRadius: 8, border: 'none',
-                    background: '#e15033', color: '#fff',
-                    fontSize: 13, fontWeight: 700, cursor: 'pointer',
-                    fontFamily: 'Inter,sans-serif',
-                  }}
-                >
-                  🚀 Join Launcher
-                </button>
-              </div>
+              <button onClick={() => setAuthModal('signup')} style={{
+                padding: '9px 24px', borderRadius: 10, border: 'none',
+                background: '#e15033', color: '#fff', fontSize: 13, fontWeight: 700,
+                cursor: 'pointer', fontFamily: 'Inter,sans-serif',
+              }}>Sign up free 🚀</button>
             </div>
           )}
 
