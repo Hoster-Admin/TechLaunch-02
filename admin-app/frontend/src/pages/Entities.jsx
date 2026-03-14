@@ -3,6 +3,8 @@ import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
 import { SCard, Badge, Tbl, ActionBtn, EmptyState } from './shared.jsx';
 
+// ─── Constants ────────────────────────────────────────────────────────────────
+
 const TABS = [
   {key:'',              label:'All'},
   {key:'startup',       label:'Companies'},
@@ -12,10 +14,10 @@ const TABS = [
 ];
 
 const ENTITY_TYPES = [
-  { value:'startup',        label:'Companies',                  desc:'Submit and showcase your product' },
-  { value:'accelerator',    label:'Accelerators & Incubators',  desc:'List your program and find companies' },
-  { value:'investor',       label:'Investment Firms',           desc:'Discover MENA deals and founders' },
-  { value:'venture_studio', label:'Venture Studios',            desc:'Build and co-found companies' },
+  { value:'startup',        label:'Companies',               desc:'Submit and showcase your product' },
+  { value:'accelerator',    label:'Accelerators & Incubators', desc:'List your program and find companies' },
+  { value:'investor',       label:'Investment Firms',        desc:'Discover MENA deals and founders' },
+  { value:'venture_studio', label:'Venture Studios',         desc:'Build and co-found companies' },
 ];
 
 const COUNTRIES = [
@@ -26,37 +28,151 @@ const COUNTRIES = [
   ['ps','🇵🇸','Palestine'],['sd','🇸🇩','Sudan'],['other','🌍','Other MENA'],
 ];
 
-const TYPE_BADGE = { startup:'orange', accelerator:'green', investor:'blue', venture_studio:'purple' };
-const typeColor  = { startup:'#E15033', accelerator:'#16a34a', investor:'#2563eb', venture_studio:'#7c3aed' };
+const INDUSTRIES = [
+  'Fintech','Edtech','Healthtech','E-Commerce','Logistics','AI & ML',
+  'Proptech','Cleantech','SaaS','Web3','Media','HR & Work','Foodtech','Traveltech','Other',
+];
+
+const STAGES = ['Ideation','Pre-Seed','Seed','Series A','Series B','Series C','Pre-IPO'];
+
+const TYPE_BADGE  = { startup:'orange', accelerator:'green', investor:'blue', venture_studio:'purple' };
+const typeColor   = { startup:'#E15033', accelerator:'#16a34a', investor:'#2563eb', venture_studio:'#7c3aed' };
+
+// ─── Styles ───────────────────────────────────────────────────────────────────
 
 const inputStyle  = {width:'100%',border:'1px solid #E8E8E8',borderRadius:8,padding:'8px 10px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FAFAFA'};
 const selectStyle = {...inputStyle,cursor:'pointer'};
 
 function Field({ label, children, span }) {
   return (
-    <div style={{marginBottom:14, ...(span && {gridColumn:'1/-1'})}}>
+    <div style={{marginBottom:14,...(span&&{gridColumn:'1/-1'})}}>
       <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:5,textTransform:'uppercase',letterSpacing:'.04em'}}>{label}</label>
       {children}
     </div>
   );
 }
 
+// ─── Logo Crop Modal ──────────────────────────────────────────────────────────
+
+function LogoCropper({ src, onDone, onCancel }) {
+  const [zoom, setZoom]   = useState(1);
+  const [pos, setPos]     = useState({ x: 0, y: 0 });
+  const [dragging, setDragging] = useState(false);
+  const [dragStart, setDragStart] = useState(null);
+  const imgRef  = useRef();
+  const FRAME   = 220;
+
+  const onMouseDown = (e) => {
+    e.preventDefault();
+    setDragging(true);
+    setDragStart({ mx: e.clientX, my: e.clientY, px: pos.x, py: pos.y });
+  };
+  const onMouseMove = (e) => {
+    if (!dragging || !dragStart) return;
+    setPos({ x: dragStart.px + e.clientX - dragStart.mx, y: dragStart.py + e.clientY - dragStart.my });
+  };
+  const onMouseUp = () => setDragging(false);
+
+  const apply = () => {
+    const img = imgRef.current;
+    if (!img) return;
+    const canvas  = document.createElement('canvas');
+    const SIZE    = 256;
+    canvas.width  = SIZE;
+    canvas.height = SIZE;
+    const ctx = canvas.getContext('2d');
+    const naturalW = img.naturalWidth;
+    const naturalH = img.naturalHeight;
+    const displayW = img.width  * zoom;
+    const displayH = img.height * zoom;
+    const cx = (FRAME / 2 - (displayW / 2 + pos.x)) / displayW * naturalW;
+    const cy = (FRAME / 2 - (displayH / 2 + pos.y)) / displayH * naturalH;
+    const cw = (FRAME / displayW) * naturalW;
+    const ch = (FRAME / displayH) * naturalH;
+    ctx.drawImage(img, cx, cy, cw, ch, 0, 0, SIZE, SIZE);
+    onDone(canvas.toDataURL('image/jpeg', 0.85));
+  };
+
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.6)',zIndex:2000,display:'flex',alignItems:'center',justifyContent:'center'}}>
+      <div style={{background:'#fff',borderRadius:16,padding:24,width:320,boxShadow:'0 20px 60px rgba(0,0,0,.25)'}}>
+        <div style={{fontWeight:800,fontSize:14,marginBottom:16,color:'#0A0A0A'}}>Crop & Adjust Logo</div>
+
+        <div
+          style={{width:FRAME,height:FRAME,overflow:'hidden',borderRadius:12,border:'2px solid #E8E8E8',cursor:'grab',position:'relative',margin:'0 auto 14px',background:'#F4F4F4',userSelect:'none'}}
+          onMouseDown={onMouseDown}
+          onMouseMove={onMouseMove}
+          onMouseUp={onMouseUp}
+          onMouseLeave={onMouseUp}
+        >
+          <img
+            ref={imgRef}
+            src={src}
+            draggable={false}
+            style={{width:'100%',height:'100%',objectFit:'cover',transform:`scale(${zoom}) translate(${pos.x/zoom}px,${pos.y/zoom}px)`,transformOrigin:'center center',display:'block',pointerEvents:'none'}}
+          />
+          <div style={{position:'absolute',inset:0,border:'2px dashed rgba(255,255,255,.6)',borderRadius:10,pointerEvents:'none'}}/>
+        </div>
+
+        <div style={{marginBottom:16}}>
+          <div style={{fontSize:11,fontWeight:700,color:'#888',marginBottom:6,textTransform:'uppercase',letterSpacing:'.04em'}}>Zoom</div>
+          <input type="range" min={1} max={3} step={0.05} value={zoom} onChange={e=>setZoom(parseFloat(e.target.value))}
+            style={{width:'100%',accentColor:'var(--orange)'}}/>
+          <div style={{display:'flex',justifyContent:'space-between',fontSize:10,color:'#CCC',marginTop:2}}><span>1×</span><span>3×</span></div>
+        </div>
+
+        <div style={{display:'flex',gap:8}}>
+          <button onClick={apply} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:9,padding:'9px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit'}}>
+            Apply
+          </button>
+          <button onClick={onCancel} style={{padding:'9px 16px',borderRadius:9,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
+            Cancel
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Multi-select Chips ───────────────────────────────────────────────────────
+
+function ChipSelect({ options, selected, onChange, color='#E15033' }) {
+  const toggle = (v) => onChange(selected.includes(v) ? selected.filter(s=>s!==v) : [...selected,v]);
+  return (
+    <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+      {options.map(o=>{
+        const on = selected.includes(o);
+        return (
+          <span key={o} onClick={()=>toggle(o)} style={{fontSize:12,fontWeight:600,padding:'5px 12px',borderRadius:20,cursor:'pointer',userSelect:'none',transition:'all .12s',border:`1.5px solid ${on?color:'#E8E8E8'}`,background:on?color:'#FAFAFA',color:on?'#fff':'#555'}}>
+            {o}
+          </span>
+        );
+      })}
+    </div>
+  );
+}
+
+// ─── Empty form ───────────────────────────────────────────────────────────────
+
 const EMPTY_FORM = {
   name:'', type:'accelerator', country:'', description:'', website:'',
-  stage:'', industry:'', aum:'', portfolio_count:'', logo_url:'',
+  stages:[], industries:[], logo_url:'',
   linkedin:'', twitter:'', why_us_items:[''],
 };
 
+// ─── Main Component ───────────────────────────────────────────────────────────
+
 export default function Entities() {
-  const [entities, setEntities]   = useState([]);
-  const [tab, setTab]             = useState('');
-  const [search, setSearch]       = useState('');
-  const [loading, setLoading]     = useState(true);
-  const [acting, setActing]       = useState({});
-  const [showModal, setShowModal] = useState(false);
-  const [saving, setSaving]       = useState(false);
-  const [form, setForm]           = useState(EMPTY_FORM);
+  const [entities, setEntities]     = useState([]);
+  const [tab, setTab]               = useState('');
+  const [search, setSearch]         = useState('');
+  const [loading, setLoading]       = useState(true);
+  const [acting, setActing]         = useState({});
+  const [showModal, setShowModal]   = useState(false);
+  const [saving, setSaving]         = useState(false);
+  const [form, setForm]             = useState(EMPTY_FORM);
   const [logoPreview, setLogoPreview] = useState(null);
+  const [cropSrc, setCropSrc]       = useState(null);
   const fileRef = useRef();
 
   const load = useCallback(() => {
@@ -73,60 +189,45 @@ export default function Entities() {
     ? entities.filter(e => e.name?.toLowerCase().includes(search.toLowerCase()))
     : entities;
 
-  const handleLogoUpload = (e) => {
+  // Logo: open file → show cropper
+  const handleLogoFile = (e) => {
     const file = e.target.files[0];
     if (!file) return;
-    if (file.size > 2 * 1024 * 1024) { toast.error('Logo must be under 2MB'); return; }
+    if (file.size > 5 * 1024 * 1024) { toast.error('Image must be under 5MB'); return; }
     const reader = new FileReader();
-    reader.onload = (ev) => {
-      setLogoPreview(ev.target.result);
-      setForm(f => ({ ...f, logo_url: ev.target.result }));
-    };
+    reader.onload = (ev) => setCropSrc(ev.target.result);
     reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
-  const setWhyItem = (idx, val) => {
-    setForm(f => {
-      const items = [...f.why_us_items];
-      items[idx] = val;
-      return { ...f, why_us_items: items };
-    });
+  const handleCropDone = (dataUrl) => {
+    setLogoPreview(dataUrl);
+    setForm(f => ({ ...f, logo_url: dataUrl }));
+    setCropSrc(null);
   };
 
-  const addWhyItem = () => {
-    if (form.why_us_items.length >= 8) return;
-    setForm(f => ({ ...f, why_us_items: [...f.why_us_items, ''] }));
-  };
+  const setWhyItem = (idx, val) => setForm(f => { const items=[...f.why_us_items]; items[idx]=val; return {...f,why_us_items:items}; });
+  const addWhyItem = () => { if(form.why_us_items.length<8) setForm(f=>({...f,why_us_items:[...f.why_us_items,'']})); };
+  const removeWhyItem = (idx) => setForm(f=>{ const items=f.why_us_items.filter((_,i)=>i!==idx); return {...f,why_us_items:items.length?items:['']}; });
 
-  const removeWhyItem = (idx) => {
-    setForm(f => {
-      const items = f.why_us_items.filter((_,i)=>i!==idx);
-      return { ...f, why_us_items: items.length ? items : [''] };
-    });
-  };
-
-  const openModal = () => {
-    setForm(EMPTY_FORM);
-    setLogoPreview(null);
-    setShowModal(true);
-  };
+  const openModal = () => { setForm(EMPTY_FORM); setLogoPreview(null); setShowModal(true); };
 
   const create = async () => {
     if (!form.name.trim()) return toast.error('Entity name is required');
-    if (!form.country) return toast.error('Country is required');
+    if (!form.country)     return toast.error('Country is required');
     setSaving(true);
     try {
-      const why_us = form.why_us_items.filter(s=>s.trim()).join('\n') || null;
-      const payload = {
-        ...form,
-        why_us,
-        portfolio_count: form.portfolio_count ? parseInt(form.portfolio_count) : undefined,
-        why_us_items: undefined,
-      };
-      const { data: d } = await adminAPI.createEntity(payload);
+      const why_us   = form.why_us_items.filter(s=>s.trim()).join('\n') || null;
+      const stage    = form.stages.join(', ') || null;
+      const industry = form.industries.join(', ') || null;
+      const { data: d } = await adminAPI.createEntity({
+        name: form.name, type: form.type, country: form.country,
+        description: form.description, website: form.website,
+        stage, industry, logo_url: form.logo_url,
+        linkedin: form.linkedin, twitter: form.twitter, why_us,
+      });
       toast.success(d.message || 'Entity created!');
       setShowModal(false);
-      setForm(EMPTY_FORM);
       setLogoPreview(null);
       load();
     } catch(e) { toast.error(e.message || 'Failed to create entity'); }
@@ -144,9 +245,19 @@ export default function Entities() {
 
   return (
     <>
+      {/* Crop modal */}
+      {cropSrc && (
+        <LogoCropper
+          src={cropSrc}
+          onDone={handleCropDone}
+          onCancel={()=>setCropSrc(null)}
+        />
+      )}
+
+      {/* Create entity modal */}
       {showModal && (
         <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setShowModal(false)}>
-          <div style={{background:'#fff',borderRadius:16,padding:28,width:520,maxWidth:'94vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+          <div style={{background:'#fff',borderRadius:16,padding:28,width:540,maxWidth:'94vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
 
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
               <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>Create Entity</div>
@@ -155,12 +266,14 @@ export default function Entities() {
 
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 14px'}}>
 
+              {/* Entity Name */}
               <div style={{gridColumn:'1/-1'}}>
                 <Field label="Entity Name *">
                   <input style={inputStyle} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))} placeholder=""/>
                 </Field>
               </div>
 
+              {/* Type selector */}
               <Field label="Type *" span>
                 <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:8}}>
                   {ENTITY_TYPES.map(t=>(
@@ -173,6 +286,7 @@ export default function Entities() {
                 </div>
               </Field>
 
+              {/* Country */}
               <Field label="Country *">
                 <select style={selectStyle} value={form.country} onChange={e=>setForm(f=>({...f,country:e.target.value}))}>
                   <option value="">Select country…</option>
@@ -182,10 +296,12 @@ export default function Entities() {
                 </select>
               </Field>
 
+              {/* Website */}
               <Field label="Website">
                 <input style={inputStyle} value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} placeholder="https://"/>
               </Field>
 
+              {/* Logo Upload */}
               <div style={{gridColumn:'1/-1'}}>
                 <Field label="Entity Logo">
                   <div style={{display:'flex',alignItems:'center',gap:12}}>
@@ -198,46 +314,52 @@ export default function Entities() {
                       }
                     </div>
                     <div>
-                      <button onClick={()=>fileRef.current.click()} style={{padding:'6px 14px',borderRadius:8,border:'1px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',color:'#444'}}>
-                        Upload Logo
-                      </button>
-                      <div style={{fontSize:10,color:'#AAAAAA',marginTop:4}}>PNG, JPG or SVG · Max 2MB</div>
+                      <div style={{display:'flex',gap:6}}>
+                        <button onClick={()=>fileRef.current.click()} style={{padding:'6px 14px',borderRadius:8,border:'1px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',color:'#444'}}>
+                          Upload
+                        </button>
+                        {logoPreview && (
+                          <button onClick={()=>setCropSrc(logoPreview)} style={{padding:'6px 14px',borderRadius:8,border:'1px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',color:'#E15033'}}>
+                            Crop & Resize
+                          </button>
+                        )}
+                        {logoPreview && (
+                          <button onClick={()=>{setLogoPreview(null);setForm(f=>({...f,logo_url:''}));}} style={{padding:'6px 10px',borderRadius:8,border:'none',background:'none',fontSize:12,fontWeight:600,cursor:'pointer',fontFamily:'inherit',color:'#CCC'}}>
+                            Remove
+                          </button>
+                        )}
+                      </div>
+                      <div style={{fontSize:10,color:'#AAAAAA',marginTop:4}}>PNG, JPG · Max 5MB · Cropped to square</div>
                     </div>
-                    {logoPreview && (
-                      <button onClick={()=>{setLogoPreview(null);setForm(f=>({...f,logo_url:''}));}} style={{marginLeft:'auto',background:'none',border:'none',cursor:'pointer',fontSize:12,color:'#AAAAAA'}}>Remove</button>
-                    )}
                   </div>
-                  <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleLogoUpload}/>
+                  <input ref={fileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleLogoFile}/>
                 </Field>
               </div>
 
-              <Field label="Industry / Focus">
-                <input style={inputStyle} value={form.industry} onChange={e=>setForm(f=>({...f,industry:e.target.value}))} placeholder=""/>
-              </Field>
-
-              {isInvestor && (
-                <Field label="Stage Focus">
-                  <input style={inputStyle} value={form.stage} onChange={e=>setForm(f=>({...f,stage:e.target.value}))} placeholder="Pre-Seed, Series A…"/>
+              {/* Industry — multi-select chips */}
+              <div style={{gridColumn:'1/-1'}}>
+                <Field label="Industry / Focus">
+                  <ChipSelect options={INDUSTRIES} selected={form.industries} onChange={v=>setForm(f=>({...f,industries:v}))} color="#E15033"/>
                 </Field>
-              )}
+              </div>
 
+              {/* Stage Focus — investor only, multi-select chips */}
               {isInvestor && (
-                <>
-                  <Field label="AUM">
-                    <input style={inputStyle} value={form.aum} onChange={e=>setForm(f=>({...f,aum:e.target.value}))} placeholder="$50M"/>
+                <div style={{gridColumn:'1/-1'}}>
+                  <Field label="Stage Focus">
+                    <ChipSelect options={STAGES} selected={form.stages} onChange={v=>setForm(f=>({...f,stages:v}))} color="#2563eb"/>
                   </Field>
-                  <Field label="Portfolio Count">
-                    <input style={inputStyle} type="number" value={form.portfolio_count} onChange={e=>setForm(f=>({...f,portfolio_count:e.target.value}))} placeholder="0"/>
-                  </Field>
-                </>
+                </div>
               )}
 
+              {/* About */}
               <div style={{gridColumn:'1/-1'}}>
                 <Field label="About">
                   <textarea style={{...inputStyle,resize:'vertical',minHeight:80}} value={form.description} onChange={e=>setForm(f=>({...f,description:e.target.value}))} placeholder=""/>
                 </Field>
               </div>
 
+              {/* Why section */}
               <div style={{gridColumn:'1/-1',marginBottom:14}}>
                 <div style={{fontSize:11,fontWeight:700,color:'#666',marginBottom:8,textTransform:'uppercase',letterSpacing:'.04em'}}>
                   🎯 Why {form.name.trim() || 'this entity'}?
@@ -246,12 +368,7 @@ export default function Entities() {
                   {form.why_us_items.map((item,idx)=>(
                     <div key={idx} style={{display:'flex',gap:6,alignItems:'center'}}>
                       <div style={{width:22,height:22,borderRadius:'50%',background:'#E15033',display:'flex',alignItems:'center',justifyContent:'center',fontSize:10,fontWeight:800,color:'#fff',flexShrink:0}}>{idx+1}</div>
-                      <input
-                        style={{...inputStyle,flex:1}}
-                        value={item}
-                        onChange={e=>setWhyItem(idx,e.target.value)}
-                        placeholder={`Reason ${idx+1}…`}
-                      />
+                      <input style={{...inputStyle,flex:1}} value={item} onChange={e=>setWhyItem(idx,e.target.value)} placeholder={`Reason ${idx+1}…`}/>
                       {form.why_us_items.length > 1 && (
                         <button onClick={()=>removeWhyItem(idx)} style={{background:'none',border:'none',cursor:'pointer',color:'#CCCCCC',fontSize:16,lineHeight:1,padding:'0 2px'}}>✕</button>
                       )}
@@ -265,10 +382,10 @@ export default function Entities() {
                 </div>
               </div>
 
+              {/* Social */}
               <Field label="LinkedIn">
                 <input style={inputStyle} value={form.linkedin} onChange={e=>setForm(f=>({...f,linkedin:e.target.value}))} placeholder="linkedin.com/company/…"/>
               </Field>
-
               <Field label="Twitter / X">
                 <input style={inputStyle} value={form.twitter} onChange={e=>setForm(f=>({...f,twitter:e.target.value}))} placeholder="@handle"/>
               </Field>
@@ -276,7 +393,7 @@ export default function Entities() {
             </div>
 
             <div style={{display:'flex',gap:8,marginTop:8}}>
-              <button onClick={create} disabled={saving} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'11px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?.7:1}}>
+              <button onClick={create} disabled={saving} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'11px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.7:1}}>
                 {saving ? 'Creating…' : 'Create Entity'}
               </button>
               <button onClick={()=>setShowModal(false)} style={{padding:'11px 18px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
@@ -287,6 +404,7 @@ export default function Entities() {
         </div>
       )}
 
+      {/* Entities table */}
       <SCard
         title="Entities"
         sub={`${entities.length} entities — companies, accelerators, investors & venture studios`}
@@ -294,19 +412,22 @@ export default function Entities() {
       >
         <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'14px 20px',borderBottom:'1px solid #F4F4F4',alignItems:'center'}}>
           {TABS.map(t=>(
-            <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:tab===t.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:tab===t.key?'var(--orange)':'#E8E8E8',background:tab===t.key?'var(--orange)':'#fff',color:tab===t.key?'#fff':'#666'}}>{t.label}</button>
+            <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:tab===t.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:tab===t.key?'var(--orange)':'#E8E8E8',background:tab===t.key?'var(--orange)':'#fff',color:tab===t.key?'#fff':'#666'}}>
+              {t.label}
+            </button>
           ))}
           <div style={{marginLeft:'auto',position:'relative'}}>
             <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'5px 10px 5px 28px',fontSize:12,width:180,outline:'none',background:'#FAFAFA'}}/>
             <svg style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',color:'#AAAAAA'}} width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
         </div>
+
         <Tbl heads={['Entity','Type','Country','Industry','Verified','Actions']}>
           {loading
             ? <tr><td colSpan={6} style={{padding:40,textAlign:'center',color:'#AAAAAA',fontSize:13}}>Loading…</td></tr>
             : filtered.length===0
               ? <tr><td colSpan={6}><EmptyState icon="🏢" title="No entities found"/></td></tr>
-              : filtered.map(e => (
+              : filtered.map(e=>(
                 <tr key={e.id} style={{borderBottom:'1px solid #F4F4F4'}}
                   onMouseEnter={el=>el.currentTarget.style.background='#FAFAFA'}
                   onMouseLeave={el=>el.currentTarget.style.background='transparent'}>
@@ -324,10 +445,12 @@ export default function Entities() {
                       </div>
                     </div>
                   </td>
-                  <td style={{padding:'11px 16px'}}><Badge variant={TYPE_BADGE[e.type]||'gray'}>{ENTITY_TYPES.find(t=>t.value===e.type)?.label||e.type?.replace(/_/g,' ')}</Badge></td>
+                  <td style={{padding:'11px 16px'}}>
+                    <Badge variant={TYPE_BADGE[e.type]||'gray'}>{ENTITY_TYPES.find(t=>t.value===e.type)?.label||e.type?.replace(/_/g,' ')}</Badge>
+                  </td>
                   <td style={{padding:'11px 16px',fontSize:12,color:'#666'}}>{e.country||'—'}</td>
                   <td style={{padding:'11px 16px',fontSize:12,color:'#666'}}>{e.industry||e.focus||'—'}</td>
-                  <td style={{padding:'11px 16px'}}>{e.verified ? <Badge variant="green">✓ Verified</Badge> : <Badge variant="gray">Unverified</Badge>}</td>
+                  <td style={{padding:'11px 16px'}}>{e.verified?<Badge variant="green">✓ Verified</Badge>:<Badge variant="gray">Unverified</Badge>}</td>
                   <td style={{padding:'11px 16px'}}>
                     {!e.verified && <ActionBtn variant="verify" loading={acting[e.id]} onClick={()=>verifyEntity(e)}>✓ Verify</ActionBtn>}
                   </td>
