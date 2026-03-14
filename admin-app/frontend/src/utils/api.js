@@ -91,4 +91,18 @@ export const adminAPI = {
   unassignTag:  (id, body)  => req('DELETE',`/admin/tags/${id}/assign`, body),
 };
 
+export async function uploadFile(file) {
+  const formData = new FormData();
+  formData.append('file', file);
+  const token = getToken();
+  const res = await fetch(`${BASE}/upload`, {
+    method: 'POST',
+    headers: token ? { 'Authorization': `Bearer ${token}` } : {},
+    body: formData,
+  });
+  const data = await res.json().catch(() => ({}));
+  if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
+  return data;
+}
+
 export { getToken, setToken };

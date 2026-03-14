@@ -616,6 +616,7 @@ admin.get('/platform-profile/activity', async (req, res) => {
     if (type === 'all' || type === 'posts') {
       const { rows } = await q(
         `SELECT pp.id, 'post' AS kind, pp.type AS post_type, pp.body, pp.likes, pp.created_at,
+                pp.tag_ids,
                 NULL AS product_id, NULL AS product_name, NULL AS product_slug
          FROM platform_posts pp
          WHERE pp.author_id = $1
@@ -659,14 +660,15 @@ admin.get('/platform-profile/activity', async (req, res) => {
 // ── Platform Profile: Create Post (platform_posts) ───────────────────────────
 admin.post('/platform-profile/post', async (req, res) => {
   try {
-    const { type = 'update', body } = req.body;
+    const { type = 'post', body, tag_ids = [] } = req.body;
     if (!body?.trim()) return res.status(400).json({ success: false, message: 'Body required' });
-    const validTypes = ['update', 'milestone', 'feature', 'news'];
-    const postType = validTypes.includes(type) ? type : 'update';
+    const validTypes = ['update', 'milestone', 'feature', 'news', 'post', 'article'];
+    const postType = validTypes.includes(type) ? type : 'post';
+    const tagIdsJson = JSON.stringify(Array.isArray(tag_ids) ? tag_ids : []);
     const { rows } = await q(
-      `INSERT INTO platform_posts (type, body, author_id) VALUES ($1, $2, $3)
-       RETURNING id, type, body, likes, created_at`,
-      [postType, body.trim(), TLMENA_ID]
+      `INSERT INTO platform_posts (type, body, author_id, tag_ids) VALUES ($1, $2, $3, $4::jsonb)
+       RETURNING id, type, body, likes, tag_ids, created_at`,
+      [postType, body.trim(), TLMENA_ID, tagIdsJson]
     );
     await logAction(req.user.id, 'platform_profile.post.created', 'platform_post', rows[0].id, { type: postType });
     res.status(201).json({ success: true, data: { post: { ...rows[0], kind: 'post', post_type: rows[0].type } } });
