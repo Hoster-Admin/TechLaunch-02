@@ -51,7 +51,8 @@ const register = async (req, res, next) => {
     );
 
     // Send welcome email (non-blocking)
-    sendWelcomeEmail({ to: user.email, name: user.name, handle: user.handle }).catch(() => {});
+    sendWelcomeEmail({ to: user.email, name: user.name, handle: user.handle })
+      .catch(err => console.error('[Email] Welcome email failed for', user.email, ':', err.message));
 
     res.status(201).json({
       success: true,
