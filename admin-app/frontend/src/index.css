@@ -190,6 +190,68 @@ nav { flex: 1; padding: 8px 0; overflow-y: auto; }
   font-weight: 600;
 }
 
+/* ── Sidebar collapse toggle (desktop) ───────────────── */
+.sidebar-toggle-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-left: auto;
+  flex-shrink: 0;
+  width: 28px;
+  height: 28px;
+  background: rgba(255,255,255,.08);
+  border: none;
+  border-radius: 7px;
+  color: rgba(255,255,255,.5);
+  cursor: pointer;
+  transition: background .15s, color .15s;
+  padding: 0;
+}
+.sidebar-toggle-btn:hover {
+  background: rgba(255,255,255,.14);
+  color: rgba(255,255,255,.9);
+}
+
+/* Standalone toggle button shown only when collapsed */
+.sidebar-toggle-collapsed {
+  display: flex;
+  margin: 8px auto 4px;
+  width: 36px;
+  height: 36px;
+  border-radius: 10px;
+  background: rgba(255,255,255,.06);
+}
+.sidebar-toggle-collapsed:hover {
+  background: rgba(225,80,51,.25);
+  color: var(--orange);
+}
+
+/* ── Sidebar collapsed state (desktop) ───────────────── */
+.admin-sidebar {
+  transition: width 0.22s cubic-bezier(.4,0,.2,1),
+              min-width 0.22s cubic-bezier(.4,0,.2,1);
+}
+
+.admin-sidebar.sidebar-collapsed {
+  width: 60px;
+  min-width: 60px;
+  overflow: hidden;
+}
+
+.admin-sidebar.sidebar-collapsed .sidebar-logo-text,
+.admin-sidebar.sidebar-collapsed .sidebar-badge,
+.admin-sidebar.sidebar-collapsed .nav-label,
+.admin-sidebar.sidebar-collapsed .nav-section,
+.admin-sidebar.sidebar-collapsed .sidebar-user-info { display: none; }
+
+.admin-sidebar.sidebar-collapsed .sidebar-toggle-btn:not(.sidebar-toggle-collapsed) { display: none; }
+.admin-sidebar.sidebar-collapsed .sidebar-logo { padding: 16px 12px 12px; }
+.admin-sidebar.sidebar-collapsed .sidebar-logo-top { justify-content: center; }
+.admin-sidebar.sidebar-collapsed .nav-item { justify-content: center; padding: 10px; }
+.admin-sidebar.sidebar-collapsed .nav-icon { margin: 0; }
+.admin-sidebar.sidebar-collapsed .sidebar-footer { padding: 12px; }
+.admin-sidebar.sidebar-collapsed .sidebar-admin-user { justify-content: center; }
+
 /* ── Sidebar close button (mobile only) ──────────────── */
 .sidebar-close-btn {
   display: none;
@@ -542,6 +604,8 @@ button:focus-visible { box-shadow: 0 0 0 3px rgba(225,80,51,.35); }
 @media (max-width: 560px) {
   .hamburger-btn { display: flex !important; }
   .sidebar-close-btn { display: flex !important; }
+  .sidebar-toggle-btn { display: none !important; }
+  .sidebar-toggle-collapsed { display: none !important; }
 
   .admin-sidebar {
     position: fixed !important;
@@ -562,11 +626,13 @@ button:focus-visible { box-shadow: 0 0 0 3px rgba(225,80,51,.35); }
     box-shadow: 6px 0 30px rgba(0,0,0,.35);
   }
 
-  /* Restore full sidebar labels when open on mobile */
+  /* Restore full sidebar labels when open on mobile (overrides collapsed state too) */
   .admin-sidebar.nav-open .sidebar-logo-text,
   .admin-sidebar.nav-open .sidebar-badge,
   .admin-sidebar.nav-open .nav-item span:last-child,
-  .admin-sidebar.nav-open .nav-section { display: block !important; }
+  .admin-sidebar.nav-open .nav-label,
+  .admin-sidebar.nav-open .nav-section,
+  .admin-sidebar.nav-open .sidebar-user-info { display: block !important; }
 
   .admin-sidebar.nav-open .nav-item { justify-content: flex-start !important; }
   .admin-sidebar.nav-open .sidebar-logo-top { justify-content: flex-start !important; }

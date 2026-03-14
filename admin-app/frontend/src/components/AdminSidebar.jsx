@@ -13,23 +13,63 @@ const NAV = [
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
 
-export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose }) {
-  const role = user?.role || 'admin';
+function CollapseIcon({ collapsed }) {
   return (
-    <div className={`admin-sidebar${isOpen ? ' nav-open' : ''}`}>
+    <svg width="16" height="14" viewBox="0 0 18 14" fill="none" xmlns="http://www.w3.org/2000/svg">
+      <rect x="0.75" y="0.75" width="16.5" height="12.5" rx="2.25" stroke="currentColor" strokeWidth="1.5"/>
+      <line x1="5.75" y1="0.75" x2="5.75" y2="13.25" stroke="currentColor" strokeWidth="1.5"/>
+      {collapsed
+        ? <path d="M9 4.5L11.5 7L9 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+        : <path d="M11 4.5L8.5 7L11 9.5" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round" strokeLinejoin="round"/>
+      }
+    </svg>
+  );
+}
+
+export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose, collapsed, onToggleCollapse }) {
+  const role = user?.role || 'admin';
+  const classes = [
+    'admin-sidebar',
+    isOpen     ? 'nav-open'       : '',
+    collapsed  ? 'sidebar-collapsed' : '',
+  ].filter(Boolean).join(' ');
+
+  return (
+    <div className={classes}>
       {/* Mobile close button */}
       <button className="sidebar-close-btn" onClick={onClose} aria-label="Close navigation">
         ✕
       </button>
 
-      {/* Logo */}
+      {/* Logo + collapse toggle */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
-          <img src="/logo.png" alt="Tech Launch MENA" className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,display:'block'}} />
+          <img src="/logo.png" alt="Tech Launch MENA" className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,display:'block',flexShrink:0}} />
           <div className="sidebar-logo-text">TL MENA</div>
+          {/* Desktop collapse toggle — hidden on mobile via CSS */}
+          <button
+            className="sidebar-toggle-btn"
+            onClick={onToggleCollapse}
+            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
+          >
+            <CollapseIcon collapsed={collapsed} />
+          </button>
         </div>
         <span className="sidebar-badge">Admin Panel</span>
       </div>
+
+      {/* When collapsed, show the toggle icon centred below the logo */}
+      {collapsed && (
+        <button
+          className="sidebar-toggle-btn sidebar-toggle-collapsed"
+          onClick={onToggleCollapse}
+          title="Expand sidebar"
+          aria-label="Expand sidebar"
+        >
+          <CollapseIcon collapsed={true} />
+        </button>
+      )}
 
       {/* Nav */}
       <nav>
@@ -37,9 +77,10 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
         {NAV.slice(0,3).map(item => (
           <div key={item.key}
             className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}>
+            onClick={() => onChange(item.key)}
+            title={collapsed ? item.label : undefined}>
             <span className="nav-icon">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="nav-label">{item.label}</span>
           </div>
         ))}
 
@@ -47,9 +88,10 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
         {NAV.slice(3,6).map(item => (
           <div key={item.key}
             className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}>
+            onClick={() => onChange(item.key)}
+            title={collapsed ? item.label : undefined}>
             <span className="nav-icon">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="nav-label">{item.label}</span>
           </div>
         ))}
 
@@ -57,9 +99,10 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
         {NAV.slice(6).map(item => (
           <div key={item.key}
             className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}>
+            onClick={() => onChange(item.key)}
+            title={collapsed ? item.label : undefined}>
             <span className="nav-icon">{item.icon}</span>
-            <span>{item.label}</span>
+            <span className="nav-label">{item.label}</span>
           </div>
         ))}
       </nav>
@@ -70,7 +113,7 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
           <div className="admin-avatar" style={{background:user?.avatar_color||'var(--orange)'}}>
             {(user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
           </div>
-          <div style={{flex:1,minWidth:0}}>
+          <div className="sidebar-user-info" style={{flex:1,minWidth:0}}>
             <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
             <div className="admin-role">{role}</div>
           </div>

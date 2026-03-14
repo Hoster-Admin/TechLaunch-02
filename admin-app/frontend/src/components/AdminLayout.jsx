@@ -1,39 +1,50 @@
 import React, { useState, useEffect } from 'react';
 import AdminSidebar from './AdminSidebar.jsx';
-import AdminDashboard   from '../pages/Dashboard.jsx';
-import AdminProducts    from '../pages/Products.jsx';
-import AdminUsers       from '../pages/Users.jsx';
-import AdminEntities    from '../pages/Entities.jsx';
+import AdminDashboard    from '../pages/Dashboard.jsx';
+import AdminProducts     from '../pages/Products.jsx';
+import AdminUsers        from '../pages/Users.jsx';
+import AdminEntities     from '../pages/Entities.jsx';
 import AdminApplications from '../pages/Applications.jsx';
-import AdminFeatured    from '../pages/Featured.jsx';
-import AdminReports     from '../pages/Reports.jsx';
-import AdminSettings    from '../pages/Settings.jsx';
-import AdminSuggestions from '../pages/Suggestions.jsx';
+import AdminFeatured     from '../pages/Featured.jsx';
+import AdminReports      from '../pages/Reports.jsx';
+import AdminSettings     from '../pages/Settings.jsx';
+import AdminSuggestions  from '../pages/Suggestions.jsx';
 import AdminActivityLog  from '../pages/ActivityLog.jsx';
 import { useAuth } from '../App.jsx';
 
 const PAGES = {
-  dashboard:    { title:'Dashboard',              sub:'Overview of platform activity',         Component: AdminDashboard },
-  products:     { title:'Products',               sub:'Manage all submitted products',          Component: AdminProducts },
-  users:        { title:'User Management',        sub:'Manage all platform users',              Component: AdminUsers },
-  entities:     { title:'Entities',               sub:'Startups, accelerators, investors',      Component: AdminEntities },
-  applications: { title:'Applications & Waitlists', sub:'Review applications and waitlists',   Component: AdminApplications },
-  featured:     { title:'Featured & Spotlight',   sub:'Control what appears on homepage',       Component: AdminFeatured },
-  reports:      { title:'Reports & Analytics',    sub:'Platform performance metrics',           Component: AdminReports },
-  activity:     { title:'Audit Log',              sub:'Full history of admin actions',          Component: AdminActivityLog },
-  settings:     { title:'Platform Settings',      sub:'Configure platform behaviour',           Component: AdminSettings },
-  suggestions:  { title:'Suggestions',            sub:'User feedback and feature requests',     Component: AdminSuggestions },
+  dashboard:    { title:'Dashboard',               sub:'Overview of platform activity',        Component: AdminDashboard },
+  products:     { title:'Products',                sub:'Manage all submitted products',         Component: AdminProducts },
+  users:        { title:'User Management',         sub:'Manage all platform users',             Component: AdminUsers },
+  entities:     { title:'Entities',                sub:'Startups, accelerators, investors',     Component: AdminEntities },
+  applications: { title:'Applications & Waitlists',sub:'Review applications and waitlists',    Component: AdminApplications },
+  featured:     { title:'Featured & Spotlight',    sub:'Control what appears on homepage',      Component: AdminFeatured },
+  reports:      { title:'Reports & Analytics',     sub:'Platform performance metrics',          Component: AdminReports },
+  activity:     { title:'Audit Log',               sub:'Full history of admin actions',         Component: AdminActivityLog },
+  settings:     { title:'Platform Settings',       sub:'Configure platform behaviour',          Component: AdminSettings },
+  suggestions:  { title:'Suggestions',             sub:'User feedback and feature requests',    Component: AdminSuggestions },
 };
 
 export default function AdminLayout() {
-  const [page, setPage]       = useState('dashboard');
-  const [navOpen, setNavOpen] = useState(false);
-  const { user, logout }      = useAuth();
+  const [page, setPage]         = useState('dashboard');
+  const [navOpen, setNavOpen]   = useState(false);
+  const [collapsed, setCollapsed] = useState(
+    () => localStorage.getItem('tlmena-sidebar-collapsed') === 'true'
+  );
+  const { user, logout } = useAuth();
   const { title, sub, Component } = PAGES[page] || PAGES.dashboard;
 
   const handleNavChange = (key) => {
     setPage(key);
     setNavOpen(false);
+  };
+
+  const toggleCollapse = () => {
+    setCollapsed(prev => {
+      const next = !prev;
+      localStorage.setItem('tlmena-sidebar-collapsed', String(next));
+      return next;
+    });
   };
 
   useEffect(() => {
@@ -53,6 +64,8 @@ export default function AdminLayout() {
         onLogout={logout}
         isOpen={navOpen}
         onClose={() => setNavOpen(false)}
+        collapsed={collapsed}
+        onToggleCollapse={toggleCollapse}
       />
 
       <div className="admin-main">
