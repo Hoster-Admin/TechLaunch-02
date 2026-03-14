@@ -32,7 +32,7 @@ import AdminProducts    from './pages/admin/AdminProducts';
 import AdminSuggestions from './pages/admin/AdminSuggestions';
 import {
   AdminUsers, AdminEntities, AdminApplications,
-  AdminFeatured, AdminReports, AdminSettings, AdminProfile
+  AdminFeatured, AdminReports, AdminSettings, AdminProfile, AdminEmailSignups
 } from './pages/admin/AdminPages';
 
 import SubmitProductModal from './components/home/SubmitProductModal';
@@ -134,6 +134,7 @@ function AppRoutes() {
           <Route path="featured"       element={<AdminFeatured/>}/>
           <Route path="suggestions"    element={<AdminSuggestions/>}/>
           <Route path="reports"        element={<AdminReports/>}/>
+          <Route path="email-signups"  element={<AdminEmailSignups/>}/>
           <Route path="settings"       element={<AdminSettings/>}/>
           <Route path="profile"        element={<AdminProfile/>}/>
         </Route>

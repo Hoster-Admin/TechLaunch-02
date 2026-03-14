@@ -96,7 +96,8 @@ export const productsAPI = {
   delete:     (id)     => api.delete(`/products/${id}`),
   upvote:     (id)     => api.post(`/products/${id}/upvote`),
   bookmark:   (id)     => api.post(`/products/${id}/bookmark`),
-  waitlist:   (id, e)  => api.post(`/products/${id}/waitlist`, { email: e }),
+  waitlist:        (id, email, name) => api.post(`/products/${id}/waitlist`, { email, name }),
+  discountSignup:  (id, email, name) => api.post(`/products/${id}/discount-signup`, { email, name }),
   comments:   (id)     => api.get(`/products/${id}/comments`),
   addComment: (id, b)  => api.post(`/products/${id}/comments`, { body: b }),
 };
@@ -160,6 +161,8 @@ export const adminAPI = {
   // Suggestions
   suggestions: (p)      => api.get('/admin/suggestions', { params: p }),
   respondSuggestion: (id, response) => api.post(`/admin/suggestions/${id}/respond`, { response }),
+  // Email signups
+  emailSignups: () => api.get('/admin/email-signups'),
 };
 
 export const suggestionsAPI = {

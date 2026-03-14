@@ -88,6 +88,8 @@ productsRouter.post('/:id/upvote',    authenticate, productCtrl.toggleUpvote);
 productsRouter.post('/:id/bookmark',  authenticate, productCtrl.toggleBookmark);
 productsRouter.post('/:id/waitlist',  optionalAuth,
   [body('email').isEmail()], validate, productCtrl.joinWaitlist);
+productsRouter.post('/:id/discount-signup', optionalAuth,
+  [body('email').isEmail()], validate, productCtrl.addDiscountSignup);
 productsRouter.get ('/:id/comments',  optionalAuth, productCtrl.getComments);
 productsRouter.post('/:id/comments',  authenticate,
   [body('body').trim().notEmpty().isLength({ max:2000 })], validate, productCtrl.addComment);
@@ -206,6 +208,9 @@ adminRouter.delete('/team/:id',      requireAdmin, adminCtrl.removeTeamMember);
 
 // Reports
 adminRouter.get('/reports', requireMod, adminCtrl.getReports);
+
+// Email signups (waitlist + discount)
+adminRouter.get('/email-signups', requireMod, adminCtrl.getEmailSignups);
 
 // Platform Posts (My Profile)
 adminRouter.get   ('/posts',          requireMod, adminCtrl.getPlatformPosts);

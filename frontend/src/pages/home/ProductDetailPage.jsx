@@ -9,6 +9,67 @@ import { Spinner } from '../../components/ui';
 import toast from 'react-hot-toast';
 import WaitlistModal from '../../components/home/WaitlistModal';
 
+function DiscountSignupBox({ product }) {
+  const { user } = useAuth();
+  const [name,    setName]    = useState(user?.name  || '');
+  const [email,   setEmail]   = useState(user?.email || '');
+  const [done,    setDone]    = useState(false);
+  const [loading, setLoading] = useState(false);
+
+  const submit = async () => {
+    if (!name.trim())        { toast.error('Please enter your name'); return; }
+    if (!email.includes('@')){ toast.error('Enter a valid email');    return; }
+    setLoading(true);
+    try {
+      await productsAPI.discountSignup(product.id, email.trim(), name.trim());
+      setDone(true);
+      toast.success('You\'re in! Discount details will be sent to your email.');
+    } catch {
+      toast.error('Could not submit — please try again');
+    } finally { setLoading(false); }
+  };
+
+  const inp = { display:'block', width:'100%', padding:'11px 14px', borderRadius:10, border:'1.5px solid #e0c8b0', fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box', background:'#fffaf7' };
+
+  if (done) return (
+    <div style={{ marginBottom:36, background:'linear-gradient(135deg,#fff7ed,#fff3e0)', borderRadius:16, padding:'24px 24px', border:'1.5px solid #f59e0b', textAlign:'center' }}>
+      <div style={{ fontSize:36, marginBottom:8 }}>🎉</div>
+      <div style={{ fontSize:16, fontWeight:800, color:'#92400e', marginBottom:4 }}>You're locked in!</div>
+      <div style={{ fontSize:13, color:'#78350f', lineHeight:1.6 }}>
+        We'll email your exclusive discount to <strong>{email}</strong>. Keep an eye on your inbox!
+      </div>
+    </div>
+  );
+
+  return (
+    <div style={{ marginBottom:36, background:'linear-gradient(135deg,#fff7ed,#fffbf5)', borderRadius:16, padding:'24px 24px', border:'1.5px solid #fed7aa' }}>
+      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:4 }}>
+        <span style={{ fontSize:20 }}>🏷️</span>
+        <div style={{ fontSize:13, fontWeight:900, textTransform:'uppercase', letterSpacing:'.07em', color:'#c2410c' }}>Launch Discount — 40% off</div>
+      </div>
+      <div style={{ fontSize:13, color:'#78350f', marginBottom:18, lineHeight:1.6 }}>
+        Get <strong>40% off for the first 3 months</strong> — exclusive to the first 200 Tech Launch community members. Sign up below and we'll send the discount directly to your email.
+      </div>
+      <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+        <input type="text" value={name} onChange={e => setName(e.target.value)} placeholder="Your name"
+          style={inp}
+          onFocus={e => e.target.style.borderColor='#f97316'} onBlur={e => e.target.style.borderColor='#e0c8b0'}/>
+        <div style={{ display:'flex', gap:10 }}>
+          <input type="email" value={email} onChange={e => setEmail(e.target.value)} placeholder="your@email.com"
+            onKeyDown={e => e.key === 'Enter' && submit()}
+            style={{ ...inp, flex:1 }}
+            onFocus={e => e.target.style.borderColor='#f97316'} onBlur={e => e.target.style.borderColor='#e0c8b0'}/>
+          <button onClick={submit} disabled={loading}
+            style={{ padding:'11px 22px', borderRadius:10, background:'#ea580c', color:'#fff', border:'none', fontSize:13, fontWeight:800, cursor:loading?'default':'pointer', opacity:loading?0.7:1, whiteSpace:'nowrap', flexShrink:0 }}>
+            {loading ? 'Sending…' : 'Claim Discount'}
+          </button>
+        </div>
+      </div>
+      <div style={{ fontSize:11, color:'#b45309', marginTop:10 }}>Limited spots · No spam · Unsubscribe anytime</div>
+    </div>
+  );
+}
+
 const REASONS_MAP = {
   'Fintech':    ['💸 Zero-fee transactions for MENA users','🔐 Bank-grade security & compliance','⚡ Instant settlements in local currency','🌍 Works across 10+ MENA countries','📱 Best-in-class mobile experience'],
   'Edtech':     ['📚 Arabic-first content library','🎓 Structured learning paths for all ages','👥 Peer-to-peer study groups','📊 Live progress tracking for parents','🏆 Gamified achievements & rewards'],
@@ -114,12 +175,12 @@ function CommentsSection({ productId, onSignIn, product }) {
       ) : (
         <div style={{ display:'flex', flexDirection:'column', gap:14 }}>
           {comments.map((c, i) => {
-            const cUser = c.user || c.author || {};
-            const name = cUser.name || cUser.full_name || 'Anonymous';
-            const handle = cUser.handle || cUser.username || '';
+            const name   = c.author_name  || c.user?.name   || c.author?.name   || 'Unknown';
+            const handle = c.author_handle || c.user?.handle || c.author?.handle || '';
+            const avatarColor = c.avatar_color || 'var(--orange)';
             return (
               <div key={c.id || i} style={{ display:'flex', gap:12, alignItems:'flex-start', background:'#fafafa', borderRadius:14, padding:'14px 16px', border:'1px solid #f0f0f0' }}>
-                <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:13, fontWeight:800, flexShrink:0 }}>
+                <div style={{ width:36, height:36, borderRadius:'50%', background:avatarColor, color:'#fff', display:'grid', placeItems:'center', fontSize:13, fontWeight:800, flexShrink:0 }}>
                   {initials(name)}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
@@ -346,6 +407,9 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
               </button>
             </div>
           )}
+
+          {/* Discount Signup — live products only */}
+          {!isSoon && <DiscountSignupBox product={p}/>}
 
           {/* Comments */}
           <CommentsSection productId={p.id} onSignIn={onSignIn} product={p}/>

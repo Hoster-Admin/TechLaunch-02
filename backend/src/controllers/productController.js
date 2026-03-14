@@ -282,15 +282,30 @@ const toggleBookmark = async (req, res, next) => {
 const joinWaitlist = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { email } = req.body;
+    const { email, name } = req.body;
 
     await query(
-      'INSERT INTO waitlist_signups (product_id, email, user_id) VALUES ($1,$2,$3) ON CONFLICT DO NOTHING',
-      [id, email, req.user?.id || null]
+      'INSERT INTO waitlist_signups (product_id, email, name, user_id) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+      [id, email, name || null, req.user?.id || null]
     );
     await query('UPDATE products SET waitlist_count = waitlist_count + 1 WHERE id=$1', [id]);
 
     res.json({ success:true, message:'Added to waitlist!' });
+  } catch (err) { next(err); }
+};
+
+// ── POST /api/products/:id/discount-signup
+const addDiscountSignup = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { email, name } = req.body;
+
+    await query(
+      'INSERT INTO discount_signups (product_id, email, name, user_id) VALUES ($1,$2,$3,$4) ON CONFLICT DO NOTHING',
+      [id, email, name || null, req.user?.id || null]
+    );
+
+    res.json({ success:true, message:'Discount signup recorded!' });
   } catch (err) { next(err); }
 };
 
@@ -322,5 +337,5 @@ const addComment = async (req, res, next) => {
 
 module.exports = {
   getProducts, getProduct, createProduct, updateProduct, deleteProduct,
-  toggleUpvote, toggleBookmark, joinWaitlist, getComments, addComment,
+  toggleUpvote, toggleBookmark, joinWaitlist, addDiscountSignup, getComments, addComment,
 };

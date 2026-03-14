@@ -2,6 +2,13 @@
 
 A full-stack product discovery platform for the MENA region, similar to Product Hunt.
 
+## Key Features (latest)
+- **Discount Signup Box**: Live product pages have an orange-styled "Launch Discount — 40% off" card where users enter name + email. Stored in `discount_signups` table.
+- **Waitlist Modal**: Collects name + email (name field added). Stored in `waitlist_signups.name` column.
+- **Product Comments**: Show real user name/handle/avatar (fixed "Anonymous" bug — backend returns `author_name`/`author_handle` flat fields).
+- **Admin Email Signups**: `/admin/email-signups` page shows both waitlist and discount signup emails with product info, with CSV export.
+- **Threaded Launcher Comments**: Replies nested under parent comments with collapsible toggle.
+
 ## Architecture
 
 - **Frontend**: React (Vite) — served by Express in production on port 5000

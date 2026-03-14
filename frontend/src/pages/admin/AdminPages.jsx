@@ -888,6 +888,75 @@ export function AdminSettings() {
 // Default export (used by router)
 export default function AdminPages() { return null; }
 
+// ─── EMAIL SIGNUPS ─────────────────────────────────────
+export function AdminEmailSignups() {
+  const [data, setData]       = useState({ waitlists: [], discounts: [] });
+  const [loading, setLoading] = useState(true);
+  const [tab, setTab]         = useState('waitlists');
+
+  useEffect(() => {
+    adminAPI.emailSignups()
+      .then(({ data: d }) => setData(d.data || { waitlists:[], discounts:[] }))
+      .catch(() => {})
+      .finally(() => setLoading(false));
+  }, []);
+
+  const rows = tab === 'waitlists' ? data.waitlists : data.discounts;
+
+  const exportCSV = () => {
+    const headers = ['Name','Email','Product','Signed Up'];
+    const lines = rows.map(r => [r.name||r.user_name||'—', r.email, r.product_name, new Date(r.created_at).toLocaleDateString()].join(','));
+    const blob = new Blob([headers.join(',')+'\n'+lines.join('\n')], { type:'text/csv' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a'); a.href=url; a.download=`${tab}-${Date.now()}.csv`; a.click();
+    URL.revokeObjectURL(url);
+    toast.success('CSV exported!');
+  };
+
+  if (loading) return <div style={{textAlign:'center',padding:'60px 0',color:'#AAA',fontSize:14}}>Loading…</div>;
+
+  return (
+    <div>
+      <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:16}}>
+        <div style={{display:'flex',gap:8}}>
+          {['waitlists','discounts'].map(t => (
+            <button key={t} onClick={() => setTab(t)}
+              style={{padding:'8px 18px',borderRadius:10,border:`1.5px solid ${tab===t?'var(--orange)':'#e8e8e8'}`,background:tab===t?'var(--orange-light)':'#fff',color:tab===t?'var(--orange)':'#555',fontSize:13,fontWeight:700,cursor:'pointer',textTransform:'capitalize'}}>
+              {t === 'waitlists' ? `⏳ Waitlist Signups (${data.waitlists.length})` : `🏷️ Discount Signups (${data.discounts.length})`}
+            </button>
+          ))}
+        </div>
+        <ActionBtn variant="edit" onClick={exportCSV}>Export CSV</ActionBtn>
+      </div>
+
+      <SectionCard title={tab === 'waitlists' ? 'Waitlist Signups' : 'Discount Signups'} sub={`Collected name & email from ${tab} forms`}>
+        {rows.length === 0 ? <EmptyState icon="📬" title="No signups yet" sub="Signups will appear here as users submit the forms"/> : (
+          <Tbl heads={['Name','Email','Product','Signed Up']}>
+            {rows.map(r => (
+              <tr key={r.id} style={{borderBottom:'1px solid #F4F4F4'}}
+                onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
+                onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
+                <td style={{padding:'11px 16px'}}>
+                  <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{r.name || r.user_name || '—'}</div>
+                  {r.user_handle && <div style={{fontSize:11,color:'#AAA'}}>@{r.user_handle}</div>}
+                </td>
+                <td style={{padding:'11px 16px',fontSize:13,color:'#0A0A0A'}}>{r.email}</td>
+                <td style={{padding:'11px 16px'}}>
+                  <div style={{display:'flex',alignItems:'center',gap:6}}>
+                    <span style={{fontSize:16}}>{r.logo_emoji||'📦'}</span>
+                    <span style={{fontSize:13,fontWeight:600,color:'#333'}}>{r.product_name}</span>
+                  </div>
+                </td>
+                <td style={{padding:'11px 16px',fontSize:12,color:'#AAA'}}>{new Date(r.created_at).toLocaleDateString('en-GB',{day:'numeric',month:'short',year:'numeric'})}</td>
+              </tr>
+            ))}
+          </Tbl>
+        )}
+      </SectionCard>
+    </div>
+  );
+}
+
 // ─── PROFILE ──────────────────────────────────────────
 export function AdminProfile() {
   const { user } = useAuth();

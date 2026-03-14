@@ -13,6 +13,7 @@ const TITLES = {
   '/admin/suggestions':  { title: 'Suggestions',             sub: 'Member suggestions and recommendations' },
   '/admin/reports':      { title: 'Reports & Analytics',     sub: 'Platform-wide metrics and growth data' },
   '/admin/settings':     { title: 'Platform Settings',       sub: 'Configure platform behaviour and integrations' },
+  '/admin/email-signups':{ title: 'Email Signups',            sub: 'Waitlist and discount signup emails collected' },
   '/admin/profile':      { title: 'My Profile',              sub: 'Your account and preferences' },
 };
 

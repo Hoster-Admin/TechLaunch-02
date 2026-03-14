@@ -523,6 +523,35 @@ const inviteUser = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── GET /api/admin/email-signups
+const getEmailSignups = async (req, res, next) => {
+  try {
+    const [waitlists, discounts] = await Promise.all([
+      query(`
+        SELECT ws.id, ws.email, ws.name, ws.created_at,
+               p.name AS product_name, p.logo_emoji,
+               u.name AS user_name, u.handle AS user_handle
+        FROM waitlist_signups ws
+        JOIN products p ON p.id = ws.product_id
+        LEFT JOIN users u ON u.id = ws.user_id
+        ORDER BY ws.created_at DESC
+        LIMIT 500
+      `),
+      query(`
+        SELECT ds.id, ds.email, ds.name, ds.created_at,
+               p.name AS product_name, p.logo_emoji,
+               u.name AS user_name, u.handle AS user_handle
+        FROM discount_signups ds
+        JOIN products p ON p.id = ds.product_id
+        LEFT JOIN users u ON u.id = ds.user_id
+        ORDER BY ds.created_at DESC
+        LIMIT 500
+      `),
+    ]);
+    res.json({ success:true, data:{ waitlists: waitlists.rows, discounts: discounts.rows } });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getDashboard,
   adminGetProducts, approveProduct, rejectProduct, toggleFeatured,
@@ -535,4 +564,5 @@ module.exports = {
   getPlatformPosts, createPlatformPost, deletePlatformPost,
   getSuggestions, respondSuggestion,
   inviteUser,
+  getEmailSignups,
 };
