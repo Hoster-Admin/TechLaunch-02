@@ -168,7 +168,7 @@ export default function Users() {
             <button onClick={doExport} disabled={exporting} style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',color:'#555',opacity:exporting?0.6:1}}>{exporting?'…':'↓ Export CSV'}</button>
           </div>
         }>
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'14px 20px',borderBottom:'1px solid #F4F4F4'}}>
+        <div className="filters-bar" style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4'}}>
           {FILTERS.map(f=>(
             <button key={f.key} onClick={()=>{setFilter(f.key);setSelected(new Set());}} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:filter===f.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:filter===f.key?'var(--orange)':'#E8E8E8',background:filter===f.key?'var(--orange)':'#fff',color:filter===f.key?'#fff':'#666'}}>{f.label}</button>
           ))}

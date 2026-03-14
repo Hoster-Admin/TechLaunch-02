@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import AdminSidebar from './AdminSidebar.jsx';
 import AdminDashboard   from '../pages/Dashboard.jsx';
 import AdminProducts    from '../pages/Products.jsx';
@@ -26,20 +26,51 @@ const PAGES = {
 };
 
 export default function AdminLayout() {
-  const [page, setPage]   = useState('dashboard');
-  const { user, logout }  = useAuth();
+  const [page, setPage]       = useState('dashboard');
+  const [navOpen, setNavOpen] = useState(false);
+  const { user, logout }      = useAuth();
   const { title, sub, Component } = PAGES[page] || PAGES.dashboard;
+
+  const handleNavChange = (key) => {
+    setPage(key);
+    setNavOpen(false);
+  };
+
+  useEffect(() => {
+    const onKey = (e) => { if (e.key === 'Escape') setNavOpen(false); };
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, []);
 
   return (
     <div className="admin-app">
-      <AdminSidebar current={page} onChange={setPage} user={user} onLogout={logout} />
+      {navOpen && <div className="admin-overlay" onClick={() => setNavOpen(false)}/>}
+
+      <AdminSidebar
+        current={page}
+        onChange={handleNavChange}
+        user={user}
+        onLogout={logout}
+        isOpen={navOpen}
+        onClose={() => setNavOpen(false)}
+      />
+
       <div className="admin-main">
         {/* Topbar */}
         <div className="topbar">
+          <button
+            className="hamburger-btn"
+            onClick={() => setNavOpen(true)}
+            aria-label="Open navigation"
+          >
+            <span/><span/><span/>
+          </button>
+
           <div>
             <div className="topbar-title">{title}</div>
             <div className="topbar-sub">{sub}</div>
           </div>
+
           <div className="topbar-right">
             <div className="topbar-search" style={{display:'flex',alignItems:'center',gap:10,border:'1.5px solid var(--gray-200)',borderRadius:10,padding:'7px 12px',background:'var(--gray-50)',width:200,transition:'border-color .15s'}}
               onFocus={e=>e.currentTarget.style.borderColor='var(--orange)'}

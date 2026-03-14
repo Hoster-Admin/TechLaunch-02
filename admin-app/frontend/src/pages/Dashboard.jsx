@@ -14,7 +14,7 @@ export default function Dashboard() {
 
   if (loading) return (
     <div>
-      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16,marginBottom:20}}>
+      <div className="resp-grid-4" style={{marginBottom:20}}>
         {[...Array(4)].map((_,i) => (
           <div key={i} style={{height:110,background:'#fff',borderRadius:16,border:'1px solid var(--gray-200)',animation:'pulse 1.5s ease-in-out infinite'}}/>
         ))}
@@ -40,7 +40,7 @@ export default function Dashboard() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       {/* Stat cards */}
-      <div style={{display:'grid',gridTemplateColumns:'repeat(4,1fr)',gap:16}}>
+      <div className="resp-grid-4">
         {STAT_CARDS.map((c,i) => (
           <div key={i} className={`stat-card ${c.color}`}>
             <div style={{width:36,height:36,borderRadius:10,display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,marginBottom:12,background:`${ICON_COLORS[c.color]}12`}}>{c.icon}</div>
@@ -52,7 +52,7 @@ export default function Dashboard() {
       </div>
 
       {/* Pending queue + chart row */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 340px',gap:16}}>
+      <div className="resp-grid-main-aside">
         <div className="card">
           <div className="card-header">
             <span className="card-title">Pending Review Queue</span>
@@ -72,7 +72,7 @@ export default function Dashboard() {
       </div>
 
       {/* 3-column bottom row */}
-      <div style={{display:'grid',gridTemplateColumns:'1fr 260px 260px',gap:16}}>
+      <div className="resp-grid-3">
         {/* Activity feed */}
         <div className="card">
           <div className="card-header"><span className="card-title">Recent Activity</span></div>

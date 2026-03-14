@@ -31,14 +31,16 @@ export function Badge({ children, variant='gray' }) {
 
 export function Tbl({ heads, children }) {
   return (
-    <table style={{width:'100%',borderCollapse:'collapse'}}>
-      <thead>
-        <tr style={{borderBottom:'1px solid #F4F4F4'}}>
-          {heads.map(h=><th key={h} style={{padding:'11px 16px',textAlign:'left',fontSize:11,fontWeight:700,color:'#AAAAAA',textTransform:'uppercase',letterSpacing:'.05em',whiteSpace:'nowrap'}}>{h}</th>)}
-        </tr>
-      </thead>
-      <tbody>{children}</tbody>
-    </table>
+    <div style={{overflowX:'auto',WebkitOverflowScrolling:'touch'}}>
+      <table style={{width:'100%',borderCollapse:'collapse',minWidth:480}}>
+        <thead>
+          <tr style={{borderBottom:'1px solid #F4F4F4'}}>
+            {heads.map(h=><th key={h} style={{padding:'11px 16px',textAlign:'left',fontSize:11,fontWeight:700,color:'#AAAAAA',textTransform:'uppercase',letterSpacing:'.05em',whiteSpace:'nowrap'}}>{h}</th>)}
+          </tr>
+        </thead>
+        <tbody>{children}</tbody>
+      </table>
+    </div>
   );
 }
 

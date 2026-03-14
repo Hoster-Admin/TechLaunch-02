@@ -560,7 +560,7 @@ export default function Settings() {
         <TagManagement settings={settings} onSettingChange={save} isAdmin={isAdmin}/>
       </SCard>
 
-      <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:20}}>
+      <div className="resp-grid-2">
         <SCard title="Moderation" sub="Control how content is reviewed">
           <div style={{padding:'0 20px 8px'}}>
             <SettingRow label="Auto-approve Products" sub="Skip manual review for trusted submitters" settingKey="auto_approve"/>

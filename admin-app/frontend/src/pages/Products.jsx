@@ -105,8 +105,8 @@ export default function Products() {
   return (
     <div>
       {/* Filter pills + search + export */}
-      <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:16, gap:10, flexWrap:'wrap' }}>
-        <div style={{ display:'flex', gap:6, flexWrap:'wrap' }}>
+      <div style={{ marginBottom:16 }}>
+        <div className="filters-bar" style={{ marginBottom:10 }}>
           {FILTERS.map(f => (
             <button key={f.key} onClick={() => { setFilter(f.key); setSelected(new Set()); }}
               style={{

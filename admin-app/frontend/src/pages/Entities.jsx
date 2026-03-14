@@ -410,14 +410,14 @@ export default function Entities() {
         sub={`${entities.length} entities — companies, accelerators, investors & venture studios`}
         action={<button onClick={openModal} style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>+ Create Entity</button>}
       >
-        <div style={{display:'flex',gap:6,flexWrap:'wrap',padding:'14px 20px',borderBottom:'1px solid #F4F4F4',alignItems:'center'}}>
+        <div className="filters-bar" style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4'}}>
           {TABS.map(t=>(
             <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:tab===t.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:tab===t.key?'var(--orange)':'#E8E8E8',background:tab===t.key?'var(--orange)':'#fff',color:tab===t.key?'#fff':'#666'}}>
               {t.label}
             </button>
           ))}
-          <div style={{marginLeft:'auto',position:'relative'}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'5px 10px 5px 28px',fontSize:12,width:180,outline:'none',background:'#FAFAFA'}}/>
+          <div style={{marginLeft:'auto',position:'relative',flexShrink:0}}>
+            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'5px 10px 5px 28px',fontSize:12,width:160,outline:'none',background:'#FAFAFA'}}/>
             <svg style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',color:'#AAAAAA'}} width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
         </div>

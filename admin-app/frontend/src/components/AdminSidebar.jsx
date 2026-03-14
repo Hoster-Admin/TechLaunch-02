@@ -13,10 +13,15 @@ const NAV = [
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
 
-export default function AdminSidebar({ current, onChange, user, onLogout }) {
+export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose }) {
   const role = user?.role || 'admin';
   return (
-    <div className="admin-sidebar">
+    <div className={`admin-sidebar${isOpen ? ' nav-open' : ''}`}>
+      {/* Mobile close button */}
+      <button className="sidebar-close-btn" onClick={onClose} aria-label="Close navigation">
+        ✕
+      </button>
+
       {/* Logo */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
