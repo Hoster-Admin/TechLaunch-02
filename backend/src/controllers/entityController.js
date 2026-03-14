@@ -8,7 +8,7 @@ const getEntities = async (req, res, next) => {
     const conditions = [];
     if (type)    { params.push(type);         conditions.push(`type=$${params.length}`); }
     if (country) { params.push(country);      conditions.push(`country=$${params.length}`); }
-    if (search)  { params.push(`%${search}%`);conditions.push(`name ILIKE $${params.length}`); }
+    if (search)  { params.push(`%${search}%`);conditions.push(`(name ILIKE $${params.length} OR country ILIKE $${params.length} OR industry ILIKE $${params.length} OR description ILIKE $${params.length})`); }
     if (status)  { params.push(status);       conditions.push(`status=$${params.length}`); }
     const where = conditions.length ? 'WHERE '+conditions.join(' AND ') : '';
     const offset=(parseInt(page)-1)*parseInt(limit);
