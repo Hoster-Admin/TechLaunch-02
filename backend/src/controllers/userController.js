@@ -26,13 +26,14 @@ const getProfile = async (req, res, next) => {
     }
 
     const { rows: userTags } = await query(`
-      SELECT t.id, t.name, t.color, t.text_color, t.category
+      SELECT t.id, t.name, t.color, t.text_color, t.category, t.is_active
       FROM tags t
       JOIN user_tags ut ON ut.tag_id = t.id
       WHERE ut.user_id = $1 AND t.is_active = true`, [user.id]);
 
     const { rows: tagSettings } = await query(
-      `SELECT key, value FROM platform_settings WHERE key IN ('tags_user_enabled','tags_role_enabled')`);
+      `SELECT key, value FROM platform_settings
+       WHERE key IN ('tags_user_enabled','tags_role_enabled','tags_entity_enabled','tags_product_enabled','tags_article_enabled')`);
     const ts = {};
     tagSettings.forEach(r => { ts[r.key] = r.value === 'true'; });
 
