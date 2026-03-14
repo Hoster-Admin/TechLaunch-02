@@ -37,14 +37,18 @@ export default function AuthModal() {
   const [lPass,  setLPass]  = useState('');
   const [lPassShow, setLPassShow] = useState(false);
 
+  // forgot password
+  const [fpEmail, setFpEmail] = useState('');
+  const [fpSent,  setFpSent]  = useState(false);
+
   useEffect(() => {
     if (authModal === 'login')   { setStep('login');   setError(''); }
     if (authModal === 'signup')  { setStep('persona'); setError(''); setSelectedPersona(null); }
     if (authModal === 'gate')    { setStep('gate');    setError(''); }
     if (authModal === null) {
-      // reset form when closed
       setSName(''); setSEmail(''); setSPass('');
       setLEmail(''); setLPass('');
+      setFpEmail(''); setFpSent(false);
       setError('');
     }
   }, [authModal]);
@@ -192,7 +196,7 @@ export default function AuthModal() {
             <div className="form-group">
               <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
                 <label className="form-label" style={{ margin:0 }}>Password</label>
-                <a onClick={() => toast('Password reset coming soon 📧')} style={{ fontSize:12, fontWeight:600, color:'var(--orange)', cursor:'pointer' }}>Forgot password?</a>
+                <a onClick={() => { setStep('forgot'); setFpEmail(lEmail); setFpSent(false); setError(''); }} style={{ fontSize:12, fontWeight:600, color:'var(--orange)', cursor:'pointer' }}>Forgot password?</a>
               </div>
               <div style={{ position:'relative' }}>
                 <input className="form-input" type={lPassShow?'text':'password'} value={lPass} onChange={e => setLPass(e.target.value)} placeholder="Your password" autoComplete="current-password"
@@ -210,6 +214,54 @@ export default function AuthModal() {
             <div className="modal-switch">
               Don't have an account? <a onClick={() => { setStep('persona'); setError(''); setSelectedPersona(null); }}>Sign up free</a>
             </div>
+          </div>
+        )}
+
+        {/* ── STEP: FORGOT PASSWORD */}
+        {step === 'forgot' && (
+          <div>
+            <LogoIcon/>
+            <div className="modal-title" style={{ marginTop:4 }}>Reset Password</div>
+            {!fpSent ? (
+              <>
+                <div className="modal-sub">Enter your email and we'll send you a reset link.</div>
+                {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
+                <div className="form-group">
+                  <label className="form-label">Email</label>
+                  <input className="form-input" type="email" value={fpEmail} onChange={e => setFpEmail(e.target.value)} placeholder="your@email.com" autoComplete="email"
+                    onKeyDown={e => {
+                      if (e.key === 'Enter') {
+                        if (!fpEmail.trim() || !fpEmail.includes('@')) { setError('Please enter a valid email'); return; }
+                        setFpSent(true); setError('');
+                      }
+                    }}/>
+                </div>
+                <button className="btn-full" disabled={loading} onClick={() => {
+                  if (!fpEmail.trim() || !fpEmail.includes('@')) { setError('Please enter a valid email'); return; }
+                  setFpSent(true); setError('');
+                }}>
+                  Send Reset Link
+                </button>
+                <div style={{ marginTop:14, textAlign:'center' }}>
+                  <a onClick={() => { setStep('login'); setError(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>← Back to sign in</a>
+                </div>
+              </>
+            ) : (
+              <>
+                <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
+                  <div style={{ fontSize:44, marginBottom:16 }}>📧</div>
+                  <div style={{ fontSize:15, fontWeight:700, color:'#0a0a0a', marginBottom:8 }}>Check your inbox</div>
+                  <div style={{ fontSize:13, color:'#666', lineHeight:1.6 }}>
+                    If <b>{fpEmail}</b> is registered, you'll receive a password reset link shortly.<br/>
+                    <span style={{ fontSize:12, color:'#aaa' }}>Don't see it? Check your spam folder.</span>
+                  </div>
+                </div>
+                <button className="btn-full" onClick={close}>Done</button>
+                <div style={{ marginTop:14, textAlign:'center' }}>
+                  <a onClick={() => { setFpSent(false); setFpEmail(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>Try a different email</a>
+                </div>
+              </>
+            )}
           </div>
         )}
 

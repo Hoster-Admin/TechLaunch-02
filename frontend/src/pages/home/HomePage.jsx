@@ -43,6 +43,8 @@ export default function HomePage() {
   const [industryDDOpen, setIndDD]    = useState(false);
   const [selectedCountries, setCountries] = useState([]);
   const [selectedIndustries, setIndustries] = useState([]);
+  const [countrySearch, setCountrySearch]   = useState('');
+  const [industrySearch, setIndustrySearch] = useState('');
 
   useEffect(() => {
     setLoading(true);
@@ -102,11 +104,12 @@ export default function HomePage() {
               {countryDDOpen && (
                 <div className="country-dd-menu open" style={{ position: 'fixed', top: 'auto', left: 'auto', marginTop: 4 }}>
                   <div className="country-dd-top">
-                    <input className="country-dd-search" type="text" placeholder="Search country…" autoComplete="off"/>
-                    <button className="country-dd-clear" onClick={() => setCountries([])}>Clear</button>
+                    <input className="country-dd-search" type="text" placeholder="Search country…" autoComplete="off"
+                      value={countrySearch} onChange={e => setCountrySearch(e.target.value)}/>
+                    <button className="country-dd-clear" onClick={() => { setCountries([]); setCountrySearch(''); }}>Clear</button>
                   </div>
                   <div className="country-dd-list">
-                    {COUNTRIES.map(([v, label]) => (
+                    {COUNTRIES.filter(([, label]) => label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim().toLowerCase().includes(countrySearch.toLowerCase())).map(([v, label]) => (
                       <label key={v} className="country-dd-item">
                         <input type="checkbox" checked={selectedCountries.includes(v)}
                           onChange={e => setCountries(prev => e.target.checked ? [...prev, v] : prev.filter(c => c !== v))}
@@ -128,11 +131,12 @@ export default function HomePage() {
               {industryDDOpen && (
                 <div className="country-dd-menu open" style={{ position: 'fixed', top: 'auto', left: 'auto', marginTop: 4 }}>
                   <div className="country-dd-top">
-                    <input className="country-dd-search" type="text" placeholder="Search industry…" autoComplete="off"/>
-                    <button className="country-dd-clear" onClick={() => setIndustries([])}>Clear</button>
+                    <input className="country-dd-search" type="text" placeholder="Search industry…" autoComplete="off"
+                      value={industrySearch} onChange={e => setIndustrySearch(e.target.value)}/>
+                    <button className="country-dd-clear" onClick={() => { setIndustries([]); setIndustrySearch(''); }}>Clear</button>
                   </div>
                   <div className="country-dd-list">
-                    {INDUSTRIES.map(ind => (
+                    {INDUSTRIES.filter(ind => ind.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => (
                       <label key={ind} className="country-dd-item">
                         <input type="checkbox" checked={selectedIndustries.includes(ind)}
                           onChange={e => setIndustries(prev => e.target.checked ? [...prev, ind] : prev.filter(i => i !== ind))}
