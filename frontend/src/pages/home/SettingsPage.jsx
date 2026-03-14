@@ -613,6 +613,9 @@ export default function SettingsPage() {
   const [coInstagram,setCoInstagram]=useState('');
   const [coTeam,     setCoTeam]    = useState('');
   const [coFounded,  setCoFounded] = useState('');
+  const [coAum,      setCoAum]     = useState('');
+  const [coPortfolio,setCoPortfolio]=useState('');
+  const [coWhyReasons,setCoWhyReasons]=useState(['']);
   const [coStageOpen,setCoStageOpen]=useState(false);
   const [coSubmitted,setCoSubmitted]=useState(false);
   const [coSaving,   setCoSaving]  = useState(false);
@@ -700,6 +703,7 @@ export default function SettingsPage() {
       const countryLabel = coCountry.length > 0
         ? (MENA_COUNTRIES_LIST.find(c => c.v === coCountry[0])?.l?.replace(/^[\S]+ /,'') || coCountry[0])
         : null;
+      const filledReasons = coWhyReasons.map(r=>r.trim()).filter(Boolean);
       await entitiesAPI.create({
         name: coName.trim(),
         type: typeMap[coType] || 'company',
@@ -712,6 +716,12 @@ export default function SettingsPage() {
         founded_year: coFounded ? parseInt(coFounded) : null,
         focus: null,
         logo_emoji: '🏢',
+        logo_url: coLogoImg || null,
+        linkedin: coLinkedIn || null,
+        twitter: coTwitter || null,
+        why_us: filledReasons.length ? JSON.stringify(filledReasons) : null,
+        aum: coAum || null,
+        portfolio_count: coPortfolio ? parseInt(coPortfolio) : null,
       });
       setCoSaving(false);
       setCoSubmitted(true);
@@ -1220,7 +1230,8 @@ export default function SettingsPage() {
               const resetForm = () => {
                 setCoType(''); setCoName(''); setCoLogoImg(null); setCoIndustry(''); setCoCountry([]);
                 setCoStages([]); setCoAbout(''); setCoWebsite(''); setCoLinkedIn(''); setCoTwitter('');
-                setCoTikTok(''); setCoInstagram(''); setCoTeam(''); setCoFounded(''); setCoSubmitted(false);
+                setCoTikTok(''); setCoInstagram(''); setCoTeam(''); setCoFounded('');
+                setCoAum(''); setCoPortfolio(''); setCoWhyReasons(['']); setCoSubmitted(false);
               };
 
               const previewLinks = [
@@ -1418,6 +1429,31 @@ export default function SettingsPage() {
                         </select>
                       </div>
 
+                      {/* AUM + Portfolio Count — Investment Firms only */}
+                      {isInvFirm && (
+                        <div className="settings-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
+                          <div>
+                            <label style={labelStyle}>AUM</label>
+                            <input value={coAum} onChange={e=>setCoAum(e.target.value)} placeholder="$50M"
+                              style={inpStyle} onFocus={fo} onBlur={bl}/>
+                          </div>
+                          <div>
+                            <label style={labelStyle}>PORTFOLIO COUNT</label>
+                            <input type="number" min="0" value={coPortfolio} onChange={e=>setCoPortfolio(e.target.value)} placeholder="0"
+                              style={inpStyle} onFocus={fo} onBlur={bl}/>
+                          </div>
+                        </div>
+                      )}
+
+                      {/* Portfolio Count — Accelerators only */}
+                      {coType === 'Accelerator/Incubator' && (
+                        <div style={{ marginBottom:16 }}>
+                          <label style={labelStyle}>COHORT ALUMNI COUNT</label>
+                          <input type="number" min="0" value={coPortfolio} onChange={e=>setCoPortfolio(e.target.value)} placeholder="0"
+                            style={inpStyle} onFocus={fo} onBlur={bl}/>
+                        </div>
+                      )}
+
                       {/* About */}
                       <div style={{ marginBottom:20 }}>
                         <label style={labelStyle}>ABOUT</label>
@@ -1426,6 +1462,39 @@ export default function SettingsPage() {
                           style={{ ...inpStyle, resize:'vertical', lineHeight:1.6 }}
                           onFocus={fo} onBlur={bl}/>
                       </div>
+
+                      {/* Why This Entity? — non-Company types */}
+                      {!isCompany && (
+                        <div style={{ marginBottom:20 }}>
+                          <label style={{ ...labelStyle, display:'flex', alignItems:'center', gap:6 }}>
+                            🎯 WHY THIS ENTITY?
+                          </label>
+                          <div style={{ display:'flex', flexDirection:'column', gap:8 }}>
+                            {coWhyReasons.map((reason, idx) => (
+                              <div key={idx} style={{ display:'flex', alignItems:'center', gap:8 }}>
+                                <div style={{ width:26, height:26, borderRadius:'50%', background:'var(--orange)', color:'#fff', fontSize:12, fontWeight:900, display:'grid', placeItems:'center', flexShrink:0 }}>{idx+1}</div>
+                                <input
+                                  value={reason}
+                                  onChange={e => { const next=[...coWhyReasons]; next[idx]=e.target.value; setCoWhyReasons(next); }}
+                                  placeholder={`Reason ${idx+1}...`}
+                                  style={{ ...inpStyle, flex:1 }} onFocus={fo} onBlur={bl}/>
+                                {coWhyReasons.length > 1 && (
+                                  <button type="button" onClick={() => setCoWhyReasons(prev => prev.filter((_,i)=>i!==idx))}
+                                    style={{ width:26, height:26, borderRadius:'50%', border:'1.5px solid #e8e8e8', background:'#fff', color:'#aaa', fontSize:14, cursor:'pointer', display:'grid', placeItems:'center', flexShrink:0 }}>
+                                    ×
+                                  </button>
+                                )}
+                              </div>
+                            ))}
+                            {coWhyReasons.length < 5 && (
+                              <button type="button" onClick={() => setCoWhyReasons(prev => [...prev, ''])}
+                                style={{ alignSelf:'flex-start', padding:'7px 14px', borderRadius:10, border:'1.5px dashed #e8e8e8', background:'transparent', fontSize:13, fontWeight:600, color:'#aaa', cursor:'pointer' }}>
+                                + Add reason
+                              </button>
+                            )}
+                          </div>
+                        </div>
+                      )}
 
                       {/* Social links */}
                       <div style={{ marginBottom:20 }}>
