@@ -773,7 +773,7 @@ admin.post('/tags', async (req, res) => {
   try {
     const { name, category, color, text_color } = req.body;
     if (!name?.trim() || !category) return res.status(400).json({ success:false, message:'name and category required' });
-    if (!['user','entity','product','article','role'].includes(category))
+    if (!['user','product','article','role'].includes(category))
       return res.status(400).json({ success:false, message:'Invalid category' });
     const { rows } = await q(
       'INSERT INTO tags (name,category,color,text_color) VALUES ($1,$2,$3,$4) RETURNING *',
@@ -814,8 +814,8 @@ admin.delete('/tags/:id', async (req, res) => {
 admin.post('/tags/:id/assign', async (req, res) => {
   try {
     const { item_type, item_id } = req.body;
-    const tableMap = { user:'user_tags', entity:'entity_tags', product:'product_tags' };
-    const colMap   = { user:'user_id',   entity:'entity_id',   product:'product_id'  };
+    const tableMap = { user:'user_tags', product:'product_tags' };
+    const colMap   = { user:'user_id',   product:'product_id'  };
     const table = tableMap[item_type];
     if (!table) return res.status(400).json({ success:false, message:'Invalid item_type' });
     await q(`INSERT INTO ${table} (${colMap[item_type]},tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [item_id, req.params.id]);
@@ -826,8 +826,8 @@ admin.post('/tags/:id/assign', async (req, res) => {
 admin.delete('/tags/:id/assign', async (req, res) => {
   try {
     const { item_type, item_id } = req.body;
-    const tableMap = { user:'user_tags', entity:'entity_tags', product:'product_tags' };
-    const colMap   = { user:'user_id',   entity:'entity_id',   product:'product_id'  };
+    const tableMap = { user:'user_tags', product:'product_tags' };
+    const colMap   = { user:'user_id',   product:'product_id'  };
     const table = tableMap[item_type];
     if (!table) return res.status(400).json({ success:false, message:'Invalid item_type' });
     await q(`DELETE FROM ${table} WHERE ${colMap[item_type]}=$1 AND tag_id=$2`, [item_id, req.params.id]);

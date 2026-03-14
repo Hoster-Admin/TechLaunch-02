@@ -202,7 +202,7 @@ router.get('/tags', async (req, res, next) => {
       'SELECT id,name,category,color,text_color FROM tags WHERE is_active=true ORDER BY category,name');
     const { rows: settings } = await dbQuery(
       `SELECT key,value FROM platform_settings
-       WHERE key IN ('tags_user_enabled','tags_entity_enabled','tags_product_enabled','tags_article_enabled','tags_role_enabled')`);
+       WHERE key IN ('tags_user_enabled','tags_product_enabled','tags_article_enabled','tags_role_enabled')`);
     const tagSettings = {};
     settings.forEach(r => { tagSettings[r.key] = r.value !== 'false'; });
     const grouped = {};

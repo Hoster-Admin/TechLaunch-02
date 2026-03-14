@@ -33,7 +33,7 @@ const getProfile = async (req, res, next) => {
 
     const { rows: tagSettings } = await query(
       `SELECT key, value FROM platform_settings
-       WHERE key IN ('tags_user_enabled','tags_role_enabled','tags_entity_enabled','tags_product_enabled','tags_article_enabled')`);
+       WHERE key IN ('tags_user_enabled','tags_role_enabled','tags_product_enabled','tags_article_enabled')`);
     const ts = {};
     tagSettings.forEach(r => { ts[r.key] = r.value === 'true'; });
 

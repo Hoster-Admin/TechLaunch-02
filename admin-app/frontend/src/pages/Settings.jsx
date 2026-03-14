@@ -44,7 +44,6 @@ function Toggle({ checked, onChange }) {
 const CATEGORIES = [
   { key:'role',    label:'Role Tags',    icon:'🎭', settingKey:'tags_role_enabled',    desc:'Automatically shown based on user role (Admin, Moderator, etc.)' },
   { key:'user',    label:'User Tags',    icon:'👤', settingKey:'tags_user_enabled',    desc:'Labels assigned to user profiles' },
-  { key:'entity',  label:'Entity Tags',  icon:'🏢', settingKey:'tags_entity_enabled',  desc:'Labels assigned to companies, accelerators & investors' },
   { key:'product', label:'Product Tags', icon:'🚀', settingKey:'tags_product_enabled', desc:'Labels assigned to product listings' },
   { key:'article', label:'Article Tags', icon:'📰', settingKey:'tags_article_enabled', desc:'Labels shown on articles and blog posts' },
 ];
