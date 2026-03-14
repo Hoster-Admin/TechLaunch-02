@@ -578,30 +578,41 @@ admin.put('/settings', async (req, res) => {
 // Platform Profile (TechLaunch public account)
 admin.get('/platform-profile', async (req, res) => {
   try {
-    const { rows } = await q(
-      `SELECT id,name,handle,headline,bio,website,twitter,linkedin,avatar_url,avatar_color,verified,followers_count
-       FROM users WHERE handle='techlaunchmena' LIMIT 1`
+    // Admin-panel identity is stored in platform_settings to keep it separate from the public profile
+    const { rows: settingRows } = await q(
+      `SELECT key, value FROM platform_settings WHERE key IN ('panel_display_name','panel_avatar_url')`
     );
-    if (!rows.length) return res.status(404).json({ success:false, message:'Platform profile not found' });
-    res.json({ success:true, data: rows[0] });
+    const settings = Object.fromEntries(settingRows.map(r => [r.key, r.value]));
+    res.json({ success:true, data: {
+      name:       settings.panel_display_name || 'TechLaunch MENA',
+      avatar_url: settings.panel_avatar_url   || null,
+    }});
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
 admin.put('/platform-profile', async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
   try {
-    const { name, headline, bio, website, twitter, linkedin, avatar_url } = req.body;
-    const { rows } = await q(
-      `UPDATE users SET
-         name=COALESCE($1,name), headline=COALESCE($2,headline), bio=COALESCE($3,bio),
-         website=COALESCE($4,website), twitter=COALESCE($5,twitter), linkedin=COALESCE($6,linkedin),
-         avatar_url=COALESCE($7,avatar_url), updated_at=NOW()
-       WHERE handle='techlaunchmena'
-       RETURNING id,name,handle,headline,bio,website,twitter,linkedin,avatar_url`,
-      [name||null, headline||null, bio||null, website||null, twitter||null, linkedin||null, avatar_url||null]
-    );
-    await logAction(req.user.id, 'platform_profile.updated', 'user', rows[0].id, { name:rows[0].name });
-    res.json({ success:true, data: rows[0], message:'Platform profile updated' });
+    const { name, avatar_url } = req.body;
+    // Save only to platform_settings — never touches the public users table
+    if (name !== undefined) {
+      await q(
+        `INSERT INTO platform_settings (key,value,type,updated_by,updated_at)
+         VALUES ('panel_display_name',$1,'string',$2,NOW())
+         ON CONFLICT (key) DO UPDATE SET value=$1,updated_by=$2,updated_at=NOW()`,
+        [name||'TechLaunch MENA', req.user.id]
+      );
+    }
+    if (avatar_url !== undefined) {
+      await q(
+        `INSERT INTO platform_settings (key,value,type,updated_by,updated_at)
+         VALUES ('panel_avatar_url',$1,'string',$2,NOW())
+         ON CONFLICT (key) DO UPDATE SET value=$1,updated_by=$2,updated_at=NOW()`,
+        [avatar_url||'', req.user.id]
+      );
+    }
+    await logAction(req.user.id, 'platform_profile.updated', 'settings', null, { name });
+    res.json({ success:true, data: { name: name||'TechLaunch MENA', avatar_url: avatar_url||null }, message:'Panel identity updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 

@@ -162,12 +162,7 @@ export default function PlatformProfile() {
   const openEdit = () => {
     setEditData({
       name:       profile?.name       || '',
-      headline:   profile?.headline   || '',
-      bio:        profile?.bio        || '',
       avatar_url: profile?.avatar_url || '',
-      website:    profile?.website    || '',
-      twitter:    profile?.twitter    || '',
-      linkedin:   profile?.linkedin   || '',
     });
     setSaveError(''); setSaveSuccess(false);
     setEditMode(true);
@@ -201,115 +196,54 @@ export default function PlatformProfile() {
   return (
     <div style={{ maxWidth: 780, margin: '0 auto' }}>
 
-      {/* ── Profile Header ──────────────────────────────────────── */}
-      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-200)', overflow: 'hidden', marginBottom: 20 }}>
-        <div style={{ height: 100, background: 'linear-gradient(135deg, #1a1a2e 0%, #E15033 70%, #ff8c69 100%)', position: 'relative' }}>
-          <span style={{ position: 'absolute', top: 12, right: 14, background: 'rgba(255,255,255,.15)', backdropFilter: 'blur(6px)', color: '#fff', fontSize: 11, fontWeight: 700, padding: '4px 10px', borderRadius: 20, letterSpacing: .5 }}>
-            PLATFORM ACCOUNT
-          </span>
+      {/* ── Panel Identity Header ────────────────────────────────── */}
+      <div style={{ background: '#fff', borderRadius: 16, border: '1px solid var(--gray-200)', padding: '18px 24px', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 16 }}>
+        <div style={{ width: 56, height: 56, borderRadius: 14, overflow: 'hidden', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
+          <AvatarDisplay src={avatarUrl} fallback="TL" />
         </div>
-
-        <div style={{ padding: '0 24px 22px' }}>
-          <div style={{ display: 'flex', alignItems: 'flex-end', justifyContent: 'space-between', marginTop: -36 }}>
-            <div style={{ width: 72, height: 72, borderRadius: 20, border: '3px solid #fff', overflow: 'hidden', background: 'var(--orange)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 24, fontWeight: 700, color: '#fff', flexShrink: 0 }}>
-              <AvatarDisplay src={avatarUrl} fallback="TL" />
-            </div>
-            <div style={{ display: 'flex', gap: 8, paddingBottom: 4 }}>
-              <button onClick={openEdit}
-                style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1.5px solid var(--orange)', background: 'rgba(225,80,51,.07)', color: 'var(--orange)', fontWeight: 600, cursor: 'pointer' }}>
-                ✏️ Edit Profile
-              </button>
-              <a href="https://tlmena.com/u/techlaunchmena" target="_blank" rel="noreferrer"
-                style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1.5px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--ink)', textDecoration: 'none', fontWeight: 600 }}>
-                ↗ View Public Profile
-              </a>
-            </div>
-          </div>
-
-          <div style={{ marginTop: 10 }}>
-            <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-              <span style={{ fontSize: 20, fontWeight: 700, color: 'var(--ink)' }}>{profile?.name || 'TechLaunch MENA'}</span>
-              {profile?.verified && (
-                <span title="Verified" style={{ background: 'var(--orange)', color: '#fff', borderRadius: '50%', width: 18, height: 18, display: 'inline-flex', alignItems: 'center', justifyContent: 'center', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>✓</span>
-              )}
-              <span style={{ background: '#1a1a2e', color: '#fff', fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 6, letterSpacing: .6 }}>ADMIN</span>
-            </div>
-            <div style={{ fontSize: 13, color: 'var(--gray-400)', marginTop: 2 }}>@{profile?.handle || 'techlaunchmena'}</div>
-            {profile?.headline && <div style={{ fontSize: 13, color: 'var(--gray-600)', marginTop: 4 }}>{profile.headline}</div>}
-            {profile?.bio && <div style={{ fontSize: 13, color: 'var(--gray-600)', marginTop: 6, lineHeight: 1.55 }}>{profile.bio}</div>}
-          </div>
-
-          <div style={{ display: 'flex', gap: 24, marginTop: 14 }}>
-            <div>
-              <span style={{ fontWeight: 700, fontSize: 16, color: 'var(--ink)' }}>{profile?.followers_count ?? 244}</span>
-              <span style={{ fontSize: 11, color: 'var(--gray-400)', marginLeft: 4, textTransform: 'uppercase', letterSpacing: .5 }}>Followers</span>
-            </div>
-            {(profile?.website || profile?.twitter || profile?.linkedin) && (
-              <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
-                {profile?.website && <a href={profile.website} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--orange)', textDecoration: 'none' }}>🌐 Website</a>}
-                {profile?.twitter && <a href={`https://x.com/${profile.twitter.replace('@','')}`} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--orange)', textDecoration: 'none' }}>𝕏 Twitter</a>}
-                {profile?.linkedin && <a href={profile.linkedin} target="_blank" rel="noreferrer" style={{ fontSize: 12, color: 'var(--orange)', textDecoration: 'none' }}>in LinkedIn</a>}
-              </div>
-            )}
-          </div>
+        <div style={{ flex: 1, minWidth: 0 }}>
+          <div style={{ fontSize: 16, fontWeight: 700, color: 'var(--ink)' }}>{profile?.name || 'TechLaunch MENA'}</div>
+          <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 2 }}>Admin panel posting identity</div>
         </div>
+        <button onClick={openEdit}
+          style={{ fontSize: 12, padding: '6px 14px', borderRadius: 8, border: '1.5px solid var(--orange)', background: 'rgba(225,80,51,.07)', color: 'var(--orange)', fontWeight: 600, cursor: 'pointer', whiteSpace: 'nowrap' }}>
+          ✏️ Edit
+        </button>
       </div>
 
-      {/* ── Edit Profile Panel ──────────────────────────────────── */}
+      {/* ── Edit Panel Identity ──────────────────────────────────── */}
       {editMode && (
         <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--orange)', padding: 24, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>✏️ Edit Platform Profile</h3>
+            <div>
+              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>✏️ Edit Panel Identity</h3>
+              <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 3 }}>Only changes how the account appears inside the admin panel. Does not affect the public profile.</div>
+            </div>
             <button onClick={() => setEditMode(false)}
-              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-400)', lineHeight: 1 }}>×</button>
+              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-400)', lineHeight: 1, marginLeft: 12 }}>×</button>
           </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-            {[
-              { key: 'name',     label: 'Display Name', placeholder: 'TechLaunch MENA' },
-              { key: 'headline', label: 'Headline',      placeholder: 'Short tagline shown under your name' },
-              { key: 'website',  label: 'Website',       placeholder: 'https://tlmena.com' },
-              { key: 'twitter',  label: 'Twitter / X handle', placeholder: 'techlaunchmena' },
-              { key: 'linkedin', label: 'LinkedIn URL',  placeholder: 'https://linkedin.com/company/…' },
-            ].map(({ key, label, placeholder }) => (
-              <div key={key}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>{label}</label>
-                <input
-                  value={editData[key] || ''}
-                  onChange={e => setEditData(prev => ({ ...prev, [key]: e.target.value }))}
-                  placeholder={placeholder}
-                  style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--orange)'}
-                  onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
-                />
-              </div>
-            ))}
-          </div>
-
-          <div style={{ marginTop: 14 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>Bio</label>
-            <textarea
-              value={editData.bio || ''}
-              onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
-              placeholder="Tell the community about the platform…"
-              rows={3}
-              style={{ width: '100%', padding: '8px 10px', borderRadius: 8, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', resize: 'vertical', outline: 'none', boxSizing: 'border-box', lineHeight: 1.55, transition: 'border-color .15s' }}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>Display Name</label>
+            <input
+              value={editData.name || ''}
+              onChange={e => setEditData(prev => ({ ...prev, name: e.target.value }))}
+              placeholder="TechLaunch MENA"
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
               onFocus={e => e.target.style.borderColor = 'var(--orange)'}
               onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
             />
           </div>
 
-          <div style={{ marginTop: 14 }}>
-            <AvatarUploader
-              currentUrl={editData.avatar_url}
-              onUploaded={url => setEditData(prev => ({ ...prev, avatar_url: url }))}
-            />
-          </div>
+          <AvatarUploader
+            currentUrl={editData.avatar_url}
+            onUploaded={url => setEditData(prev => ({ ...prev, avatar_url: url }))}
+          />
 
-          {saveError   && <div style={{ marginTop: 10, fontSize: 12, color: '#E15033' }}>{saveError}</div>}
-          {saveSuccess && <div style={{ marginTop: 10, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</div>}
+          {saveError   && <div style={{ marginTop: 12, fontSize: 12, color: '#E15033' }}>{saveError}</div>}
+          {saveSuccess && <div style={{ marginTop: 12, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</div>}
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 16, justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
             <button onClick={() => setEditMode(false)}
               style={{ padding: '8px 18px', borderRadius: 9, border: '1.5px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--gray-600)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
               Cancel
