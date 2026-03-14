@@ -102,6 +102,15 @@ const getProduct = async (req, res, next) => {
 
     if (!rows.length) return res.status(404).json({ success:false, message:'Product not found' });
 
+    const product = rows[0];
+    const isOwner = req.user && req.user.id === product.submitted_by;
+    const isAdmin = req.user && ['admin','moderator'].includes(req.user.role);
+
+    // Block non-owners from seeing pending/rejected products
+    if (['pending','rejected'].includes(product.status) && !isOwner && !isAdmin) {
+      return res.status(404).json({ success:false, message:'Product not found' });
+    }
+
     // Increment view count
     await query('UPDATE products SET views_count = views_count + 1 WHERE id=$1', [id]);
 

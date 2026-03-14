@@ -516,6 +516,8 @@ export default function SettingsPage() {
   const [saving,        setSaving]        = useState(false);
   const [showSubmitForm,setShowSubmitForm] = useState(false);
   const [submitDraft,   setSubmitDraft]   = useState(null);
+  const [myProducts,    setMyProducts]    = useState(null);
+  const [myProductsLoading, setMyProductsLoading] = useState(false);
   const [localDraft,    setLocalDraft]    = useState(() => {
     try { const d = localStorage.getItem(DRAFT_KEY); return d ? JSON.parse(d) : null; } catch { return null; }
   });
@@ -780,6 +782,16 @@ export default function SettingsPage() {
   }, [activeTab, loadSettingsThreads]);
 
   React.useEffect(() => {
+    if (activeTab === 'products' && user?.id && myProducts === null) {
+      setMyProductsLoading(true);
+      productsAPI.list({ submitter: user.id, status: 'all', limit: 50 })
+        .then(({ data: d }) => setMyProducts(Array.isArray(d.data) ? d.data : []))
+        .catch(() => setMyProducts([]))
+        .finally(() => setMyProductsLoading(false));
+    }
+  }, [activeTab, user, myProducts]);
+
+  React.useEffect(() => {
     if (activeThread) loadSettingsMessages(activeThread);
   }, [activeThread, loadSettingsMessages]);
 
@@ -1020,6 +1032,7 @@ export default function SettingsPage() {
                     onSuccess={(name) => {
                       toast.success(`${name} submitted!`);
                       setLocalDraft(null);
+                      setMyProducts(null);
                     }}
                     onCancel={() => { setShowSubmitForm(false); setSubmitDraft(null); }}
                   />
@@ -1054,16 +1067,61 @@ export default function SettingsPage() {
                       </div>
                     )}
 
-                    {/* Empty state */}
-                    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'48px 40px', textAlign:'center' }}>
-                      <div style={{ fontSize:48, marginBottom:14 }}>🚀</div>
-                      <div style={{ fontSize:19, fontWeight:800, marginBottom:8 }}>No products yet</div>
-                      <p style={{ color:'#888', marginBottom:24, lineHeight:1.6 }}>Ready to launch? Submit your product and get discovered by the MENA tech community.</p>
-                      <button onClick={() => { setSubmitDraft(null); setShowSubmitForm(true); }}
-                        style={{ padding:'13px 28px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:15, fontWeight:800, cursor:'pointer' }}>
-                        Submit a Product 🚀
-                      </button>
-                    </div>
+                    {/* Submitted products list */}
+                    {myProductsLoading ? (
+                      <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'48px 40px', textAlign:'center', color:'#aaa', fontSize:14 }}>
+                        Loading your products…
+                      </div>
+                    ) : myProducts && myProducts.length > 0 ? (
+                      <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                        {[{key:'pending',bg:'#FEF3C7',color:'#92400E',label:'⏳ Under Review'},{key:'rejected',bg:'#FEE2E2',color:'#991B1B',label:'✕ Not Approved'},{key:'live',bg:'#DCFCE7',color:'#166534',label:'✓ Live'},{key:'soon',bg:'#DBEAFE',color:'#1e40af',label:'⏳ Coming Soon'}].map(({ key, bg, color, label }) => {
+                          const group = myProducts.filter(p => p.status === key);
+                          if (!group.length) return null;
+                          return group.map(p => (
+                            <div key={p.id} style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:20, display:'flex', alignItems:'center', gap:16 }}>
+                              <div style={{ width:52, height:52, borderRadius:14, background:'#f4f4f4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:26, flexShrink:0 }}>
+                                {p.logo_emoji || '📦'}
+                              </div>
+                              <div style={{ flex:1, minWidth:0 }}>
+                                <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:3 }}>
+                                  <div style={{ fontSize:15, fontWeight:800, color:'#0a0a0a' }}>{p.name}</div>
+                                  <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:99, background:bg, color }}>{label}</span>
+                                </div>
+                                <div style={{ fontSize:13, color:'#888', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.tagline}</div>
+                                {p.status === 'rejected' && p.rejected_reason && (
+                                  <div style={{ fontSize:12, color:'#991B1B', marginTop:4, background:'#FEF2F2', borderRadius:6, padding:'4px 8px', display:'inline-block' }}>
+                                    Reason: {p.rejected_reason}
+                                  </div>
+                                )}
+                                {p.status === 'pending' && (
+                                  <div style={{ fontSize:11, color:'#92400E', marginTop:4 }}>Usually reviewed within 24 hours</div>
+                                )}
+                              </div>
+                              {p.status === 'live' && (
+                                <a href={`/products/${p.id}`} target="_blank" rel="noreferrer"
+                                  style={{ padding:'8px 16px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:12, fontWeight:700, cursor:'pointer', textDecoration:'none', whiteSpace:'nowrap' }}>
+                                  View Live →
+                                </a>
+                              )}
+                            </div>
+                          ));
+                        })}
+                        <button onClick={() => { setSubmitDraft(null); setShowSubmitForm(true); }}
+                          style={{ padding:'13px 0', borderRadius:12, background:'#f4f4f4', color:'#444', border:'none', fontSize:14, fontWeight:700, cursor:'pointer', marginTop:4 }}>
+                          + Submit Another Product
+                        </button>
+                      </div>
+                    ) : (
+                      <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'48px 40px', textAlign:'center' }}>
+                        <div style={{ fontSize:48, marginBottom:14 }}>🚀</div>
+                        <div style={{ fontSize:19, fontWeight:800, marginBottom:8 }}>No products yet</div>
+                        <p style={{ color:'#888', marginBottom:24, lineHeight:1.6 }}>Ready to launch? Submit your product and get discovered by the MENA tech community.</p>
+                        <button onClick={() => { setSubmitDraft(null); setShowSubmitForm(true); }}
+                          style={{ padding:'13px 28px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:15, fontWeight:800, cursor:'pointer' }}>
+                          Submit a Product 🚀
+                        </button>
+                      </div>
+                    )}
                   </>
                 )}
               </div>

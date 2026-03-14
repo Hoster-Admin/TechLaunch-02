@@ -124,10 +124,18 @@ const approveProduct = async (req, res, next) => {
     const { id } = req.params;
     const { rows } = await query(`
       UPDATE products SET status='live', approved_by=$1, approved_at=NOW()
-      WHERE id=$2 RETURNING name`, [req.user.id, id]);
+      WHERE id=$2 RETURNING name, submitted_by`, [req.user.id, id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
     await query('INSERT INTO activity_log (actor_id,action,entity,entity_id) VALUES ($1,$2,$3,$4)',
       [req.user.id, 'product.approve', 'products', id]);
+    // Notify the submitter
+    await query(
+      `INSERT INTO notifications (user_id, type, title, body, link)
+       VALUES ($1,'product_approved','🎉 Product Approved!',$2,$3)`,
+      [rows[0].submitted_by,
+       `"${rows[0].name}" has been approved and is now live on Tech Launch MENA! 🚀`,
+       `/products/${id}`]
+    ).catch(() => {});
     res.json({ success:true, message:`${rows[0].name} approved` });
   } catch (err) { next(err); }
 };
@@ -138,10 +146,19 @@ const rejectProduct = async (req, res, next) => {
     const { reason } = req.body;
     const { rows } = await query(`
       UPDATE products SET status='rejected', rejected_reason=$1
-      WHERE id=$2 RETURNING name`, [reason||null, id]);
+      WHERE id=$2 RETURNING name, submitted_by`, [reason||null, id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
     await query('INSERT INTO activity_log (actor_id,action,entity,entity_id) VALUES ($1,$2,$3,$4)',
       [req.user.id, 'product.reject', 'products', id]);
+    // Notify the submitter
+    const reasonText = reason ? ` Reason: ${reason}` : '';
+    await query(
+      `INSERT INTO notifications (user_id, type, title, body, link)
+       VALUES ($1,'product_rejected','❌ Product Not Approved',$2,$3)`,
+      [rows[0].submitted_by,
+       `"${rows[0].name}" was not approved at this time.${reasonText} You can update and resubmit.`,
+       `/settings`]
+    ).catch(() => {});
     res.json({ success:true, message:`${rows[0].name} rejected` });
   } catch (err) { next(err); }
 };
