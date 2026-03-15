@@ -39,11 +39,14 @@ const register = async (req, res, next) => {
   try {
     const { name, handle, email, password, persona, country } = req.body;
 
-    const { rows: existing } = await query(
-      'SELECT id FROM users WHERE email=$1 OR handle=$2', [email, handle]
-    );
-    if (existing.length) {
-      return res.status(409).json({ success:false, message:'Email or handle already taken' });
+    const { rows: emailRows } = await query('SELECT id FROM users WHERE email=$1', [email]);
+    if (emailRows.length) {
+      return res.status(409).json({ success:false, message:'Email already registered', field:'email' });
+    }
+    const cleanHandle = handle.replace('@','');
+    const { rows: handleRows } = await query('SELECT id FROM users WHERE handle=$1', [cleanHandle]);
+    if (handleRows.length) {
+      return res.status(409).json({ success:false, message:'Username already taken', field:'handle' });
     }
 
     const hash = await bcrypt.hash(password, 12);

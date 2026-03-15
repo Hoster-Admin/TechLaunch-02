@@ -31,6 +31,7 @@ export default function AuthModal() {
   const [selectedPersona, setSelectedPersona] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
+  const [fieldErrors, setFieldErrors] = useState({});
 
   const [sName,     setSName]     = useState('');
   const [sHandle,   setSHandle]   = useState('');
@@ -54,7 +55,7 @@ export default function AuthModal() {
       setSName(''); setSHandle(''); setSEmail(''); setSPass('');
       setLEmail(''); setLPass('');
       setFpEmail(''); setFpSent(false);
-      setError('');
+      setError(''); setFieldErrors({});
     }
   }, [authModal]);
 
@@ -70,6 +71,7 @@ export default function AuthModal() {
     setSName(val);
     if (!sHandle || sHandle === autoHandle(sName)) {
       setSHandle(autoHandle(val));
+      setFieldErrors(f => ({ ...f, handle: '' }));
     }
   };
 
@@ -80,9 +82,9 @@ export default function AuthModal() {
 
   const doSignup = async () => {
     if (!sName.trim()) { setError('Full name is required'); return; }
-    if (!sEmail.trim() || !sEmail.includes('@')) { setError('Valid email is required'); return; }
+    if (!sEmail.trim() || !sEmail.includes('@')) { setFieldErrors(f => ({ ...f, email: 'Please enter a valid email' })); return; }
     if (sPass.length < 8) { setError('Password must be at least 8 characters'); return; }
-    setLoading(true); setError('');
+    setLoading(true); setError(''); setFieldErrors({});
     try {
       const handle = sHandle.trim() || autoHandle(sName);
       const dbPersona = PERSONA_DB_MAP[selectedPersona] || 'Enthusiast';
@@ -91,7 +93,14 @@ export default function AuthModal() {
       close();
       if (selectedPersona === 'startup') setSubmitOpen(true);
     } catch (err) {
-      setError(err.response?.data?.message || 'Signup failed. Try again.');
+      const data = err.response?.data;
+      if (data?.field === 'handle') {
+        setFieldErrors({ handle: 'This username is already taken' });
+      } else if (data?.field === 'email') {
+        setFieldErrors({ email: 'This email is already registered — try signing in instead' });
+      } else {
+        setError(data?.message || 'Signup failed. Try again.');
+      }
     } finally { setLoading(false); }
   };
 
@@ -189,24 +198,35 @@ export default function AuthModal() {
                 <div style={{ position:'relative' }}>
                   <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#aaa', fontSize:14, pointerEvents:'none' }}>@</span>
                   <input className="form-input" type="text" value={sHandle}
-                    onChange={e => setSHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30))}
+                    onChange={e => { setSHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30)); setFieldErrors(f => ({ ...f, handle: '' })); }}
                     placeholder="your_handle" autoComplete="username"
-                    style={{ paddingLeft:30 }}/>
+                    style={{ paddingLeft:30, borderColor: fieldErrors.handle ? '#dc2626' : '' }}/>
                 </div>
-                {sHandle && (
+                {fieldErrors.handle ? (
+                  <div style={{ marginTop:6, fontSize:12, color:'#dc2626', paddingLeft:2, fontWeight:500 }}>
+                    ⚠️ {fieldErrors.handle}
+                  </div>
+                ) : sHandle ? (
                   <div style={{ marginTop:6, fontSize:12, color:'#888', paddingLeft:2 }}>
                     🔗 Your profile: <span style={{ color:'var(--orange)', fontWeight:600 }}>tlmena.com/@{sHandle}</span>
                   </div>
-                )}
+                ) : null}
               </div>
               <div className="form-group">
                 <label className="form-label">Email</label>
-                <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
-                {sEmail && (
+                <input className="form-input" type="email" value={sEmail}
+                  onChange={e => { setSEmail(e.target.value); setFieldErrors(f => ({ ...f, email: '' })); }}
+                  placeholder="ahmad@startup.sa" autoComplete="email"
+                  style={{ borderColor: fieldErrors.email ? '#dc2626' : '' }}/>
+                {fieldErrors.email ? (
+                  <div style={{ marginTop:6, fontSize:12, color:'#dc2626', paddingLeft:2, fontWeight:500 }}>
+                    ⚠️ {fieldErrors.email}
+                  </div>
+                ) : sEmail ? (
                   <div style={{ marginTop:6, fontSize:12, color:'#888', paddingLeft:2 }}>
                     ✉️ Confirmation & login link will be sent here
                   </div>
-                )}
+                ) : null}
               </div>
               <div className="form-group">
                 <label className="form-label">Password</label>
