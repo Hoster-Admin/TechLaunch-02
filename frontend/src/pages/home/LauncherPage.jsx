@@ -555,21 +555,24 @@ export default function LauncherPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth: activeTab === 'People' ? 1100 : 720, margin: '0 auto', padding: 'clamp(16px,3vh,32px) clamp(12px,3.5vw,24px) 80px', transition: 'max-width .2s' }}>
-
-          <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '1.5px solid #ebebeb', paddingBottom: 0 }}>
+        <div className="launcher-tab-bar">
+          <div className="launcher-tab-bar-inner">
             {TABS.map(tab => (
               <button key={tab} onClick={() => setActiveTab(tab)}
                 style={{
-                  padding: '8px 18px', fontSize: 13, fontWeight: 700, background: 'none', border: 'none',
+                  padding: '10px 18px', fontSize: 13, fontWeight: 700, background: 'none', border: 'none',
                   cursor: 'pointer', color: activeTab === tab ? 'var(--orange)' : '#888',
                   borderBottom: activeTab === tab ? '2px solid var(--orange)' : '2px solid transparent',
                   marginBottom: -1.5, transition: 'color .15s', fontFamily: "'DM Sans',sans-serif",
+                  whiteSpace: 'nowrap',
                 }}>
                 {tab}
               </button>
             ))}
           </div>
+        </div>
+
+        <div style={{ maxWidth: activeTab === 'People' ? 1100 : 720, margin: '0 auto', padding: 'clamp(16px,3vh,32px) clamp(12px,3.5vw,24px) 80px', transition: 'max-width .2s' }}>
 
           {activeTab === 'People' ? (
             <PeopleContent/>

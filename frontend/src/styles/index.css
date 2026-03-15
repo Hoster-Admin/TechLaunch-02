@@ -858,6 +858,26 @@ nav {
 /* ── LAUNCHER FEED ── */
 .launcher-feed-wrap { max-width: 720px; margin: 0 auto; padding: 32px 24px 80px; }
 
+/* ── LAUNCHER TAB BAR (sticky) ── */
+.launcher-tab-bar {
+  position: sticky;
+  top: var(--nav-h);
+  z-index: 50;
+  background: #fff;
+  border-bottom: 1.5px solid #ebebeb;
+  box-shadow: 0 2px 8px rgba(0,0,0,.04);
+}
+.launcher-tab-bar-inner {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 0 clamp(12px,3.5vw,32px);
+  display: flex;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+  scrollbar-width: none;
+}
+.launcher-tab-bar-inner::-webkit-scrollbar { display: none; }
+
 /* ── PRODUCT DETAIL ── */
 .product-detail-wrap { max-width: 860px; margin: 0 auto; padding: 40px 32px 80px; }
 
