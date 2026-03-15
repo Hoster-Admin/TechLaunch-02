@@ -6,7 +6,7 @@ const getProfile = async (req, res, next) => {
   try {
     const handle = req.params.handle.replace('@','');
     const { rows } = await query(`
-      SELECT id, name, handle, persona, headline, country, bio, website, twitter, linkedin, github,
+      SELECT id, name, handle, persona, headline, country, city, bio, website, twitter, linkedin, github,
              avatar_url, avatar_color, verified, role, followers_count, following_count, created_at
       FROM users WHERE handle=$1 AND status='active'`, [handle]);
     if (!rows.length) return res.status(404).json({ success:false, message:'User not found' });

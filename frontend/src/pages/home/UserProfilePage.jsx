@@ -33,7 +33,6 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [profile, setProfile]       = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [followLoading, setFollowLoading]   = useState(false);
-  const [aboutOpen, setAboutOpen]           = useState(false);
   const [followModal, setFollowModal]       = useState(null);
   const [followList, setFollowList]         = useState([]);
   const [loadingFollowList, setLoadingFollowList] = useState(false);
@@ -67,6 +66,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             headline: user.headline || '',
             bio: user.bio || '',
             country: user.country || '',
+            city: user.city || '',
             twitter: user.twitter || '',
             linkedin: user.linkedin || '',
             github: user.github || '',
@@ -88,6 +88,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             headline: u.headline || '',
             bio: u.bio || '',
             country: u.country || '',
+            city: u.city || '',
             twitter: u.twitter || '',
             linkedin: u.linkedin || '',
             github: u.github || '',
@@ -165,8 +166,6 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const isFollowing       = isFollowingHandle || isFollowingId;
   const displayFollowers  = (profile.followers_count ?? 0) + (isFollowing ? 1 : 0);
   const followingCount    = isOwn ? following.size : (profile.following_count ?? 0);
-
-  const hasAbout = profile.bio || profile.country || profile.website || profile.twitter || profile.linkedin || profile.github || profile.joinDate;
 
   const handleFollowClick = async () => {
     if (!user) { onSignIn?.(); return; }
@@ -276,44 +275,58 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   ))}
                 </div>
 
-                {/* Headline — always visible under username */}
+                {/* Headline */}
                 {profile.headline && (
-                  <div style={{ fontSize:13, color:'#555', marginBottom:8, lineHeight:1.5 }}>{profile.headline}</div>
+                  <div style={{ fontSize:13, color:'#555', marginBottom:10, lineHeight:1.5 }}>{profile.headline}</div>
                 )}
 
-                {/* Collapsible About */}
-                {hasAbout && (
-                  <div style={{ marginBottom:12 }}>
-                    <button
-                      onClick={() => setAboutOpen(o => !o)}
-                      style={{ display:'inline-flex', alignItems:'center', gap:4, background:'none', border:'none', cursor:'pointer', padding:0 }}>
-                      <span style={{ fontSize:12, color:'#777', fontWeight:600, textDecoration:'underline', textUnderlineOffset:3 }}>About</span>
-                      <span style={{ fontSize:9, color:'#aaa', transition:'transform .2s', display:'inline-block', transform:aboutOpen?'rotate(180deg)':'rotate(0deg)', marginTop:1 }}>▼</span>
-                    </button>
+                {/* Bio — always visible */}
+                {profile.bio && (
+                  <div style={{ fontSize:13, color:'#444', lineHeight:1.7, marginBottom:12, whiteSpace:'pre-wrap' }}>{profile.bio}</div>
+                )}
 
-                    {/* Dropdown bio panel */}
-                    {aboutOpen && (
-                      <div style={{ marginTop:10, background:'#fafafa', border:'1px solid #f0f0f0', borderRadius:12, padding:'16px 18px', animation:'fadeIn .15s ease' }}>
-                        {profile.bio && (
-                          <div style={{ fontSize:13, color:'#444', lineHeight:1.7, marginBottom:12 }}>{profile.bio}</div>
-                        )}
-                        <div style={{ display:'flex', flexWrap:'wrap', gap:8 }}>
-                          {profile.country && (
-                            <span style={{ fontSize:12, color:'#777', fontWeight:600, padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>
-                              📍 {COUNTRY_NAMES[profile.country] || profile.country}
-                            </span>
-                          )}
-                          {profile.joinDate && (
-                            <span style={{ fontSize:12, color:'#777', fontWeight:600, padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>
-                              📅 Since {profile.joinDate}
-                            </span>
-                          )}
-                          {profile.website && <a href={profile.website.startsWith('http')?profile.website:'https://'+profile.website} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>🌐 Website</a>}
-                          {profile.twitter && <a href={`https://twitter.com/${profile.twitter.replace('@','')}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>𝕏 @{profile.twitter.replace('@','')}</a>}
-                          {profile.linkedin && <a href={`https://linkedin.com/in/${profile.linkedin}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>💼 LinkedIn</a>}
-                          {profile.github && <a href={`https://github.com/${profile.github}`} target="_blank" rel="noopener noreferrer" style={{ fontSize:12, fontWeight:600, color:'#555', textDecoration:'none', padding:'4px 10px', borderRadius:8, background:'#f0f0f0' }}>⌥ GitHub</a>}
-                        </div>
-                      </div>
+                {/* Location + Join date chips */}
+                {(profile.country || profile.city || profile.joinDate) && (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:10 }}>
+                    {(profile.country || profile.city) && (
+                      <span style={{ fontSize:12, color:'#666', fontWeight:600, padding:'4px 10px', borderRadius:8, background:'#f4f4f4', display:'inline-flex', alignItems:'center', gap:4 }}>
+                        📍 {[profile.city, COUNTRY_NAMES[profile.country] || profile.country].filter(Boolean).join(', ')}
+                      </span>
+                    )}
+                    {profile.joinDate && (
+                      <span style={{ fontSize:12, color:'#666', fontWeight:600, padding:'4px 10px', borderRadius:8, background:'#f4f4f4' }}>
+                        📅 Since {profile.joinDate}
+                      </span>
+                    )}
+                  </div>
+                )}
+
+                {/* Social links */}
+                {(profile.website || profile.twitter || profile.linkedin || profile.github) && (
+                  <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:12 }}>
+                    {profile.website && (
+                      <a href={profile.website.startsWith('http')?profile.website:'https://'+profile.website} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize:12, fontWeight:600, color:'#444', textDecoration:'none', padding:'5px 12px', borderRadius:8, background:'#f4f4f4', border:'1px solid #eee', display:'inline-flex', alignItems:'center', gap:5 }}>
+                        🌐 Website
+                      </a>
+                    )}
+                    {profile.twitter && (
+                      <a href={`https://twitter.com/${profile.twitter.replace('@','')}`} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize:12, fontWeight:600, color:'#444', textDecoration:'none', padding:'5px 12px', borderRadius:8, background:'#f4f4f4', border:'1px solid #eee', display:'inline-flex', alignItems:'center', gap:5 }}>
+                        𝕏 @{profile.twitter.replace('@','')}
+                      </a>
+                    )}
+                    {profile.linkedin && (
+                      <a href={`https://linkedin.com/in/${profile.linkedin}`} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize:12, fontWeight:600, color:'#444', textDecoration:'none', padding:'5px 12px', borderRadius:8, background:'#f4f4f4', border:'1px solid #eee', display:'inline-flex', alignItems:'center', gap:5 }}>
+                        💼 LinkedIn
+                      </a>
+                    )}
+                    {profile.github && (
+                      <a href={`https://github.com/${profile.github}`} target="_blank" rel="noopener noreferrer"
+                        style={{ fontSize:12, fontWeight:600, color:'#444', textDecoration:'none', padding:'5px 12px', borderRadius:8, background:'#f4f4f4', border:'1px solid #eee', display:'inline-flex', alignItems:'center', gap:5 }}>
+                        ⌥ GitHub
+                      </a>
                     )}
                   </div>
                 )}
