@@ -46,6 +46,13 @@ export default function AdminLayout() {
         setPanelProfile({ name: d.name || 'TL MENA', avatar_url: d.avatar_url || '' });
       })
       .catch(() => {});
+
+    const handleUpdate = (e) => {
+      const { name, avatar_url } = e.detail || {};
+      setPanelProfile({ name: name || 'TL MENA', avatar_url: avatar_url || '' });
+    };
+    window.addEventListener('panelProfileUpdated', handleUpdate);
+    return () => window.removeEventListener('panelProfileUpdated', handleUpdate);
   }, []);
   const { title, sub, Component } = PAGES[page] || PAGES.dashboard;
 

@@ -280,6 +280,7 @@ function PlatformProfileCard({ isAdmin }) {
       await adminAPI.savePlatformProfile({ name: form.name, avatar_url: form.avatar_url });
       setDirty(false);
       toast.success('Admin panel identity saved');
+      window.dispatchEvent(new CustomEvent('panelProfileUpdated', { detail: { name: form.name, avatar_url: form.avatar_url } }));
     } catch(e) { toast.error(e.message || 'Failed to save'); }
     finally { setSaving(false); }
   };
