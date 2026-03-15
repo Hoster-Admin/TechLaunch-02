@@ -5,6 +5,17 @@ import { SCard, Badge, Tbl, ActionBtn, EmptyState, SkeletonRows, Pagination, Con
 
 const PAGE_SIZE = 20;
 
+const COUNTRY_NAMES = {
+  ae:'UAE', sa:'Saudi Arabia', eg:'Egypt', jo:'Jordan', kw:'Kuwait',
+  bh:'Bahrain', qa:'Qatar', om:'Oman', iq:'Iraq', lb:'Lebanon',
+  ly:'Libya', tn:'Tunisia', ma:'Morocco', ps:'Palestine', ye:'Yemen',
+  sy:'Syria', dz:'Algeria', sd:'Sudan', other:'Other',
+};
+const fmtCountries = (arr) => {
+  if (!arr || !arr.length) return '—';
+  return arr.map(c => COUNTRY_NAMES[c] || c.toUpperCase()).join(', ');
+};
+
 const FILTERS = [
   { key:'queue',    label:'🔔 Review Queue' },
   { key:'all',      label:'All' },
@@ -151,11 +162,11 @@ function ProductDrawer({ productId, onClose, onAction }) {
 
             {/* Fields */}
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 20px'}}>
-              <DrawerField label="Category">{detail.category || detail.industry}</DrawerField>
-              <DrawerField label="Country">{detail.country}</DrawerField>
-              <DrawerField label="Upvotes">🎉 {detail.upvotes_count}</DrawerField>
-              <DrawerField label="Waitlist">{detail.waitlist_count || 0} signups</DrawerField>
-              <DrawerField label="Submitted">
+              <DrawerField label="Industry">{detail.industry || '—'}</DrawerField>
+              <DrawerField label="Country">{fmtCountries(detail.countries)}</DrawerField>
+              <DrawerField label="Upvotes">🎉 {detail.upvotes_count ?? 0}</DrawerField>
+              <DrawerField label="Waitlist">{detail.waitlist_count ?? 0} signups</DrawerField>
+              <DrawerField label="Submitted By">
                 <div style={{display:'flex',alignItems:'center',gap:8}}>
                   <div style={{width:22,height:22,borderRadius:'50%',background:detail.submitter_avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:9,fontWeight:800,color:'#fff',flexShrink:0}}>
                     {(detail.submitter_name||'?').split(' ').map(w=>w[0]).join('').slice(0,2)}
@@ -167,19 +178,39 @@ function ProductDrawer({ productId, onClose, onAction }) {
               <DrawerField label="Submitted On">{fmtDate(detail.created_at)}</DrawerField>
             </div>
 
-            {detail.description && (
-              <DrawerField label="Description">
-                <div style={{fontSize:13,color:'#444',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{detail.description}</div>
-              </DrawerField>
-            )}
+            <DrawerField label="Tagline">
+              <div style={{fontSize:13,color:'#444'}}>{detail.tagline || '—'}</div>
+            </DrawerField>
 
-            {detail.website && (
-              <DrawerField label="Website">
-                <a href={detail.website} target="_blank" rel="noreferrer" style={{color:'var(--orange)',fontSize:13,textDecoration:'none',wordBreak:'break-all'}}>
-                  {detail.website}
-                </a>
-              </DrawerField>
-            )}
+            <DrawerField label="Description">
+              <div style={{fontSize:13,color:'#444',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{detail.description || '—'}</div>
+            </DrawerField>
+
+            <DrawerField label="Website">
+              {detail.website
+                ? <a href={detail.website} target="_blank" rel="noreferrer" style={{color:'var(--orange)',fontSize:13,textDecoration:'none',wordBreak:'break-all'}}>{detail.website}</a>
+                : <span style={{fontSize:13,color:'#aaa'}}>—</span>}
+            </DrawerField>
+
+            <DrawerField label="Demo URL">
+              {detail.demo_url
+                ? <a href={detail.demo_url} target="_blank" rel="noreferrer" style={{color:'var(--orange)',fontSize:13,textDecoration:'none',wordBreak:'break-all'}}>{detail.demo_url}</a>
+                : <span style={{fontSize:13,color:'#aaa'}}>—</span>}
+            </DrawerField>
+
+            <DrawerField label="Video URL">
+              {detail.video_url
+                ? <a href={detail.video_url} target="_blank" rel="noreferrer" style={{color:'var(--orange)',fontSize:13,textDecoration:'none',wordBreak:'break-all'}}>{detail.video_url}</a>
+                : <span style={{fontSize:13,color:'#aaa'}}>—</span>}
+            </DrawerField>
+
+            <DrawerField label="Tags">
+              <div style={{display:'flex',flexWrap:'wrap',gap:4}}>
+                {detail.tags?.length
+                  ? detail.tags.map(t => <span key={t} style={{fontSize:11,padding:'2px 8px',borderRadius:20,background:'#F4F4F4',color:'#555',fontWeight:600}}>{t}</span>)
+                  : <span style={{fontSize:13,color:'#aaa'}}>—</span>}
+              </div>
+            </DrawerField>
 
             {detail.rejected_reason && (
               <div style={{padding:'12px 14px',background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:10,marginTop:4}}>
@@ -470,7 +501,7 @@ export default function Products() {
                         </div>
                       </td>
                       <td style={{padding:'11px 16px'}}><Badge variant="purple">{p.category||p.industry||'—'}</Badge></td>
-                      <td style={{padding:'11px 16px',fontSize:12,color:'#666'}}>{p.country}</td>
+                      <td style={{padding:'11px 16px',fontSize:12,color:'#666'}}>{fmtCountries(p.countries)}</td>
                       <td style={{padding:'11px 16px'}}><span style={{fontSize:11,color:'var(--orange)',fontWeight:600}}>@{p.submitter_handle}</span></td>
                       <td style={{padding:'11px 16px',fontSize:14,fontWeight:800,color:'var(--orange)'}}>🎉 {p.upvotes_count}</td>
                       <td style={{padding:'11px 16px'}}><Badge variant={sb.v}>{sb.l}</Badge></td>

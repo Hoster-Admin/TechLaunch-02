@@ -394,7 +394,7 @@ admin.get('/dashboard', async (req, res) => {
 admin.get('/products', async (req, res) => {
   try {
     const { status, search, page=1, limit=50, sortBy='created_at', sortDir='desc' } = req.query;
-    const SAFE_COLS_P = { name:1, status:1, upvotes_count:1, created_at:1, country:1 };
+    const SAFE_COLS_P = { name:1, status:1, upvotes_count:1, created_at:1 };
     const col_p = SAFE_COLS_P[sortBy] ? `p.${sortBy}` : 'p.created_at';
     const dir_p = sortDir === 'asc' ? 'ASC' : 'DESC';
     const params = [], conds = [];
