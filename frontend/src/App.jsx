@@ -19,7 +19,6 @@ import PeoplePage       from './pages/home/PeoplePage';
 import UserProfilePage  from './pages/home/UserProfilePage';
 import SettingsPage     from './pages/home/SettingsPage';
 import { LoginPage, RegisterPage, SetPasswordPage, ResetPasswordPage } from './pages/home/AuthPages';
-import { ArticlesList, ArticleDetail } from './pages/home/ArticlesPage';
 import AboutPage   from './pages/home/AboutPage';
 import PrivacyPage from './pages/home/PrivacyPage';
 import TermsPage   from './pages/home/TermsPage';
@@ -153,8 +152,6 @@ function AppRoutes() {
         <Route path="/settings"          element={<RequireAuth><SettingsPage/></RequireAuth>}/>
         <Route path="/launcher"           element={<LauncherPage/>}/>
         <Route path="/launcher/posts/:id" element={<PostDetailPage/>}/>
-        <Route path="/articles"          element={<WithAuthCallbacks Component={ArticlesList}/>}/>
-        <Route path="/articles/:slug"    element={<WithAuthCallbacks Component={ArticleDetail}/>}/>
         <Route path="/about"             element={<AboutPage/>}/>
         <Route path="/privacy"           element={<PrivacyPage/>}/>
         <Route path="/terms"             element={<TermsPage/>}/>

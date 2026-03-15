@@ -2,13 +2,12 @@ import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
-import { ARTICLES } from './ArticlesPage';
 import { PeopleContent } from './PeoplePage';
 import { useAuth } from '../../context/AuthContext';
 import { launcherAPI, uploadAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
-const TABS = ['All', 'Articles', 'Posts', 'People'];
+const TABS = ['All', 'Posts', 'People'];
 
 const POST_TAGS = ['Discussion', 'Milestone', 'Tip', 'Question', 'Announcement', 'Ask'];
 
@@ -451,18 +450,14 @@ export default function LauncherPage() {
     setPosts(prev => prev.filter(p => p.id !== id));
   };
 
-  const allItems = [
-    ...posts.map(p => ({ ...p, _type: 'post', _sort: p.created_at })),
-    ...ARTICLES.map(a => ({ ...a, _type: 'article', _sort: a.date })),
-  ].sort((a, b) => new Date(b._sort) - new Date(a._sort));
+  const allItems = posts.map(p => ({ ...p, _type: 'post', _sort: p.created_at }))
+    .sort((a, b) => new Date(b._sort) - new Date(a._sort));
 
   const filtered = activeTab === 'All'
     ? allItems
-    : activeTab === 'Articles'
-      ? allItems.filter(i => i._type === 'article')
-      : activeTab === 'Posts'
-        ? allItems.filter(i => i._type === 'post')
-        : [];
+    : activeTab === 'Posts'
+      ? allItems
+      : [];
 
   return (
     <>
@@ -506,7 +501,7 @@ export default function LauncherPage() {
             <PeopleContent/>
           ) : (
             <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-              {activeTab !== 'Articles' && user && (
+              {activeTab !== 'People' && user && (
                 <button onClick={() => setShowCreatePost(true)} style={{
                   width: '100%', padding: '14px 20px', background: '#fff', border: '1.5px dashed #e0e0e0',
                   borderRadius: 16, fontSize: 14, color: '#aaa', cursor: 'pointer', textAlign: 'left',
@@ -517,7 +512,7 @@ export default function LauncherPage() {
                   🚀 Share something with the community…
                 </button>
               )}
-              {postsLoading && activeTab !== 'Articles' ? (
+              {postsLoading ? (
                 <div style={{ textAlign: 'center', padding: '40px 0', color: '#bbb', fontSize: 14 }}>
                   Loading…
                 </div>
@@ -528,10 +523,8 @@ export default function LauncherPage() {
                   <div style={{ fontSize: 13, color: '#aaa' }}>Community activity will show up here.</div>
                 </div>
               ) : filtered.map(item =>
-                item._type === 'article'
-                  ? <ArticleCard key={item.slug} article={item} onClick={() => navigate(`/articles/${item.slug}`)}/>
-                  : <PostCard key={item.id} post={item} currentUser={user}
-                      onDeleted={handlePostDeleted}/>
+                <PostCard key={item.id} post={item} currentUser={user}
+                  onDeleted={handlePostDeleted}/>
               )}
             </div>
           )}

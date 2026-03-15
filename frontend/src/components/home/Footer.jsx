@@ -43,7 +43,6 @@ export default function Footer() {
               { label:'Venture Studio',          action:() => navigate('/list/venture') },
             ]},
             { title:'Community', links:[
-              { label:'Articles',      action:() => navigate('/articles') },
               { label:'Accelerators',  action:() => navigate('/accelerators') },
               { label:'Launcher',      action:() => navigate('/launcher') },
               { label:'Directory',     action:() => navigate('/directory') },
