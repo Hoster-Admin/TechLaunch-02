@@ -55,6 +55,7 @@ export const NAV_ITEMS = [
   { key:'messages',  icon:'💬', label:'Messages'            },
   { key:'bookmarks', icon:'🔖', label:'Bookmarks'           },
   { key:'company',   icon:'🏢', label:'Create Entity Page'  },
+  { key:'security',  icon:'🔒', label:'Security'            },
 ];
 
 export const MENA_INDUSTRIES = ['AI & ML','Cleantech','Cybersecurity','Dev Tools','E-Commerce','Edtech','Fintech','Foodtech','Healthtech','HR & Work','Logistics','Media','Proptech','Traveltech','Web3'];

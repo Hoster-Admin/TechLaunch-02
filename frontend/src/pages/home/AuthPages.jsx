@@ -245,6 +245,108 @@ export function RegisterPage() {
 }
 
 // ══════════════════════════════════════════════
+// RESET PASSWORD PAGE  (forgot-password flow)
+// ══════════════════════════════════════════════
+export function ResetPasswordPage() {
+  const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+  const token = searchParams.get('token');
+
+  const [password, setPassword] = useState('');
+  const [confirm,  setConfirm]  = useState('');
+  const [errors,   setErrors]   = useState({});
+  const [loading,  setLoading]  = useState(false);
+  const [done,     setDone]     = useState(false);
+
+  const handleSubmit = async (e) => {
+    e.preventDefault();
+    const errs = {};
+    if (!password || password.length < 8) errs.password = 'Password must be at least 8 characters';
+    if (password !== confirm) errs.confirm = 'Passwords do not match';
+    if (Object.keys(errs).length) { setErrors(errs); return; }
+
+    setLoading(true);
+    try {
+      await api.post('/auth/reset-password', { token, password });
+      setDone(true);
+      setTimeout(() => navigate('/'), 3000);
+    } catch (err) {
+      setErrors({ general: err.response?.data?.message || 'Invalid or expired reset link. Please request a new one.' });
+    } finally { setLoading(false); }
+  };
+
+  if (!token) {
+    return (
+      <div style={pageStyle}>
+        <div style={{ ...cardStyle, textAlign:'center', color:'#dc2626' }}>
+          <p style={{ fontSize:15, marginBottom:16 }}>Invalid reset link. Please request a new password reset.</p>
+          <Link to="/login" style={{ color:'var(--orange)', fontWeight:700, fontSize:14 }}>Back to Login</Link>
+        </div>
+      </div>
+    );
+  }
+
+  return (
+    <div style={pageStyle}>
+      <div style={{ width:'100%', maxWidth:440 }}>
+        <div style={{ textAlign:'center', marginBottom:28 }}>
+          <Link to="/" style={{ display:'inline-flex', alignItems:'center', gap:10, textDecoration:'none', marginBottom:20 }}>
+            <div style={{ width:38, height:38, borderRadius:10, background:'#0a0a0a', display:'grid', placeItems:'center' }}>
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="white" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                <line x1="18" y1="20" x2="18" y2="10"/><line x1="12" y1="20" x2="12" y2="4"/><line x1="6" y1="20" x2="6" y2="14"/>
+              </svg>
+            </div>
+            <span style={{ fontSize:18, fontWeight:800, color:'#0a0a0a', letterSpacing:'-.03em' }}>Tech Launch</span>
+          </Link>
+          {done ? (
+            <>
+              <div style={{ fontSize:48, marginBottom:12 }}>✅</div>
+              <h1 style={{ fontSize:22, fontWeight:800, color:'#0a0a0a', letterSpacing:'-.02em', marginBottom:8 }}>Password reset!</h1>
+              <p style={{ fontSize:14, color:'#888' }}>You're now logged in — redirecting…</p>
+            </>
+          ) : (
+            <>
+              <h1 style={{ fontSize:24, fontWeight:800, color:'#0a0a0a', letterSpacing:'-.02em', marginBottom:6 }}>Choose a new password</h1>
+              <p style={{ fontSize:14, color:'#888' }}>Enter and confirm your new password below.</p>
+            </>
+          )}
+        </div>
+
+        {!done && (
+          <div style={cardStyle}>
+            {errors.general && (
+              <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'12px 16px', borderRadius:10, marginBottom:20, fontWeight:500 }}>
+                {errors.general}
+              </div>
+            )}
+            <form onSubmit={handleSubmit}>
+              <div style={{ marginBottom:18 }}>
+                <label style={labelStyle}>NEW PASSWORD</label>
+                <input type="password" value={password} onChange={e => setPassword(e.target.value)}
+                  placeholder="At least 8 characters" style={inputStyle(errors.password)}
+                  onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor=errors.password?'#dc2626':'#e8e8e8'}/>
+                {errors.password && <p style={errStyle}>{errors.password}</p>}
+              </div>
+              <div style={{ marginBottom:24 }}>
+                <label style={labelStyle}>CONFIRM PASSWORD</label>
+                <input type="password" value={confirm} onChange={e => setConfirm(e.target.value)}
+                  placeholder="Repeat your password" style={inputStyle(errors.confirm)}
+                  onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor=errors.confirm?'#dc2626':'#e8e8e8'}/>
+                {errors.confirm && <p style={errStyle}>{errors.confirm}</p>}
+              </div>
+              <button type="submit" disabled={loading}
+                style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', opacity:loading?.75:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>
+                {loading ? 'Saving…' : 'Reset Password'}
+              </button>
+            </form>
+          </div>
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ══════════════════════════════════════════════
 // SET PASSWORD PAGE  (invite link flow)
 // ══════════════════════════════════════════════
 export function SetPasswordPage() {

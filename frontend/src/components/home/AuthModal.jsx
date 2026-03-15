@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
+import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const PERSONAS = [
@@ -15,57 +16,76 @@ const PERSONAS = [
 const PERSONA_LABELS = { startup:'Startup', investor:'Investor', accelerator:'Accelerator', pm:'Product Manager', enthusiast:'Enthusiast' };
 const PERSONA_DB_MAP = { startup:'Founder', investor:'Investor', accelerator:'Accelerator', pm:'Product Manager', enthusiast:'Enthusiast' };
 
+function Spinner() {
+  return (
+    <span style={{ display:'inline-block', width:16, height:16, border:'2px solid rgba(255,255,255,.4)', borderTopColor:'#fff', borderRadius:'50%', animation:'spin .6s linear infinite', verticalAlign:'middle', marginRight:8 }}/>
+  );
+}
+
 export default function AuthModal() {
   const { login, register } = useAuth();
   const { authModal, setAuthModal, setSubmitOpen } = useUI();
   const navigate = useNavigate();
 
-  // step: 'persona' | 'signup' | 'login' | 'gate'
   const [step, setStep] = useState('persona');
   const [selectedPersona, setSelectedPersona] = useState(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState('');
 
-  // signup form
-  const [sName,  setSName]  = useState('');
-  const [sEmail, setSEmail] = useState('');
-  const [sPass,  setSPass]  = useState('');
+  const [sName,     setSName]     = useState('');
+  const [sHandle,   setSHandle]   = useState('');
+  const [sEmail,    setSEmail]    = useState('');
+  const [sPass,     setSPass]     = useState('');
   const [sPassShow, setSPassShow] = useState(false);
 
-  // login form
   const [lEmail, setLEmail] = useState('');
   const [lPass,  setLPass]  = useState('');
   const [lPassShow, setLPassShow] = useState(false);
 
-  // forgot password
   const [fpEmail, setFpEmail] = useState('');
   const [fpSent,  setFpSent]  = useState(false);
+  const [fpLoading, setFpLoading] = useState(false);
 
   useEffect(() => {
     if (authModal === 'login')   { setStep('login');   setError(''); }
     if (authModal === 'signup')  { setStep('persona'); setError(''); setSelectedPersona(null); }
     if (authModal === 'gate')    { setStep('gate');    setError(''); }
     if (authModal === null) {
-      setSName(''); setSEmail(''); setSPass('');
+      setSName(''); setSHandle(''); setSEmail(''); setSPass('');
       setLEmail(''); setLPass('');
       setFpEmail(''); setFpSent(false);
       setError('');
     }
   }, [authModal]);
 
+  const autoHandle = (name) => {
+    return name.trim().toLowerCase()
+      .replace(/[\u0600-\u06FF\u0750-\u077F\u08A0-\u08FF\uFB50-\uFDFF\uFE70-\uFEFF]/g, '')
+      .replace(/\s+/g, '_')
+      .replace(/[^a-z0-9_]/g, '')
+      .slice(0, 18) || 'user';
+  };
+
+  const handleNameChange = (val) => {
+    setSName(val);
+    if (!sHandle || sHandle === autoHandle(sName)) {
+      setSHandle(autoHandle(val));
+    }
+  };
+
   const close = () => setAuthModal(null);
   const handleOverlay = (e) => { if (e.target === e.currentTarget) close(); };
 
   if (!authModal) return null;
 
-  // ── SIGNUP
   const doSignup = async () => {
     if (!sName.trim()) { setError('Full name is required'); return; }
     if (!sEmail.trim() || !sEmail.includes('@')) { setError('Valid email is required'); return; }
     if (sPass.length < 8) { setError('Password must be at least 8 characters'); return; }
     setLoading(true); setError('');
     try {
-      const handle = sName.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').slice(0,20) + Math.floor(Math.random()*100);
+      const rawHandle = sHandle.trim() || autoHandle(sName);
+      const handle = rawHandle + Math.floor(Math.random() * 100);
       const dbPersona = PERSONA_DB_MAP[selectedPersona] || 'Enthusiast';
       const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle, persona:dbPersona });
       toast.success(`Welcome to Tech Launch, ${user.name.split(' ')[0]}! 🚀`);
@@ -76,7 +96,6 @@ export default function AuthModal() {
     } finally { setLoading(false); }
   };
 
-  // ── LOGIN
   const doLogin = async () => {
     if (!lEmail.trim()) { setError('Email is required'); return; }
     if (!lPass) { setError('Password is required'); return; }
@@ -91,6 +110,17 @@ export default function AuthModal() {
     } finally { setLoading(false); }
   };
 
+  const doForgotPassword = async () => {
+    if (!fpEmail.trim() || !fpEmail.includes('@')) { setError('Please enter a valid email'); return; }
+    setFpLoading(true); setError('');
+    try {
+      await api.post('/auth/forgot-password', { email: fpEmail.trim() });
+      setFpSent(true);
+    } catch {
+      setFpSent(true);
+    } finally { setFpLoading(false); }
+  };
+
   const LogoIcon = () => (
     <div style={{ display:'flex', justifyContent:'center', marginBottom:24 }}>
       <div style={{ width:52, height:52, borderRadius:16, background:'var(--orange)', display:'flex', alignItems:'center', justifyContent:'center' }}>
@@ -103,183 +133,189 @@ export default function AuthModal() {
   );
 
   return (
-    <div className="modal-overlay open" onClick={handleOverlay} style={{ zIndex:2000 }}>
-      <div className="modal" style={{ maxWidth:440, position:'relative' }}>
-        <button className="modal-close" onClick={close}>✕</button>
+    <>
+      <style>{`@keyframes spin { to { transform:rotate(360deg); } }`}</style>
+      <div className="modal-overlay open" onClick={handleOverlay} style={{ zIndex:2000 }}>
+        <div className="modal" style={{ maxWidth:440, position:'relative' }}>
+          <button className="modal-close" onClick={close}>✕</button>
 
-        {/* ── STEP: PERSONA */}
-        {step === 'persona' && (
-          <div>
-            <LogoIcon/>
-            <div className="modal-title">Join Tech Launch</div>
-            <div className="modal-sub">Who are you? Choose your role to get started.</div>
-            <div className="persona-grid">
-              {PERSONAS.filter(p => !p.fullWidth).map(p => (
-                <div key={p.key} className={`persona-card${selectedPersona===p.key?' selected':''}`}
-                  onClick={() => setSelectedPersona(p.key)}>
-                  <div className="persona-icon">{p.icon}</div>
-                  <div className="persona-label">{p.label}</div>
-                  <div className="persona-desc">{p.desc}</div>
-                </div>
-              ))}
-              {PERSONAS.filter(p => p.fullWidth).map(p => (
-                <div key={p.key} className={`persona-card full-width${selectedPersona===p.key?' selected':''}`}
-                  onClick={() => setSelectedPersona(p.key)}>
-                  <div className="persona-icon">{p.icon}</div>
-                  <div className="persona-label">{p.label}</div>
-                  <div className="persona-desc">{p.desc}</div>
-                </div>
-              ))}
-            </div>
-            <button className="btn-full" disabled={!selectedPersona} onClick={() => setStep('signup')}
-              style={{ opacity:selectedPersona?1:.4, cursor:selectedPersona?'pointer':'not-allowed' }}>
-              Continue →
-            </button>
-            <div className="modal-switch">
-              Already have an account? <a onClick={() => setStep('login')}>Sign in</a>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP: SIGNUP */}
-        {step === 'signup' && (
-          <div>
-            <div className="modal-title">Create Account</div>
-            <div className="modal-sub">
-              Join as a <span>{PERSONA_LABELS[selectedPersona] || 'Member'}</span>
-            </div>
-            {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
-            <div className="form-group">
-              <label className="form-label">Full Name</label>
-              <input className="form-input" type="text" value={sName} onChange={e => setSName(e.target.value)} placeholder="Ahmad Al-Rashid" autoComplete="name"/>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
-            </div>
-            <div className="form-group">
-              <label className="form-label">Password</label>
-              <div style={{ position:'relative' }}>
-                <input className="form-input" type={sPassShow?'text':'password'} value={sPass} onChange={e => setSPass(e.target.value)} placeholder="Min. 8 characters" autoComplete="new-password"
-                  onKeyDown={e => e.key==='Enter' && doSignup()}
-                  style={{ paddingRight:44 }}/>
-                <button type="button" onClick={() => setSPassShow(v=>!v)}
-                  style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:4 }}>
-                  {sPassShow ? '🙈' : '👁'}
-                </button>
-              </div>
-            </div>
-            <button className="btn-full" onClick={doSignup} disabled={loading}>
-              {loading ? 'Creating Account…' : 'Create Account 🚀'}
-            </button>
-            <div className="modal-switch">
-              Already have an account? <a onClick={() => { setStep('login'); setError(''); }}>Sign in</a>
-            </div>
-            <div style={{ marginTop:12, textAlign:'center' }}>
-              <a onClick={() => { setStep('persona'); setError(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>← Back</a>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP: LOGIN */}
-        {step === 'login' && (
-          <div>
-            <LogoIcon/>
-            <div className="modal-title" style={{ marginTop:4 }}>Welcome back</div>
-            <div className="modal-sub">Sign in to your Tech Launch account</div>
-            {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
-            <div className="form-group">
-              <label className="form-label">Email</label>
-              <input className="form-input" type="email" value={lEmail} onChange={e => setLEmail(e.target.value)} placeholder="your@email.com" autoComplete="email"
-                onKeyDown={e => e.key==='Enter' && doLogin()}/>
-            </div>
-            <div className="form-group">
-              <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
-                <label className="form-label" style={{ margin:0 }}>Password</label>
-                <a onClick={() => { setStep('forgot'); setFpEmail(lEmail); setFpSent(false); setError(''); }} style={{ fontSize:12, fontWeight:600, color:'var(--orange)', cursor:'pointer' }}>Forgot password?</a>
-              </div>
-              <div style={{ position:'relative' }}>
-                <input className="form-input" type={lPassShow?'text':'password'} value={lPass} onChange={e => setLPass(e.target.value)} placeholder="Your password" autoComplete="current-password"
-                  onKeyDown={e => e.key==='Enter' && doLogin()}
-                  style={{ paddingRight:44 }}/>
-                <button type="button" onClick={() => setLPassShow(v=>!v)}
-                  style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:4 }}>
-                  {lPassShow ? '🙈' : '👁'}
-                </button>
-              </div>
-            </div>
-            <button className="btn-full" onClick={doLogin} disabled={loading}>
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
-            <div className="modal-switch">
-              Don't have an account? <a onClick={() => { setStep('persona'); setError(''); setSelectedPersona(null); }}>Sign up free</a>
-            </div>
-          </div>
-        )}
-
-        {/* ── STEP: FORGOT PASSWORD */}
-        {step === 'forgot' && (
-          <div>
-            <LogoIcon/>
-            <div className="modal-title" style={{ marginTop:4 }}>Reset Password</div>
-            {!fpSent ? (
-              <>
-                <div className="modal-sub">Enter your email and we'll send you a reset link.</div>
-                {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
-                <div className="form-group">
-                  <label className="form-label">Email</label>
-                  <input className="form-input" type="email" value={fpEmail} onChange={e => setFpEmail(e.target.value)} placeholder="your@email.com" autoComplete="email"
-                    onKeyDown={e => {
-                      if (e.key === 'Enter') {
-                        if (!fpEmail.trim() || !fpEmail.includes('@')) { setError('Please enter a valid email'); return; }
-                        setFpSent(true); setError('');
-                      }
-                    }}/>
-                </div>
-                <button className="btn-full" disabled={loading} onClick={() => {
-                  if (!fpEmail.trim() || !fpEmail.includes('@')) { setError('Please enter a valid email'); return; }
-                  setFpSent(true); setError('');
-                }}>
-                  Send Reset Link
-                </button>
-                <div style={{ marginTop:14, textAlign:'center' }}>
-                  <a onClick={() => { setStep('login'); setError(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>← Back to sign in</a>
-                </div>
-              </>
-            ) : (
-              <>
-                <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
-                  <div style={{ fontSize:44, marginBottom:16 }}>📧</div>
-                  <div style={{ fontSize:15, fontWeight:700, color:'#0a0a0a', marginBottom:8 }}>Check your inbox</div>
-                  <div style={{ fontSize:13, color:'#666', lineHeight:1.6 }}>
-                    If <b>{fpEmail}</b> is registered, you'll receive a password reset link shortly.<br/>
-                    <span style={{ fontSize:12, color:'#aaa' }}>Don't see it? Check your spam folder.</span>
+          {/* ── STEP: PERSONA */}
+          {step === 'persona' && (
+            <div>
+              <LogoIcon/>
+              <div className="modal-title">Join Tech Launch</div>
+              <div className="modal-sub">Who are you? Choose your role to get started.</div>
+              <div className="persona-grid">
+                {PERSONAS.filter(p => !p.fullWidth).map(p => (
+                  <div key={p.key} className={`persona-card${selectedPersona===p.key?' selected':''}`}
+                    onClick={() => setSelectedPersona(p.key)}>
+                    <div className="persona-icon">{p.icon}</div>
+                    <div className="persona-label">{p.label}</div>
+                    <div className="persona-desc">{p.desc}</div>
                   </div>
-                </div>
-                <button className="btn-full" onClick={close}>Done</button>
-                <div style={{ marginTop:14, textAlign:'center' }}>
-                  <a onClick={() => { setFpSent(false); setFpEmail(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>Try a different email</a>
-                </div>
-              </>
-            )}
-          </div>
-        )}
+                ))}
+                {PERSONAS.filter(p => p.fullWidth).map(p => (
+                  <div key={p.key} className={`persona-card full-width${selectedPersona===p.key?' selected':''}`}
+                    onClick={() => setSelectedPersona(p.key)}>
+                    <div className="persona-icon">{p.icon}</div>
+                    <div className="persona-label">{p.label}</div>
+                    <div className="persona-desc">{p.desc}</div>
+                  </div>
+                ))}
+              </div>
+              <button className="btn-full" disabled={!selectedPersona} onClick={() => setStep('signup')}
+                style={{ opacity:selectedPersona?1:.4, cursor:selectedPersona?'pointer':'not-allowed' }}>
+                Continue →
+              </button>
+              <div className="modal-switch">
+                Already have an account? <a onClick={() => setStep('login')}>Sign in</a>
+              </div>
+            </div>
+          )}
 
-        {/* ── STEP: GATE (unauthenticated action) */}
-        {step === 'gate' && (
-          <div>
-            <LogoIcon/>
-            <div className="modal-title">Sign in to continue</div>
-            <div className="modal-sub">Create a free account to <span>upvote products</span> and support MENA tech.</div>
-            <button className="btn-full" onClick={() => { setStep('persona'); setError(''); setSelectedPersona(null); }} style={{ marginBottom:10 }}>
-              Create Free Account 🚀
-            </button>
-            <button className="btn-full" onClick={() => { setStep('login'); setError(''); }} style={{ background:'var(--black)' }}>
-              Sign In
-            </button>
-          </div>
-        )}
+          {/* ── STEP: SIGNUP */}
+          {step === 'signup' && (
+            <div>
+              <div className="modal-title">Create Account</div>
+              <div className="modal-sub">
+                Join as a <span>{PERSONA_LABELS[selectedPersona] || 'Member'}</span>
+              </div>
+              {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
+              <div className="form-group">
+                <label className="form-label">Full Name</label>
+                <input className="form-input" type="text" value={sName} onChange={e => handleNameChange(e.target.value)} placeholder="Ahmad Al-Rashid" autoComplete="name"/>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Username</label>
+                <div style={{ position:'relative' }}>
+                  <span style={{ position:'absolute', left:14, top:'50%', transform:'translateY(-50%)', color:'#aaa', fontSize:14, pointerEvents:'none' }}>@</span>
+                  <input className="form-input" type="text" value={sHandle}
+                    onChange={e => setSHandle(e.target.value.toLowerCase().replace(/[^a-z0-9_]/g, '').slice(0, 30))}
+                    placeholder="your_handle" autoComplete="username"
+                    style={{ paddingLeft:30 }}/>
+                </div>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
+              </div>
+              <div className="form-group">
+                <label className="form-label">Password</label>
+                <div style={{ position:'relative' }}>
+                  <input className="form-input" type={sPassShow?'text':'password'} value={sPass} onChange={e => setSPass(e.target.value)} placeholder="Min. 8 characters" autoComplete="new-password"
+                    onKeyDown={e => e.key==='Enter' && doSignup()}
+                    style={{ paddingRight:44 }}/>
+                  <button type="button" onClick={() => setSPassShow(v=>!v)}
+                    style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:4 }}>
+                    {sPassShow ? '🙈' : '👁'}
+                  </button>
+                </div>
+              </div>
+              <button className="btn-full" onClick={doSignup} disabled={loading}>
+                {loading ? <><Spinner/>Creating Account…</> : 'Create Account 🚀'}
+              </button>
+              <div className="modal-switch">
+                Already have an account? <a onClick={() => { setStep('login'); setError(''); }}>Sign in</a>
+              </div>
+              <div style={{ marginTop:12, textAlign:'center' }}>
+                <a onClick={() => { setStep('persona'); setError(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>← Back</a>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP: LOGIN */}
+          {step === 'login' && (
+            <div>
+              <LogoIcon/>
+              <div className="modal-title" style={{ marginTop:4 }}>Welcome back</div>
+              <div className="modal-sub">Sign in to your Tech Launch account</div>
+              {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
+              <div className="form-group">
+                <label className="form-label">Email</label>
+                <input className="form-input" type="email" value={lEmail} onChange={e => setLEmail(e.target.value)} placeholder="your@email.com" autoComplete="email"
+                  onKeyDown={e => e.key==='Enter' && doLogin()}/>
+              </div>
+              <div className="form-group">
+                <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:7 }}>
+                  <label className="form-label" style={{ margin:0 }}>Password</label>
+                  <a onClick={() => { setStep('forgot'); setFpEmail(lEmail); setFpSent(false); setError(''); }} style={{ fontSize:12, fontWeight:600, color:'var(--orange)', cursor:'pointer' }}>Forgot password?</a>
+                </div>
+                <div style={{ position:'relative' }}>
+                  <input className="form-input" type={lPassShow?'text':'password'} value={lPass} onChange={e => setLPass(e.target.value)} placeholder="Your password" autoComplete="current-password"
+                    onKeyDown={e => e.key==='Enter' && doLogin()}
+                    style={{ paddingRight:44 }}/>
+                  <button type="button" onClick={() => setLPassShow(v=>!v)}
+                    style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:4 }}>
+                    {lPassShow ? '🙈' : '👁'}
+                  </button>
+                </div>
+              </div>
+              <button className="btn-full" onClick={doLogin} disabled={loading}>
+                {loading ? <><Spinner/>Signing in…</> : 'Sign In'}
+              </button>
+              <div className="modal-switch">
+                Don't have an account? <a onClick={() => { setStep('persona'); setError(''); setSelectedPersona(null); }}>Sign up free</a>
+              </div>
+            </div>
+          )}
+
+          {/* ── STEP: FORGOT PASSWORD */}
+          {step === 'forgot' && (
+            <div>
+              <LogoIcon/>
+              <div className="modal-title" style={{ marginTop:4 }}>Reset Password</div>
+              {!fpSent ? (
+                <>
+                  <div className="modal-sub">Enter your email and we'll send you a reset link.</div>
+                  {error && <div style={{ background:'#fff5f5', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'10px 14px', borderRadius:10, marginBottom:16 }}>{error}</div>}
+                  <div className="form-group">
+                    <label className="form-label">Email</label>
+                    <input className="form-input" type="email" value={fpEmail} onChange={e => setFpEmail(e.target.value)} placeholder="your@email.com" autoComplete="email"
+                      onKeyDown={e => { if (e.key === 'Enter') doForgotPassword(); }}/>
+                  </div>
+                  <button className="btn-full" disabled={fpLoading} onClick={doForgotPassword}>
+                    {fpLoading ? <><Spinner/>Sending…</> : 'Send Reset Link'}
+                  </button>
+                  <div style={{ marginTop:14, textAlign:'center' }}>
+                    <a onClick={() => { setStep('login'); setError(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>← Back to sign in</a>
+                  </div>
+                </>
+              ) : (
+                <>
+                  <div style={{ textAlign:'center', padding:'8px 0 16px' }}>
+                    <div style={{ fontSize:44, marginBottom:16 }}>📧</div>
+                    <div style={{ fontSize:15, fontWeight:700, color:'#0a0a0a', marginBottom:8 }}>Check your inbox</div>
+                    <div style={{ fontSize:13, color:'#666', lineHeight:1.6 }}>
+                      If <b>{fpEmail}</b> is registered, you'll receive a password reset link shortly.<br/>
+                      <span style={{ fontSize:12, color:'#aaa' }}>Don't see it? Check your spam folder.</span>
+                    </div>
+                  </div>
+                  <button className="btn-full" onClick={close}>Done</button>
+                  <div style={{ marginTop:14, textAlign:'center' }}>
+                    <a onClick={() => { setFpSent(false); setFpEmail(''); setError(''); }} style={{ fontSize:12, color:'#aaa', cursor:'pointer' }}>Try a different email</a>
+                  </div>
+                </>
+              )}
+            </div>
+          )}
+
+          {/* ── STEP: GATE (unauthenticated action) */}
+          {step === 'gate' && (
+            <div>
+              <LogoIcon/>
+              <div className="modal-title">Sign in to continue</div>
+              <div className="modal-sub">Create a free account to <span>upvote products</span> and support MENA tech.</div>
+              <button className="btn-full" onClick={() => { setStep('persona'); setError(''); setSelectedPersona(null); }} style={{ marginBottom:10 }}>
+                Create Free Account 🚀
+              </button>
+              <button className="btn-full" onClick={() => { setStep('login'); setError(''); }}
+                style={{ background:'transparent', color:'var(--black)', border:'1.5px solid #e8e8e8' }}>
+                Sign In
+              </button>
+            </div>
+          )}
+        </div>
       </div>
-    </div>
+    </>
   );
 }

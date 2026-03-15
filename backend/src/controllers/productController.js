@@ -1,4 +1,5 @@
 const { query, getClient } = require('../config/database');
+const { sendSubmissionEmail } = require('../services/emailService');
 
 // ── GET /api/products  (public, filterable)
 const getProducts = async (req, res, next) => {
@@ -140,7 +141,7 @@ const getProduct = async (req, res, next) => {
 const createProduct = async (req, res, next) => {
   try {
     const {
-      name, tagline, description, logo_emoji, website, demo_url, video_url,
+      name, tagline, description, logo_emoji, logo_url, website, demo_url, video_url,
       industry, countries, tags, launch_date, maker_ids = []
     } = req.body;
 
@@ -152,12 +153,12 @@ const createProduct = async (req, res, next) => {
     const status = manualApproval ? 'pending' : 'live';
 
     const { rows } = await query(`
-      INSERT INTO products (name, tagline, description, logo_emoji, website, demo_url, video_url,
+      INSERT INTO products (name, tagline, description, logo_emoji, logo_url, website, demo_url, video_url,
         industry, countries, tags, launch_date, status, submitted_by,
         approved_by, approved_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
       RETURNING *`,
-      [name, tagline, description||null, logo_emoji||'🚀', website||null, demo_url||null, video_url||null,
+      [name, tagline, description||null, logo_emoji||'🚀', logo_url||null, website||null, demo_url||null, video_url||null,
        industry, countries||[], tags||[], launch_date||null, status,
        req.user.id,
        !manualApproval ? req.user.id : null,
@@ -192,6 +193,11 @@ const createProduct = async (req, res, next) => {
 
     // Update user product count
     await query('UPDATE users SET products_count = products_count + 1 WHERE id=$1', [req.user.id]);
+
+    // Send submission confirmation email (non-blocking)
+    if (manualApproval) {
+      sendSubmissionEmail({ name: req.user.name, email: req.user.email, productName: rows[0].name });
+    }
 
     res.status(201).json({ success:true, data:rows[0] });
   } catch (err) { next(err); }

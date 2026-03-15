@@ -34,7 +34,7 @@ const COUNTRY_MATCH = {
 
 export default function AllProductsPage({ onSignIn, onSignUp }) {
   const navigate = useNavigate();
-  const [searchParams] = useSearchParams();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { bookmarks, toggleBookmark, votes, toggleVote, setWaitlistModal } = useUI();
   const [products, setProducts] = useState([]);
@@ -53,7 +53,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
   useEffect(() => {
     setLoading(true);
-    productsAPI.list({ sort:'top', limit:100, status:'all' })
+    productsAPI.list({ sort:'top', limit:100, status:'live,soon' })
       .then(({ data }) => { setProducts(data.data || []); })
       .catch(() => { setProducts([]); })
       .finally(() => setLoading(false));
@@ -114,7 +114,14 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
           {/* Search */}
           <div style={{ position:'relative', marginBottom:20 }}>
             <svg style={{ position:'absolute', left:16, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#aaa" strokeWidth="2.2"><circle cx="11" cy="11" r="8"/><path d="m21 21-4.35-4.35"/></svg>
-            <input value={searchQ} onChange={e => setSearchQ(e.target.value)}
+            <input value={searchQ} onChange={e => {
+                const val = e.target.value;
+                setSearchQ(val);
+                setSearchParams(prev => {
+                  if (val) { prev.set('q', val); } else { prev.delete('q'); }
+                  return prev;
+                }, { replace: true });
+              }}
               placeholder="Search by name, tagline, or category…" autoComplete="off"
               style={{ width:'100%', padding:'14px 16px 14px 46px', borderRadius:14, border:'1.5px solid #e8e8e8', fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:'none', background:'#fff', color:'#0a0a0a', boxSizing:'border-box', boxShadow:'0 2px 8px rgba(0,0,0,.05)' }}
               onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor='#e8e8e8'}/>

@@ -1,0 +1,428 @@
+Here's the complete fix prompt:
+
+Tech Launch MENA — Public Site Full Fix
+You are fixing all known issues on the Tech Launch public site (tlmena.com). Work through every item systematically in the order listed. Do not skip any item.
+
+CONTEXT
+
+Stack: React + Vite, Node.js/Express backend, PostgreSQL
+Email service: Resend (already integrated for welcome + invite emails)
+File uploads: uploadAPI already exists for post images
+Auth: JWT stored in localStorage
+Fonts needed: DM Sans, DM Mono, Noto Kufi Arabic via Google Fonts
+Search: currently client-side, limit:100, needs to move server-side
+Product submission: SubmitProductModal.jsx, 6 steps
+
+
+🔴 CRITICAL — Fix First
+1. Logo and screenshots silently dropped on submission
+
+File: SubmitProductModal.jsx
+submit() currently only sends logo_emoji — never uploads logoFile
+Before calling productsAPI.create(), upload logoFile via uploadAPI and pass the returned URL as logo_url
+Upload each non-null screenshot from Step 3 via uploadAPI and pass the array of URLs as screenshots
+The Step 5 preview already shows the correct logo — make the submission match what the user sees
+
+2. Forgot password makes no API call
+
+File: AuthModal.jsx
+doForgot() currently just calls setFpSent(true) with no API call
+Add await api.post('/api/auth/forgot-password', { email: fpEmail }) before setting fpSent
+Backend must send a real password reset email via Resend with a tokenized reset link
+Add POST /api/auth/forgot-password route if it doesn't exist:
+
+Generate a secure token, store in DB with expiry (1 hour)
+Send email via Resend with link: https://tlmena.com/reset-password?token=...
+
+
+Add POST /api/auth/reset-password route:
+
+Validate token, check expiry, update password hash, invalidate token
+
+
+
+3. Verify password change in Settings — build if missing
+
+Check if a password change form exists in Settings tabs
+If missing, add a "Security" tab with:
+
+Current password field
+New password field
+Confirm new password field
+Save button with loading state
+Wired to PUT /api/auth/change-password
+
+
+
+4. Pending products in public search
+
+File: wherever productsAPI.list() or GET /api/products is called on the public site
+Change status: 'all' to status: 'live' on all public-facing product fetch calls
+Ensure pending, rejected, and coming-soon products are never returned to unauthenticated users
+Backend: add a status filter check on GET /api/products — if request is not from an authenticated admin, always filter to status = 'live' only
+
+5. Submission confirmation + approval/rejection emails
+
+File: email service (wherever Resend is configured)
+Add 3 new email templates:
+
+Email 1 — On product submission:
+Subject: We received your submission — [Product Name]
+Body: Your product [Name] has been submitted and is under review.
+We'll notify you once it's been reviewed (usually within 24 hours).
+View your submission status: https://tlmena.com/settings?tab=products
+Email 2 — On product approval:
+Subject: 🎉 [Product Name] is now live on Tech Launch!
+Body: Congratulations — your product is live.
+View it here: https://tlmena.com/products/[slug]
+Share it with your network and start collecting upvotes.
+Email 3 — On product rejection:
+Subject: Update on your submission — [Product Name]
+Body: Thank you for submitting [Product Name].
+After review, we weren't able to approve this listing.
+Reason: [rejection_reason]
+You're welcome to resubmit after making changes.
+
+Trigger Email 1 in the product submission route
+Trigger Email 2 in PUT /admin/products/:id/approve
+Trigger Email 3 in PUT /admin/products/:id/reject
+
+
+🟠 HIGH — Fix Before Launch
+6. Remove Weekly Digest from homepage entirely
+
+File: HomePage.jsx
+Delete the entire Weekly Digest subscription input, button, and surrounding container
+Do not replace with "Coming Soon" — remove completely
+Remove any associated state variables and handlers
+
+7. Remove "Events" from footer
+
+File: Footer.jsx
+Delete the "Events" link from the Community column entirely
+Replace it with a link to "Launcher" → /launcher
+
+8. Rename "Join Launcher" to "Community" in nav
+
+File: Navbar.jsx
+Change the nav item text from "Join Launcher" to "Community"
+The destination /launcher stays the same
+Apply to both desktop nav and mobile slide-down menu
+Mobile menu currently missing this link entirely — add it
+
+9. Install react-helmet-async — dynamic meta tags
+
+Install: npm install react-helmet-async
+Wrap App.jsx root with <HelmetProvider>
+Add dynamic <Helmet> to these pages:
+
+ProductDetailPage:
+jsx<Helmet>
+  <title>{product.name} — Tech Launch MENA</title>
+  <meta name="description" content={product.tagline} />
+  <meta property="og:title" content={`${product.name} — Tech Launch MENA`} />
+  <meta property="og:description" content={product.tagline} />
+  <meta property="og:image" content={product.logo_url || 'https://tlmena.com/og-default.png'} />
+  <meta property="og:url" content={`https://tlmena.com/products/${product.slug}`} />
+  <meta name="twitter:card" content="summary_large_image" />
+</Helmet>
+User Profile page:
+jsx<Helmet>
+  <title>{user.name} (@{user.handle}) — Tech Launch MENA</title>
+  <meta property="og:title" content={`${user.name} on Tech Launch MENA`} />
+  <meta property="og:description" content={user.headline || `${user.persona} on Tech Launch MENA`} />
+  <meta property="og:image" content={user.avatar_url || 'https://tlmena.com/og-default.png'} />
+</Helmet>
+DirectoryPage:
+jsx<Helmet>
+  <title>MENA Tech Directory — Browse by Industry & Country | Tech Launch</title>
+  <meta name="description" content="Explore MENA startups, products, accelerators, and investors by industry and country." />
+</Helmet>
+Listing pages (Companies, Accelerators, etc.):
+jsx<Helmet>
+  <title>{pageTitle} — Tech Launch MENA</title>
+  <meta name="description" content={pageDescription} />
+</Helmet>
+```
+
+**10. Add robots.txt**
+- File: `frontend/public/robots.txt`
+```
+User-agent: *
+Allow: /
+Disallow: /admin
+Sitemap: https://tlmena.com/sitemap.xml
+11. Generate dynamic sitemap.xml from backend
+
+Add GET /sitemap.xml route to Express
+Include all live product pages, directory pages, listing pages
+Format:
+
+xml<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  <url>
+    <loc>https://tlmena.com/</loc>
+    <changefreq>daily</changefreq>
+    <priority>1.0</priority>
+  </url>
+  <!-- one <url> per live product, entity, directory page -->
+</urlset>
+12. Fix search to be server-side
+
+Move product search from client-side filter to a backend query
+GET /api/products/search?q=keyword&industry=Fintech&country=SA&page=1&limit=20
+Remove the limit:100 client-side fetch
+Backend performs WHERE name ILIKE $1 OR tagline ILIKE $1 OR description ILIKE $1
+Returns paginated results with total count
+
+13. Make search URL-shareable
+
+Update URL params on every search input keystroke and filter change
+Use useSearchParams or history.replaceState to keep URL in sync
+On page load, read all params and pre-apply filters and search term
+
+14. Fix social footer links
+
+File: Footer.jsx
+Set real URLs for X/Twitter, LinkedIn, Instagram
+If accounts don't exist yet, remove the icons entirely
+Do not leave href="#"
+
+15. Stats strip with threshold guard
+
+Add GET /api/stats endpoint returning { users, products, upvotes }
+In HomePage.jsx, fetch stats on mount
+Only show the strip when: users >= 50 AND products >= 10 AND upvotes >= 100
+Below threshold show instead:
+
+jsx<div className="positioning-strip">
+  🇸🇦 🇦🇪 🇪🇬 🇯🇴 🇰🇼 Built for MENA founders, investors, and builders
+</div>
+
+Once thresholds are crossed the strip automatically switches to real numbers
+
+16. Add hero CTA for product submission
+
+File: HomePage.jsx
+Add a "Submit Your Product →" button in the hero section below the headline
+Button opens SubmitProductModal for logged-in users
+Button opens auth gate modal for logged-out users
+Style: orange filled, same as "Join Now" button
+
+17. Bio and social links visible by default on profiles
+
+File: UserProfilePage.jsx or equivalent
+Remove the collapsed "About ▼" default state
+Bio, website, Twitter, LinkedIn, GitHub links should be visible immediately on profile load
+Keep the section collapsible if desired but default to open
+
+18. Fix website URL validation in product submission
+
+File: SubmitProductModal.jsx validateStep2()
+Add: if (form.website && !form.website.startsWith('http')) { toast.error('Website must start with https://'); return false; }
+
+19. Name and tagline character limits
+
+File: SubmitProductModal.jsx Step 2
+Add maxLength={60} to Name field with live counter showing "X / 60"
+Add maxLength={120} to Tagline field with live counter showing "X / 120"
+Counter turns red when within 10 characters of limit
+
+20. Fix Arabic handle generation
+
+File: AuthModal.jsx signup step
+Add a visible Handle field between Name and Email
+Pre-fill from name: name.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'') + 2 random digits
+Make it editable so user can correct before submitting
+Show live preview: tlmena.com/@[handle]
+If name is fully Arabic, pre-fill with user + 4 random digits as fallback
+Validate: only a-z, 0-9, _ allowed, minimum 3 characters
+
+21. Add country dropdown to signup modal
+
+File: AuthModal.jsx
+Add a country <select> field to the signup step
+Default options: Saudi Arabia, UAE, Egypt, Jordan, Kuwait, Bahrain, Qatar, Oman, Lebanon, Morocco, Other
+Required field — validated before proceeding
+
+
+🟡 MEDIUM — Fix After Critical and High
+22. 404 page improvements
+
+File: NotFound.jsx
+Wrap with <Navbar /> and <Footer />
+Replace <a href="/"> with <Link to="/">
+Add search input
+Add quick-links: "Browse Products", "Explore Directory", "Community"
+
+23. Auth modal spinner
+
+Add a 16px rotating SVG spinner inside the submit button when loading === true
+Show spinner alongside button text
+Apply same spinner to the /register page button
+Create as a shared <Spinner /> component
+
+24. Fix hardcoded fake articles
+
+File: HomePage.jsx and ArticlesPage.jsx
+Remove the ARTICLES hardcoded constant
+Pull from articlesAPI.list({ limit: 3 }) instead
+If API returns 0 articles, hide the section entirely — do not show empty cards
+
+25. Description field validation
+
+File: SubmitProductModal.jsx validateStep2()
+Either: add minimum 50 character validation matching the asterisk
+Or: remove the asterisk from the description field
+Pick one — the current state (asterisk + no validation) is misleading
+
+26. Step 3 label fix
+
+File: SubmitProductModal.jsx Step 3
+Rename "Skip for now →" button to "Continue without media →"
+
+27. Step 6 success link
+
+File: SubmitProductModal.jsx Step 6
+Add <Link to="/settings?tab=products">View in My Products →</Link>
+Styled in orange
+
+28. Unify upvote code paths
+
+File: AllProductsPage.jsx
+Replace onSignIn?.() with setAuthModal('gate') — same path as ProductCard
+Ensure both use the contextual gate modal not the plain sign-in modal
+
+29. Verified badge tooltip
+
+Wherever the ✅ verified badge renders on profiles and post cards
+Add: title="Verified MENA founder — identity confirmed by Tech Launch"
+Or use a proper tooltip component if one exists
+
+30. Directory zero counts
+
+File: DirectoryPage.jsx
+Change "0 products" label to "Be the first →" in orange
+Make it a clickable link to the product submission flow
+
+31. Directory filters hidden when empty
+
+File: listing pages (Companies, Accelerators, etc.)
+Hide Country and Industry filter dropdowns when entity count is 0
+Show simplified empty state instead
+
+32. Entity submission approval notice
+
+On the entity submission modal/form
+Add a notice before the submit button: "Submissions are reviewed by our team before going live — usually within 24 hours."
+
+33. Top Industries sidebar
+
+File: HomePage.jsx
+Hide the Top Industries sidebar section entirely when all industry counts are 0
+
+34. Homepage dropdown off-screen fix
+
+File: HomePage.jsx Country/Industry dropdowns
+Replace position: fixed with position: absolute inside a position: relative wrapper
+Check viewport bounds before opening and flip direction if needed
+
+35. "All Products" tab rename
+
+File: HomePage.jsx or wherever feed tabs are rendered
+Rename "All Products" tab to "Top" or replace with "Featured"
+
+36. Stage filter expansion
+
+File: wherever Investors/Ventures listing filter is defined
+Expand STAGE_OPTIONS from 3 hardcoded items to all 14 stages from STAGE_COLORS
+
+37. Notification bell aria-label
+
+File: Navbar.jsx
+Add aria-label="Notifications" to the bell button
+
+38. Back to top on Directory
+
+File: DirectoryPage.jsx
+Add a "↑ Back to top" button that appears after scrolling 400px
+Smooth scrolls to top on click
+
+39. Sign in secondary button style
+
+File: AuthModal.jsx
+Change the Sign In button from background: var(--black) to ghost/outline style
+Primary (Join Now) should be visually dominant — secondary should recede
+
+40. JSON-LD structured data on product pages
+
+File: ProductDetailPage.jsx
+Add inside <Helmet>:
+
+jsx<script type="application/ld+json">{JSON.stringify({
+  "@context": "https://schema.org",
+  "@type": "SoftwareApplication",
+  "name": product.name,
+  "description": product.tagline,
+  "url": `https://tlmena.com/products/${product.slug}`,
+  "applicationCategory": product.industry,
+  "offers": { "@type": "Offer", "price": "0" }
+})}</script>
+41. Mobile search trigger
+
+File: Navbar.jsx
+Add a search icon button in nav-mobile-right
+On tap: expands to a full-width search bar inline below the nav
+Or scrolls to the mobile hamburger menu search
+
+42. Homepage sidebar on mobile
+
+File: HomePage.jsx
+Convert sidebar to a horizontal scrollable chip row below the filter bar on mobile
+Show: Top Industries as chips, quick links to Directory and Launcher
+
+43. Directory grid mobile fix
+
+File: DirectoryPage.jsx
+Change minmax(220px, 1fr) to minmax(160px, 1fr)
+Ensures two full columns always render on 375px phones
+
+
+🟢 RTL & ARABIC
+44. RTL foundation
+
+Add a LanguageContext to App.jsx with lang (en / ar) and dir (ltr / rtl) state
+Apply dir to the root <div> in App.jsx
+Add language toggle button to Navbar
+Load Noto Kufi Arabic via Google Fonts in index.html:
+
+html<link href="https://fonts.googleapis.com/css2?family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+
+When lang === 'ar': apply font-family: 'Noto Kufi Arabic', sans-serif to all text
+Replace all margin-left / padding-left with margin-inline-start / padding-inline-start
+Replace all margin-right / padding-right with margin-inline-end / padding-inline-end
+Replace directional arrow icons (→ ←) with RTL-aware versions
+
+45. Arabic country and industry names
+
+Build an ar translations object for all country names and industry names
+When lang === 'ar', show Arabic labels in all dropdowns, cards, and filter pills
+
+46. Social proof stats strip
+
+Add GET /api/stats endpoint
+Return: { users_count, products_count, upvotes_count }
+In HomePage.jsx show strip only when thresholds met (fix #15)
+Format: "١٢٣ منتج · ٤٥٦ مؤسس · ٧٨٩ تصويت" when Arabic is active
+
+
+HOW TO PROCEED
+
+Fix one numbered item at a time in the order listed
+Show only the changed file or component with enough surrounding context to locate each change
+After every 5 fixes show a progress summary
+If a fix requires both frontend and backend changes show both
+If a fix requires a new shared component create it in components/shared/ and import it wherever needed
+Do not modify anything outside of what each fix describes
+
+Start with fixes 1–5.

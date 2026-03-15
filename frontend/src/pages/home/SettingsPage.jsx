@@ -10,6 +10,7 @@ import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
 import 'react-image-crop/dist/ReactCrop.css';
 
 import { NAV_ITEMS, PERSONAS, WORLD_DIALS, WORLD_COUNTRIES, MENA_COUNTRIES_LIST, DRAFT_KEY } from '../../components/settings/settingsConstants';
+import SecurityTab from '../../components/settings/SecurityTab';
 import ProfileTab  from '../../components/settings/ProfileTab';
 import ProductsTab from '../../components/settings/ProductsTab';
 import DraftsTab   from '../../components/settings/DraftsTab';
@@ -380,6 +381,8 @@ export default function SettingsPage() {
                 settingsMsgScrollRef={settingsMsgScrollRef} currentThread={currentThread}
               />
             )}
+
+            {activeTab === 'security' && <SecurityTab/>}
 
             {activeTab === 'company' && (
               <CompanyTab

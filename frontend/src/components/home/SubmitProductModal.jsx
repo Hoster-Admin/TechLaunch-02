@@ -1,7 +1,7 @@
 import React, { useState, useRef, useEffect, useCallback } from 'react';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { productsAPI, entitiesAPI } from '../../utils/api';
+import { productsAPI, entitiesAPI, uploadAPI } from '../../utils/api';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 
@@ -68,8 +68,10 @@ export default function SubmitProductModal({ open, onClose }) {
   const [type, setType] = useState(null);
   const [form, setForm] = useState({ name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
   const [logoFile, setLogoFile] = useState(null);
+  const [logoRawFile, setLogoRawFile] = useState(null);
   const [selectedCountries, setCountries] = useState([]);
   const [screenshots, setScreenshots] = useState([null, null, null, null]);
+  const [screenshotFiles, setScreenshotFiles] = useState([null, null, null, null]);
   const [submitting, setSubmitting] = useState(false);
 
   // Entity search
@@ -133,7 +135,7 @@ export default function SubmitProductModal({ open, onClose }) {
   const reset = () => {
     setStep(1); setType(null);
     setForm({ name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
-    setLogoFile(null); setCountries([]); setScreenshots([null,null,null,null]);
+    setLogoFile(null); setLogoRawFile(null); setCountries([]); setScreenshots([null,null,null,null]); setScreenshotFiles([null,null,null,null]);
     setEntityQ(''); setSelectedEntity(null); setEntityResults([]);
     setFounderQ(''); setFounderResults([]); setCoFounders([]);
     setDraftPrompt(null); setPendingDraft(null);
@@ -166,6 +168,7 @@ export default function SubmitProductModal({ open, onClose }) {
   const handleLogoUpload = (e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setLogoRawFile(file);
     const reader = new FileReader();
     reader.onload = ev => setLogoFile(ev.target.result);
     reader.readAsDataURL(file);
@@ -174,6 +177,7 @@ export default function SubmitProductModal({ open, onClose }) {
   const handleScreenshot = (idx, e) => {
     const file = e.target.files[0];
     if (!file) return;
+    setScreenshotFiles(prev => { const n=[...prev]; n[idx]=file; return n; });
     const reader = new FileReader();
     reader.onload = ev => setScreenshots(prev => { const n=[...prev]; n[idx]=ev.target.result; return n; });
     reader.readAsDataURL(file);
@@ -182,6 +186,7 @@ export default function SubmitProductModal({ open, onClose }) {
   const removeScreenshot = (idx, e) => {
     e.stopPropagation();
     setScreenshots(prev => { const n=[...prev]; n[idx]=null; return n; });
+    setScreenshotFiles(prev => { const n=[...prev]; n[idx]=null; return n; });
   };
 
   const searchEntities = async (q) => {
@@ -227,18 +232,48 @@ export default function SubmitProductModal({ open, onClose }) {
     }
     setSubmitting(true);
     try {
-      await productsAPI.create({
+      // Upload logo image if a file was selected
+      let logoUrl = null;
+      if (logoRawFile) {
+        try {
+          const uploadRes = await uploadAPI.postImage(logoRawFile);
+          logoUrl = uploadRes.data?.data?.url || null;
+        } catch { /* continue without logo URL */ }
+      }
+
+      // Create product
+      const res = await productsAPI.create({
         name: form.name.trim(),
         tagline: form.tagline.trim(),
         industry: form.industry,
         description: form.description.trim() || null,
         website: form.website.trim() || null,
         logo_emoji: form.logoEmoji || '🚀',
+        logo_url: logoUrl,
         video_url: form.videoUrl.trim() || null,
         countries: selectedCountries.length > 0 ? selectedCountries : ['other'],
         tags: [],
         maker_ids: coFounders.map(cf => cf.id),
       });
+
+      const productId = res.data?.data?.id;
+
+      // Upload screenshots and attach to product
+      if (productId) {
+        const uploads = screenshotFiles
+          .map((file, idx) => file ? { file, idx } : null)
+          .filter(Boolean);
+        for (const { file, idx } of uploads) {
+          try {
+            const uploadRes = await uploadAPI.postImage(file);
+            const url = uploadRes.data?.data?.url;
+            if (url) {
+              await api.post(`/products/${productId}/media`, { url, type:'screenshot', order_num: idx });
+            }
+          } catch { /* non-fatal, skip this screenshot */ }
+        }
+      }
+
       clearDraft();
       addNotification('product', `Your product "${form.name}" was submitted for review 🚀`, '🚀');
       setStep(6);

@@ -18,7 +18,7 @@ import BookmarksPage    from './pages/home/BookmarksPage';
 import PeoplePage       from './pages/home/PeoplePage';
 import UserProfilePage  from './pages/home/UserProfilePage';
 import SettingsPage     from './pages/home/SettingsPage';
-import { LoginPage, RegisterPage, SetPasswordPage } from './pages/home/AuthPages';
+import { LoginPage, RegisterPage, SetPasswordPage, ResetPasswordPage } from './pages/home/AuthPages';
 import { ArticlesList, ArticleDetail } from './pages/home/ArticlesPage';
 import AboutPage   from './pages/home/AboutPage';
 import PrivacyPage from './pages/home/PrivacyPage';
@@ -122,7 +122,8 @@ function AppRoutes() {
         {/* Auth */}
         <Route path="/login"         element={<GuestOnly><LoginPage/></GuestOnly>}/>
         <Route path="/register"      element={<GuestOnly><RegisterPage/></GuestOnly>}/>
-        <Route path="/set-password"  element={<SetPasswordPage/>}/>
+        <Route path="/set-password"    element={<SetPasswordPage/>}/>
+        <Route path="/reset-password"  element={<ResetPasswordPage/>}/>
 
         {/* Admin panel */}
         <Route path="/admin" element={<RequireAdmin><AdminLayout/></RequireAdmin>}>

@@ -34,7 +34,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [profile, setProfile]       = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [followLoading, setFollowLoading]   = useState(false);
-  const [aboutOpen, setAboutOpen]           = useState(false);
+  const [aboutOpen, setAboutOpen]           = useState(true);
   const [followModal, setFollowModal]       = useState(null);
   const [followList, setFollowList]         = useState([]);
   const [loadingFollowList, setLoadingFollowList] = useState(false);

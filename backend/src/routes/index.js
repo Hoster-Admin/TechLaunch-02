@@ -87,10 +87,21 @@ authRouter.post('/login',
   validate, authCtrl.login
 );
 
-authRouter.post('/refresh',      authCtrl.refresh);
-authRouter.post('/logout',       authCtrl.logout);
-authRouter.get ('/me',           authenticate, authCtrl.getMe);
-authRouter.post('/set-password', authCtrl.setPassword);
+authRouter.post('/refresh',        authCtrl.refresh);
+authRouter.post('/logout',         authCtrl.logout);
+authRouter.get ('/me',             authenticate, authCtrl.getMe);
+authRouter.post('/set-password',   authCtrl.setPassword);
+authRouter.post('/forgot-password',
+  [body('email').isEmail().normalizeEmail()],
+  validate, authCtrl.forgotPassword
+);
+authRouter.post('/reset-password',
+  [
+    body('token').notEmpty(),
+    body('password').isLength({ min:8 }).withMessage('Password must be at least 8 characters'),
+  ],
+  validate, authCtrl.resetPassword
+);
 
 // ══════════════════════════════════════════════════
 // PRODUCTS  /api/products
@@ -119,6 +130,23 @@ productsRouter.post('/:id/discount-signup', optionalAuth,
 productsRouter.get ('/:id/comments',  optionalAuth, productCtrl.getComments);
 productsRouter.post('/:id/comments',  authenticate, commentLimiter,
   [body('body').trim().notEmpty().isLength({ max:2000 })], validate, productCtrl.addComment);
+productsRouter.post('/:id/media', authenticate, async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { url, type = 'screenshot', order_num = 0 } = req.body;
+    if (!url) return res.status(400).json({ success:false, message:'url required' });
+    const { rows: product } = await dbQuery('SELECT submitted_by FROM products WHERE id=$1', [id]);
+    if (!product.length) return res.status(404).json({ success:false, message:'Not found' });
+    const isOwner = product[0].submitted_by === req.user.id;
+    const isAdmin = ['admin','moderator'].includes(req.user.role);
+    if (!isOwner && !isAdmin) return res.status(403).json({ success:false, message:'Forbidden' });
+    const { rows } = await dbQuery(
+      'INSERT INTO product_media (product_id, url, type, order_num) VALUES ($1,$2,$3,$4) RETURNING *',
+      [id, url, type, order_num]
+    );
+    res.status(201).json({ success:true, data:rows[0] });
+  } catch (err) { next(err); }
+});
 
 // ══════════════════════════════════════════════════
 // ENTITIES  /api/entities

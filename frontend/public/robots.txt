@@ -1,0 +1,10 @@
+User-agent: *
+Allow: /
+
+Disallow: /admin/
+Disallow: /api/
+Disallow: /settings
+Disallow: /reset-password
+Disallow: /set-password
+
+Sitemap: https://tlmena.com/sitemap.xml

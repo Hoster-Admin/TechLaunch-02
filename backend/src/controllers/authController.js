@@ -3,12 +3,10 @@ const crypto = require('crypto');
 const jwt    = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { query } = require('../config/database');
-const { sendWelcomeEmail } = require('../services/emailService');
+const { sendWelcomeEmail, sendPasswordResetEmail } = require('../services/emailService');
 
-// ── Helper: hash a refresh token before storing / looking up
 const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
-// ── Helper: generate tokens
 const generateTokens = (userId) => {
   const accessToken = jwt.sign(
     { userId },
@@ -19,7 +17,6 @@ const generateTokens = (userId) => {
   return { accessToken, refreshToken };
 };
 
-// ── Cookie options
 const COOKIE_OPTS = {
   httpOnly: true,
   secure: process.env.NODE_ENV === 'production',
@@ -42,7 +39,6 @@ const register = async (req, res, next) => {
   try {
     const { name, handle, email, password, persona, country } = req.body;
 
-    // Check email / handle unique
     const { rows: existing } = await query(
       'SELECT id FROM users WHERE email=$1 OR handle=$2', [email, handle]
     );
@@ -60,19 +56,16 @@ const register = async (req, res, next) => {
     const user = rows[0];
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Store hashed refresh token
     await query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
       [user.id, hashToken(refreshToken)]
     );
 
-    // Log activity
     await query(
       'INSERT INTO activity_log (actor_id, action, entity, entity_id) VALUES ($1,$2,$3,$4)',
       [user.id, 'user.signup', 'users', user.id]
     );
 
-    // Send welcome email (non-blocking)
     sendWelcomeEmail({ name: user.name, email: user.email });
 
     setAuthCookies(res, accessToken, refreshToken);
@@ -109,7 +102,6 @@ const login = async (req, res, next) => {
 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Store hashed refresh token
     await query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
       [user.id, hashToken(refreshToken)]
@@ -127,7 +119,6 @@ const login = async (req, res, next) => {
 // ── POST /api/auth/refresh
 const refresh = async (req, res, next) => {
   try {
-    // Accept from cookie or request body (backwards compat)
     const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!refreshToken) return res.status(400).json({ success:false, message:'Refresh token required' });
 
@@ -142,7 +133,6 @@ const refresh = async (req, res, next) => {
     const { user_id, status } = rows[0];
     if (status === 'suspended') return res.status(403).json({ success:false, message:'Account suspended' });
 
-    // Rotate token — revoke old hash, store new hash
     await query('UPDATE refresh_tokens SET revoked=true WHERE token=$1', [hashToken(refreshToken)]);
     const tokens = generateTokens(user_id);
     await query(
@@ -172,7 +162,7 @@ const getMe = async (req, res) => {
   res.json({ success:true, data: req.user });
 };
 
-// ── POST /api/auth/set-password  (used by admin-invited users)
+// ── POST /api/auth/set-password  (admin-invited users)
 const setPassword = async (req, res, next) => {
   try {
     const { token, password } = req.body;
@@ -219,4 +209,80 @@ const setPassword = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { register, login, refresh, logout, getMe, setPassword };
+// ── POST /api/auth/forgot-password
+const forgotPassword = async (req, res, next) => {
+  try {
+    const { email } = req.body;
+    if (!email) return res.status(400).json({ success:false, message:'Email is required' });
+
+    const { rows } = await query(
+      'SELECT id, name, email FROM users WHERE email=$1', [email.toLowerCase().trim()]
+    );
+
+    // Always respond 200 to prevent email enumeration
+    if (!rows.length) {
+      return res.json({ success:true, message:'If that email is registered, a reset link has been sent.' });
+    }
+
+    const user = rows[0];
+    const token = crypto.randomBytes(32).toString('hex');
+    const expires = new Date(Date.now() + 60 * 60 * 1000); // 1 hour
+
+    await query(
+      'UPDATE users SET reset_token=$1, reset_token_expires_at=$2 WHERE id=$3',
+      [token, expires, user.id]
+    );
+
+    sendPasswordResetEmail({ name: user.name, email: user.email, token });
+
+    res.json({ success:true, message:'If that email is registered, a reset link has been sent.' });
+  } catch (err) { next(err); }
+};
+
+// ── POST /api/auth/reset-password
+const resetPassword = async (req, res, next) => {
+  try {
+    const { token, password } = req.body;
+    if (!token || !password) {
+      return res.status(400).json({ success:false, message:'Token and password are required' });
+    }
+    if (password.length < 8) {
+      return res.status(400).json({ success:false, message:'Password must be at least 8 characters' });
+    }
+
+    const { rows } = await query(
+      `SELECT id, name, email FROM users WHERE reset_token=$1 AND reset_token_expires_at > NOW()`,
+      [token]
+    );
+
+    if (!rows.length) {
+      return res.status(400).json({ success:false, message:'Invalid or expired reset link. Please request a new one.' });
+    }
+
+    const user = rows[0];
+    const hash = await bcrypt.hash(password, 12);
+
+    await query(
+      `UPDATE users SET password_hash=$1, reset_token=NULL, reset_token_expires_at=NULL, updated_at=NOW() WHERE id=$2`,
+      [hash, user.id]
+    );
+
+    // Revoke all existing refresh tokens for security
+    await query('UPDATE refresh_tokens SET revoked=true WHERE user_id=$1', [user.id]);
+
+    const { accessToken, refreshToken } = generateTokens(user.id);
+    await query(
+      `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
+      [user.id, hashToken(refreshToken)]
+    );
+
+    setAuthCookies(res, accessToken, refreshToken);
+    res.json({
+      success: true,
+      message: 'Password reset successfully',
+      data: { accessToken, refreshToken },
+    });
+  } catch (err) { next(err); }
+};
+
+module.exports = { register, login, refresh, logout, getMe, setPassword, forgotPassword, resetPassword };

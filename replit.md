@@ -3,6 +3,13 @@
 A full-stack product discovery platform for the MENA region, similar to Product Hunt.
 
 ## Key Features (latest)
+- **Security Tab in Settings**: Users can change their password from Settings → Security tab. Uses `PUT /api/users/me/change-password` with toggle visibility and validation.
+- **Product image upload fix**: `SubmitProductModal` now correctly parses `uploadRes.data?.data?.url` (not `data?.url`) from `/api/upload/post-image` response.
+- **Email system**: Welcome, invite, password reset, submission confirmation, approval, and rejection emails via Resend.
+- **Forgot/Reset password flow**: `POST /api/auth/forgot-password` + `POST /api/auth/reset-password` + `ResetPasswordPage` at `/reset-password`.
+- **Navbar**: "Join Launcher" → "Community" (desktop + mobile); "Events" and "Weekly Digest" links removed; "Launcher" added to footer.
+- **AllProductsPage**: Shows only `live,soon` products, URL-syncs `?q=` search param.
+- **robots.txt**: Served statically from public folder.
 - **Discount Signup Box**: Live product pages have an orange-styled "Launch Discount — 40% off" card where users enter name + email. Stored in `discount_signups` table.
 - **Waitlist Modal**: Collects name + email (name field added). Stored in `waitlist_signups.name` column.
 - **Product Comments**: Show real user name/handle/avatar (fixed "Anonymous" bug — backend returns `author_name`/`author_handle` flat fields).
