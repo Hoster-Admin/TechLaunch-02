@@ -75,7 +75,11 @@ export default function Dashboard() {
       <div className="resp-grid-3">
         {/* Activity feed */}
         <div className="card">
-          <div className="card-header"><span className="card-title">Recent Activity</span></div>
+          <div className="card-header">
+            <span className="card-title">Recent Activity</span>
+            {/* FIX 18: Audit Log quick-link */}
+            <a href="/audit-log" style={{fontSize:12,fontWeight:600,color:'var(--brand)',textDecoration:'none'}}>View full audit log →</a>
+          </div>
           <div style={{maxHeight:300,overflowY:'auto'}}>
             {activity.length===0
               ? <div style={{padding:'30px 20px',textAlign:'center',color:'var(--gray-400)',fontSize:13}}>No activity yet</div>

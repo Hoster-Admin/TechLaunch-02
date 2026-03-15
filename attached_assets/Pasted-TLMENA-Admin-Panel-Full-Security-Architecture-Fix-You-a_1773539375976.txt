@@ -1,0 +1,36 @@
+TLMENA Admin Panel — Full Security & Architecture Fix
+You are fixing the admin panel backend (server.js) and frontend of the TLMENA platform. Below is a complete list of issues from a security audit. Work through them systematically.
+
+CONTEXT
+
+Backend: single server.js (~1,220 lines), Node.js/Express, PostgreSQL (Neon), JWT auth
+Frontend: React, pages/ and components/ folders
+Auth tokens stored in localStorage
+DB uses UUIDs (not integers) for all IDs
+
+
+FIX LIST — in this order:
+🔴 CRITICAL (do first)
+
+Remove JWT_SECRET fallback — add startup crash if env var is missing
+Add express-rate-limit to POST /api/auth/login (10 attempts / 15 min window)
+Block non-admins from setting role: 'admin' in POST /admin/users
+
+🟠 HIGH
+4. Re-enable Helmet CSP — remove contentSecurityPolicy: false and frameguard: false
+5. Replace all res.status(500).json({ message: e.message }) with a generic error string; log full error server-side only
+6. Fix bulk action ID validation — change integer check to UUID string validation (regex: /^[0-9a-f-]{36}$/)
+7. Tighten CORS — remove wildcard *.replit.dev / *.repl.co in production, use an explicit allowlist
+8. Add last-admin guard on DELETE /admin/users/:id
+🟡 MEDIUM
+9. Unify all audit logging — replace the 2 raw INSERT INTO activity_log calls with logAction()
+10. Add IP address logging to all logAction() calls (pass req.ip)
+11. Fix Launcher Activity — replace the two-query Node.js memory sort with a single SQL UNION ALL with ORDER BY created_at DESC LIMIT $1 OFFSET $2
+12. Reduce express.json({ limit: '10mb' }) to '100kb'
+13. Add a global Express error handler at the bottom of server.js
+14. Move require('crypto') from inside the route handler to the top of the file
+15. Add startup validation that crashes with a clear error if JWT_SECRET or NEON_DATABASE_URL are missing
+🟢 LOWER PRIORITY
+16. Switch morgan('dev') to morgan('combined') in production
+17. Add 30-second in-memory cache for Dashboard stat queries
+18. Add a Audit Log quick-link on the Dashboard page

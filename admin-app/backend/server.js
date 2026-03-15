@@ -1,17 +1,30 @@
 require('dotenv').config();
-const express  = require('express');
-const cors     = require('cors');
-const helmet   = require('helmet');
-const morgan   = require('morgan');
-const jwt      = require('jsonwebtoken');
-const bcrypt   = require('bcryptjs');
-const { Pool } = require('pg');
-const path     = require('path');
+const express    = require('express');
+const cors       = require('cors');
+const helmet     = require('helmet');
+const morgan     = require('morgan');
+const rateLimit  = require('express-rate-limit');
+const jwt        = require('jsonwebtoken');
+const bcrypt     = require('bcryptjs');
+const crypto     = require('crypto');
+const { Pool }   = require('pg');
+const path       = require('path');
 const { sendAdminCreatedAccountEmail, sendPublicInvitationEmail } = require('../../backend/src/services/emailService');
+
+// ─── FIX 15: Startup validation — crash fast if critical env vars are missing ─
+if (!process.env.JWT_SECRET) {
+  console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
+  process.exit(1);
+}
+if (!process.env.NEON_DATABASE_URL && !process.env.DATABASE_URL) {
+  console.error('FATAL: NEON_DATABASE_URL environment variable is not set. Refusing to start.');
+  process.exit(1);
+}
 
 const app  = express();
 const PORT = process.env.PORT || process.env.ADMIN_PORT || 5000;
-const JWT_SECRET = process.env.JWT_SECRET || 'tlmena_dev_secret';
+// FIX 1: JWT_SECRET fallback removed — crashes above if missing
+const JWT_SECRET = process.env.JWT_SECRET;
 
 const getAdminUrl = () => {
   if (process.env.ADMIN_URL) return process.env.ADMIN_URL;
@@ -33,29 +46,41 @@ const q = (sql, p) => pool.query(sql, p);
 
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 app.set('trust proxy', 1);
-app.use(helmet({ contentSecurityPolicy: false, frameguard: false }));
+// FIX 4: Re-enabled Helmet CSP and frameguard
+app.use(helmet());
+const isProd = process.env.NODE_ENV === 'production';
 const ALLOWED_ORIGINS = [
   'https://admin.tlmena.com',
   'http://localhost:5174',
   'http://localhost:5000',
   ...(process.env.ADMIN_CLIENT_URL ? [process.env.ADMIN_CLIENT_URL] : []),
 ];
+// FIX 7: CORS — wildcard Replit origins only allowed outside production
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin || ALLOWED_ORIGINS.some(o => origin.startsWith(o)) ||
-        origin.includes('.replit.dev') || origin.includes('.repl.co') ||
-        (process.env.NODE_ENV !== 'production')) {
-      cb(null, true);
-    } else {
-      cb(new Error('Not allowed by CORS'));
-    }
+    if (!origin) return cb(null, true);
+    if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return cb(null, true);
+    if (!isProd && (origin.includes('.replit.dev') || origin.includes('.repl.co'))) return cb(null, true);
+    if (!isProd) return cb(null, true);
+    cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
 }));
-app.use(express.json({ limit: '10mb' }));
-app.use(morgan('dev'));
+// FIX 12: Reduce body limit from 10mb to 100kb
+app.use(express.json({ limit: '100kb' }));
+// FIX 16: Use 'combined' format in production
+app.use(morgan(isProd ? 'combined' : 'dev'));
+
+// FIX 2: Rate limiting on login endpoint
+const loginLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 10,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many login attempts. Please try again in 15 minutes.' },
+});
 
 // ─── AUTH MIDDLEWARE ──────────────────────────────────────────────────────────
 const authenticate = async (req, res, next) => {
@@ -81,7 +106,7 @@ const requireAdmin = (req, res, next) => {
 };
 
 // ─── AUTH ROUTES ──────────────────────────────────────────────────────────────
-app.post('/api/auth/login', async (req, res) => {
+app.post('/api/auth/login', loginLimiter, async (req, res) => {
   const { email, password } = req.body;
   if (!email || !password) return res.status(400).json({ success:false, message:'Email and password required' });
   try {
@@ -118,7 +143,7 @@ app.get('/api/auth/activate/:token', async (req, res) => {
     if (r.used_at) return res.json({ success:false, message:'This link has already been used' });
     if (new Date(r.expires_at) < new Date()) return res.json({ success:false, message:'This link has expired. Please ask your admin to resend the invitation.' });
     res.json({ success:true, data:{ name: r.name, email: r.email, role: r.role } });
-  } catch (e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch (e) { res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 app.post('/api/auth/activate', async (req, res) => {
@@ -138,7 +163,7 @@ app.post('/api/auth/activate', async (req, res) => {
     await q(`UPDATE users SET password_hash=$1, email_verified=true, status='active' WHERE id=$2`, [hash, r.user_id]);
     await q(`UPDATE activation_tokens SET used_at=NOW() WHERE id=$1`, [r.id]);
     res.json({ success:true, message:'Account activated! You can now log in.' });
-  } catch (e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch (e) { res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 app.get('/activate', (req, res) => {
@@ -281,16 +306,25 @@ const admin = express.Router();
 admin.use(authenticate, requireAdmin);
 
 // ─── AUDIT LOG HELPER ────────────────────────────────────────────────────────
-async function logAction(actorId, action, entity, entityId, details) {
+// FIX 10: logAction now accepts optional ip parameter — stored inside details JSON
+async function logAction(actorId, action, entity, entityId, details, ip) {
   try {
+    const detailsWithIp = { ...(details || {}), ...(ip ? { _ip: ip } : {}) };
     await q(`INSERT INTO activity_log (actor_id,action,entity,entity_id,details) VALUES ($1,$2,$3,$4,$5)`,
-      [actorId||null, action, entity||null, entityId||null, details ? JSON.stringify(details) : null]);
+      [actorId||null, action, entity||null, entityId||null, JSON.stringify(detailsWithIp)]);
   } catch(_) { /* non-fatal */ }
 }
+
+// FIX 17: 30-second in-memory cache for dashboard stat queries
+const _dashCache = { data: null, ts: 0 };
+const DASH_TTL = 30_000;
 
 // Dashboard
 admin.get('/dashboard', async (req, res) => {
   try {
+    if (_dashCache.data && Date.now() - _dashCache.ts < DASH_TTL) {
+      return res.json({ success: true, data: _dashCache.data });
+    }
     const [products, users, upvotes, apps, waitlist, activity, topProducts, newUsers, upvoteChart, signupChart] =
       await Promise.all([
         q(`SELECT COUNT(*) FILTER(WHERE status='live') AS live, COUNT(*) FILTER(WHERE status='pending') AS pending, COUNT(*) FILTER(WHERE status='soon') AS soon, COUNT(*) FILTER(WHERE status='rejected') AS rejected, COUNT(*) AS total FROM products`),
@@ -304,12 +338,15 @@ admin.get('/dashboard', async (req, res) => {
         q(`SELECT TO_CHAR(DATE_TRUNC('day',created_at),'Dy') AS day, COUNT(*) AS count FROM upvotes WHERE created_at>NOW()-INTERVAL '7 days' GROUP BY DATE_TRUNC('day',created_at),day ORDER BY DATE_TRUNC('day',created_at)`),
         q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'WW') AS week, COUNT(*) AS count FROM users WHERE role='user' AND created_at>NOW()-INTERVAL '8 weeks' GROUP BY DATE_TRUNC('week',created_at),week ORDER BY DATE_TRUNC('week',created_at)`),
       ]);
-    res.json({ success:true, data: {
+    const dashData = {
       stats: { products:products.rows[0], users:users.rows[0], upvotes:parseInt(upvotes.rows[0].total), apps_pending:parseInt(apps.rows[0].pending), waitlist:parseInt(waitlist.rows[0].total) },
       topProducts: topProducts.rows, newUsers: newUsers.rows, activity: activity.rows,
       charts: { upvotes: upvoteChart.rows, signups: signupChart.rows },
-    }});
-  } catch(e) { console.error(e); res.status(500).json({ success:false, message:e.message }); }
+    };
+    _dashCache.data = dashData;
+    _dashCache.ts = Date.now();
+    res.json({ success:true, data: dashData });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Products
@@ -327,34 +364,35 @@ admin.get('/products', async (req, res) => {
     params.push(parseInt(limit), offset);
     const { rows } = await q(`SELECT p.*,u.name AS submitter_name,u.handle AS submitter_handle,COUNT(*) OVER() AS total_count FROM products p JOIN users u ON u.id=p.submitted_by ${where} ORDER BY p.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data: rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/products/:id/approve', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE products SET status='live',approved_by=$1,approved_at=NOW() WHERE id=$2 RETURNING name`, [req.user.id, req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await q('INSERT INTO activity_log (actor_id,action,entity,entity_id) VALUES ($1,$2,$3,$4)', [req.user.id,'product.approve','products',req.params.id]);
+    // FIX 9: Unified to use logAction() helper
+    await logAction(req.user.id, 'product.approve', 'product', req.params.id, { name:rows[0].name }, req.ip);
     res.json({ success:true, message:`${rows[0].name} approved` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/products/:id/reject', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE products SET status='rejected',rejected_reason=$1 WHERE id=$2 RETURNING name`, [req.body.reason||null, req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await logAction(req.user.id, 'product.rejected', 'product', req.params.id, { name:rows[0].name, reason:req.body.reason||null });
+    await logAction(req.user.id, 'product.rejected', 'product', req.params.id, { name:rows[0].name, reason:req.body.reason||null }, req.ip);
     res.json({ success:true, message:`${rows[0].name} rejected` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/products/:id/featured', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE products SET featured=NOT featured WHERE id=$1 RETURNING name,featured`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await logAction(req.user.id, rows[0].featured ? 'product.featured' : 'product.unfeatured', 'product', req.params.id, { name:rows[0].name });
+    await logAction(req.user.id, rows[0].featured ? 'product.featured' : 'product.unfeatured', 'product', req.params.id, { name:rows[0].name }, req.ip);
     res.json({ success:true, data:rows[0] });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Users
@@ -370,7 +408,7 @@ admin.get('/users', async (req, res) => {
     params.push(parseInt(limit), offset);
     const { rows } = await q(`SELECT u.id,u.name,u.handle,u.email,u.persona,u.country,u.verified,u.status,u.role,u.avatar_color,u.created_at,u.products_count,u.votes_given,u.followers_count,COUNT(*) OVER() AS total_count FROM users u WHERE ${conds.join(' AND ')} ORDER BY u.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data:rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/users', async (req, res) => {
@@ -379,6 +417,9 @@ admin.post('/users', async (req, res) => {
     if (!email) return res.status(400).json({ success:false, message:'Email is required' });
     const allowed = ['admin','moderator','editor','user'];
     if (!allowed.includes(role)) return res.status(400).json({ success:false, message:'Invalid role' });
+    // FIX 3: Only admins can create admin accounts (privilege escalation guard)
+    if (role === 'admin' && req.user.role !== 'admin')
+      return res.status(403).json({ success:false, message:'Only admins can create admin accounts' });
     const isTeam = role !== 'user';
     const handle = customHandle?.trim()
       ? customHandle.toLowerCase().replace(/[^a-z0-9_]/g,'')
@@ -394,9 +435,9 @@ admin.post('/users', async (req, res) => {
     if (country) { cols.push('country'); vals.push(country); }
     const placeholders = vals.map((_,i)=>`$${i+1}`).join(',');
     const { rows } = await q(`INSERT INTO users (${cols.join(',')}) VALUES (${placeholders}) RETURNING id,name,email,role`, vals);
-    await logAction(req.user.id, 'user.created', 'user', rows[0].id, { name:rows[0].name, role:rows[0].role });
+    await logAction(req.user.id, 'user.created', 'user', rows[0].id, { name:rows[0].name, role:rows[0].role }, req.ip);
     // Generate activation token and send invitation email (non-blocking)
-    const crypto = require('crypto');
+    // FIX 14: crypto is now imported at the top of the file
     const activationToken = crypto.randomBytes(32).toString('hex');
     q(`INSERT INTO activation_tokens (user_id, token) VALUES ($1, $2)`, [rows[0].id, activationToken]).catch(e => console.error('[Token] Failed to store activation token:', e.message));
     const activationLink = `${getAdminUrl()}/activate?token=${activationToken}`;
@@ -408,7 +449,7 @@ admin.post('/users', async (req, res) => {
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
-    res.status(500).json({ success:false, message:e.message });
+    res.status(500).json({ success:false, message:'Internal server error' });
   }
 });
 
@@ -416,16 +457,16 @@ admin.get('/users/team', async (req, res) => {
   try {
     const { rows } = await q(`SELECT id,name,handle,email,role,status,verified,avatar_color,created_at FROM users WHERE role IN ('admin','moderator','editor') ORDER BY created_at ASC`);
     res.json({ success:true, data:rows });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/users/:id/verify', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE users SET verified=true WHERE id=$1 RETURNING name`, [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await logAction(req.user.id, 'user.verified', 'user', req.params.id, { name:rows[0].name });
+    await logAction(req.user.id, 'user.verified', 'user', req.params.id, { name:rows[0].name }, req.ip);
     res.json({ success:true, message:`${rows[0].name} verified` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/users/:id/suspend', async (req, res) => {
@@ -436,9 +477,9 @@ admin.post('/users/:id/suspend', async (req, res) => {
     if (target[0].role === 'admin') return res.status(403).json({ success:false, message:'Cannot suspend an admin account' });
     if (target[0].role !== 'user' && req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can suspend team members' });
     await q(`UPDATE users SET status='suspended', updated_at=NOW() WHERE id=$1`, [req.params.id]);
-    await logAction(req.user.id, 'user.suspended', 'user', req.params.id, { name:target[0].name });
+    await logAction(req.user.id, 'user.suspended', 'user', req.params.id, { name:target[0].name }, req.ip);
     res.json({ success:true, message:`${target[0].name} suspended` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/users/:id/reinstate', async (req, res) => {
@@ -448,9 +489,9 @@ admin.post('/users/:id/reinstate', async (req, res) => {
     if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
     if (target[0].role !== 'user' && req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can reinstate team members' });
     await q(`UPDATE users SET status='active', updated_at=NOW() WHERE id=$1`, [req.params.id]);
-    await logAction(req.user.id, 'user.reinstated', 'user', req.params.id, { name:target[0].name });
+    await logAction(req.user.id, 'user.reinstated', 'user', req.params.id, { name:target[0].name }, req.ip);
     res.json({ success:true, message:`${target[0].name} reinstated` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.delete('/users/:id', async (req, res) => {
@@ -460,10 +501,14 @@ admin.delete('/users/:id', async (req, res) => {
     const { rows: target } = await q(`SELECT id,name,role FROM users WHERE id=$1`, [req.params.id]);
     if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
     if (target[0].role === 'admin') return res.status(403).json({ success:false, message:'Cannot delete another admin account' });
+    // FIX 8: Last-admin guard — prevent deleting the only remaining admin
+    const { rows: adminCount } = await q(`SELECT COUNT(*) AS cnt FROM users WHERE role='admin' AND status='active'`);
+    if (target[0].role === 'admin' || parseInt(adminCount[0].cnt) <= 1)
+      return res.status(403).json({ success:false, message:'Cannot delete the last admin account' });
     await q(`DELETE FROM users WHERE id=$1`, [req.params.id]);
-    await logAction(req.user.id, 'user.deleted', 'user', req.params.id, { name:target[0].name, role:target[0].role });
+    await logAction(req.user.id, 'user.deleted', 'user', req.params.id, { name:target[0].name, role:target[0].role }, req.ip);
     res.json({ success:true, message:`${target[0].name} has been removed from the team` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Entities
@@ -478,7 +523,7 @@ admin.get('/entities', async (req, res) => {
     params.push(parseInt(limit), offset);
     const { rows } = await q(`SELECT *,COUNT(*) OVER() AS total_count FROM entities ${where} ORDER BY created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data:rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/entities', async (req, res) => {
@@ -494,11 +539,11 @@ admin.post('/entities', async (req, res) => {
       VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,false,$18)
       RETURNING id,name,type,country`,
       [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,portfolio_count||null,employees||null,founded_year||null,logo_url||null,focus||null,linkedin||null,twitter||null,why_us||null,req.user.id]);
-    await logAction(req.user.id, 'entity.created', 'entity', rows[0].id, { name:rows[0].name, type:rows[0].type });
+    await logAction(req.user.id, 'entity.created', 'entity', rows[0].id, { name:rows[0].name, type:rows[0].type }, req.ip);
     res.json({ success:true, data:rows[0], message:`${rows[0].name} created` });
   } catch(e) {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Entity with this name already exists' });
-    res.status(500).json({ success:false, message:e.message });
+    res.status(500).json({ success:false, message:'Internal server error' });
   }
 });
 
@@ -506,9 +551,9 @@ admin.post('/entities/:id/verify', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE entities SET verified=true,verified_by=$1 WHERE id=$2 RETURNING name`, [req.user.id, req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await logAction(req.user.id, 'entity.verified', 'entity', req.params.id, { name:rows[0].name });
+    await logAction(req.user.id, 'entity.verified', 'entity', req.params.id, { name:rows[0].name }, req.ip);
     res.json({ success:true, message:`${rows[0].name} verified` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Applications
@@ -520,7 +565,7 @@ admin.get('/applications', async (req, res) => {
       q(`SELECT pr.id,pr.name,pr.logo_emoji,pr.waitlist_count,COUNT(ws.id) FILTER(WHERE ws.created_at>NOW()-INTERVAL '24h') AS last_24h FROM products pr LEFT JOIN waitlist_signups ws ON ws.product_id=pr.id WHERE pr.waitlist_count>0 GROUP BY pr.id ORDER BY pr.waitlist_count DESC`),
     ]);
     res.json({ success:true, data:{ accelerator_apps:accelApps.rows, investor_pitches:pitches.rows, waitlists:waitlists.rows } });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.patch('/applications/accelerator/:id', async (req, res) => {
@@ -534,9 +579,9 @@ admin.patch('/applications/accelerator/:id', async (req, res) => {
     if (fields.length === 1) return res.json({ success:true });
     vals.push(req.params.id);
     await q(`UPDATE accelerator_applications SET ${fields.join(',')} WHERE id=$${vals.length}`, vals);
-    if (status) await logAction(req.user.id, 'application.status_updated', 'application', req.params.id, { status });
+    if (status) await logAction(req.user.id, 'application.status_updated', 'application', req.params.id, { status }, req.ip);
     res.json({ success:true });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.patch('/applications/pitches/:id', async (req, res) => {
@@ -549,9 +594,9 @@ admin.patch('/applications/pitches/:id', async (req, res) => {
     if (fields.length === 1) return res.json({ success:true });
     vals.push(req.params.id);
     await q(`UPDATE investor_pitches SET ${fields.join(',')} WHERE id=$${vals.length}`, vals);
-    if (status) await logAction(req.user.id, 'pitch.status_updated', 'pitch', req.params.id, { status });
+    if (status) await logAction(req.user.id, 'pitch.status_updated', 'pitch', req.params.id, { status }, req.ip);
     res.json({ success:true });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Settings
@@ -561,7 +606,7 @@ admin.get('/settings', async (req, res) => {
     const settings = {};
     rows.forEach(r => { settings[r.key] = r.type==='boolean' ? r.value==='true' : r.value; });
     res.json({ success:true, data:settings });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.put('/settings', async (req, res) => {
@@ -570,9 +615,9 @@ admin.put('/settings', async (req, res) => {
     for (const [key, value] of Object.entries(req.body)) {
       await q(`INSERT INTO platform_settings (key,value,type,updated_by,updated_at) VALUES ($1,$2,'boolean',$3,NOW()) ON CONFLICT (key) DO UPDATE SET value=$2,updated_by=$3,updated_at=NOW()`, [key,String(value),req.user.id]);
     }
-    await logAction(req.user.id, 'settings.updated', 'settings', null, req.body);
+    await logAction(req.user.id, 'settings.updated', 'settings', null, req.body, req.ip);
     res.json({ success:true, message:'Settings updated' });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Platform account UUID (shared by all platform-profile routes)
@@ -588,7 +633,7 @@ admin.get('/public-profile', async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ success:false, message:'Platform profile not found' });
     res.json({ success:true, data: rows[0] });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.put('/public-profile', async (req, res) => {
@@ -611,9 +656,9 @@ admin.put('/public-profile', async (req, res) => {
       [name||'', handle||'', headline||'', bio||'', website||'', twitter||'', linkedin||'', avatar_url||'', TLMENA_ID]
     );
     if (!rows.length) return res.status(404).json({ success:false, message:'Platform account not found' });
-    await logAction(req.user.id, 'public_profile.updated', 'user', rows[0].id, { name:rows[0].name });
+    await logAction(req.user.id, 'public_profile.updated', 'user', rows[0].id, { name:rows[0].name }, req.ip);
     res.json({ success:true, data: rows[0], message:'Public profile updated' });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // ── Admin-panel identity (Platform Profile page) — reads/writes platform_settings only ──
@@ -628,7 +673,7 @@ admin.get('/platform-profile', async (req, res) => {
       name:       settings.panel_display_name || 'TechLaunch MENA',
       avatar_url: settings.panel_avatar_url   || null,
     }});
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.put('/platform-profile', async (req, res) => {
@@ -652,9 +697,9 @@ admin.put('/platform-profile', async (req, res) => {
         [avatar_url||'', req.user.id]
       );
     }
-    await logAction(req.user.id, 'platform_profile.updated', 'settings', null, { name });
+    await logAction(req.user.id, 'platform_profile.updated', 'settings', null, { name }, req.ip);
     res.json({ success:true, data: { name: name||'TechLaunch MENA', avatar_url: avatar_url||null }, message:'Panel identity updated' });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Activity Feed ──────────────────────────────────────────
@@ -704,7 +749,7 @@ admin.get('/platform-profile/activity', async (req, res) => {
 
     results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
     res.json({ success: true, data: { activity: results.slice(0, Number(limit)) } });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Create Post (platform_posts) ───────────────────────────
@@ -720,18 +765,18 @@ admin.post('/platform-profile/post', async (req, res) => {
        RETURNING id, type, body, likes, tag_ids, created_at`,
       [postType, body.trim(), TLMENA_ID, tagIdsJson]
     );
-    await logAction(req.user.id, 'platform_profile.post.created', 'platform_post', rows[0].id, { type: postType });
+    await logAction(req.user.id, 'platform_profile.post.created', 'platform_post', rows[0].id, { type: postType }, req.ip);
     res.status(201).json({ success: true, data: { post: { ...rows[0], kind: 'post', post_type: rows[0].type } } });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Delete Post ─────────────────────────────────────────────
 admin.delete('/platform-profile/post/:id', async (req, res) => {
   try {
     await q('DELETE FROM platform_posts WHERE id=$1 AND author_id=$2', [req.params.id, TLMENA_ID]);
-    await logAction(req.user.id, 'platform_profile.post.deleted', 'platform_post', req.params.id, {});
+    await logAction(req.user.id, 'platform_profile.post.deleted', 'platform_post', req.params.id, {}, req.ip);
     res.json({ success: true, message: 'Post deleted' });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Search Products ────────────────────────────────────────
@@ -748,7 +793,7 @@ admin.get('/platform-profile/products/search', async (req, res) => {
       [`%${search}%`]
     );
     res.json({ success: true, data: { products: rows } });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Comment on a product ────────────────────────────────────
@@ -768,7 +813,7 @@ admin.post('/platform-profile/comment', async (req, res) => {
       [product_id, TLMENA_ID, body.trim()]
     );
     await q('UPDATE products SET comments_count = comments_count + 1 WHERE id=$1', [product_id]);
-    await logAction(req.user.id, 'platform_profile.comment.created', 'comment', rows[0].id, { product_id });
+    await logAction(req.user.id, 'platform_profile.comment.created', 'comment', rows[0].id, { product_id }, req.ip);
     res.status(201).json({
       success: true,
       data: {
@@ -779,7 +824,7 @@ admin.post('/platform-profile/comment', async (req, res) => {
         }
       }
     });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Delete comment ─────────────────────────────────────────
@@ -787,9 +832,9 @@ admin.delete('/platform-profile/comment/:id', async (req, res) => {
   try {
     const { rows } = await q('DELETE FROM comments WHERE id=$1 AND user_id=$2 RETURNING product_id', [req.params.id, TLMENA_ID]);
     if (rows.length) await q('UPDATE products SET comments_count = GREATEST(0, comments_count - 1) WHERE id=$1', [rows[0].product_id]);
-    await logAction(req.user.id, 'platform_profile.comment.deleted', 'comment', req.params.id, {});
+    await logAction(req.user.id, 'platform_profile.comment.deleted', 'comment', req.params.id, {}, req.ip);
     res.json({ success: true, message: 'Comment deleted' });
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Platform Profile: Toggle upvote ──────────────────────────────────────────
@@ -804,13 +849,14 @@ admin.post('/platform-profile/upvote/:productId', async (req, res) => {
     } else {
       await q('INSERT INTO upvotes (user_id, product_id) VALUES ($1, $2) ON CONFLICT DO NOTHING', [TLMENA_ID, productId]);
       await q('UPDATE products SET upvotes_count = upvotes_count + 1 WHERE id=$1', [productId]);
-      await logAction(req.user.id, 'platform_profile.upvoted', 'product', productId, {});
+      await logAction(req.user.id, 'platform_profile.upvoted', 'product', productId, {}, req.ip);
       res.json({ success: true, data: { upvoted: true } });
     }
-  } catch (e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch (e) { res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // ── Launcher Activity ────────────────────────────────────
+// FIX 11: Single UNION ALL query with SQL-level ORDER BY + LIMIT/OFFSET (no in-memory sort)
 admin.get('/launcher-activity', async (req, res) => {
   try {
     const { type = 'all', search = '', page = 1 } = req.query;
@@ -818,66 +864,46 @@ admin.get('/launcher-activity', async (req, res) => {
     const offset = (Math.max(1, parseInt(page)) - 1) * limit;
     const searchLike = `%${search}%`;
 
-    let rows = [];
+    const buildUnion = () => {
+      const parts = [];
+      if (type === 'all' || type === 'comments') {
+        parts.push(`
+          SELECT 'comment' AS kind, c.id, c.body, c.created_at, c.likes,
+            u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
+            u.avatar_url, u.avatar_color, u.verified,
+            p.id::text AS product_id, p.name AS product_name, NULL::text AS post_type
+          FROM comments c
+          JOIN users u ON u.id = c.user_id
+          JOIN products p ON p.id = c.product_id
+          WHERE ($1 = '' OR c.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2 OR p.name ILIKE $2)
+        `);
+      }
+      if (type === 'all' || type === 'posts') {
+        parts.push(`
+          SELECT 'post' AS kind, pp.id, pp.body, pp.created_at, pp.likes,
+            u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
+            u.avatar_url, u.avatar_color, u.verified,
+            NULL::text AS product_id, NULL::text AS product_name, pp.type::text AS post_type
+          FROM platform_posts pp
+          JOIN users u ON u.id = pp.author_id
+          WHERE ($1 = '' OR pp.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
+        `);
+      }
+      return parts.join(' UNION ALL ');
+    };
 
-    if (type === 'all' || type === 'comments') {
-      const { rows: commentRows } = await q(`
-        SELECT
-          'comment'            AS kind,
-          c.id,
-          c.body,
-          c.created_at,
-          c.likes,
-          u.id                 AS user_id,
-          u.name               AS user_name,
-          u.handle             AS user_handle,
-          u.avatar_url,
-          u.avatar_color,
-          u.verified,
-          p.id::text           AS product_id,
-          p.name               AS product_name,
-          NULL::text           AS post_type
-        FROM comments c
-        JOIN users   u ON u.id = c.user_id
-        JOIN products p ON p.id = c.product_id
-        WHERE ($1 = '' OR c.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2 OR p.name ILIKE $2)
-        ORDER BY c.created_at DESC
-      `, [search, searchLike]);
-      rows = [...rows, ...commentRows];
-    }
+    const unionSql = buildUnion();
+    if (!unionSql) return res.json({ success: true, data: { items: [], total: 0, page: 1, limit } });
 
-    if (type === 'all' || type === 'posts') {
-      const { rows: postRows } = await q(`
-        SELECT
-          'post'               AS kind,
-          pp.id,
-          pp.body,
-          pp.created_at,
-          pp.likes,
-          u.id                 AS user_id,
-          u.name               AS user_name,
-          u.handle             AS user_handle,
-          u.avatar_url,
-          u.avatar_color,
-          u.verified,
-          NULL::text           AS product_id,
-          NULL::text           AS product_name,
-          pp.type::text        AS post_type
-        FROM platform_posts pp
-        JOIN users u ON u.id = pp.author_id
-        WHERE ($1 = '' OR pp.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
-        ORDER BY pp.created_at DESC
-      `, [search, searchLike]);
-      rows = [...rows, ...postRows];
-    }
+    const countResult = await q(`SELECT COUNT(*) AS cnt FROM (${unionSql}) AS sub`, [search, searchLike]);
+    const total = parseInt(countResult.rows[0].cnt);
+    const { rows } = await q(
+      `SELECT * FROM (${unionSql}) AS sub ORDER BY created_at DESC LIMIT $3 OFFSET $4`,
+      [search, searchLike, limit, offset]
+    );
 
-    // sort combined by created_at desc, paginate
-    rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
-    const total = rows.length;
-    const paginated = rows.slice(offset, offset + limit);
-
-    res.json({ success: true, data: { items: paginated, total, page: parseInt(page), limit } });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+    res.json({ success: true, data: { items: rows, total, page: parseInt(page), limit } });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 admin.delete('/launcher-activity/comment/:id', async (req, res) => {
@@ -887,9 +913,9 @@ admin.delete('/launcher-activity/comment/:id', async (req, res) => {
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: 'Comment not found' });
-    await logAction(req.user.id, 'comment.delete', 'comment', req.params.id, { body: rows[0].body?.slice(0,80) });
+    await logAction(req.user.id, 'comment.delete', 'comment', req.params.id, { body: rows[0].body?.slice(0,80) }, req.ip);
     res.json({ success: true, message: 'Comment deleted' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 admin.delete('/launcher-activity/post/:id', async (req, res) => {
@@ -899,9 +925,9 @@ admin.delete('/launcher-activity/post/:id', async (req, res) => {
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: 'Post not found' });
-    await logAction(req.user.id, 'platform_post.delete', 'platform_post', req.params.id, { body: rows[0].body?.slice(0,80) });
+    await logAction(req.user.id, 'platform_post.delete', 'platform_post', req.params.id, { body: rows[0].body?.slice(0,80) }, req.ip);
     res.json({ success: true, message: 'Post deleted' });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 admin.post('/launcher-activity/warn/:userId', async (req, res) => {
@@ -925,9 +951,9 @@ admin.post('/launcher-activity/warn/:userId', async (req, res) => {
       [req.params.userId, 'admin_warning', '⚠️ Message from TechLaunch MENA', note.trim(), '/messages']
     );
 
-    await logAction(req.user.id, 'user.warn', 'user', req.params.userId, { note: note.trim().slice(0,80) });
+    await logAction(req.user.id, 'user.warn', 'user', req.params.userId, { note: note.trim().slice(0,80) }, req.ip);
     res.json({ success: true, message: `Warning sent to ${userRows[0].handle}` });
-  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success: false, message:'Internal server error' }); }
 });
 
 // Suggestions
@@ -938,7 +964,7 @@ admin.get('/suggestions', async (req, res) => {
     const params = status && status !== 'all' ? [status] : [];
     const { rows } = await q(`SELECT s.*,u.name AS user_name,u.handle AS user_handle,u.avatar_color FROM suggestions s LEFT JOIN users u ON u.id=s.user_id ${where} ORDER BY s.created_at DESC`, params);
     res.json({ success:true, data:{ suggestions:rows } });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/suggestions/:id/respond', async (req, res) => {
@@ -948,7 +974,7 @@ admin.post('/suggestions/:id/respond', async (req, res) => {
     const { rows } = await q(`UPDATE suggestions SET admin_response=$1,responded_by=$2,responded_at=NOW(),status='responded' WHERE id=$3 RETURNING *`, [response.trim(),req.user.id,req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
     res.json({ success:true, data:{ suggestion:rows[0] } });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Bulk product actions
@@ -956,7 +982,7 @@ admin.post('/products/bulk', async (req, res) => {
   try {
     const { ids, action, reason } = req.body;
     if (!ids?.length || !action) return res.status(400).json({ success:false, message:'ids and action required' });
-    if (!ids.every(id => Number.isInteger(id) && id > 0)) return res.status(400).json({ success:false, message:'ids must be positive integers' });
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; if (!ids.every(id => typeof id === 'string' && UUID_RE.test(id))) return res.status(400).json({ success:false, message:'Invalid id format' });
     const placeholders = ids.map((_,i)=>`$${i+1}`).join(',');
     if (action === 'approve') {
       await q(`UPDATE products SET status='live', approved_by=$${ids.length+1}, approved_at=NOW(), updated_at=NOW() WHERE id IN (${placeholders}) AND status='pending'`, [...ids, req.user.id]);
@@ -969,9 +995,9 @@ admin.post('/products/bulk', async (req, res) => {
     } else {
       return res.status(400).json({ success:false, message:'Unknown action' });
     }
-    await logAction(req.user.id, `products.bulk_${action}`, 'product', null, { count:ids.length, ids });
+    await logAction(req.user.id, `products.bulk_${action}`, 'product', null, { count:ids.length, ids }, req.ip);
     res.json({ success:true, message:`${ids.length} product(s) ${action}d` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Bulk user actions
@@ -979,7 +1005,7 @@ admin.post('/users/bulk', async (req, res) => {
   try {
     const { ids, action } = req.body;
     if (!ids?.length || !action) return res.status(400).json({ success:false, message:'ids and action required' });
-    if (!ids.every(id => Number.isInteger(id) && id > 0)) return res.status(400).json({ success:false, message:'ids must be positive integers' });
+    const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i; if (!ids.every(id => typeof id === 'string' && UUID_RE.test(id))) return res.status(400).json({ success:false, message:'Invalid id format' });
     const placeholders = ids.map((_,i)=>`$${i+1}`).join(',');
     if (action === 'verify') {
       await q(`UPDATE users SET verified=true, updated_at=NOW() WHERE id IN (${placeholders})`, ids);
@@ -990,9 +1016,9 @@ admin.post('/users/bulk', async (req, res) => {
     } else {
       return res.status(400).json({ success:false, message:'Unknown action' });
     }
-    await logAction(req.user.id, `users.bulk_${action}`, 'user', null, { count:ids.length });
+    await logAction(req.user.id, `users.bulk_${action}`, 'user', null, { count:ids.length }, req.ip);
     res.json({ success:true, message:`${ids.length} user(s) updated` });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // Activity Log
@@ -1019,7 +1045,7 @@ admin.get('/activity-log', async (req, res) => {
       LIMIT $${params.length-1} OFFSET $${params.length}
     `, params);
     res.json({ success:true, data:{ logs:rows, total:parseInt(countRes.rows[0].count), page:parseInt(page), limit:parseInt(limit) } });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // CSV Export
@@ -1085,7 +1111,7 @@ admin.get('/export/:type', async (req, res) => {
     res.setHeader('Content-Type', 'text/csv');
     res.setHeader('Content-Disposition', `attachment; filename="${filename}_${new Date().toISOString().split('T')[0]}.csv"`);
     res.send(csv);
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 // ─── TAG MANAGEMENT ───────────────────────────────────────────────────────────
@@ -1093,7 +1119,7 @@ admin.get('/tags', async (req, res) => {
   try {
     const { rows } = await q('SELECT * FROM tags ORDER BY category, sort_order, name');
     res.json({ success:true, data:rows });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/tags', async (req, res) => {
@@ -1107,9 +1133,9 @@ admin.post('/tags', async (req, res) => {
       'INSERT INTO tags (name,category,color,text_color) VALUES ($1,$2,$3,$4) RETURNING *',
       [name.trim(), category, color||'#E8E8E8', text_color||'#374151']
     );
-    await logAction(req.user.id, 'tags.create', 'tag', rows[0].id, { name:name.trim(), category });
+    await logAction(req.user.id, 'tags.create', 'tag', rows[0].id, { name:name.trim(), category }, req.ip);
     res.json({ success:true, data:rows[0] });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.put('/tags/:id', async (req, res) => {
@@ -1127,7 +1153,7 @@ admin.put('/tags/:id', async (req, res) => {
     );
     if (!rows.length) return res.status(404).json({ success:false, message:'Tag not found' });
     res.json({ success:true, data:rows[0] });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.delete('/tags/:id', async (req, res) => {
@@ -1136,7 +1162,7 @@ admin.delete('/tags/:id', async (req, res) => {
     const { rows } = await q('DELETE FROM tags WHERE id=$1 RETURNING id', [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Tag not found' });
     res.json({ success:true });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.post('/tags/:id/assign', async (req, res) => {
@@ -1148,7 +1174,7 @@ admin.post('/tags/:id/assign', async (req, res) => {
     if (!table) return res.status(400).json({ success:false, message:'Invalid item_type' });
     await q(`INSERT INTO ${table} (${colMap[item_type]},tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`, [item_id, req.params.id]);
     res.json({ success:true });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 admin.delete('/tags/:id/assign', async (req, res) => {
@@ -1160,7 +1186,7 @@ admin.delete('/tags/:id/assign', async (req, res) => {
     if (!table) return res.status(400).json({ success:false, message:'Invalid item_type' });
     await q(`DELETE FROM ${table} WHERE ${colMap[item_type]}=$1 AND tag_id=$2`, [item_id, req.params.id]);
     res.json({ success:true });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 app.use('/api/admin', admin);
@@ -1212,6 +1238,14 @@ app.use(express.static(DIST, { etag: false, lastModified: false, setHeaders(res,
 app.get('/{*path}', (req, res) => {
   res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.sendFile(path.join(DIST, 'index.html'));
+});
+
+// ─── FIX 13: Global error handler — catches unhandled Express errors ──────────
+// eslint-disable-next-line no-unused-vars
+app.use((err, req, res, next) => {
+  console.error('[Unhandled Error]', err.message, err.stack);
+  if (res.headersSent) return;
+  res.status(err.status || 500).json({ success: false, message: 'Internal server error' });
 });
 
 // ─── START ────────────────────────────────────────────────────────────────────
