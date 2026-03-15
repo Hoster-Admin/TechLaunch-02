@@ -76,19 +76,6 @@ export default function AuthModal() {
       close();
       if (selectedPersona === 'startup') setSubmitOpen(true);
     } catch (err) {
-      if (err.response?.status === 409 && err.response?.data?.message?.toLowerCase().includes('handle')) {
-        try {
-          const suffixed = baseHandle.slice(0,17) + Math.floor(Math.random()*900+100);
-          const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle: suffixed, persona:dbPersona });
-          toast.success(`Welcome to Tech Launch, ${user.name.split(' ')[0]}! 🚀`);
-          close();
-          if (selectedPersona === 'startup') setSubmitOpen(true);
-          return;
-        } catch (retryErr) {
-          setError(retryErr.response?.data?.message || 'Signup failed. Try again.');
-          return;
-        }
-      }
       setError(err.response?.data?.message || 'Signup failed. Try again.');
     } finally { setLoading(false); }
   };
@@ -174,7 +161,7 @@ export default function AuthModal() {
             <div className="form-group">
               <label className="form-label">Email</label>
               <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
-              {handlePreview && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your profile: <span style={{ color:'#555', fontWeight:600 }}>tlmena.com/{handlePreview}</span></div>}
+              {handlePreview && sEmail.trim() && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your profile: <span style={{ color:'#555', fontWeight:600 }}>tlmena.com/{handlePreview}</span></div>}
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
