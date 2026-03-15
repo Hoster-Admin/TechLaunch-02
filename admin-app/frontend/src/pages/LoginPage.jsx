@@ -5,8 +5,9 @@ import { useAuth } from '../App.jsx';
 
 export default function LoginPage() {
   const { login } = useAuth();
-  const [form, setForm]     = useState({ email:'', password:'' });
+  const [form, setForm]       = useState({ email:'', password:'' });
   const [loading, setLoading] = useState(false);
+  const [showPw, setShowPw]   = useState(false);
 
   const submit = async e => {
     e.preventDefault();
@@ -54,17 +55,30 @@ export default function LoginPage() {
           </div>
           <div style={{marginBottom:20}}>
             <label style={{display:'block',fontSize:12,fontWeight:700,color:'var(--ink)',marginBottom:6}}>Password</label>
-            <input
-              type="password"
-              value={form.password}
-              onChange={e=>setForm(f=>({...f,password:e.target.value}))}
-              placeholder="••••••••"
-              autoComplete="current-password"
-              required
-              style={{width:'100%',padding:'11px 14px',border:'1.5px solid var(--gray-200)',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'var(--ink)',outline:'none',boxSizing:'border-box',transition:'border-color .15s'}}
-              onFocus={e=>e.target.style.borderColor='var(--orange)'}
-              onBlur={e=>e.target.style.borderColor='var(--gray-200)'}
-            />
+            <div style={{position:'relative'}}>
+              <input
+                type={showPw ? 'text' : 'password'}
+                value={form.password}
+                onChange={e=>setForm(f=>({...f,password:e.target.value}))}
+                placeholder="••••••••"
+                autoComplete="current-password"
+                required
+                style={{width:'100%',padding:'11px 44px 11px 14px',border:'1.5px solid var(--gray-200)',borderRadius:10,fontSize:14,fontFamily:'inherit',color:'var(--ink)',outline:'none',boxSizing:'border-box',transition:'border-color .15s'}}
+                onFocus={e=>e.target.style.borderColor='var(--orange)'}
+                onBlur={e=>e.target.style.borderColor='var(--gray-200)'}
+              />
+              <button
+                type="button"
+                onClick={()=>setShowPw(v=>!v)}
+                style={{position:'absolute',right:12,top:'50%',transform:'translateY(-50%)',background:'none',border:'none',cursor:'pointer',padding:4,color:'var(--gray-400)',fontSize:16,lineHeight:1,display:'flex',alignItems:'center'}}
+                tabIndex={-1}
+                title={showPw ? 'Hide password' : 'Show password'}>
+                {showPw
+                  ? <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M17.94 17.94A10.94 10.94 0 0112 20C7 20 2.73 16.11 1 12c.74-1.9 1.97-3.57 3.53-4.9M9.9 4.24A9.12 9.12 0 0112 4c5 0 9.27 3.89 11 8a18.5 18.5 0 01-2.16 3.19"/><line x1="1" y1="1" x2="23" y2="23"/></svg>
+                  : <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>
+                }
+              </button>
+            </div>
           </div>
           <button type="submit" disabled={loading}
             style={{width:'100%',padding:'13px',borderRadius:11,border:'none',background:'var(--orange)',color:'#fff',fontSize:14,fontWeight:800,cursor:loading?'not-allowed':'pointer',fontFamily:'inherit',opacity:loading?0.65:1,letterSpacing:'-.01em',transition:'background .15s'}}
