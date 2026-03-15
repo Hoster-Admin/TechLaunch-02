@@ -53,26 +53,42 @@ const ENTITY_OPTIONS = [
   { value:'settings', label:'Settings' },
 ];
 
+const ROLE_OPTIONS = [
+  { value:'', label:'All roles' },
+  { value:'admin', label:'Admin' },
+  { value:'moderator', label:'Moderator' },
+  { value:'editor', label:'Editor' },
+];
+
 const inputS = { border:'1px solid #E8E8E8', borderRadius:8, padding:'7px 10px', fontSize:12, outline:'none', background:'#FAFAFA', fontFamily:'inherit' };
 
 export default function ActivityLog() {
-  const [logs, setLogs]       = useState([]);
-  const [total, setTotal]     = useState(0);
-  const [page, setPage]       = useState(1);
-  const [loading, setLoading] = useState(true);
+  const [logs, setLogs]           = useState([]);
+  const [total, setTotal]         = useState(0);
+  const [page, setPage]           = useState(1);
+  const [loading, setLoading]     = useState(true);
   const [loadingMore, setLoadingMore] = useState(false);
+  const [actions, setActions]     = useState([]);
 
   const [actorQ,  setActorQ]  = useState('');
   const [actionQ, setActionQ] = useState('');
   const [entityQ, setEntityQ] = useState('');
+  const [roleQ,   setRoleQ]   = useState('');
   const [from,    setFrom]    = useState('');
   const [to,      setTo]      = useState('');
+
+  useEffect(() => {
+    adminAPI.activityLogActions()
+      .then(({ data: d }) => setActions(d.data || []))
+      .catch(() => {});
+  }, []);
 
   const load = useCallback((reset = true) => {
     const params = { page: reset ? 1 : page, limit: 50 };
     if (actorQ)  params.actor  = actorQ;
     if (actionQ) params.action = actionQ;
     if (entityQ) params.entity = entityQ;
+    if (roleQ)   params.role   = roleQ;
     if (from)    params.from   = from;
     if (to)      params.to     = to;
 
@@ -89,15 +105,15 @@ export default function ActivityLog() {
       })
       .catch(() => toast.error('Failed to load audit log'))
       .finally(() => { setLoading(false); setLoadingMore(false); });
-  }, [actorQ, actionQ, entityQ, from, to, page]);
+  }, [actorQ, actionQ, entityQ, roleQ, from, to, page]);
 
-  useEffect(() => { load(true); }, [actorQ, actionQ, entityQ, from, to]);
+  useEffect(() => { load(true); }, [actorQ, actionQ, entityQ, roleQ, from, to]);
 
   const clearFilters = () => {
-    setActorQ(''); setActionQ(''); setEntityQ(''); setFrom(''); setTo('');
+    setActorQ(''); setActionQ(''); setEntityQ(''); setRoleQ(''); setFrom(''); setTo('');
   };
 
-  const hasFilters = actorQ || actionQ || entityQ || from || to;
+  const hasFilters = actorQ || actionQ || entityQ || roleQ || from || to;
 
   return (
     <div style={{ display:'flex', flexDirection:'column', gap:16 }}>
@@ -106,12 +122,17 @@ export default function ActivityLog() {
         <div style={{ padding:'14px 20px', display:'flex', gap:10, flexWrap:'wrap', alignItems:'center' }}>
           <input
             value={actorQ} onChange={e=>setActorQ(e.target.value)}
-            placeholder="Filter by admin name…" style={{ ...inputS, width:180 }}
+            placeholder="Filter by admin name…" style={{ ...inputS, width:170 }}
           />
-          <input
-            value={actionQ} onChange={e=>setActionQ(e.target.value)}
-            placeholder="Filter by action…" style={{ ...inputS, width:160 }}
-          />
+          <select value={actionQ} onChange={e=>setActionQ(e.target.value)} style={{ ...inputS, cursor:'pointer', minWidth:160 }}>
+            <option value="">All actions</option>
+            {actions.map(a => (
+              <option key={a} value={a}>{getMeta(a).icon} {getMeta(a).label}</option>
+            ))}
+          </select>
+          <select value={roleQ} onChange={e=>setRoleQ(e.target.value)} style={{ ...inputS, cursor:'pointer' }}>
+            {ROLE_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
+          </select>
           <select value={entityQ} onChange={e=>setEntityQ(e.target.value)} style={{ ...inputS, cursor:'pointer' }}>
             {ENTITY_OPTIONS.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
           </select>

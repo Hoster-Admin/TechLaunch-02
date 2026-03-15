@@ -81,10 +81,14 @@ function ProductDrawer({ productId, onClose, onAction }) {
       .finally(() => setLoading(false));
   }, [productId]);
 
-  const doApprove = async () => {
+  const [showApproveModal, setShowApproveModal] = React.useState(false);
+  const [approveNote, setApproveNote] = React.useState('');
+
+  const doApprove = async (note) => {
     setActing('approve');
+    setShowApproveModal(false);
     try {
-      await adminAPI.approveProduct(productId);
+      await adminAPI.approveProduct(productId, note);
       toast.success(`✅ ${detail.name} approved!`);
       onAction();
       onClose();
@@ -187,7 +191,7 @@ function ProductDrawer({ productId, onClose, onAction }) {
             {/* Actions */}
             {detail.status === 'pending' && (
               <div style={{display:'flex',gap:10,marginTop:24,paddingTop:20,borderTop:'1px solid #F0F0F0'}}>
-                <button onClick={doApprove} disabled={!!acting}
+                <button onClick={() => { setApproveNote(''); setShowApproveModal(true); }} disabled={!!acting}
                   style={{flex:1,padding:'11px',borderRadius:10,background:'#16a34a',color:'#fff',border:'none',fontSize:13,fontWeight:700,cursor:acting?'not-allowed':'pointer',fontFamily:'inherit',opacity:acting?0.7:1}}>
                   {acting==='approve'?'Approving…':'✓ Approve'}
                 </button>
@@ -208,6 +212,34 @@ function ProductDrawer({ productId, onClose, onAction }) {
           </>
         )}
       </Drawer>
+
+      {showApproveModal && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:9100,display:'flex',alignItems:'center',justifyContent:'center'}}
+          onClick={() => setShowApproveModal(false)}>
+          <div style={{background:'#fff',borderRadius:18,padding:28,width:440,maxWidth:'90vw',boxShadow:'0 24px 64px rgba(0,0,0,.22)'}}
+            onClick={e=>e.stopPropagation()}>
+            <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A',marginBottom:4}}>✓ Approve Product</div>
+            <div style={{fontSize:13,color:'#888',marginBottom:16}}>
+              Approving <strong>{detail?.name}</strong>. Optionally leave a note for the founder — it will be included in their approval email.
+            </div>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>
+              Note for founder <span style={{fontWeight:400,color:'#AAA'}}>(optional)</span>
+            </label>
+            <textarea autoFocus value={approveNote} onChange={e=>setApproveNote(e.target.value)}
+              placeholder="e.g. Great submission! Consider updating your tagline before launch."
+              rows={3}
+              style={{width:'100%',borderRadius:10,border:'1.5px solid #E8E8E8',padding:'9px 11px',fontSize:13,fontFamily:'inherit',resize:'vertical',outline:'none',boxSizing:'border-box'}}/>
+            <div style={{display:'flex',gap:10,justifyContent:'flex-end',marginTop:16}}>
+              <button onClick={() => setShowApproveModal(false)}
+                style={{padding:'9px 18px',borderRadius:9,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',color:'#555',fontFamily:'inherit'}}>Cancel</button>
+              <button onClick={() => doApprove(approveNote)}
+                style={{padding:'9px 18px',borderRadius:9,border:'none',background:'#16a34a',color:'#fff',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+                ✓ Approve
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       {showReject && (
         <RejectModal

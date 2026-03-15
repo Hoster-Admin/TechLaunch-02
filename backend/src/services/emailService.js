@@ -211,4 +211,42 @@ const sendAdminCreatedAccountEmail = ({ to, name, role, activationLink }) => {
     : send(to, `You've been invited to join TechLaunch MENA`, publicInviteHtml(name, activationLink), 'public-invite');
 };
 
-module.exports = { sendWelcomeEmail, sendPublicInvitationEmail, sendAdminCreatedAccountEmail };
+const sendApprovalEmail = ({ to, founderName, productName, productSlug, note }) => {
+  const productUrl = `${APP_URL}/products/${productSlug || ''}`;
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Product Approved</title></head>
+<body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;">
+<tr><td align="center" style="padding:48px 16px 40px;">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:500px;">
+  <tr><td align="center" style="padding-bottom:24px;">
+    <img src="${LOGO_URL}" alt="TechLaunch MENA" width="56" height="56" style="display:block;border-radius:14px;border:0;"/>
+  </td></tr>
+  <tr><td style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:40px 40px 32px;border-bottom:4px solid #16a34a;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#16a34a;letter-spacing:1.4px;text-transform:uppercase;">🎉 Congratulations!</p>
+        <h1 style="margin:0;font-size:26px;font-weight:800;color:#111827;letter-spacing:-0.5px;line-height:1.2;">${productName} is now live!</h1>
+      </td></tr>
+      <tr><td style="padding:32px 40px 40px;">
+        <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">Hi ${founderName}, your product <strong style="color:#111827;">${productName}</strong> has been approved and is now visible on TechLaunch MENA.</p>
+        ${note ? `<div style="margin:0 0 24px;padding:16px 20px;background:#f0fdf4;border-radius:10px;border-left:4px solid #16a34a;"><p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#16a34a;text-transform:uppercase;letter-spacing:.08em;">Note from our team</p><p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">${note}</p></div>` : ''}
+        <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.6;">Share your listing with your network and start collecting upvotes. The more visibility you get, the higher you'll rank.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr><td style="background:#16a34a;border-radius:10px;">
+            <a href="${productUrl}" target="_blank" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#fff;text-decoration:none;">View Your Live Listing →</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  return send(to, `🎉 ${productName} is now live on Tech Launch!`, html, 'product-approval');
+};
+
+module.exports = { sendWelcomeEmail, sendPublicInvitationEmail, sendAdminCreatedAccountEmail, sendApprovalEmail };

@@ -220,7 +220,14 @@ export default function Applications() {
                   <td style={{padding:'11px 16px'}}><Badge variant="green">+{w.last_24h||0} today</Badge></td>
                   <td style={{padding:'11px 16px'}}><Badge variant="green">● Open</Badge></td>
                   <td style={{padding:'11px 16px'}}>
-                    <ActionBtn variant="edit" onClick={()=>toast.success(`Exported ${w.name} CSV`)}>Export CSV</ActionBtn>
+                    <ActionBtn variant="edit" loading={busy[`csv_${w.id}`]} onClick={async () => {
+                      setBusy(b => ({ ...b, [`csv_${w.id}`]: true }));
+                      try {
+                        await adminAPI.exportCSV('waitlist', { product_id: w.id });
+                        toast.success(`${w.name} waitlist exported`);
+                      } catch { toast.error('Export failed'); }
+                      finally { setBusy(b => ({ ...b, [`csv_${w.id}`]: false })); }
+                    }}>Export CSV</ActionBtn>
                   </td>
                 </tr>
               ))}

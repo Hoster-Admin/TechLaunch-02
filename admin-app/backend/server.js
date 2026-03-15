@@ -90,7 +90,7 @@ const authenticate = async (req, res, next) => {
   if (!header?.startsWith('Bearer ')) return res.status(401).json({ success:false, message:'No token' });
   try {
     const { userId } = jwt.verify(header.split(' ')[1], JWT_SECRET);
-    const { rows } = await q('SELECT id,name,handle,email,role,status,avatar_color FROM users WHERE id=$1', [userId]);
+    const { rows } = await q('SELECT id,name,handle,email,role,status,avatar_color,force_password_change FROM users WHERE id=$1', [userId]);
     if (!rows.length) return res.status(401).json({ success:false, message:'User not found' });
     if (rows[0].status !== 'active') return res.status(403).json({ success:false, message:'Account suspended' });
     req.user = rows[0];
@@ -162,10 +162,27 @@ app.post('/api/auth/activate', async (req, res) => {
     if (r.used_at) return res.status(400).json({ success:false, message:'This link has already been used' });
     if (new Date(r.expires_at) < new Date()) return res.status(400).json({ success:false, message:'Link expired' });
     const hash = await bcrypt.hash(password, 10);
-    await q(`UPDATE users SET password_hash=$1, email_verified=true, status='active' WHERE id=$2`, [hash, r.user_id]);
+    await q(`UPDATE users SET password_hash=$1, email_verified=true, status='active', force_password_change=false WHERE id=$2`, [hash, r.user_id]);
     await q(`UPDATE activation_tokens SET used_at=NOW() WHERE id=$1`, [r.id]);
     res.json({ success:true, message:'Account activated! You can now log in.' });
   } catch (e) { res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+app.post('/api/admin/auth/change-password', authenticate, async (req, res) => {
+  const { current_password, new_password } = req.body;
+  if (!new_password || new_password.length < 8)
+    return res.status(400).json({ success:false, message:'New password must be at least 8 characters' });
+  try {
+    const { rows } = await q(`SELECT password_hash FROM users WHERE id=$1`, [req.user.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'User not found' });
+    if (current_password) {
+      const ok = await bcrypt.compare(current_password, rows[0].password_hash);
+      if (!ok) return res.status(401).json({ success:false, message:'Current password is incorrect' });
+    }
+    const hash = await bcrypt.hash(new_password, 10);
+    await q(`UPDATE users SET password_hash=$1, force_password_change=false WHERE id=$2`, [hash, req.user.id]);
+    res.json({ success:true, message:'Password updated successfully' });
+  } catch(e) { res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
 app.get('/activate', (req, res) => {
@@ -389,10 +406,27 @@ admin.get('/products/:id', async (req, res) => {
 
 admin.post('/products/:id/approve', async (req, res) => {
   try {
-    const { rows } = await q(`UPDATE products SET status='live',approved_by=$1,approved_at=NOW() WHERE id=$2 RETURNING name`, [req.user.id, req.params.id]);
+    const { note } = req.body;
+    const { rows } = await q(
+      `UPDATE products SET status='live', approved_by=$1, approved_at=NOW(), approval_note=$2
+       WHERE id=$3 RETURNING name, slug, submitted_by`,
+      [req.user.id, note?.trim() || null, req.params.id]
+    );
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    // FIX 9: Unified to use logAction() helper
-    await logAction(req.user.id, 'product.approve', 'product', req.params.id, { name:rows[0].name }, req.ip);
+    await logAction(req.user.id, 'product.approve', 'product', req.params.id, { name:rows[0].name, note: note?.trim()?.slice(0,80) || null }, req.ip);
+    if (rows[0].submitted_by) {
+      const { rows: founder } = await q(`SELECT email, name FROM users WHERE id=$1`, [rows[0].submitted_by]);
+      if (founder[0]?.email) {
+        const { sendApprovalEmail } = require('../../backend/src/services/emailService');
+        sendApprovalEmail({
+          to: founder[0].email,
+          founderName: founder[0].name,
+          productName: rows[0].name,
+          productSlug: rows[0].slug,
+          note: note?.trim() || null,
+        }).catch(err => console.error('[Email] approval failed:', err.message));
+      }
+    }
     res.json({ success:true, message:`${rows[0].name} approved` });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
@@ -452,8 +486,8 @@ admin.post('/users', async (req, res) => {
     const hash   = await bcrypt.hash(tempPwd, 10);
     const colors = ['#E15033','#2563eb','#7c3aed','#16a34a','#d97706'];
     const color  = colors[Math.floor(Math.random()*colors.length)];
-    const cols   = ['name','handle','email','password_hash','role','status','verified','email_verified','avatar_color'];
-    const vals   = [resolvedName, handle, email.toLowerCase().trim(), hash, role, 'active', isTeam, isTeam, color];
+    const cols   = ['name','handle','email','password_hash','role','status','verified','email_verified','avatar_color','force_password_change'];
+    const vals   = [resolvedName, handle, email.toLowerCase().trim(), hash, role, 'active', isTeam, isTeam, color, isTeam];
     if (persona) { cols.push('persona'); vals.push(persona); }
     if (country) { cols.push('country'); vals.push(country); }
     const placeholders = vals.map((_,i)=>`$${i+1}`).join(',');
@@ -684,6 +718,30 @@ admin.put('/settings', async (req, res) => {
     }
     await logAction(req.user.id, 'settings.updated', 'settings', null, req.body, req.ip);
     res.json({ success:true, message:'Settings updated' });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+admin.put('/platform/banner', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can update the banner' });
+  try {
+    const { text, visible } = req.body;
+    await q(`INSERT INTO platform_settings (key,value,type,updated_by,updated_at) VALUES ('banner',$1,'text',$2,NOW())
+             ON CONFLICT (key) DO UPDATE SET value=$1,updated_by=$2,updated_at=NOW()`,
+      [JSON.stringify({ text, visible }), req.user.id]);
+    await logAction(req.user.id, 'update_banner', 'platform', null, { text: String(text).slice(0,80), visible }, req.ip);
+    res.json({ success:true, message:'Banner updated' });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+admin.put('/platform/editors-pick', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can update the editor\'s pick' });
+  try {
+    const { text } = req.body;
+    await q(`INSERT INTO platform_settings (key,value,type,updated_by,updated_at) VALUES ('editors_pick',$1,'text',$2,NOW())
+             ON CONFLICT (key) DO UPDATE SET value=$1,updated_by=$2,updated_at=NOW()`,
+      [JSON.stringify({ text }), req.user.id]);
+    await logAction(req.user.id, 'update_editors_pick', 'platform', null, { text: String(text).slice(0,80) }, req.ip);
+    res.json({ success:true, message:"Editor's pick updated" });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
@@ -1089,13 +1147,21 @@ admin.post('/users/bulk', async (req, res) => {
 });
 
 // Activity Log
+admin.get('/activity-log/actions', async (req, res) => {
+  try {
+    const { rows } = await q(`SELECT DISTINCT action FROM activity_log ORDER BY action`);
+    res.json({ success:true, data: rows.map(r => r.action) });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
 admin.get('/activity-log', async (req, res) => {
   try {
-    const { actor, action, entity, from, to, page=1, limit=50 } = req.query;
+    const { actor, action, entity, role, from, to, page=1, limit=50 } = req.query;
     const conds = [], params = [];
     if (actor)  { params.push(`%${actor}%`);  conds.push(`u.name ILIKE $${params.length}`); }
-    if (action) { params.push(`%${action}%`); conds.push(`al.action ILIKE $${params.length}`); }
+    if (action) { params.push(action);         conds.push(`al.action = $${params.length}`); }
     if (entity) { params.push(entity);         conds.push(`al.entity=$${params.length}`); }
+    if (role)   { params.push(role);           conds.push(`u.role=$${params.length}`); }
     if (from)   { params.push(from);           conds.push(`al.created_at >= $${params.length}::date`); }
     if (to)     { params.push(to);             conds.push(`al.created_at < ($${params.length}::date + interval '1 day')`); }
     const where  = conds.length ? `WHERE ${conds.join(' AND ')}` : '';
@@ -1164,6 +1230,16 @@ admin.get('/export/:type', async (req, res) => {
       rows = result.rows;
       headers = ['Applicant','Email','Entity','Startup','Stage','Status','Notes','Applied At'];
       filename = 'applications';
+    } else if (type === 'waitlist') {
+      const { product_id } = req.query;
+      const params = [];
+      let where = '1=1';
+      if (product_id) { params.push(product_id); where += ` AND ws.product_id=$${params.length}`; }
+      const dateClause = buildDateFilter('ws.created_at', params);
+      const result = await q(`SELECT u.name,u.email,u.handle,p.name AS product,ws.created_at AS signed_up_at FROM waitlist_signups ws JOIN users u ON u.id=ws.user_id JOIN products p ON p.id=ws.product_id WHERE ${where}${dateClause} ORDER BY ws.created_at DESC`, params);
+      rows = result.rows;
+      headers = ['Name','Email','Handle','Product','Signed Up At'];
+      filename = product_id ? `waitlist_${product_id}` : 'waitlist_all';
     } else {
       return res.status(400).json({ success:false, message:'Unknown export type' });
     }

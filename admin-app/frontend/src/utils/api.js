@@ -31,7 +31,7 @@ export const authAPI = {
 export const adminAPI = {
   dashboard:    ()          => req('GET',  '/admin/dashboard'),
   products:     (p={})      => req('GET',  '/admin/products?' + new URLSearchParams(p)),
-  approveProduct: (id)      => req('POST', `/admin/products/${id}/approve`),
+  approveProduct: (id, note) => req('POST', `/admin/products/${id}/approve`, { note: note || null }),
   rejectProduct:  (id, r)   => req('POST', `/admin/products/${id}/reject`, { reason: r }),
   featured:     (id)        => req('POST', `/admin/products/${id}/featured`),
   users:        (p={})      => req('GET',  '/admin/users?' + new URLSearchParams(p)),
@@ -49,7 +49,11 @@ export const adminAPI = {
   updatePitch:    (id, body)=> req('PATCH', `/admin/applications/pitches/${id}`, body),
   bulkProducts: (body)      => req('POST', '/admin/products/bulk', body),
   bulkUsers:    (body)      => req('POST', '/admin/users/bulk', body),
-  activityLog:  (p={})     => req('GET',  '/admin/activity-log?' + new URLSearchParams(p)),
+  activityLog:  (p={})       => req('GET',  '/admin/activity-log?' + new URLSearchParams(p)),
+  activityLogActions: ()     => req('GET',  '/admin/activity-log/actions'),
+  saveBanner:         (body) => req('PUT',  '/admin/platform/banner', body),
+  saveEditorsPick:    (body) => req('PUT',  '/admin/platform/editors-pick', body),
+  changePassword:     (body) => req('POST', '/admin/auth/change-password', body),
   exportCSV:    (type, p={}) => {
     const token = getToken();
     const qs = new URLSearchParams(p).toString();

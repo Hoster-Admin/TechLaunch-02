@@ -43,7 +43,30 @@ export default function AdminLayout() {
   const [exportTo,   setExportTo]     = useState('');
   const [exporting,  setExporting]    = useState('');
   const exportRef = useRef(null);
-  const { user, logout } = useAuth();
+  const { user, logout, refreshUser } = useAuth();
+
+  const [showChangePwd, setShowChangePwd] = useState(false);
+  const [pwdNew,        setPwdNew]        = useState('');
+  const [pwdConfirm,    setPwdConfirm]    = useState('');
+  const [pwdSaving,     setPwdSaving]     = useState(false);
+
+  useEffect(() => {
+    if (user?.force_password_change) setShowChangePwd(true);
+  }, [user?.force_password_change]);
+
+  const submitChangePwd = async () => {
+    if (!pwdNew || pwdNew.length < 8) { toast.error('Password must be at least 8 characters'); return; }
+    if (pwdNew !== pwdConfirm) { toast.error('Passwords do not match'); return; }
+    setPwdSaving(true);
+    try {
+      await adminAPI.changePassword(pwdNew);
+      toast.success('Password updated — welcome aboard!');
+      setPwdNew(''); setPwdConfirm('');
+      setShowChangePwd(false);
+      if (typeof refreshUser === 'function') refreshUser();
+    } catch(e) { toast.error(e.message || 'Failed to update password'); }
+    finally { setPwdSaving(false); }
+  };
 
   useEffect(() => {
     adminAPI.platformProfile()
@@ -160,6 +183,40 @@ export default function AdminLayout() {
 
   return (
     <div className="admin-app">
+      {/* Force password change overlay */}
+      {showChangePwd && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.65)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}}>
+          <div style={{background:'#fff',borderRadius:20,padding:36,width:420,maxWidth:'92vw',boxShadow:'0 24px 72px rgba(0,0,0,.28)'}}>
+            <div style={{fontSize:22,marginBottom:8}}>🔐</div>
+            <div style={{fontSize:16,fontWeight:800,color:'#0A0A0A',marginBottom:4}}>Set your password</div>
+            <div style={{fontSize:13,color:'#888',marginBottom:24,lineHeight:1.5}}>
+              Your account was created by an admin. Please set a new password before continuing.
+            </div>
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>New Password</label>
+            <input type="password" value={pwdNew} onChange={e=>setPwdNew(e.target.value)}
+              placeholder="At least 8 characters"
+              style={{width:'100%',borderRadius:10,border:'1.5px solid #E8E8E8',padding:'10px 12px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',marginBottom:14}}
+            />
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>Confirm Password</label>
+            <input type="password" value={pwdConfirm} onChange={e=>setPwdConfirm(e.target.value)}
+              placeholder="Repeat your new password"
+              onKeyDown={e=>{ if(e.key==='Enter') submitChangePwd(); }}
+              style={{width:'100%',borderRadius:10,border:'1.5px solid #E8E8E8',padding:'10px 12px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',marginBottom:20}}
+            />
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={submitChangePwd} disabled={pwdSaving}
+                style={{flex:1,padding:'11px',borderRadius:10,border:'none',background:'var(--orange)',color:'#fff',fontSize:13,fontWeight:700,cursor:pwdSaving?'not-allowed':'pointer',opacity:pwdSaving?0.6:1,fontFamily:'inherit'}}>
+                {pwdSaving ? 'Saving…' : 'Set Password & Continue'}
+              </button>
+              <button onClick={logout}
+                style={{padding:'11px 16px',borderRadius:10,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',color:'#555',fontFamily:'inherit'}}>
+                Log out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
       {navOpen && <div className="admin-overlay" onClick={() => setNavOpen(false)}/>}
 
       <AdminSidebar

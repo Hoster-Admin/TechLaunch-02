@@ -30,6 +30,12 @@ export default function App() {
     setUser(null);
   };
 
+  const refreshUser = () => {
+    authAPI.me()
+      .then(({ data }) => setUser(data.data?.user || null))
+      .catch(() => {});
+  };
+
   if (loading) {
     return (
       <div style={{ height:'100vh', display:'flex', alignItems:'center', justifyContent:'center', fontFamily:'DM Sans,sans-serif', color:'#AAAAAA', fontSize:14 }}>
@@ -39,7 +45,7 @@ export default function App() {
   }
 
   return (
-    <AuthCtx.Provider value={{ user, login, logout }}>
+    <AuthCtx.Provider value={{ user, login, logout, refreshUser }}>
       <Toaster position="top-right" toastOptions={{ style:{ fontFamily:'DM Sans,sans-serif', fontSize:13, fontWeight:600 } }}/>
       {user ? <AdminLayout /> : <LoginPage />}
     </AuthCtx.Provider>

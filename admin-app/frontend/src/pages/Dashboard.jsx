@@ -65,11 +65,13 @@ export default function Dashboard({ onNavigate }) {
     </div>
   );
 
-  const s            = data?.stats || {};
-  const topProducts  = data?.topProducts || [];
-  const activity     = data?.activity    || [];
-  const newUsers     = data?.newUsers    || [];
-  const pendingCount = Number(s.products?.pending ?? 0);
+  const s              = data?.stats || {};
+  const topProducts    = data?.topProducts || [];
+  const activity       = data?.activity    || [];
+  const newUsers       = data?.newUsers    || [];
+  const pendingCount   = Number(s.products?.pending ?? 0);
+  const appsPending    = Number(s.apps_pending ?? 0);
+  const totalPending   = pendingCount + appsPending;
 
   const STAT_CARDS = [
     { icon:'🚀', label:'Live Products',     value:s.products?.live ?? 0, delta:`↑ ${pendingCount} pending review`, color:'orange', page:'products' },
@@ -80,6 +82,36 @@ export default function Dashboard({ onNavigate }) {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      {/* Action Required Banner */}
+      {totalPending > 0 && (
+        <div style={{background:'linear-gradient(135deg, #FF6B35 0%, #FF8C42 100%)',borderRadius:16,padding:'16px 24px',display:'flex',alignItems:'center',gap:16,boxShadow:'0 4px 20px rgba(255,107,53,.25)'}}>
+          <span style={{fontSize:24,flexShrink:0}}>🔔</span>
+          <div style={{flex:1}}>
+            <div style={{fontSize:14,fontWeight:800,color:'#fff',marginBottom:2}}>
+              Action Required — {totalPending} item{totalPending!==1?'s':''} need{totalPending===1?'s':''} your attention
+            </div>
+            <div style={{fontSize:12,color:'rgba(255,255,255,.85)'}}>
+              {pendingCount > 0 && `${pendingCount} product${pendingCount!==1?'s':''} pending review`}
+              {pendingCount > 0 && appsPending > 0 && '  ·  '}
+              {appsPending > 0 && `${appsPending} application${appsPending!==1?'s':''} awaiting decision`}
+            </div>
+          </div>
+          <div style={{display:'flex',gap:8,flexShrink:0}}>
+            {pendingCount > 0 && (
+              <button onClick={() => onNavigate?.('products')}
+                style={{padding:'8px 16px',borderRadius:9,background:'rgba(255,255,255,.2)',color:'#fff',border:'1.5px solid rgba(255,255,255,.4)',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',backdropFilter:'blur(4px)'}}>
+                Review Products →
+              </button>
+            )}
+            {appsPending > 0 && (
+              <button onClick={() => onNavigate?.('applications')}
+                style={{padding:'8px 16px',borderRadius:9,background:'rgba(255,255,255,.2)',color:'#fff',border:'1.5px solid rgba(255,255,255,.4)',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',backdropFilter:'blur(4px)'}}>
+                Review Applications →
+              </button>
+            )}
+          </div>
+        </div>
+      )}
       {/* Stat cards — clickable */}
       <div className="resp-grid-4">
         {STAT_CARDS.map((c,i) => (

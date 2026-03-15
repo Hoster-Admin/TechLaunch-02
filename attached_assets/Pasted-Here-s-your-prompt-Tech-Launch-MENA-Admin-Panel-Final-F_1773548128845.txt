@@ -1,0 +1,271 @@
+Here's your prompt:
+
+Tech Launch MENA — Admin Panel Final Fixes (Post-Simulation)
+You are fixing the final issues found during a user flow simulation of the Tech Launch admin panel. These are the only remaining fixes needed before handing the panel to a real moderation team. Fix them in the order listed.
+
+CONTEXT
+
+Stack: React frontend, Node.js/Express backend, PostgreSQL
+Email service: Resend (already integrated)
+Platform settings likely stored in a platform_settings table or similar
+Featured page: pages/Featured.jsx
+Audit Log page: pages/AuditLog.jsx
+Applications page: pages/Applications.jsx
+Settings page: pages/Settings.jsx
+Products page: pages/Products.jsx
+Dashboard: pages/Dashboard.jsx
+
+
+FIX 1 — Banner Save Not Persisting
+The bug: "Save Banner" shows a success toast but does not write to the database. On refresh the text resets to the hardcoded default.
+Frontend — pages/Featured.jsx:
+
+The "Save Banner" button must call PUT /admin/platform/banner with { text: bannerText, visible: bannerVisible }
+Show loading state on button during API call
+Only show success toast after confirmed API response
+On page load, fetch current banner from GET /admin/platform/settings and populate the field
+
+Backend — server.js:
+
+Add or fix PUT /admin/platform/banner route:
+
+javascriptrouter.put('/admin/platform/banner', authenticate, requireAdmin, async (req, res) => {
+  const { text, visible } = req.body;
+  await q(
+    `INSERT INTO platform_settings (key, value) VALUES ('banner', $1)
+     ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+    [JSON.stringify({ text, visible })]
+  );
+  await logAction(req.user.id, 'update_banner', 'platform', null, { text, visible });
+  res.json({ success: true });
+});
+
+Add GET /admin/platform/settings route that returns all platform settings as a key-value object
+Ensure platform_settings table exists:
+
+sqlCREATE TABLE IF NOT EXISTS platform_settings (
+  key TEXT PRIMARY KEY,
+  value TEXT NOT NULL,
+  updated_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+FIX 2 — Editor's Pick Save Not Persisting
+The bug: Same as Fix 1 — "Update Pick" shows success toast but does not write to the database.
+Frontend — pages/Featured.jsx:
+
+"Update Pick" button must call PUT /admin/platform/editors-pick with { text: pickText }
+Show loading state during call
+On page load fetch current Editor's Pick from GET /admin/platform/settings and populate
+
+Backend:
+
+Add PUT /admin/platform/editors-pick route following the same pattern as Fix 1:
+
+javascriptrouter.put('/admin/platform/editors-pick', authenticate, requireAdmin, async (req, res) => {
+  const { text } = req.body;
+  await q(
+    `INSERT INTO platform_settings (key, value) VALUES ('editors_pick', $1)
+     ON CONFLICT (key) DO UPDATE SET value = $1, updated_at = NOW()`,
+    [JSON.stringify({ text })]
+  );
+  await logAction(req.user.id, 'update_editors_pick', 'platform', null, { text });
+  res.json({ success: true });
+});
+
+FIX 3 — Approval Note / Message to Founder
+The bug: Approving a product gives the moderator no way to send a message to the founder. Only rejection has a reason field. Founders receive no communication on approval.
+Frontend — pages/Products.jsx product detail drawer:
+
+Change the Approve button to open a modal instead of firing immediately
+Modal contains:
+
+Heading: "Approve Product"
+Optional textarea: "Add a note for the founder (optional)" — placeholder: "e.g. Great submission! Consider updating your tagline before launch."
+Two buttons: "Approve" (orange) and "Cancel" (ghost)
+Approve button fires even if textarea is empty
+
+
+Pass the note to PUT /admin/products/:id/approve as { note: approvalNote }
+
+Backend — PUT /admin/products/:id/approve:
+
+Accept optional note in request body
+After approving, trigger approval email via Resend:
+
+javascriptawait resend.emails.send({
+  from: 'Tech Launch <noreply@tlmena.com>',
+  to: founderEmail,
+  subject: `🎉 ${product.name} is now live on Tech Launch!`,
+  html: `
+    <p>Congratulations! Your product <strong>${product.name}</strong> has been approved and is now live.</p>
+    ${note ? `<p><strong>Note from our team:</strong> ${note}</p>` : ''}
+    <p><a href="https://tlmena.com/products/${product.slug}">View your live listing →</a></p>
+    <p>Share it with your network and start collecting upvotes.</p>
+  `
+});
+
+Store the note in the products table: ALTER TABLE products ADD COLUMN IF NOT EXISTS approval_note TEXT
+Log the action with the note in logAction()
+
+
+FIX 4 — Audit Log Filters
+The bug: Audit Log has no filter by actor, action type, or date range — unusable at scale.
+Frontend — pages/AuditLog.jsx:
+
+Add these filter controls above the table:
+
+Text input: "Filter by admin name…" — filters by actor name client-side or via query param
+Dropdown: "Filter by action…" — populated from distinct action types returned by backend
+Dropdown: "Filter by role…" — Admin / Moderator / Editor
+Date range: From date + To date inputs
+"Clear filters" button that resets all inputs
+
+
+All filters apply via query params to GET /admin/audit-log
+Show result count: "Showing X events"
+
+Backend — GET /admin/audit-log:
+
+Accept query params: actorName, action, role, from, to, page, limit
+Build dynamic WHERE clause:
+
+javascriptconst conditions = [];
+const params = [];
+if (actorName) { conditions.push(`u.name ILIKE $${params.length+1}`); params.push(`%${actorName}%`); }
+if (action) { conditions.push(`al.action = $${params.length+1}`); params.push(action); }
+if (role) { conditions.push(`u.role = $${params.length+1}`); params.push(role); }
+if (from) { conditions.push(`al.created_at >= $${params.length+1}`); params.push(from); }
+if (to) { conditions.push(`al.created_at <= $${params.length+1}`); params.push(to); }
+const where = conditions.length ? `WHERE ${conditions.join(' AND ')}` : '';
+
+Add GET /admin/audit-log/actions endpoint returning distinct action types for the dropdown
+
+
+FIX 5 — Applications CSV Export
+The bug: The CSV export button for Applications shows a success toast but generates no file.
+Frontend — pages/Applications.jsx:
+
+Wire the export button to call GET /admin/export/applications with optional date range params
+Handle the response as a file download:
+
+javascriptconst response = await fetch('/admin/export/applications', {
+  headers: { Authorization: `Bearer ${token}` }
+});
+const blob = await response.blob();
+const url = URL.createObjectURL(blob);
+const a = document.createElement('a');
+a.href = url;
+a.download = `applications_${Date.now()}.csv`;
+a.click();
+URL.revokeObjectURL(url);
+Backend:
+
+Add GET /admin/export/applications route:
+
+javascriptrouter.get('/admin/export/applications', authenticate, requireAdmin, async (req, res) => {
+  const apps = await q(`
+    SELECT 
+      ea.id, ea.status, ea.stage, ea.notes, ea.created_at,
+      u.name as applicant_name, u.email as applicant_email,
+      e.name as entity_name
+    FROM entity_applications ea
+    JOIN users u ON ea.user_id = u.id
+    JOIN entities e ON ea.entity_id = e.id
+    ORDER BY ea.created_at DESC
+  `);
+  const csv = [
+    'ID,Status,Stage,Entity,Applicant,Email,Notes,Date',
+    ...apps.rows.map(r =>
+      `${r.id},${r.status},${r.stage},"${r.entity_name}","${r.applicant_name}",${r.applicant_email},"${r.notes || ''}",${r.created_at}`
+    )
+  ].join('\n');
+  res.setHeader('Content-Type', 'text/csv');
+  res.setHeader('Content-Disposition', 'attachment; filename="applications.csv"');
+  res.send(csv);
+});
+
+FIX 6 — Team Invite Email
+The bug: Inviting a new team member creates their account but sends no email. The new member is never notified.
+Backend — POST /admin/users (team invite route):
+
+After creating the account, send an invite email via Resend:
+
+javascriptawait resend.emails.send({
+  from: 'Tech Launch <noreply@tlmena.com>',
+  to: newMemberEmail,
+  subject: `You've been invited to the Tech Launch admin panel`,
+  html: `
+    <p>Hi ${newMemberName},</p>
+    <p>You've been added to the Tech Launch admin team as a <strong>${role}</strong>.</p>
+    <p>Your login details:</p>
+    <ul>
+      <li>Email: ${newMemberEmail}</li>
+      <li>Temporary password: ${tempPassword}</li>
+    </ul>
+    <p><a href="https://tlmena.com/admin">Log in to the admin panel →</a></p>
+    <p>You'll be prompted to change your password on first login.</p>
+  `
+});
+
+Generate a secure temporary password and hash it before storing
+Add a force_password_change BOOLEAN DEFAULT false column to users:
+
+sqlALTER TABLE users ADD COLUMN IF NOT EXISTS force_password_change BOOLEAN DEFAULT false;
+
+Set force_password_change = true for all invited team members
+On admin panel login, if force_password_change is true, redirect to a password change screen before showing the dashboard
+
+
+FIX 7 — "Feature a Product" Button on Featured Page
+The bug: The Featured page shows currently featured products but has no way to add a new one. Tariq has to navigate to Products, find a live product, and feature it from there — completely non-obvious.
+Frontend — pages/Featured.jsx:
+
+Add a "+ Feature a Product" button in the top-right of the Featured Spotlight section header
+Clicking opens a modal with:
+
+A searchable dropdown of all live products (fetched from GET /admin/products?status=live&limit=100)
+A "Feature" button that calls PUT /admin/products/:id/feature
+Search input filters the dropdown as the user types
+
+
+After featuring, close the modal and refresh the Featured Spotlight list
+The modal should show product name, tagline, and submitter for each option
+
+
+FIX 8 — Dashboard Pending Action Count
+The bug: Dashboard stat cards are informational only. A moderator landing on the dashboard has no prominent signal that action is required.
+Frontend — pages/Dashboard.jsx:
+
+Add a prominent "Action Required" banner at the top of the dashboard when there are pending items
+Show only when counts are greater than 0:
+
+jsx{(stats.pending_products > 0 || stats.pending_applications > 0) && (
+  <div className="action-banner">
+    <span>⚡ Action required:</span>
+    {stats.pending_products > 0 && (
+      <a href="/admin/products?filter=pending">
+        {stats.pending_products} product{stats.pending_products > 1 ? 's' : ''} awaiting review
+      </a>
+    )}
+    {stats.pending_applications > 0 && (
+      <a href="/admin/applications">
+        {stats.pending_applications} application{stats.pending_applications > 1 ? 's' : ''} to review
+      </a>
+    )}
+  </div>
+)}
+
+Style: orange left border, light orange background, bold orange links
+Banner disappears automatically when all counts reach 0
+Backend GET /admin/dashboard must include pending_products and pending_applications in the stats response
+
+
+HOW TO PROCEED
+
+Fix one item at a time in the order listed
+Show the changed file with enough surrounding context to locate each change
+For fixes touching both frontend and backend show both
+After all 8 fixes show a final summary of what was changed
+Do not modify anything outside of what each fix describes
+
+Start with Fix 1.
