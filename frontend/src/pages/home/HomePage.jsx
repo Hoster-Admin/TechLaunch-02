@@ -202,18 +202,6 @@ export default function HomePage() {
               })}
             </div>
 
-            {/* Weekly Digest */}
-            <div className="sidebar-card" style={{ background: 'var(--black)' }}>
-              <div className="sidebar-title" style={{ color: 'var(--white)' }}>📬 Weekly Digest</div>
-              <p style={{ fontSize: 12, color: 'rgba(255,255,255,.5)', lineHeight: 1.6, marginBottom: 14 }}>
-                Get the top MENA launches every week.
-              </p>
-              <input type="email" placeholder="your@email.com" style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1px solid rgba(255,255,255,.15)', background: 'rgba(255,255,255,.08)', color: '#fff', fontSize: 12, outline: 'none', fontFamily: 'Inter,sans-serif', boxSizing: 'border-box', marginBottom: 8 }}/>
-              <button style={{ width: '100%', padding: '9px', borderRadius: 8, background: 'var(--orange)', border: 'none', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter,sans-serif' }}>
-                Subscribe
-              </button>
-            </div>
-
             {/* Community CTAs */}
             <div className="sidebar-card">
               <div className="sidebar-title">🌍 Explore Ecosystem</div>

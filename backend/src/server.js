@@ -1,4 +1,10 @@
 require('dotenv').config();
+
+if (!process.env.RESEND_API_KEY) {
+  console.error('FATAL: RESEND_API_KEY is not set. Email delivery will fail. Exiting.');
+  process.exit(1);
+}
+
 const express     = require('express');
 const cors        = require('cors');
 const helmet      = require('helmet');
@@ -37,20 +43,27 @@ app.use(helmet({
 }));
 
 // ── CORS
-const allowedOrigins = [
-  'http://localhost:3000',
-  'http://localhost:5000',
-  process.env.CLIENT_URL,
-  process.env.ADMIN_URL,
-].filter(Boolean);
+const allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [
+      'https://tlmena.com',
+      'https://www.tlmena.com',
+    ]
+  : [
+      'http://localhost:3000',
+      'http://localhost:5000',
+      'http://localhost:5173',
+      /\.replit\.dev$/,
+      /\.replit\.app$/,
+    ];
 
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
-    if (allowedOrigins.includes(origin) || origin.endsWith('.replit.dev') || origin.endsWith('.replit.app') || origin.endsWith('.tlmena.com')) {
-      return cb(null, true);
-    }
-    cb(new Error('Not allowed by CORS'));
+    const allowed = allowedOrigins.some(o =>
+      typeof o === 'string' ? o === origin : o.test(origin)
+    );
+    if (allowed) return cb(null, true);
+    cb(new Error(`CORS blocked: ${origin}`));
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
@@ -58,14 +71,12 @@ app.use(cors({
 }));
 
 // ── Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 app.use(cookieParser());
 
-// ── HTTP logger (dev only)
-if (process.env.NODE_ENV !== 'production') {
-  app.use(morgan('dev'));
-}
+// ── HTTP logger
+app.use(morgan(process.env.NODE_ENV === 'production' ? 'combined' : 'dev'));
 
 // ── Rate limiting
 const limiter = rateLimit({

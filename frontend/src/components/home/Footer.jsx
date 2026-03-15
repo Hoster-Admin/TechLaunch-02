@@ -73,7 +73,7 @@ export default function Footer() {
       {/* Bottom */}
       <div style={{ maxWidth:1100, margin:'0 auto', paddingTop:28, display:'flex', alignItems:'center', justifyContent:'space-between', flexWrap:'wrap', gap:12 }}>
         <div style={{ fontSize:12, color:'rgba(255,255,255,.3)', fontWeight:400 }}>
-          © 2026 Tech Launch. All rights reserved. Built for the MENA region. 🌍
+          © {new Date().getFullYear()} Tech Launch. All rights reserved. Built for the MENA region. 🌍
         </div>
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'rgba(255,255,255,.3)' }}>
           <span>Made with ❤️ in MENA</span>

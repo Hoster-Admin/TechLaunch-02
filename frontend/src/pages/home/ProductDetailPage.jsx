@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
@@ -267,6 +268,28 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
 
   return (
     <>
+      <Helmet>
+        <title>{p.name} — Tech Launch MENA</title>
+        <meta name="description" content={p.tagline} />
+        <meta property="og:title" content={`${p.name} — Tech Launch MENA`} />
+        <meta property="og:description" content={p.tagline} />
+        <meta property="og:image" content={p.logo_url || 'https://tlmena.com/og-default.png'} />
+        <meta property="og:url" content={`https://tlmena.com/products/${p.id}`} />
+        <meta property="og:type" content="website" />
+        <meta name="twitter:card" content="summary_large_image" />
+        <meta name="twitter:title" content={`${p.name} — Tech Launch MENA`} />
+        <meta name="twitter:description" content={p.tagline} />
+        <meta name="twitter:image" content={p.logo_url || 'https://tlmena.com/og-default.png'} />
+        <script type="application/ld+json">{JSON.stringify({
+          '@context': 'https://schema.org',
+          '@type': 'SoftwareApplication',
+          name: p.name,
+          description: p.tagline,
+          url: `https://tlmena.com/products/${p.id}`,
+          applicationCategory: p.industry,
+          offers: { '@type': 'Offer', price: '0' },
+        })}</script>
+      </Helmet>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', background:'#fff', minHeight:'100vh' }}>
         <div style={{ maxWidth:860, margin:'0 auto', padding:'40px 32px 80px' }}>

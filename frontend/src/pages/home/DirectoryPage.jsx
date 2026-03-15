@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { statsAPI } from '../../utils/api';
@@ -85,6 +86,13 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
 
   return (
     <>
+      <Helmet>
+        <title>MENA Tech Directory — Browse by Industry &amp; Country | Tech Launch MENA</title>
+        <meta name="description" content="Explore MENA startups, products, accelerators, and investors by industry and country." />
+        <meta property="og:title" content="MENA Tech Directory — Tech Launch MENA" />
+        <meta property="og:description" content="Explore MENA startups, products, accelerators, and investors by industry and country." />
+        <meta property="og:url" content="https://tlmena.com/directory" />
+      </Helmet>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
         {/* Hero */}

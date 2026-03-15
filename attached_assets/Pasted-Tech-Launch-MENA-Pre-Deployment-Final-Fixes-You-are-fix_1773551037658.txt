@@ -1,0 +1,208 @@
+Tech Launch MENA — Pre-Deployment Final Fixes
+You are fixing the remaining issues blocking public site deployment. Fix them in the order listed — must-fix items first, then lower priority.
+
+CONTEXT
+
+Stack: React + Vite frontend, Node.js/Express backend
+Fonts needed: DM Sans + DM Mono + Noto Kufi Arabic
+react-helmet-async is installed but not wired up
+File: frontend/public/index.html, frontend/src/App.jsx, backend/src/server.js, frontend/src/index.css
+
+
+🔴 MUST FIX BEFORE GOING LIVE
+FIX 1 — Wire react-helmet-async and Add OG Meta Tags
+Step A — frontend/src/App.jsx or frontend/src/index.jsx:
+jsximport { HelmetProvider } from 'react-helmet-async';
+
+// Wrap your entire app:
+<HelmetProvider>
+  <App />
+</HelmetProvider>
+Step B — ProductDetailPage.jsx:
+jsximport { Helmet } from 'react-helmet-async';
+
+// Inside the component, after product data loads:
+<Helmet>
+  <title>{product.name} — Tech Launch MENA</title>
+  <meta name="description" content={product.tagline} />
+  <meta property="og:title" content={`${product.name} — Tech Launch MENA`} />
+  <meta property="og:description" content={product.tagline} />
+  <meta property="og:image" content={product.logo_url || 'https://tlmena.com/og-default.png'} />
+  <meta property="og:url" content={`https://tlmena.com/products/${product.slug}`} />
+  <meta property="og:type" content="website" />
+  <meta name="twitter:card" content="summary_large_image" />
+  <meta name="twitter:title" content={`${product.name} — Tech Launch MENA`} />
+  <meta name="twitter:description" content={product.tagline} />
+  <meta name="twitter:image" content={product.logo_url || 'https://tlmena.com/og-default.png'} />
+  <script type="application/ld+json">{JSON.stringify({
+    "@context": "https://schema.org",
+    "@type": "SoftwareApplication",
+    "name": product.name,
+    "description": product.tagline,
+    "url": `https://tlmena.com/products/${product.slug}`,
+    "applicationCategory": product.industry,
+    "offers": { "@type": "Offer", "price": "0" }
+  })}</script>
+</Helmet>
+Step C — UserProfilePage.jsx:
+jsx<Helmet>
+  <title>{user.name} (@{user.handle}) — Tech Launch MENA</title>
+  <meta name="description" content={user.headline || `${user.persona} on Tech Launch MENA`} />
+  <meta property="og:title" content={`${user.name} on Tech Launch MENA`} />
+  <meta property="og:description" content={user.headline || `${user.persona} on Tech Launch MENA`} />
+  <meta property="og:image" content={user.avatar_url || 'https://tlmena.com/og-default.png'} />
+  <meta property="og:url" content={`https://tlmena.com/u/${user.handle}`} />
+  <meta name="twitter:card" content="summary" />
+</Helmet>
+Step D — DirectoryPage.jsx:
+jsx<Helmet>
+  <title>MENA Tech Directory — Browse by Industry & Country | Tech Launch MENA</title>
+  <meta name="description" content="Explore MENA startups, products, accelerators, and investors by industry and country." />
+  <meta property="og:title" content="MENA Tech Directory — Tech Launch MENA" />
+  <meta property="og:description" content="Explore MENA startups, products, accelerators, and investors by industry and country." />
+  <meta property="og:url" content="https://tlmena.com/directory" />
+</Helmet>
+Step E — Create a default OG image:
+
+Add a file frontend/public/og-default.png — a simple branded image (1200x630px) with the Tech Launch logo and "MENA's Product Discovery Platform"
+This is used as fallback when no product logo exists
+
+
+FIX 2 — Lock CORS to Production Domain
+File: backend/src/server.js
+Replace the current CORS config with:
+javascriptconst allowedOrigins = process.env.NODE_ENV === 'production'
+  ? [
+      'https://tlmena.com',
+      'https://www.tlmena.com'
+    ]
+  : [
+      'http://localhost:3000',
+      'http://localhost:5173',
+      /\.replit\.dev$/,
+      /\.replit\.app$/
+    ];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin) return callback(null, true);
+    const allowed = allowedOrigins.some(o =>
+      typeof o === 'string' ? o === origin : o.test(origin)
+    );
+    if (allowed) {
+      callback(null, true);
+    } else {
+      callback(new Error(`CORS blocked: ${origin}`));
+    }
+  },
+  credentials: true
+}));
+This allows Replit URLs in development but locks to tlmena.com only in production.
+
+FIX 3 — Body Size Limit
+File: backend/src/server.js
+Find:
+javascriptexpress.json({ limit: '10mb' })
+express.urlencoded({ limit: '10mb' })
+Replace with:
+javascriptexpress.json({ limit: '100kb' })
+express.urlencoded({ limit: '100kb', extended: true })
+Note: if file uploads (logo, screenshots) go through a separate multipart/multer middleware they are unaffected by this change — confirm this is the case before applying.
+
+FIX 4 — Fix Fonts
+File: frontend/public/index.html
+Replace existing Google Fonts link with:
+html<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+File: frontend/src/index.css
+
+Remove the Inter import line entirely
+Replace all occurrences of font-family: 'Inter', sans-serif with font-family: 'DM Sans', sans-serif
+Add at the bottom:
+
+css[dir="rtl"] {
+  font-family: 'Noto Kufi Arabic', sans-serif;
+}
+
+FIX 5 — Rate Limit Forgot Password
+File: backend/src/server.js or wherever auth routes are defined
+Add a dedicated limiter for forgot-password:
+javascriptconst forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 5, // max 5 attempts per window
+  message: {
+    success: false,
+    message: 'Too many password reset attempts. Please try again in 15 minutes.'
+  },
+  standardHeaders: true,
+  legacyHeaders: false
+});
+
+// Apply to the forgot-password route:
+router.post('/auth/forgot-password', forgotPasswordLimiter, forgotPasswordHandler);
+
+FIX 6 — RESEND_API_KEY Startup Crash Guard
+File: backend/src/server.js or backend/src/services/emailService.js
+Add at the top of the file before any other code:
+javascriptif (!process.env.RESEND_API_KEY) {
+  console.error('FATAL: RESEND_API_KEY environment variable is not set. Email delivery will fail.');
+  process.exit(1);
+}
+
+🟡 LOWER PRIORITY — Fix After Critical Items
+FIX 7 — Remove Weekly Digest from Homepage
+File: frontend/src/pages/HomePage.jsx
+
+Find the commented-out {/* Weekly Digest */} block around line 205–207
+Delete it entirely — the comment and all JSX inside it
+Remove any associated state variables (digestEmail, digestLoading etc.) if they exist and are only used by this block
+
+
+FIX 8 — Copyright Year
+File: wherever the footer renders the copyright line
+Find:
+jsx© 2026 Tech Launch
+Replace with:
+jsx© {new Date().getFullYear()} Tech Launch
+
+FIX 9 — Morgan in Production
+File: backend/src/server.js
+Find the current Morgan setup:
+javascriptif (process.env.NODE_ENV !== 'production') {
+  app.use(morgan('dev'));
+}
+Replace with:
+javascriptapp.use(morgan(
+  process.env.NODE_ENV === 'production' ? 'combined' : 'dev'
+));
+This keeps HTTP request logs running in production using the standard combined format.
+
+FIX 10 — Favicon
+File: frontend/public/index.html
+Add inside <head>:
+html<link rel="icon" href="/tlmena-logo.svg" type="image/svg+xml">
+<link rel="apple-touch-icon" href="/tlmena-logo.svg">
+Confirm tlmena-logo.svg exists in frontend/public/ — if not copy the logo file there.
+
+AFTER ALL FIXES — Final Verification
+Run these checks before deploying:
+
+ Open browser DevTools → Network tab → confirm DM Sans loading from Google Fonts
+ Share a product URL in WhatsApp — confirm product name and image appear in preview
+ Test OG tags at https://developers.facebook.com/tools/debug/
+ Check favicon appears in browser tab
+ Trigger forgot-password 6 times — confirm rate limit fires on 6th attempt
+ Confirm CORS blocks requests from unknown origins in production
+ Confirm body limit rejects payloads over 100kb
+
+
+HOW TO PROCEED
+
+Fix one item at a time in the order listed
+Fixes 1–6 must all be done before deploying
+Fixes 7–10 can be done before or shortly after deploying
+Show only the changed file with enough context to locate each change
+Do not modify anything outside of what each fix describes
+
+Start with Fix 1.

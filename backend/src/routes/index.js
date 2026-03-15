@@ -8,6 +8,15 @@ const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
 
+// ── Forgot-password rate limiter (strict — prevents email bombing)
+const forgotPasswordLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 5,
+  standardHeaders: true,
+  legacyHeaders: false,
+  message: { success: false, message: 'Too many password reset attempts. Please try again in 15 minutes.' },
+});
+
 // ── Write-endpoint rate limiters
 const writeLimiter = rateLimit({
   windowMs: 60 * 60 * 1000,
@@ -92,6 +101,7 @@ authRouter.post('/logout',         authCtrl.logout);
 authRouter.get ('/me',             authenticate, authCtrl.getMe);
 authRouter.post('/set-password',   authCtrl.setPassword);
 authRouter.post('/forgot-password',
+  forgotPasswordLimiter,
   [body('email').isEmail().normalizeEmail()],
   validate, authCtrl.forgotPassword
 );

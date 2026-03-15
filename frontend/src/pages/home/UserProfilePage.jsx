@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
+import { Helmet } from 'react-helmet-async';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
@@ -236,6 +237,15 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
 
   return (
     <>
+      <Helmet>
+        <title>{profile.name} (@{profile.handle}) — Tech Launch MENA</title>
+        <meta name="description" content={profile.headline || `${personaLabel} on Tech Launch MENA`} />
+        <meta property="og:title" content={`${profile.name} on Tech Launch MENA`} />
+        <meta property="og:description" content={profile.headline || `${personaLabel} on Tech Launch MENA`} />
+        <meta property="og:image" content={profile.avatar_url || 'https://tlmena.com/og-default.png'} />
+        <meta property="og:url" content={`https://tlmena.com/u/${profile.handle}`} />
+        <meta name="twitter:card" content="summary" />
+      </Helmet>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
 
       {/* ── First-time welcome popup ── */}
