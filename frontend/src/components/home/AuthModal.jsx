@@ -54,20 +54,41 @@ export default function AuthModal() {
 
   if (!authModal) return null;
 
+  const deriveHandle = (name, email) => {
+    const fromName = name.toLowerCase().replace(/\s+/g,'').replace(/[^a-z0-9]/g,'').slice(0,20);
+    if (fromName.length >= 3) return fromName;
+    const fromEmail = (email || '').split('@')[0].toLowerCase().replace(/[^a-z0-9]/g,'').slice(0,20);
+    return fromEmail || 'user';
+  };
+  const handlePreview = deriveHandle(sName, sEmail);
+
   // ── SIGNUP
   const doSignup = async () => {
     if (!sName.trim()) { setError('Full name is required'); return; }
     if (!sEmail.trim() || !sEmail.includes('@')) { setError('Valid email is required'); return; }
     if (sPass.length < 8) { setError('Password must be at least 8 characters'); return; }
     setLoading(true); setError('');
+    const baseHandle = deriveHandle(sName.trim(), sEmail.trim());
+    const dbPersona = PERSONA_DB_MAP[selectedPersona] || 'Enthusiast';
     try {
-      const handle = sName.toLowerCase().replace(/\s+/g,'_').replace(/[^a-z0-9_]/g,'').slice(0,20) + Math.floor(Math.random()*100);
-      const dbPersona = PERSONA_DB_MAP[selectedPersona] || 'Enthusiast';
-      const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle, persona:dbPersona });
+      const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle: baseHandle, persona:dbPersona });
       toast.success(`Welcome to Tech Launch, ${user.name.split(' ')[0]}! 🚀`);
       close();
       if (selectedPersona === 'startup') setSubmitOpen(true);
     } catch (err) {
+      if (err.response?.status === 409 && err.response?.data?.message?.toLowerCase().includes('handle')) {
+        try {
+          const suffixed = baseHandle.slice(0,17) + Math.floor(Math.random()*900+100);
+          const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle: suffixed, persona:dbPersona });
+          toast.success(`Welcome to Tech Launch, ${user.name.split(' ')[0]}! 🚀`);
+          close();
+          if (selectedPersona === 'startup') setSubmitOpen(true);
+          return;
+        } catch (retryErr) {
+          setError(retryErr.response?.data?.message || 'Signup failed. Try again.');
+          return;
+        }
+      }
       setError(err.response?.data?.message || 'Signup failed. Try again.');
     } finally { setLoading(false); }
   };
@@ -148,10 +169,12 @@ export default function AuthModal() {
             <div className="form-group">
               <label className="form-label">Full Name</label>
               <input className="form-input" type="text" value={sName} onChange={e => setSName(e.target.value)} placeholder="Ahmad Al-Rashid" autoComplete="name"/>
+              {handlePreview && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your handle: <span style={{ color:'#555', fontWeight:600 }}>@{handlePreview}</span></div>}
             </div>
             <div className="form-group">
               <label className="form-label">Email</label>
               <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
+              {handlePreview && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your profile: <span style={{ color:'#555', fontWeight:600 }}>tlmena.com/{handlePreview}</span></div>}
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
