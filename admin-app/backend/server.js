@@ -50,20 +50,21 @@ app.set('trust proxy', 1);
 app.use(helmet());
 const isProd = process.env.NODE_ENV === 'production';
 const ALLOWED_ORIGINS = [
+  'https://tlmena.com',
+  'https://www.tlmena.com',
   'https://admin.tlmena.com',
-  'http://localhost:5174',
-  'http://localhost:5000',
+  process.env.CORS_ORIGIN || null,
+  process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
+  !isProd ? 'http://localhost:5174' : null,
+  !isProd ? 'http://localhost:5000' : null,
   ...(process.env.ADMIN_CLIENT_URL ? [process.env.ADMIN_CLIENT_URL] : []),
-];
-// FIX 7: CORS — always allow Replit dev domains (they are this app's own domain);
-// block truly unknown external origins in production
+].filter(Boolean);
+
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);  // same-origin / server-to-server
-    if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return cb(null, true);
-    // Replit hosting always uses .replit.dev or .repl.co — these are our own domains
-    if (origin.includes('.replit.dev') || origin.includes('.repl.co')) return cb(null, true);
-    if (!isProd) return cb(null, true);  // allow everything else in dev
+    if (ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + '/'))) return cb(null, true);
+    if (!isProd && (origin.startsWith('http://localhost') || origin.includes('.replit.dev'))) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,

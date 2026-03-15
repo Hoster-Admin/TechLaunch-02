@@ -1,5 +1,10 @@
 const { Resend } = require('resend');
 
+if (!process.env.RESEND_API_KEY) {
+  console.error('FATAL: RESEND_API_KEY environment variable is not set');
+  process.exit(1);
+}
+
 const resend    = new Resend(process.env.RESEND_API_KEY);
 const FROM      = process.env.RESEND_FROM_EMAIL || 'TechLaunch MENA <hello@tlmena.com>';
 const APP_URL   = process.env.APP_URL   || 'https://tlmena.com';
@@ -249,4 +254,141 @@ const sendApprovalEmail = ({ to, founderName, productName, productSlug, note }) 
   return send(to, `🎉 ${productName} is now live on Tech Launch!`, html, 'product-approval');
 };
 
-module.exports = { sendWelcomeEmail, sendPublicInvitationEmail, sendAdminCreatedAccountEmail, sendApprovalEmail };
+const sendSubmissionConfirmationEmail = ({ to, productName }) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Submission Received</title></head>
+<body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;">
+<tr><td align="center" style="padding:48px 16px 40px;">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:500px;">
+  <tr><td align="center" style="padding-bottom:24px;">
+    <img src="${LOGO_URL}" alt="TechLaunch MENA" width="56" height="56" style="display:block;border-radius:14px;border:0;"/>
+  </td></tr>
+  <tr><td style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:40px 40px 32px;border-bottom:4px solid #E15033;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#E15033;letter-spacing:1.4px;text-transform:uppercase;">Submission Received</p>
+        <h1 style="margin:0;font-size:26px;font-weight:800;color:#111827;letter-spacing:-0.5px;line-height:1.2;">Your submission is under review 🎉</h1>
+      </td></tr>
+      <tr><td style="padding:32px 40px 40px;">
+        <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">
+          We received your product <strong style="color:#111827;">${productName}</strong> and it's now in our review queue.
+          We'll notify you once it's been reviewed — usually within 24 hours.
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr><td style="background:#E15033;border-radius:10px;">
+            <a href="${APP_URL}/settings?tab=products" target="_blank" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#fff;text-decoration:none;">Track your submission →</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+  <tr><td align="center" style="padding:24px 0 0;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} TechLaunch MENA &nbsp;·&nbsp; <a href="mailto:hello@tlmena.com" style="color:#9ca3af;text-decoration:none;">hello@tlmena.com</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  return send(to, `We received your submission — ${productName}`, html, 'submission-confirm');
+};
+
+const sendRejectionEmail = ({ to, productName, reason }) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Submission Update</title></head>
+<body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;">
+<tr><td align="center" style="padding:48px 16px 40px;">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:500px;">
+  <tr><td align="center" style="padding-bottom:24px;">
+    <img src="${LOGO_URL}" alt="TechLaunch MENA" width="56" height="56" style="display:block;border-radius:14px;border:0;"/>
+  </td></tr>
+  <tr><td style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:40px 40px 32px;border-bottom:4px solid #e53e3e;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#e53e3e;letter-spacing:1.4px;text-transform:uppercase;">Submission Update</p>
+        <h1 style="margin:0;font-size:26px;font-weight:800;color:#111827;letter-spacing:-0.5px;line-height:1.2;">Update on your submission</h1>
+      </td></tr>
+      <tr><td style="padding:32px 40px 40px;">
+        <p style="margin:0 0 16px;font-size:15px;color:#4b5563;line-height:1.7;">
+          Thank you for submitting <strong style="color:#111827;">${productName}</strong> to TechLaunch MENA.
+          After review, we weren't able to approve this listing at this time.
+        </p>
+        <div style="margin:0 0 24px;padding:16px 20px;background:#fff5f5;border-radius:10px;border-left:4px solid #e53e3e;">
+          <p style="margin:0 0 6px;font-size:11px;font-weight:700;color:#e53e3e;text-transform:uppercase;letter-spacing:.08em;">Reason</p>
+          <p style="margin:0;font-size:14px;color:#374151;line-height:1.6;">${reason || 'Does not meet our listing guidelines at this time.'}</p>
+        </div>
+        <p style="margin:0 0 28px;font-size:14px;color:#6b7280;line-height:1.6;">You're welcome to make changes and resubmit at any time.</p>
+        <table role="presentation" cellpadding="0" cellspacing="0">
+          <tr><td style="background:#E15033;border-radius:10px;">
+            <a href="${APP_URL}/settings?tab=products" target="_blank" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#fff;text-decoration:none;">View your submissions →</a>
+          </td></tr>
+        </table>
+      </td></tr>
+    </table>
+  </td></tr>
+  <tr><td align="center" style="padding:24px 0 0;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} TechLaunch MENA &nbsp;·&nbsp; <a href="mailto:hello@tlmena.com" style="color:#9ca3af;text-decoration:none;">hello@tlmena.com</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  return send(to, `Update on your submission — ${productName}`, html, 'product-rejection');
+};
+
+const sendPasswordResetEmail = ({ to, resetLink }) => {
+  const html = `<!DOCTYPE html>
+<html lang="en">
+<head><meta charset="UTF-8"/><meta name="viewport" content="width=device-width,initial-scale=1"/><title>Reset your password</title></head>
+<body style="margin:0;padding:0;background:#fafafa;font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',Roboto,Helvetica,Arial,sans-serif;">
+<table role="presentation" width="100%" cellpadding="0" cellspacing="0" style="background:#fafafa;">
+<tr><td align="center" style="padding:48px 16px 40px;">
+<table role="presentation" cellpadding="0" cellspacing="0" style="width:100%;max-width:500px;">
+  <tr><td align="center" style="padding-bottom:24px;">
+    <img src="${LOGO_URL}" alt="TechLaunch MENA" width="56" height="56" style="display:block;border-radius:14px;border:0;"/>
+  </td></tr>
+  <tr><td style="background:#fff;border-radius:20px;overflow:hidden;box-shadow:0 2px 16px rgba(0,0,0,0.07);">
+    <table role="presentation" width="100%" cellpadding="0" cellspacing="0">
+      <tr><td style="padding:40px 40px 32px;border-bottom:4px solid #E15033;">
+        <p style="margin:0 0 6px;font-size:12px;font-weight:700;color:#E15033;letter-spacing:1.4px;text-transform:uppercase;">Password Reset</p>
+        <h1 style="margin:0;font-size:26px;font-weight:800;color:#111827;letter-spacing:-0.5px;line-height:1.2;">Reset your password</h1>
+      </td></tr>
+      <tr><td style="padding:32px 40px 40px;">
+        <p style="margin:0 0 20px;font-size:15px;color:#4b5563;line-height:1.7;">
+          We received a request to reset your TechLaunch MENA password.
+          Click the button below — this link expires in <strong>1 hour</strong>.
+        </p>
+        <table role="presentation" cellpadding="0" cellspacing="0" style="margin-bottom:24px;">
+          <tr><td style="background:#E15033;border-radius:10px;">
+            <a href="${resetLink}" target="_blank" style="display:inline-block;padding:14px 36px;font-size:15px;font-weight:700;color:#fff;text-decoration:none;">Reset my password →</a>
+          </td></tr>
+        </table>
+        <p style="margin:0;font-size:13px;color:#9ca3af;line-height:1.6;">If you didn't request this, you can safely ignore this email — your password won't change.</p>
+      </td></tr>
+    </table>
+  </td></tr>
+  <tr><td align="center" style="padding:24px 0 0;">
+    <p style="margin:0;font-size:12px;color:#9ca3af;">© ${new Date().getFullYear()} TechLaunch MENA &nbsp;·&nbsp; <a href="mailto:hello@tlmena.com" style="color:#9ca3af;text-decoration:none;">hello@tlmena.com</a></p>
+  </td></tr>
+</table>
+</td></tr>
+</table>
+</body>
+</html>`;
+  return send(to, 'Reset your Tech Launch MENA password', html, 'password-reset');
+};
+
+module.exports = {
+  sendWelcomeEmail,
+  sendPublicInvitationEmail,
+  sendAdminCreatedAccountEmail,
+  sendApprovalEmail,
+  sendSubmissionConfirmationEmail,
+  sendRejectionEmail,
+  sendPasswordResetEmail,
+};

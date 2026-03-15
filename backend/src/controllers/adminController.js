@@ -136,10 +136,22 @@ const rejectProduct = async (req, res, next) => {
     const { reason } = req.body;
     const { rows } = await query(`
       UPDATE products SET status='rejected', rejected_reason=$1
-      WHERE id=$2 RETURNING name`, [reason||null, id]);
+      WHERE id=$2
+      RETURNING name, submitted_by`, [reason||null, id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
     await query('INSERT INTO activity_log (actor_id,action,entity,entity_id) VALUES ($1,$2,$3,$4)',
       [req.user.id, 'product.reject', 'products', id]);
+
+    // Send rejection email to founder (non-blocking)
+    const { sendRejectionEmail } = require('../services/emailService');
+    query('SELECT email, name FROM users WHERE id=$1', [rows[0].submitted_by])
+      .then(({ rows: u }) => {
+        if (u.length) {
+          sendRejectionEmail({ to: u[0].email, productName: rows[0].name, reason: reason || '' })
+            .catch(err => console.error('[Email] Rejection email failed:', err.message));
+        }
+      }).catch(() => {});
+
     res.json({ success:true, message:`${rows[0].name} rejected` });
   } catch (err) { next(err); }
 };

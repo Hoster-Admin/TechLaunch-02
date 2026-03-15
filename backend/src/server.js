@@ -22,18 +22,23 @@ app.use(helmet({
 
 // ── CORS
 const allowedOrigins = [
-  process.env.CLIENT_URL,
-  'http://localhost:3000',
-  'http://localhost:5000',
+  'https://tlmena.com',
+  'https://www.tlmena.com',
+  'https://admin.tlmena.com',
+  process.env.CORS_ORIGIN || null,
+  process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null,
 ].filter(Boolean);
 
 app.use(cors({
   origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.some(o => origin.startsWith(o)) ||
-        origin.endsWith('.replit.dev') ||
-        origin.endsWith('.repl.co')) {
+    if (!origin) return callback(null, true); // same-origin / server-to-server
+    if (allowedOrigins.some(o => origin === o || origin.startsWith(o + '/'))) {
       return callback(null, true);
+    }
+    if (process.env.NODE_ENV !== 'production') {
+      if (origin.startsWith('http://localhost') || origin.includes('.replit.dev')) {
+        return callback(null, true);
+      }
     }
     callback(new Error('Not allowed by CORS'));
   },
@@ -43,8 +48,8 @@ app.use(cors({
 }));
 
 // ── Body parsing
-app.use(express.json({ limit: '10mb' }));
-app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(express.json({ limit: '100kb' }));
+app.use(express.urlencoded({ extended: true, limit: '100kb' }));
 
 // ── HTTP logger (dev only)
 if (process.env.NODE_ENV !== 'production') {

@@ -201,6 +201,11 @@ const createProduct = async (req, res, next) => {
     // Update user product count
     await query('UPDATE users SET products_count = products_count + 1 WHERE id=$1', [req.user.id]);
 
+    // Send submission confirmation email (non-blocking)
+    const { sendSubmissionConfirmationEmail } = require('../services/emailService');
+    sendSubmissionConfirmationEmail({ to: req.user.email, productName: rows[0].name })
+      .catch(err => console.error('[Email] Submission confirm failed:', err.message));
+
     res.status(201).json({ success:true, data:rows[0] });
   } catch (err) { next(err); }
 };

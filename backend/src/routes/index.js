@@ -61,11 +61,13 @@ authRouter.post('/login',
   validate, authCtrl.login
 );
 
-authRouter.post('/refresh',         authCtrl.refresh);
-authRouter.post('/logout',          authCtrl.logout);
-authRouter.get ('/me',              authenticate, authCtrl.getMe);
-authRouter.get ('/activate/:token', authCtrl.checkActivationToken);
-authRouter.post('/activate',        authCtrl.activateAccount);
+authRouter.post('/refresh',          authCtrl.refresh);
+authRouter.post('/logout',           authCtrl.logout);
+authRouter.get ('/me',               authenticate, authCtrl.getMe);
+authRouter.get ('/activate/:token',  authCtrl.checkActivationToken);
+authRouter.post('/activate',         authCtrl.activateAccount);
+authRouter.post('/forgot-password',  [body('email').isEmail().normalizeEmail()], validate, authCtrl.forgotPassword);
+authRouter.post('/reset-password',   [body('token').notEmpty(), body('password').isLength({ min:8 })], validate, authCtrl.resetPassword);
 
 // ══════════════════════════════════════════════════
 // PRODUCTS  /api/products

@@ -1,0 +1,255 @@
+Clear report — 6 blockers standing between you and deployment. Here's the fix prompt:
+
+Tech Launch MENA — Pre-Deployment Blockers Fix
+You are fixing the 6 critical issues blocking deployment of Tech Launch on Replit + Neon. Fix them in the order listed. Do not touch anything else.
+
+CONTEXT
+
+Database: Neon PostgreSQL (production branch)
+Backend: Two servers — admin backend and public API (backend/src/server.js)
+Email service: Resend, configured in emailService.js
+Replit workflows configured in .replit
+
+
+FIX 1 — Run Missing Database Migrations
+Run these SQL statements against the production Neon database in this exact order:
+sql-- 1. Add missing columns to users table
+ALTER TABLE users ADD COLUMN IF NOT EXISTS warnings_count INTEGER DEFAULT 0;
+ALTER TABLE users ADD COLUMN IF NOT EXISTS force_password_change BOOLEAN DEFAULT false;
+
+-- 2. Add missing column to products table
+ALTER TABLE products ADD COLUMN IF NOT EXISTS approval_note TEXT;
+
+-- 3. Create user_warnings table
+CREATE TABLE IF NOT EXISTS user_warnings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  warned_by UUID REFERENCES users(id),
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 4. Create password_reset_tokens table
+CREATE TABLE IF NOT EXISTS password_reset_tokens (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  token TEXT NOT NULL UNIQUE,
+  expires_at TIMESTAMPTZ NOT NULL,
+  used BOOLEAN DEFAULT false,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+
+-- 5. Verify all columns exist
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'users' 
+AND column_name IN ('warnings_count', 'force_password_change');
+
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'products' 
+AND column_name = 'approval_note';
+
+SELECT table_name FROM information_schema.tables 
+WHERE table_name IN ('user_warnings', 'password_reset_tokens');
+After running, confirm all 5 SELECT checks return the expected columns and tables before moving to Fix 2.
+
+FIX 2 — Delete Test Users from Production Database
+Run against production Neon DB:
+sql-- Preview first — confirm these are test accounts
+SELECT id, name, email, role FROM users 
+WHERE handle LIKE 'testuser_%' 
+OR handle LIKE 'audituser_%' 
+OR handle LIKE 'cookieuser_%';
+
+-- Only run DELETE after confirming the above returns only test accounts
+DELETE FROM users 
+WHERE handle LIKE 'testuser_%' 
+OR handle LIKE 'audituser_%' 
+OR handle LIKE 'cookieuser_%';
+
+-- Confirm deletion
+SELECT COUNT(*) FROM users;
+-- Should show only real accounts remaining
+
+FIX 3 — Add NODE_ENV=production to Public API Workflow
+File: .replit
+
+Find the public API workflow run command
+Current: PORT=3001 node backend/src/server.js
+Change to: NODE_ENV=production PORT=3001 node backend/src/server.js
+
+This ensures:
+
+Morgan runs in combined mode not dev
+Any production-only guards in the codebase activate correctly
+
+
+FIX 4 — Public API Body Limit
+File: backend/src/server.js
+
+Find: express.json({ limit: '10mb' })
+Change to: express.json({ limit: '100kb' })
+Same for express.urlencoded if present:
+
+Change { limit: '10mb' } to { limit: '100kb' })
+
+
+Note: if the public API handles file uploads through JSON, check that uploads go through a dedicated multipart middleware (multer) and not through express.json — if so the 100kb limit is safe
+
+
+FIX 5 — Add 3 Missing Email Functions
+File: emailService.js (or wherever email functions are exported)
+Add these 3 functions and export them:
+Function 1 — Submission Confirmation:
+javascriptexport async function sendSubmissionConfirmationEmail({ to, productName }) {
+  await resend.emails.send({
+    from: 'Tech Launch <noreply@tlmena.com>',
+    to,
+    subject: `We received your submission — ${productName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Your submission is under review 🎉</h2>
+        <p>Hi there,</p>
+        <p>We received your product <strong>${productName}</strong> and it's now in our review queue.</p>
+        <p>We'll notify you once it's been reviewed — usually within 24 hours.</p>
+        <p>
+          <a href="https://tlmena.com/settings?tab=products" 
+             style="background:#E85D26;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Track your submission →
+          </a>
+        </p>
+        <p style="color:#888;font-size:12px;">Tech Launch MENA · tlmena.com</p>
+      </div>
+    `
+  });
+}
+Function 2 — Rejection Email:
+javascriptexport async function sendRejectionEmail({ to, productName, reason }) {
+  await resend.emails.send({
+    from: 'Tech Launch <noreply@tlmena.com>',
+    to,
+    subject: `Update on your submission — ${productName}`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Update on your submission</h2>
+        <p>Hi there,</p>
+        <p>Thank you for submitting <strong>${productName}</strong> to Tech Launch MENA.</p>
+        <p>After review, we weren't able to approve this listing at this time.</p>
+        <div style="background:#fff3f3;border-left:4px solid #e53e3e;padding:12px 16px;margin:16px 0;">
+          <strong>Reason:</strong> ${reason}
+        </div>
+        <p>You're welcome to make changes and resubmit at any time.</p>
+        <p>
+          <a href="https://tlmena.com/settings?tab=products"
+             style="background:#E85D26;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">
+            View your submissions →
+          </a>
+        </p>
+        <p style="color:#888;font-size:12px;">Tech Launch MENA · tlmena.com</p>
+      </div>
+    `
+  });
+}
+Function 3 — Password Reset Email:
+javascriptexport async function sendPasswordResetEmail({ to, resetLink }) {
+  await resend.emails.send({
+    from: 'Tech Launch <noreply@tlmena.com>',
+    to,
+    subject: `Reset your Tech Launch password`,
+    html: `
+      <div style="font-family: sans-serif; max-width: 600px; margin: 0 auto;">
+        <h2>Reset your password</h2>
+        <p>Hi there,</p>
+        <p>We received a request to reset your Tech Launch password.</p>
+        <p>Click the button below — this link expires in 1 hour.</p>
+        <p>
+          <a href="${resetLink}"
+             style="background:#E85D26;color:white;padding:12px 24px;border-radius:6px;text-decoration:none;display:inline-block;">
+            Reset my password →
+          </a>
+        </p>
+        <p>If you didn't request this, ignore this email — your password won't change.</p>
+        <p style="color:#888;font-size:12px;">Tech Launch MENA · tlmena.com</p>
+      </div>
+    `
+  });
+}
+After adding the functions wire them into the correct routes:
+
+Call sendSubmissionConfirmationEmail in the product submission route after saving to DB
+Call sendRejectionEmail in PUT /admin/products/:id/reject after status update
+Call sendPasswordResetEmail in POST /api/auth/forgot-password after token is generated
+
+Also add a startup crash guard for RESEND_API_KEY:
+javascriptif (!process.env.RESEND_API_KEY) {
+  console.error('FATAL: RESEND_API_KEY environment variable is not set');
+  process.exit(1);
+}
+
+FIX 6 — Lock CORS to Production Domain
+File: both server.js files (admin backend and public backend)
+
+Find the CORS configuration
+Current: allows all *.replit.dev and *.repl.co — wildcard
+Replace with explicit allowlist:
+
+javascriptconst allowedOrigins = [
+  'https://tlmena.com',
+  'https://www.tlmena.com',
+  // Add your specific Replit deployment URL below:
+  'https://YOUR_REPLIT_DEPLOYMENT_URL.replit.app'
+];
+
+app.use(cors({
+  origin: function(origin, callback) {
+    if (!origin || allowedOrigins.includes(origin)) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  credentials: true
+}));
+
+Replace YOUR_REPLIT_DEPLOYMENT_URL with your actual Replit deployment URL
+Apply this to both the admin backend and the public backend
+After applying, test login and API calls still work on the production URL
+
+
+AFTER ALL 6 FIXES — Run This Verification
+Confirm the following before going live:
+sql-- Confirm all tables and columns exist
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'users' 
+AND column_name IN ('warnings_count', 'force_password_change');
+
+SELECT column_name FROM information_schema.columns 
+WHERE table_name = 'products' 
+AND column_name = 'approval_note';
+
+SELECT table_name FROM information_schema.tables 
+WHERE table_name IN ('user_warnings', 'password_reset_tokens');
+
+-- Confirm test users are gone
+SELECT COUNT(*) FROM users WHERE handle LIKE 'testuser_%' OR handle LIKE 'audituser_%' OR handle LIKE 'cookieuser_%';
+-- Must return 0
+Then test manually:
+
+ Sign up a new account — welcome email arrives
+ Submit a test product — confirmation email arrives
+ Trigger password reset — reset email arrives
+ Log into admin panel — works
+ Check body limit — send a request larger than 100kb — should be rejected
+ Check CORS — API calls work from tlmena.com, blocked from unknown origins
+
+
+HOW TO PROCEED
+
+Fix one item at a time in the order listed
+Fix 1 and Fix 2 are SQL — run them directly in the Neon SQL editor
+Fix 3 is a one-line change in .replit
+Fix 4 is a one-line change in backend/src/server.js
+Fix 5 requires adding 3 functions and wiring them to routes
+Fix 6 requires updating CORS config in both server files
+Do not modify anything outside of what each fix describes
+
+Start with Fix 1 — run the migrations first.
