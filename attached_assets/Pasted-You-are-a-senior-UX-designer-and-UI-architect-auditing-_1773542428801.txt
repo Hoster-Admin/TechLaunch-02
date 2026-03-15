@@ -1,0 +1,101 @@
+You are a senior UX designer and UI architect auditing the admin panel for TLMENA (tlmena.com) — a Product Hunt-style platform for the MENA/Arab world.
+
+CONTEXT
+
+Admin panel roles: Admin, Moderator, Editor
+Stack: React, DM Sans + DM Mono fonts
+Market: MENA/GCC, bilingual Arabic + English, RTL support required
+Core workflows: product moderation, user management, entity management, community moderation, platform settings
+
+
+AUDIT THESE AREAS:
+1. Dashboard
+
+Does it show the right information immediately on login?
+Are stat cards clickable and linked to the relevant section?
+Is there a shortcut to the Audit Log?
+Are pending items (products awaiting approval) prominently surfaced?
+What would an admin look for first — is it visible without scrolling?
+
+2. Navigation & Sidebar
+
+Is grouping logical for the three role types?
+Are the most-used actions reachable in ≤2 clicks?
+Is the active page state obvious?
+Do moderators and editors see menu items they have no access to?
+Are any important pages buried or hard to discover?
+
+3. Product Moderation Flow
+
+Is the approve/reject/feature flow clear and fast?
+Can a moderator review a product and take action without leaving the page?
+Is there enough product detail visible to make a decision?
+Are bulk actions intuitive — select, action, confirm?
+Is feedback given immediately after an action?
+
+4. User Management
+
+Is it easy to find a specific user quickly?
+Are suspend/warn/delete actions clearly separated to prevent mistakes?
+Is the user's activity history visible from the management screen?
+Are destructive actions (delete) protected by confirmation?
+
+5. Tables & Data Lists
+
+Are columns prioritized correctly — most important info first?
+Is sorting and filtering intuitive and fast?
+Are empty states handled with helpful messaging?
+Are long strings (names, emails, URLs) truncated gracefully without losing meaning?
+Is pagination clear — does the user know where they are in the list?
+
+6. Forms & Inputs
+
+Are labels clear and unambiguous?
+Are validation errors inline and specific?
+Are required fields marked consistently?
+Is there confirmation before any destructive or irreversible action?
+Are success and failure states visually distinct?
+
+7. Modals & Dialogs
+
+Can they be dismissed with ESC and backdrop click?
+Is the primary action always visually dominant?
+Are they the right size for their content — not too large or too small?
+Are warning/destructive modals visually differentiated from standard ones?
+
+8. Role-Based UI
+
+Do moderators see admin-only actions they cannot perform?
+Are restricted actions hidden or just disabled — and is the choice consistent?
+Is the logged-in user's role visible somewhere in the UI at all times?
+Are there any actions a role can trigger in the UI that the backend will reject?
+
+9. Feedback & Loading States
+
+Are there loading skeletons or spinners on every data fetch?
+Do actions give immediate visual feedback before the server responds?
+Are toast/error messages specific enough to tell the user what went wrong?
+What happens if an action fails — is there a retry option?
+
+10. RTL & Bilingual Readiness
+
+Are there hardcoded LTR assumptions in padding, margin, flex direction, or icon placement?
+Is Noto Kufi Arabic applied correctly to all Arabic strings?
+Are Arabic strings truncated correctly in tables and cards?
+Does the layout flip correctly when switching to Arabic?
+Are numbers and dates formatted correctly for an Arabic-language context?
+
+11. Consistency
+
+Are spacing, color, and typography consistent across all pages?
+Are button variants (primary, danger, ghost) used consistently?
+Are icons from a single coherent set with consistent sizing?
+Do similar actions always look and behave the same way across different pages?
+
+12. Mobile & Responsiveness
+
+Is the panel usable on a tablet (common in the GCC market)?
+Does the sidebar collapse and expand correctly?
+Are touch targets large enough for finger interaction?
+Do tables degrade gracefully on smaller screens?
+
