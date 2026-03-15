@@ -9,6 +9,7 @@ const NAV_CONTENT = [
   { key:'entities',     icon:'🏢', label:'Entities' },
   { key:'applications', icon:'📋', label:'Applications' },
   { key:'featured',     icon:'⭐', label:'Featured' },
+  { key:'launcher',     icon:'🔥', label:'Launcher Activity' },
 ];
 const NAV_SYSTEM = [
   { key:'activity',     icon:'📝', label:'Audit Log' },

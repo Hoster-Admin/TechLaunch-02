@@ -6,7 +6,8 @@ import AdminUsers        from '../pages/Users.jsx';
 import AdminEntities     from '../pages/Entities.jsx';
 import AdminApplications from '../pages/Applications.jsx';
 import AdminFeatured     from '../pages/Featured.jsx';
-import AdminSettings     from '../pages/Settings.jsx';
+import AdminSettings       from '../pages/Settings.jsx';
+import LauncherActivity    from '../pages/LauncherActivity.jsx';
 import AdminSuggestions  from '../pages/Suggestions.jsx';
 import AdminActivityLog  from '../pages/ActivityLog.jsx';
 import PlatformProfile   from '../pages/PlatformProfile.jsx';
@@ -21,6 +22,7 @@ const PAGES = {
   entities:     { title:'Entities',                sub:'Startups, accelerators, investors',     Component: AdminEntities },
   applications: { title:'Applications & Waitlists',sub:'Review applications and waitlists',    Component: AdminApplications },
   featured:     { title:'Featured & Spotlight',    sub:'Control what appears on homepage',      Component: AdminFeatured },
+  launcher:     { title:'Launcher Activity',        sub:'Community posts, comments and moderation', Component: LauncherActivity },
   activity:     { title:'Audit Log',               sub:'Full history of admin actions',         Component: AdminActivityLog },
   settings:     { title:'Settings',                sub:'Configure platform behaviour',          Component: AdminSettings },
   suggestions:      { title:'Suggestions',             sub:'User feedback and feature requests',    Component: AdminSuggestions },

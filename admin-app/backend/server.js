@@ -810,6 +810,126 @@ admin.post('/platform-profile/upvote/:productId', async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
+// ── Launcher Activity ────────────────────────────────────
+admin.get('/launcher-activity', async (req, res) => {
+  try {
+    const { type = 'all', search = '', page = 1 } = req.query;
+    const limit = 30;
+    const offset = (Math.max(1, parseInt(page)) - 1) * limit;
+    const searchLike = `%${search}%`;
+
+    let rows = [];
+
+    if (type === 'all' || type === 'comments') {
+      const { rows: commentRows } = await q(`
+        SELECT
+          'comment'            AS kind,
+          c.id,
+          c.body,
+          c.created_at,
+          c.likes,
+          u.id                 AS user_id,
+          u.name               AS user_name,
+          u.handle             AS user_handle,
+          u.avatar_url,
+          u.avatar_color,
+          u.verified,
+          p.id::text           AS product_id,
+          p.name               AS product_name,
+          NULL::text           AS post_type
+        FROM comments c
+        JOIN users   u ON u.id = c.user_id
+        JOIN products p ON p.id = c.product_id
+        WHERE ($1 = '' OR c.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2 OR p.name ILIKE $2)
+        ORDER BY c.created_at DESC
+      `, [search, searchLike]);
+      rows = [...rows, ...commentRows];
+    }
+
+    if (type === 'all' || type === 'posts') {
+      const { rows: postRows } = await q(`
+        SELECT
+          'post'               AS kind,
+          pp.id,
+          pp.body,
+          pp.created_at,
+          pp.likes,
+          u.id                 AS user_id,
+          u.name               AS user_name,
+          u.handle             AS user_handle,
+          u.avatar_url,
+          u.avatar_color,
+          u.verified,
+          NULL::text           AS product_id,
+          NULL::text           AS product_name,
+          pp.type::text        AS post_type
+        FROM platform_posts pp
+        JOIN users u ON u.id = pp.author_id
+        WHERE ($1 = '' OR pp.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
+        ORDER BY pp.created_at DESC
+      `, [search, searchLike]);
+      rows = [...rows, ...postRows];
+    }
+
+    // sort combined by created_at desc, paginate
+    rows.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    const total = rows.length;
+    const paginated = rows.slice(offset, offset + limit);
+
+    res.json({ success: true, data: { items: paginated, total, page: parseInt(page), limit } });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+admin.delete('/launcher-activity/comment/:id', async (req, res) => {
+  try {
+    const { rows } = await q(
+      `DELETE FROM comments WHERE id=$1 RETURNING id, user_id, body`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Comment not found' });
+    await logAction(req.user.id, 'comment.delete', 'comment', req.params.id, { body: rows[0].body?.slice(0,80) });
+    res.json({ success: true, message: 'Comment deleted' });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+admin.delete('/launcher-activity/post/:id', async (req, res) => {
+  try {
+    const { rows } = await q(
+      `DELETE FROM platform_posts WHERE id=$1 RETURNING id, body`,
+      [req.params.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Post not found' });
+    await logAction(req.user.id, 'platform_post.delete', 'platform_post', req.params.id, { body: rows[0].body?.slice(0,80) });
+    res.json({ success: true, message: 'Post deleted' });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
+admin.post('/launcher-activity/warn/:userId', async (req, res) => {
+  try {
+    const { note } = req.body;
+    if (!note?.trim()) return res.status(400).json({ success: false, message: 'Warning note is required' });
+    if (note.trim().length > 2000) return res.status(400).json({ success: false, message: 'Note too long (max 2000 chars)' });
+
+    const { rows: userRows } = await q('SELECT id, name, handle FROM users WHERE id=$1 LIMIT 1', [req.params.userId]);
+    if (!userRows.length) return res.status(404).json({ success: false, message: 'User not found' });
+
+    // Insert message from platform account into user's inbox
+    await q(
+      `INSERT INTO messages (sender_id, recipient_id, body) VALUES ($1, $2, $3)`,
+      [TLMENA_ID, req.params.userId, note.trim()]
+    );
+
+    // Insert in-app notification
+    await q(
+      `INSERT INTO notifications (user_id, type, title, body, link) VALUES ($1, $2, $3, $4, $5)`,
+      [req.params.userId, 'admin_warning', '⚠️ Message from TechLaunch MENA', note.trim(), '/messages']
+    );
+
+    await logAction(req.user.id, 'user.warn', 'user', req.params.userId, { note: note.trim().slice(0,80) });
+    res.json({ success: true, message: `Warning sent to ${userRows[0].handle}` });
+  } catch(e) { res.status(500).json({ success: false, message: e.message }); }
+});
+
 // Suggestions
 admin.get('/suggestions', async (req, res) => {
   try {
