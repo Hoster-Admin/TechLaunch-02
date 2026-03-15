@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
-import { SCard, Badge, Tbl, ActionBtn, EmptyState } from './shared.jsx';
+import { SCard, Badge, Tbl, ActionBtn, EmptyState, SkeletonRows, Pagination } from './shared.jsx';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -162,8 +162,12 @@ const EMPTY_FORM = {
 
 // ─── Main Component ───────────────────────────────────────────────────────────
 
+const ENT_PAGE_SIZE = 20;
+
 export default function Entities() {
   const [entities, setEntities]     = useState([]);
+  const [total, setTotal]           = useState(0);
+  const [page, setPage]             = useState(1);
   const [tab, setTab]               = useState('');
   const [search, setSearch]         = useState('');
   const [loading, setLoading]       = useState(true);
@@ -177,17 +181,15 @@ export default function Entities() {
 
   const load = useCallback(() => {
     setLoading(true);
-    adminAPI.entities({ ...(tab && {type:tab}), limit:200 })
-      .then(({ data: d }) => setEntities(d.data || []))
+    adminAPI.entities({ ...(tab && {type:tab}), ...(search && {search}), limit:ENT_PAGE_SIZE, page })
+      .then(({ data: d }) => { setEntities(d.data || []); setTotal(d.pagination?.total || 0); })
       .catch(() => setEntities([]))
       .finally(() => setLoading(false));
-  }, [tab]);
+  }, [tab, search, page]);
 
   useEffect(() => { load(); }, [load]);
 
-  const filtered = search
-    ? entities.filter(e => e.name?.toLowerCase().includes(search.toLowerCase()))
-    : entities;
+  const filtered = entities;
 
   // Logo: open file → show cropper
   const handleLogoFile = (e) => {
@@ -407,26 +409,26 @@ export default function Entities() {
       {/* Entities table */}
       <SCard
         title="Entities"
-        sub={`${entities.length} entities — companies, accelerators, investors & venture studios`}
+        sub={`${total.toLocaleString()} entities — companies, accelerators, investors & venture studios`}
         action={<button onClick={openModal} style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>+ Create Entity</button>}
       >
         <div className="filters-bar" style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4'}}>
           {TABS.map(t=>(
-            <button key={t.key} onClick={()=>setTab(t.key)} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:tab===t.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:tab===t.key?'var(--orange)':'#E8E8E8',background:tab===t.key?'var(--orange)':'#fff',color:tab===t.key?'#fff':'#666'}}>
+            <button key={t.key} onClick={()=>{setTab(t.key);setPage(1);}} style={{padding:'5px 14px',borderRadius:20,fontSize:12,fontWeight:tab===t.key?700:500,cursor:'pointer',border:'1.5px solid',borderColor:tab===t.key?'var(--orange)':'#E8E8E8',background:tab===t.key?'var(--orange)':'#fff',color:tab===t.key?'#fff':'#666'}}>
               {t.label}
             </button>
           ))}
           <div style={{marginLeft:'auto',position:'relative',flexShrink:0}}>
-            <input value={search} onChange={e=>setSearch(e.target.value)} placeholder="Search…" style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'5px 10px 5px 28px',fontSize:12,width:160,outline:'none',background:'#FAFAFA'}}/>
+            <input value={search} onChange={e=>{setSearch(e.target.value);setPage(1);}} placeholder="Search…" style={{border:'1px solid #E8E8E8',borderRadius:10,padding:'5px 10px 5px 28px',fontSize:12,width:160,outline:'none',background:'#FAFAFA'}}/>
             <svg style={{position:'absolute',left:8,top:'50%',transform:'translateY(-50%)',color:'#AAAAAA'}} width="13" height="13" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth="2"><circle cx="11" cy="11" r="8"/><path d="M21 21l-4.35-4.35"/></svg>
           </div>
         </div>
 
         <Tbl heads={['Entity','Type','Country','Industry','Verified','Actions']}>
           {loading
-            ? <tr><td colSpan={6} style={{padding:40,textAlign:'center',color:'#AAAAAA',fontSize:13}}>Loading…</td></tr>
+            ? <SkeletonRows cols={6} rows={5}/>
             : filtered.length===0
-              ? <tr><td colSpan={6}><EmptyState icon="🏢" title="No entities found"/></td></tr>
+              ? <tr><td colSpan={6}><EmptyState icon="🏢" title="No entities found" sub="Try creating your first entity with the button above."/></td></tr>
               : filtered.map(e=>(
                 <tr key={e.id} style={{borderBottom:'1px solid #F4F4F4'}}
                   onMouseEnter={el=>el.currentTarget.style.background='#FAFAFA'}
@@ -458,6 +460,7 @@ export default function Entities() {
               ))
           }
         </Tbl>
+        <Pagination page={page} total={total} limit={ENT_PAGE_SIZE} onChange={setPage}/>
       </SCard>
     </>
   );

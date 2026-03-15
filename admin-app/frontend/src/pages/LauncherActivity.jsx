@@ -201,7 +201,9 @@ export default function LauncherActivity() {
                     <span style={{fontSize:11,color:'#aaa'}}>@{item.user_handle}</span>
                     <span style={{flex:1}}/>
                     <span style={{fontSize:11,background:badge.bg,color:badge.color,borderRadius:6,padding:'2px 8px',fontWeight:700}}>{badge.icon} {badge.label}{item.post_type ? ` · ${POST_TYPE_LABEL[item.post_type]||item.post_type}` : ''}</span>
-                    <span style={{fontSize:11,color:'#bbb'}}>{timeAgo(item.created_at)}</span>
+                    <span style={{fontSize:11,color:'#bbb'}} title={new Date(item.created_at).toLocaleString('en-GB',{day:'numeric',month:'short',year:'numeric',hour:'2-digit',minute:'2-digit'})}>
+                      {timeAgo(item.created_at)}
+                    </span>
                   </div>
 
                   {/* Row 2: content */}

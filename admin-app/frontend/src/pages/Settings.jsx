@@ -4,6 +4,14 @@ import toast from 'react-hot-toast';
 import { SCard, Badge, Tbl, EmptyState } from './shared.jsx';
 import { useAuth } from '../App.jsx';
 
+function maskEmail(email) {
+  if (!email) return '—';
+  const [local, domain] = email.split('@');
+  if (!domain) return email;
+  const visible = local.length <= 2 ? local[0] : local.slice(0, 2);
+  return `${visible}${'*'.repeat(Math.min(4, local.length - visible.length))}@${domain}`;
+}
+
 function Modal({ title, onClose, children }) {
   return (
     <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={onClose}>
@@ -487,7 +495,7 @@ export default function Settings() {
                         </div>
                       </div>
                     </td>
-                    <td style={{padding:'10px 16px',fontSize:12,color:'#666'}}>{m.email}</td>
+                    <td style={{padding:'10px 16px',fontSize:12,color:'#666',fontFamily:'DM Mono,monospace'}}>{maskEmail(m.email)}</td>
                     <td style={{padding:'10px 16px'}}>
                       <Badge variant={{admin:'orange',moderator:'blue',editor:'purple'}[m.role]||'gray'}>{m.role}</Badge>
                     </td>

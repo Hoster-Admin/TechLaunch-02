@@ -1,0 +1,146 @@
+Tech Launch MENA — Admin Panel UI/UX Fix Verification
+You are visually verifying that all UI/UX fixes have been correctly applied to the Tech Launch admin panel. Go through every page and confirm each fix is working as intended.
+
+HOW TO TEST
+
+Open the admin panel in a browser
+Log in as Admin, then repeat key tests as Moderator and Editor
+Go through every page listed below
+Screenshot any issue you find
+Report ✅ pass or ❌ fail for each item
+
+
+DASHBOARD
+
+ Stat cards are clickable and navigate to the correct page
+ Hovering a stat card shows a visual change (border, shadow, or lift)
+ 4th stat card shows correct waitlist number (not pending products count)
+ Pending Review Queue shows a button CTA, not plain text
+ Pending queue card is compact when 0 waiting — not a large empty box
+ Upvote Activity is compact when no data — not a large empty box
+ Recent Activity timestamps show full date + time (not time only)
+ Recent Activity action labels are readable ("New Signup" not "user.signup")
+ If dashboard API fails — error message and retry button appear (not silent zeros)
+
+
+NAVIGATION & SIDEBAR
+
+ Logged in as Moderator: Settings and Audit Log are hidden
+ Logged in as Editor: Users, Settings, Audit Log are hidden
+ Navigating directly to a restricted URL redirects to Dashboard with a toast
+ Active page in sidebar is clearly highlighted
+ "Account" section is renamed to "Platform"
+ "Suggestions" is under CONTENT, not SYSTEM
+ Role badge next to user name in sidebar footer is visible and clear
+
+
+PRODUCTS PAGE
+
+ "Review Queue" is styled as a filter pill, not a filled primary button
+ Clicking a product row opens a side drawer
+ Drawer shows: name, description, URL, founder info, category
+ Approve button works from inside the drawer
+ Reject button inside drawer opens a modal with a required reason textarea
+ Reject button is disabled until reason is typed
+ Drawer closes and list refreshes after action
+ Bulk actions work correctly (select multiple, action fires, list refreshes)
+ Table shows pagination controls (not all 200 records at once)
+ Pagination shows "Showing 1–20 of X"
+ Name and Status columns are sortable with a visible arrow
+
+
+USERS PAGE
+
+ Clicking a user row opens a detail drawer
+ Drawer shows: submissions, vote history, warnings, ban history
+ Verify, Warn, Suspend buttons are all visible in the table
+ Button order is: Verify → Warn → Suspend
+ Warn button is styled neutral/outlined (not yellow or red)
+ Suspend opens a confirmation modal with the user's name
+ Confirmation modal has a red confirm button
+ Delete option is available inside the user detail drawer
+ Delete requires a red confirmation modal before firing
+ Table has pagination controls
+ Date Joined column is sortable
+
+
+ENTITIES PAGE
+
+ Table has pagination controls
+ Columns are sortable
+ Empty state has a clear CTA
+
+
+LAUNCHER ACTIVITY PAGE
+
+ Table has pagination controls
+ Delete action opens a confirmation modal before firing
+ Timestamps show full date + time
+
+
+AUDIT LOG PAGE
+
+ Timestamps show full date + time
+ All entries are using the logAction() format (no raw inconsistent entries)
+
+
+SETTINGS PAGE
+
+ Team member email is partially masked (om***@gmail.com)
+ Tag management works correctly
+
+
+FEATURED PAGE
+
+ Homepage Banner save and hide work correctly
+ Editor's Pick update works correctly
+
+
+FORMS & MODALS (across all pages)
+
+ All required fields have a red asterisk
+ "Fields marked * are required" helper text is visible
+ All modals close on ESC key press
+ All modals close on backdrop click
+ Destructive action modals have a red confirm button
+ Destructive modals show the name of the item being acted on
+
+
+LOADING & FEEDBACK STATES
+
+ All pages show skeleton loaders while data is fetching (not plain "Loading…" text)
+ Toast messages appear after every action (success and failure)
+ Error toasts are specific enough to understand what went wrong
+ Actions give immediate visual feedback before server responds
+
+
+FONTS & VISUAL CONSISTENCY
+
+ DM Sans is the base font across all pages (not Inter)
+ DM Mono is used for code or mono elements
+ Button styles are consistent across all pages (primary, ghost, danger)
+ Spacing is consistent — no pages feel cramped or over-padded
+ Icons are from a single consistent set
+
+
+MOBILE & TABLET
+
+ Sidebar collapses correctly on tablet
+ Off-canvas drawer works on mobile
+ All touch targets are large enough to tap accurately
+ Tables scroll horizontally on small screens
+ A fade gradient hints at horizontal scroll when content overflows
+
+
+OUTPUT FORMAT
+Go page by page. For each item report:
+
+✅ Pass — working correctly
+❌ Fail — describe exactly what you see instead
+⚠️ Partial — working but not quite right, describe the gap
+
+At the end give:
+
+Total score: X / Y checks passed
+List of all ❌ failures ranked by severity
+Top 3 things to fix immediately

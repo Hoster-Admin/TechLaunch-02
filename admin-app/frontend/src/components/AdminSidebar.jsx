@@ -103,7 +103,7 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
 
       <nav>
         {navPlatform.length > 0 && <>
-          <div className="nav-section">Platform</div>
+          <div className="nav-section">Overview</div>
           {navPlatform.map(item => <NavItem key={item.key} item={item}/>)}
         </>}
 
@@ -119,7 +119,7 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
 
         {navPlatformSection.length > 0 && <>
           <div className="nav-section">Platform</div>
-          {navPlatformSection.map(item => <NavItem key={item.key} item={item}/>)}
+          <NavItem item={{key:'platformprofile',icon:'🌐',label:'Public Profile'}}/>
         </>}
       </nav>
 

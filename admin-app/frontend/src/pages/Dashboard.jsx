@@ -2,6 +2,29 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../utils/api.js';
 import { fmtDate } from './shared.jsx';
 
+const ACTION_LABELS = {
+  'product.approve':   'Approved a product',
+  'product.reject':    'Rejected a product',
+  'product.feature':   'Featured a product',
+  'product.unfeature': 'Unfeatured a product',
+  'user.verified':     'Verified a user',
+  'user.suspended':    'Suspended a user',
+  'user.reinstated':   'Reinstated a user',
+  'user.warned':       'Warned a user',
+  'user.deleted':      'Deleted a user',
+  'user.created':      'Added a user',
+  'user.signup':       'New member signup',
+  'entity.created':    'Created an entity',
+  'entity.updated':    'Updated an entity',
+  'entity.deleted':    'Deleted an entity',
+  'settings.updated':  'Updated settings',
+  'bulk.approve':      'Bulk approved products',
+  'bulk.reject':       'Bulk rejected products',
+};
+function humanizeAction(action) {
+  return ACTION_LABELS[action] || action.split('.').map(w => w.charAt(0).toUpperCase()+w.slice(1)).join(' ');
+}
+
 const ICON_COLORS = { orange:'#E15033', green:'#16a34a', blue:'#2563eb', purple:'#7c3aed' };
 
 export default function Dashboard({ onNavigate }) {
@@ -135,7 +158,7 @@ export default function Dashboard({ onNavigate }) {
                   <div style={{width:8,height:8,borderRadius:'50%',background:'var(--orange)',flexShrink:0,marginTop:5}}/>
                   <div style={{flex:1,minWidth:0}}>
                     <div style={{fontSize:12,color:'var(--ink)',fontWeight:500,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
-                      <strong>{a.actor_name}</strong> — <span style={{color:'var(--gray-400)'}}>{a.action.replace(/\./g,' ')}</span>
+                      <strong>{a.actor_name}</strong> — <span style={{color:'var(--gray-400)'}}>{humanizeAction(a.action)}</span>
                     </div>
                     <div style={{fontSize:10,color:'var(--gray-400)',marginTop:2}}>{fmtDate(a.created_at)}</div>
                   </div>

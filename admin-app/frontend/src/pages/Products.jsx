@@ -232,14 +232,25 @@ export default function Products() {
   const [acting,   setActing]   = useState({});
   const [selected, setSelected] = useState(new Set());
   const [bulking,  setBulking]  = useState(false);
+  const [sortBy,   setSortBy]   = useState('created_at');
+  const [sortDir,  setSortDir]  = useState('desc');
   const [rejectTarget, setRejectTarget] = useState(null);
   const [rejectLoading, setRejectLoading] = useState(false);
   const [bulkRejectConfirm, setBulkRejectConfirm] = useState(false);
   const [drawerProduct, setDrawerProduct] = useState(null);
 
+  const handleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortDir('desc'); }
+    setPage(1);
+  };
+  const SortArrow = ({ col }) => sortBy === col
+    ? <span style={{marginLeft:4,fontSize:9,color:'var(--orange)'}}>{sortDir==='asc'?'▲':'▼'}</span>
+    : <span style={{marginLeft:4,fontSize:9,color:'#ddd'}}>▼</span>;
+
   const load = useCallback(() => {
     setLoading(true);
-    const params = { limit: PAGE_SIZE, page };
+    const params = { limit: PAGE_SIZE, page, sortBy, sortDir };
     if (filter === 'queue' || filter === 'pending') params.status = 'pending';
     else if (filter === 'featured') params.featured = true;
     else if (filter !== 'all') params.status = filter;
@@ -251,7 +262,7 @@ export default function Products() {
       })
       .catch(() => setProducts([]))
       .finally(() => setLoading(false));
-  }, [filter, search, page]);
+  }, [filter, search, page, sortBy, sortDir]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -390,7 +401,11 @@ export default function Products() {
             checked={products.length>0 && selected.size===products.length}
             onChange={toggleAll}
             style={{cursor:'pointer',accentColor:'var(--orange)',width:14,height:14}}/>,
-          'Product','Industry','Country','Submitter','Upvotes','Status','Featured','Actions'
+          <span key="n" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('name')}>Product<SortArrow col="name"/></span>,
+          'Industry','Country','Submitter',
+          <span key="u" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('upvotes_count')}>Upvotes<SortArrow col="upvotes_count"/></span>,
+          <span key="s" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('status')}>Status<SortArrow col="status"/></span>,
+          'Featured','Actions'
         ]}>
           {loading
             ? <SkeletonRows cols={9} rows={6}/>

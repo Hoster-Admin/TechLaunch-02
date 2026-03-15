@@ -244,13 +244,24 @@ export default function Users() {
   const [acting,   setActing]   = useState({});
   const [selected, setSelected] = useState(new Set());
   const [bulking,  setBulking]  = useState(false);
+  const [sortBy,   setSortBy]   = useState('created_at');
+  const [sortDir,  setSortDir]  = useState('desc');
   const [showAdd,  setShowAdd]  = useState(false);
   const [suspendTarget, setSuspendTarget] = useState(null);
   const [drawerUser, setDrawerUser] = useState(null);
 
+  const handleSort = (col) => {
+    if (sortBy === col) setSortDir(d => d==='asc'?'desc':'asc');
+    else { setSortBy(col); setSortDir('desc'); }
+    setPage(1);
+  };
+  const SortArrow = ({ col }) => sortBy === col
+    ? <span style={{marginLeft:4,fontSize:9,color:'var(--orange)'}}>{sortDir==='asc'?'▲':'▼'}</span>
+    : <span style={{marginLeft:4,fontSize:9,color:'#ddd'}}>▼</span>;
+
   const load = useCallback(() => {
     setLoading(true);
-    const params = { limit: PAGE_SIZE, page };
+    const params = { limit: PAGE_SIZE, page, sortBy, sortDir };
     if (filter==='verified')  params.verified  = true;
     if (filter==='suspended') params.status    = 'suspended';
     if (filter==='startup')   params.persona   = 'Founder';
@@ -263,7 +274,7 @@ export default function Users() {
       })
       .catch(() => {})
       .finally(() => setLoading(false));
-  }, [filter, search, page]);
+  }, [filter, search, page, sortBy, sortDir]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -352,7 +363,12 @@ export default function Users() {
             checked={users.length>0 && selected.size===users.length}
             onChange={toggleAll}
             style={{cursor:'pointer',accentColor:'var(--orange)',width:14,height:14}}/>,
-          'User','Persona','Country','Joined','Products','Status','Actions'
+          <span key="n" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('name')}>User<SortArrow col="name"/></span>,
+          'Persona','Country',
+          <span key="d" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('created_at')}>Date Joined<SortArrow col="created_at"/></span>,
+          <span key="p" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('products_count')}>Products<SortArrow col="products_count"/></span>,
+          <span key="s" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('status')}>Status<SortArrow col="status"/></span>,
+          'Actions'
         ]}>
           {loading
             ? <SkeletonRows cols={8} rows={6}/>

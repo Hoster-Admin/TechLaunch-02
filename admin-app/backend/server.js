@@ -354,7 +354,10 @@ admin.get('/dashboard', async (req, res) => {
 // Products
 admin.get('/products', async (req, res) => {
   try {
-    const { status, search, page=1, limit=50 } = req.query;
+    const { status, search, page=1, limit=50, sortBy='created_at', sortDir='desc' } = req.query;
+    const SAFE_COLS_P = { name:1, status:1, upvotes_count:1, created_at:1, country:1 };
+    const col_p = SAFE_COLS_P[sortBy] ? `p.${sortBy}` : 'p.created_at';
+    const dir_p = sortDir === 'asc' ? 'ASC' : 'DESC';
     const params = [], conds = [];
     if (status && status !== 'all') {
       if (status === 'featured') conds.push('p.featured=true');
@@ -364,7 +367,7 @@ admin.get('/products', async (req, res) => {
     const where = conds.length ? 'WHERE '+conds.join(' AND ') : '';
     const offset = (parseInt(page)-1)*parseInt(limit);
     params.push(parseInt(limit), offset);
-    const { rows } = await q(`SELECT p.*,u.name AS submitter_name,u.handle AS submitter_handle,COUNT(*) OVER() AS total_count FROM products p JOIN users u ON u.id=p.submitted_by ${where} ORDER BY p.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
+    const { rows } = await q(`SELECT p.*,u.name AS submitter_name,u.handle AS submitter_handle,COUNT(*) OVER() AS total_count FROM products p JOIN users u ON u.id=p.submitted_by ${where} ORDER BY ${col_p} ${dir_p} LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data: rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
@@ -415,7 +418,10 @@ admin.post('/products/:id/featured', async (req, res) => {
 // Users
 admin.get('/users', async (req, res) => {
   try {
-    const { status, persona, verified, search, page=1, limit=50 } = req.query;
+    const { status, persona, verified, search, page=1, limit=50, sortBy='created_at', sortDir='desc' } = req.query;
+    const SAFE_COLS_U = { name:1, status:1, created_at:1, persona:1, products_count:1, verified:1 };
+    const col_u = SAFE_COLS_U[sortBy] ? `u.${sortBy}` : 'u.created_at';
+    const dir_u = sortDir === 'asc' ? 'ASC' : 'DESC';
     const params = [], conds = [`u.role='user'`];
     if (status)  { params.push(status);  conds.push(`u.status=$${params.length}`); }
     if (persona) { params.push(persona); conds.push(`u.persona=$${params.length}`); }
@@ -423,7 +429,7 @@ admin.get('/users', async (req, res) => {
     if (search)  { params.push(`%${search}%`); conds.push(`(u.name ILIKE $${params.length} OR u.handle ILIKE $${params.length})`); }
     const offset = (parseInt(page)-1)*parseInt(limit);
     params.push(parseInt(limit), offset);
-    const { rows } = await q(`SELECT u.id,u.name,u.handle,u.email,u.persona,u.country,u.verified,u.status,u.role,u.avatar_color,u.created_at,u.products_count,u.votes_given,u.followers_count,COUNT(*) OVER() AS total_count FROM users u WHERE ${conds.join(' AND ')} ORDER BY u.created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
+    const { rows } = await q(`SELECT u.id,u.name,u.handle,u.email,u.persona,u.country,u.verified,u.status,u.role,u.avatar_color,u.created_at,u.products_count,u.votes_given,u.followers_count,COUNT(*) OVER() AS total_count FROM users u WHERE ${conds.join(' AND ')} ORDER BY ${col_u} ${dir_u} LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data:rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });

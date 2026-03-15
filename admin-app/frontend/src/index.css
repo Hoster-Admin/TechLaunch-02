@@ -554,6 +554,21 @@ tr:hover td { background: var(--gray-50); }
 input:focus, textarea:focus, button:focus { outline: none; }
 button:focus-visible { box-shadow: 0 0 0 3px rgba(225,80,51,.35); }
 
+/* ── Horizontal scroll fade hint ─────────────────────── */
+.table-scroll-wrap {
+  position: relative;
+  overflow-x: auto;
+  -webkit-overflow-scrolling: touch;
+}
+.table-scroll-wrap::after {
+  content: '';
+  position: absolute;
+  top: 0; right: 0; bottom: 0;
+  width: 40px;
+  background: linear-gradient(to right, transparent, rgba(255,255,255,.9));
+  pointer-events: none;
+}
+
 /* ── Animations ───────────────────────────────────────── */
 @keyframes pulse {
   0%, 100% { opacity: 1; }
