@@ -1,0 +1,104 @@
+Tech Launch MENA — Public Site UI/UX Audit
+You are a senior UX designer auditing the public site of Tech Launch (tlmena.com) — a Product Hunt + LinkedIn + AngelList hybrid for the MENA/Arab world.
+
+CONTEXT
+
+Market: MENA/GCC, bilingual Arabic + English
+Users: Founders, Investors, Startups, Accelerators
+Stack: React, DM Sans + DM Mono fonts, Noto Kufi Arabic for Arabic
+Nav: Home, Join Launcher, List ▼, Search, Sign In, Join Now
+Key pages: Homepage, Directory, Launcher (community), Companies, Suggestions
+
+
+AUDIT THESE PAGES:
+1. Homepage
+
+Is it immediately clear what this platform is for?
+Is the value proposition visible without scrolling?
+Is the CTA ("Join Now" vs "Join Launcher") clear — do they mean different things?
+Is the product feed compelling on first visit with zero products?
+Is the Featured / Spotlight section visible and impactful?
+
+2. Navigation
+
+Is "Join Launcher" vs "Join Now" confusing to a new visitor?
+Is the List dropdown organized logically?
+Is search prominent enough?
+On mobile — does the nav collapse correctly?
+
+3. Directory Page
+
+Does showing 20 industries all at 0 products hurt first impressions?
+Is browse by Industry vs Country intuitive?
+What should the empty state look like to still feel valuable?
+
+4. Launcher / Community Page
+
+Is the purpose of this page clear on arrival?
+Are Articles / Posts / People tabs the right organization?
+Is there a clear CTA to contribute — or does it feel read-only?
+Do the article cards give enough info to decide whether to click?
+
+5. Companies / List Pages
+
+Does the empty state with "Nothing here yet" damage trust?
+Is "+ List Your Company" the right primary CTA on an empty page?
+Are the Country and Industry filters useful when there's no content?
+
+6. Suggestions Page
+
+Is "Sign in to send a suggestion" the right gate — or does it feel like a wall?
+Should anonymous suggestions be allowed?
+Is the page copy compelling enough to make users want to contribute?
+
+7. Footer
+
+Are there links that will 404 (Weekly Digest, Events, Write for Us, About, Contact)?
+Does the footer give a good impression of platform completeness?
+Should unbuilt pages be hidden or show a "Coming Soon" state?
+
+8. Empty States Across All Pages
+
+Do empty states feel like a broken product or an invite to be first?
+Is there a consistent empty state design language?
+Do empty states have a clear CTA pointing the user somewhere useful?
+
+9. Onboarding & Conversion
+
+Is it obvious what a new user should do first?
+Is the signup flow frictionless?
+After signup — does the user land somewhere useful or feel lost?
+Is there a clear path for a founder vs an investor vs an accelerator?
+
+10. Mobile & Responsiveness
+
+Does the homepage feel good on mobile?
+Are cards and buttons touch-friendly?
+Does the directory grid collapse correctly on small screens?
+
+11. Trust & Credibility
+
+Does the platform look credible enough for a MENA founder to submit their product?
+Are there social proof elements — user count, product count, community size?
+Does the "Made with ❤️ in MENA" footer feel authentic or generic?
+
+12. RTL & Arabic Readiness
+
+Is there any RTL support currently?
+Are Arabic strings handled correctly in cards and truncation?
+Is Noto Kufi Arabic loaded and applied?
+
+
+OUTPUT FORMAT
+For each page:
+
+✅ What works well
+🔴 Critical issues (broken, confusing, or damaging to trust)
+🟡 Improvements (friction or missing polish)
+Specific fix recommendation for each issue
+
+End with:
+
+Overall UX score out of 100
+Top 5 highest impact fixes before launch
+Verdict: READY FOR LAUNCH or NEEDS WORK BEFORE LAUNCH
