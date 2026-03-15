@@ -166,7 +166,7 @@ export default function HomePage() {
           <div>
             <div className="list-header">
               <div className="list-title">{feedTitles[feedType]}</div>
-              <div className="list-count">{loading ? '—' : `${filtered.length} products`}</div>
+              <div className="list-count">{loading ? '—' : filtered.length > 0 ? `${filtered.length} products` : ''}</div>
             </div>
             {loading ? (
               <div style={{ display: 'flex', justifyContent: 'center', padding: 60 }}><Spinner size="lg"/></div>
