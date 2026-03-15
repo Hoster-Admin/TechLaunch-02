@@ -1,0 +1,293 @@
+Act as a senior software architect, senior backend engineer, frontend architect, security engineer, and QA lead.
+
+Your task is to perform a complete production-level audit of my system before public launch.
+
+Assume this system will be used by thousands of users in production and must be stable, secure, scalable, and easy for developers to maintain.
+
+Analyze the entire repository and produce a detailed report.
+
+--------------------------------------------------
+
+1. System Architecture Review
+Analyze the overall system architecture.
+
+Check if the architecture follows best practices for:
+- scalability
+- modular design
+- maintainability
+- separation of concerns
+
+Verify that:
+- business logic is not mixed with UI logic
+- backend layers are properly separated (controllers, services, models)
+- components are reusable
+- the structure is understandable by human developers
+
+Identify:
+- architectural anti-patterns
+- tightly coupled components
+- unnecessary complexity
+- areas that should be modularized
+
+Provide suggestions to improve architecture.
+
+--------------------------------------------------
+
+2. Code Quality & Clean Code
+
+Analyze all code for:
+
+- duplicated code
+- overlapping logic
+- unused functions
+- inconsistent naming conventions
+- poor readability
+- bad folder structure
+
+Check if the code follows clean code principles:
+
+- single responsibility
+- DRY (don't repeat yourself)
+- clear function naming
+- consistent formatting
+- modular functions
+
+Recommend refactoring where necessary.
+
+--------------------------------------------------
+
+3. Frontend Architecture Review
+
+Analyze the frontend code.
+
+Check for:
+
+- reusable components
+- duplicated UI logic
+- proper state management
+- clean component hierarchy
+- proper separation between UI and business logic
+
+Verify:
+
+- API calls are handled correctly
+- components are not too large
+- performance optimizations exist
+
+Check for:
+
+- unnecessary re-renders
+- missing lazy loading
+- inefficient data fetching
+- bad state design
+
+Provide improvements.
+
+--------------------------------------------------
+
+4. Backend Architecture Review
+
+Review backend structure and logic.
+
+Check:
+
+- API design
+- routing logic
+- controller/service structure
+- database access patterns
+
+Detect:
+
+- inefficient queries
+- duplicated business logic
+- poor error handling
+- missing validation
+- bad async handling
+- race conditions
+
+Ensure APIs are:
+
+- predictable
+- consistent
+- RESTful or properly structured
+
+--------------------------------------------------
+
+5. Database Design Review
+
+Analyze the database schema.
+
+Check for:
+
+- normalization issues
+- missing indexes
+- inefficient relationships
+- poor schema design
+- unnecessary data duplication
+
+Identify potential performance problems.
+
+Suggest improvements for scalability.
+
+--------------------------------------------------
+
+6. Frontend ↔ Backend Integration
+
+Verify that frontend and backend communicate correctly.
+
+Check:
+
+- API contract consistency
+- request/response formats
+- error handling between client and server
+- authentication flow
+- token handling
+
+Detect logic mismatches between frontend expectations and backend responses.
+
+--------------------------------------------------
+
+7. Security Audit
+
+Perform a security review and detect vulnerabilities such as:
+
+- SQL injection
+- XSS vulnerabilities
+- CSRF issues
+- authentication flaws
+- authorization weaknesses
+- insecure API endpoints
+- exposed secrets or API keys
+
+Verify:
+
+- proper input validation
+- secure session/token handling
+- password hashing
+- environment variable protection
+
+Highlight critical risks.
+
+--------------------------------------------------
+
+8. Performance Analysis
+
+Analyze system performance.
+
+Detect:
+
+- slow API endpoints
+- inefficient loops
+- repeated API calls
+- unnecessary database queries
+- frontend performance issues
+
+Suggest:
+
+- caching strategies
+- query optimization
+- API improvements
+- performance best practices.
+
+--------------------------------------------------
+
+9. Edge Case & Bug Detection
+
+Simulate possible user flows.
+
+Identify:
+
+- edge cases
+- hidden bugs
+- crash scenarios
+- broken flows
+- missing error handling
+
+Check important flows such as:
+
+- authentication
+- signup/login
+- data creation
+- data editing
+- user actions
+- API failures
+
+--------------------------------------------------
+
+10. Load & Scalability Review
+
+Assume the system scales to thousands of users.
+
+Check if architecture supports:
+
+- horizontal scaling
+- stateless APIs
+- efficient database usage
+- caching
+- queue systems if necessary
+
+Identify bottlenecks.
+
+--------------------------------------------------
+
+11. Logging, Monitoring & Production Readiness
+
+Verify that the system is production ready.
+
+Check for:
+
+- structured logging
+- error tracking
+- monitoring capability
+- environment variable usage
+- configuration separation (dev/staging/production)
+
+Verify deployment safety.
+
+--------------------------------------------------
+
+12. Automated Testing Review
+
+Check if the project includes:
+
+- unit tests
+- integration tests
+- API tests
+- end-to-end tests
+
+Identify missing testing coverage.
+
+Suggest a minimal testing structure if missing.
+
+--------------------------------------------------
+
+13. Code Maintainability Score
+
+Evaluate how easy it is for another developer to understand and maintain the code.
+
+Score from 0–100.
+
+--------------------------------------------------
+
+14. Final Report
+
+Provide a structured report including:
+
+1. Critical issues (must fix before launch)
+2. Security vulnerabilities
+3. Architecture improvements
+4. Performance optimizations
+5. Code refactoring suggestions
+6. Scalability risks
+7. Maintainability problems
+8. Testing gaps
+
+End with a final:
+
+PRODUCTION READINESS SCORE (0–100)
+
+and a clear recommendation:
+
+- READY FOR LAUNCH
+or
+- NOT READY FOR PRODUCTION
