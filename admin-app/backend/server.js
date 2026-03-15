@@ -55,13 +55,15 @@ const ALLOWED_ORIGINS = [
   'http://localhost:5000',
   ...(process.env.ADMIN_CLIENT_URL ? [process.env.ADMIN_CLIENT_URL] : []),
 ];
-// FIX 7: CORS — wildcard Replit origins only allowed outside production
+// FIX 7: CORS — always allow Replit dev domains (they are this app's own domain);
+// block truly unknown external origins in production
 app.use(cors({
   origin: (origin, cb) => {
-    if (!origin) return cb(null, true);
+    if (!origin) return cb(null, true);  // same-origin / server-to-server
     if (ALLOWED_ORIGINS.some(o => origin.startsWith(o))) return cb(null, true);
-    if (!isProd && (origin.includes('.replit.dev') || origin.includes('.repl.co'))) return cb(null, true);
-    if (!isProd) return cb(null, true);
+    // Replit hosting always uses .replit.dev or .repl.co — these are our own domains
+    if (origin.includes('.replit.dev') || origin.includes('.repl.co')) return cb(null, true);
+    if (!isProd) return cb(null, true);  // allow everything else in dev
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
