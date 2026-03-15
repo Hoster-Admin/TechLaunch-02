@@ -158,10 +158,17 @@ function ArticlesList({ onSignIn }) {
 }
 
 /* ─── Article Detail Page ─── */
-function ArticleDetail() {
+function ArticleDetail({ onSignIn }) {
   const { slug } = useParams();
   const navigate = useNavigate();
+  const { user } = useAuth();
+  const [submitOpen, setSubmitOpen] = useState(false);
   const article  = ARTICLES.find(a => a.slug === slug);
+
+  const handleSubmit = () => {
+    if (!user) { onSignIn?.(); return; }
+    setSubmitOpen(true);
+  };
 
   useEffect(() => { window.scrollTo(0, 0); }, [slug]);
 

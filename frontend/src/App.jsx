@@ -153,7 +153,7 @@ function AppRoutes() {
         <Route path="/launcher"           element={<LauncherPage/>}/>
         <Route path="/launcher/posts/:id" element={<PostDetailPage/>}/>
         <Route path="/articles"          element={<WithAuthCallbacks Component={ArticlesList}/>}/>
-        <Route path="/articles/:slug"    element={<ArticleDetail/>}/>
+        <Route path="/articles/:slug"    element={<WithAuthCallbacks Component={ArticleDetail}/>}/>
         <Route path="/about"             element={<AboutPage/>}/>
         <Route path="/privacy"           element={<PrivacyPage/>}/>
         <Route path="/terms"             element={<TermsPage/>}/>
