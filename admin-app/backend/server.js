@@ -810,47 +810,6 @@ admin.post('/platform-profile/upvote/:productId', async (req, res) => {
   } catch (e) { res.status(500).json({ success: false, message: e.message }); }
 });
 
-// Reports
-admin.get('/reports', async (req, res) => {
-  try {
-    const ISO_DATE = /^\d{4}-\d{2}-\d{2}$/;
-    if ((req.query.from && !ISO_DATE.test(req.query.from)) ||
-        (req.query.to   && !ISO_DATE.test(req.query.to))) {
-      return res.status(400).json({ success: false, message: 'Invalid date format. Use YYYY-MM-DD.' });
-    }
-    const { from, to } = req.query;
-    const fromVal  = from ? from : null;
-    const toVal    = to   ? `${to} 23:59:59` : null;
-    const allParams = [...(fromVal ? [fromVal] : []), ...(toVal ? [toVal] : [])];
-    const toIdx    = fromVal ? 2 : 1;
-
-    const df  = fromVal ? `AND created_at >= $1`          : '';
-    const dt  = toVal   ? `AND created_at <= $${toIdx}`   : '';
-    const dpf = fromVal ? `AND p.created_at >= $1`        : '';
-    const dpt = toVal   ? `AND p.created_at <= $${toIdx}` : '';
-
-    const stStart = fromVal
-      ? `created_at > $1`
-      : `created_at > NOW()-INTERVAL '8 weeks'`;
-
-    const [kpis, countryBreakdown, industryBreakdown, personaBreakdown, signupTrend] = await Promise.all([
-      q(`SELECT
-          (SELECT COUNT(*) FROM products WHERE status='live' ${dpf} ${dpt}) AS live_products,
-          (SELECT COUNT(*) FROM users WHERE status='active' ${df} ${dt}) AS active_users,
-          (SELECT COALESCE(SUM(upvotes_count),0) FROM products ${fromVal||toVal?`WHERE 1=1 ${dpf} ${dpt}`:''}) AS total_upvotes,
-          (SELECT COALESCE(SUM(waitlist_count),0) FROM products ${fromVal||toVal?`WHERE 1=1 ${dpf} ${dpt}`:''}) AS waitlist_total,
-          (SELECT COUNT(*) FROM accelerator_applications ${fromVal||toVal?`WHERE 1=1 ${df} ${dt}`:''}) AS total_apps,
-          (SELECT ROUND(AVG(upvotes_count)) FROM products WHERE status='live' ${dpf} ${dpt}) AS avg_upvotes,
-          (SELECT name FROM products ORDER BY upvotes_count DESC LIMIT 1) AS top_product`, allParams),
-      q(`SELECT country,COUNT(*) AS count FROM users WHERE country IS NOT NULL ${df} ${dt} GROUP BY country ORDER BY count DESC LIMIT 8`, allParams),
-      q(`SELECT industry,COUNT(*) AS count FROM products WHERE 1=1 ${dpf} ${dpt} GROUP BY industry ORDER BY count DESC LIMIT 8`, allParams),
-      q(`SELECT persona,COUNT(*) AS count FROM users WHERE status='active' ${df} ${dt} GROUP BY persona ORDER BY count DESC`, allParams),
-      q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'IYYY-IW') AS week,COUNT(*) AS signups FROM users WHERE ${stStart} ${dt} GROUP BY week ORDER BY week`, allParams),
-    ]);
-    res.json({ success:true, data:{ kpis:kpis.rows[0], country_breakdown:countryBreakdown.rows, industry_breakdown:industryBreakdown.rows, persona_breakdown:personaBreakdown.rows, signup_trend:signupTrend.rows } });
-  } catch(e) { res.status(500).json({ success:false, message:e.message }); }
-});
-
 // Suggestions
 admin.get('/suggestions', async (req, res) => {
   try {

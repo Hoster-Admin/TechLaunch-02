@@ -11,7 +11,6 @@ const NAV_CONTENT = [
   { key:'featured',     icon:'⭐', label:'Featured' },
 ];
 const NAV_SYSTEM = [
-  { key:'reports',      icon:'📈', label:'Reports' },
   { key:'activity',     icon:'📝', label:'Audit Log' },
   { key:'settings',     icon:'⚙️',  label:'Settings' },
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
