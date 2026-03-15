@@ -72,6 +72,8 @@ export const adminAPI = {
   reports:          (p={})   => req('GET',  '/admin/reports?' + new URLSearchParams(p)),
   settings:         ()       => req('GET',  '/admin/settings'),
   saveSettings:     (body)   => req('PUT',  '/admin/settings', body),
+  publicProfile:         ()       => req('GET',  '/admin/public-profile'),
+  savePublicProfile:     (body)   => req('PUT',  '/admin/public-profile', body),
   platformProfile:       ()       => req('GET',  '/admin/platform-profile'),
   savePlatformProfile:   (body)   => req('PUT',  '/admin/platform-profile', body),
   platformActivity:      (type='all') => req('GET', `/admin/platform-profile/activity?type=${type}`),
