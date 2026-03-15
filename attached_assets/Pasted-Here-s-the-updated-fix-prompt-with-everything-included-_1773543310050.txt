@@ -1,0 +1,261 @@
+Here's the updated fix prompt with everything included:
+
+TLMENA Admin Panel — Full UI/UX Fix (Updated with Screenshot Findings)
+You are fixing the frontend of the TLMENA admin panel. Below is a complete list of UX issues found in a code audit and visual review of all pages. Work through them systematically.
+
+CONTEXT
+
+Stack: React, CSS (mix of class-based and inline styles)
+Fonts should be: DM Sans + DM Mono, loaded via Google Fonts
+Arabic font: Noto Kufi Arabic
+Roles: Admin, Moderator, Editor
+Core pages: Dashboard, Products, Users, Entities, Applications, Featured, Launcher Activity, Audit Log, Settings, Suggestions, Public Profile
+
+
+FIX LIST — in this order:
+🔴 CRITICAL (do first)
+
+Stat cards — make clickable
+
+Live Products → /admin/products?filter=live
+Registered Users → /admin/users
+Pending Products → /admin/products?filter=pending
+Waitlist Signups → /admin/waitlist
+Add hover state (subtle lift or border highlight) so cards feel interactive
+
+
+Waitlist stat data bug
+
+4th card reads from s.products?.pending — fix to read from s.waitlist
+
+
+Reject product — add reason field
+
+Reject button opens a modal with a required textarea for rejection reason
+Reason is passed to the backend and shown to the founder
+Reject button is disabled until reason is filled
+
+
+Suspend / destructive action — add confirmation dialogs
+
+Suspend, Bulk Reject, Bulk Delete, and Delete in LauncherActivity must all open a confirmation modal before firing
+Destructive modals must use a red confirm button
+Modal must show the name of the item being acted on
+On Users page: add visual separation between Verify and Suspend buttons — they are currently side by side with no gap or divider, making accidental taps likely
+
+
+Product detail view before approve/reject
+
+Clicking a product row opens a side drawer showing full description, URL, founder info, category, and screenshots
+Approve and Reject buttons live inside the drawer
+Drawer closes after action and refreshes the list
+
+
+
+🟠 HIGH
+
+Dashboard — Pending Review Queue empty state
+
+When 0 pending: collapse the card height or show a compact "All caught up ✓" message
+Replace the plain text "Go to Products → Pending" with a styled button linking to /admin/products?filter=pending
+Do not show a large empty card taking up half the screen
+
+
+Dashboard — Upvote Activity empty state
+
+Replace the large empty "No data yet" box with a compact placeholder
+When there is no data, collapse the card to a minimal height with a short message
+
+
+Dashboard error state
+
+Replace .catch(() => {}) with a visible error state
+Show a retry button if the dashboard API call fails
+Never show all-zeros silently — show "Failed to load" with a refresh option
+
+
+Role-based navigation
+
+Hide menu items the role cannot access:
+
+Admin: all items
+Moderator: Dashboard, Products, Users, Entities, Launcher Activity, Suggestions
+Editor: Dashboard, Products, Entities, Featured
+
+
+Settings and Audit Log visible to Admin only
+If a restricted role navigates directly to a restricted URL, redirect to Dashboard with toast: "You don't have access to this section"
+
+
+Users page — add Warn button
+
+Warn action is missing from the table entirely
+Add Warn button between Verify and Suspend
+Button style: neutral/outlined (not yellow, not red)
+Order: Verify → Warn → Suspend
+
+
+Users page — clickable rows
+
+Clicking a user row opens a side drawer showing their submissions, vote history, warnings, and ban history
+Verify, Warn, and Suspend buttons live inside the drawer as well
+
+
+Fix font loading
+
+Add to index.html:
+
+
+
+html    <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700&family=DM+Mono:wght@400;500&family=Noto+Kufi+Arabic:wght@400;500;600;700&display=swap" rel="stylesheet">
+- Set `font-family: 'DM Sans', sans-serif` as base body font
+- Replace all Inter references in CSS
+13. Re-enable Helmet CSP on backend
+- Remove contentSecurityPolicy: false and frameguard: false
+🟡 MEDIUM
+
+Products page — Review Queue button style
+
+"Review Queue" pill is styled as a filled orange primary button — it looks like an action, not a filter
+Restyle to match the other filter pills (outlined, same weight as All / Live / Pending)
+
+
+Required field indicators
+
+Add a red asterisk to all required fields in all modals and forms
+Add helper text below form: "Fields marked * are required"
+
+
+Activity timestamps — show full date
+
+Replace toLocaleTimeString() with a full format: "15 Mar, 05:04"
+Apply to all timestamp columns across all pages including Dashboard Recent Activity
+
+
+Sidebar — rename "Account" to "Platform"
+
+The section contains Public Profile which is platform management, not personal settings
+
+
+Suggestions — move in sidebar
+
+Move Suggestions from SYSTEM group to CONTENT group
+It is user-generated feedback, not a system tool
+
+
+Role visibility
+
+The role label in the sidebar footer is too small and easy to miss
+Make it a small pill badge (e.g. orange outline pill showing "Admin") next to the user's name
+
+
+Pagination UI on all tables
+
+Add next/previous controls to Products, Users, Entities, Launcher Activity
+Show: "Showing 1–20 of 347"
+Change all limit:200 fetches to limit:20 with page parameter
+
+
+Column sorting
+
+Make Name, Date Joined, Status, and Upvotes columns sortable
+Show sort direction arrow on active column
+
+
+Loading state consistency
+
+Replace all plain "Loading…" text with the skeleton component used on Dashboard
+Apply to Products, Users, Entities, Launcher Activity
+
+
+ESC key on modals
+
+Add useEffect ESC listener directly in every modal component
+Do not rely on the outer AdminLayout ESC handler
+
+
+"Submitted" column label fix
+
+Rename to "Submitter" — it shows a handle, not a date
+
+
+Delete user — add to frontend
+
+Add Delete to the user actions (inside the drawer from fix #11)
+Wire to DELETE /admin/users/:id
+Requires red confirmation modal
+
+
+Global Express error handler
+
+Add error handler middleware at the bottom of server.js
+Catches unhandled errors that fall through all middleware
+
+
+
+🟢 LOWER PRIORITY
+
+Sidebar icon tooltips on mobile
+
+Replace title attribute with a proper tooltip component
+Visible on hover and long-press on touch devices
+
+
+Table horizontal scroll indicator
+
+Add a fade gradient on the right edge of tables when content overflows
+Visual signal that the user can scroll right
+
+
+RTL groundwork
+
+Add dir attribute toggle to root <html> element
+When Arabic active: <html dir="rtl">
+Apply Noto Kufi Arabic to all text in RTL mode
+Replace margin-left / padding-left with margin-inline-start / padding-inline-start
+Replace directional arrow icons with RTL-aware versions
+
+
+Bulk action safety
+
+After bulk action completes, show toast with Undo button (5 second window)
+On undo, call reverse endpoint and refresh list
+
+
+Audit Log — filter by role
+
+Add role filter dropdown: "Show only Moderator actions"
+
+
+Dashboard — add quick stats to Recent Activity
+
+Show action type with a colored badge not just plain text
+"user.signup" should display as a readable label: "New Signup"
+
+
+Settings page — mask email
+
+In Team Members table, show partial email: om***@gmail.com
+Prevents accidental exposure in screenshots or screen shares
+
+
+Switch Morgan logging
+
+Change morgan('dev') to morgan('combined') in production
+
+
+Add in-memory cache on Dashboard stats
+
+30–60 second TTL on stat queries
+Reduces DB load on repeated dashboard visits
+
+
+
+
+HOW TO PROCEED
+
+Fix one numbered item at a time
+Show only the changed component or file with enough surrounding context to locate it
+After every 5 fixes, show a progress summary
+If a fix requires a new shared component, create it in components/shared/ and import it wherever needed
+If a fix touches both frontend and backend, show both files

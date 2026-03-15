@@ -31,13 +31,16 @@
 
 html, body, #root {
   height: 100%;
-  font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  font-family: 'DM Sans', -apple-system, BlinkMacSystemFont, sans-serif;
   font-size: 14px;
   color: var(--ink);
   background: var(--gray-50);
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
 }
+
+/* Monospace elements */
+code, pre, .mono { font-family: 'DM Mono', 'Menlo', monospace; }
 
 .admin-app {
   display: flex;
@@ -550,6 +553,19 @@ tr:hover td { background: var(--gray-50); }
 /* ── Focus ────────────────────────────────────────────── */
 input:focus, textarea:focus, button:focus { outline: none; }
 button:focus-visible { box-shadow: 0 0 0 3px rgba(225,80,51,.35); }
+
+/* ── Animations ───────────────────────────────────────── */
+@keyframes pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+@keyframes slideInRight {
+  from { transform: translateX(100%); opacity: 0; }
+  to   { transform: translateX(0);    opacity: 1; }
+}
 
 /* ══════════════════════════════════════════════════════════
    RESPONSIVE BREAKPOINTS

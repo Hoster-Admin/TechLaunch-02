@@ -369,6 +369,21 @@ admin.get('/products', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
+admin.get('/products/:id', async (req, res) => {
+  try {
+    const { rows } = await q(`
+      SELECT p.*, u.name AS submitter_name, u.handle AS submitter_handle,
+             u.email AS submitter_email, u.persona AS submitter_persona,
+             u.avatar_color AS submitter_avatar_color, u.verified AS submitter_verified
+      FROM products p
+      JOIN users u ON u.id = p.submitted_by
+      WHERE p.id = $1
+    `, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, data: rows[0] });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
 admin.post('/products/:id/approve', async (req, res) => {
   try {
     const { rows } = await q(`UPDATE products SET status='live',approved_by=$1,approved_at=NOW() WHERE id=$2 RETURNING name`, [req.user.id, req.params.id]);
@@ -459,6 +474,17 @@ admin.get('/users/team', async (req, res) => {
   try {
     const { rows } = await q(`SELECT id,name,handle,email,role,status,verified,avatar_color,created_at FROM users WHERE role IN ('admin','moderator','editor') ORDER BY created_at ASC`);
     res.json({ success:true, data:rows });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+admin.get('/users/:id', async (req, res) => {
+  try {
+    const [uRes, pRes] = await Promise.all([
+      q(`SELECT u.*, COUNT(p.id) AS products_count FROM users u LEFT JOIN products p ON p.submitted_by = u.id WHERE u.id = $1 GROUP BY u.id`, [req.params.id]),
+      q(`SELECT id, name, logo_emoji, status, upvotes_count, created_at FROM products WHERE submitted_by = $1 ORDER BY created_at DESC LIMIT 5`, [req.params.id]),
+    ]);
+    if (!uRes.rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, data: { ...uRes.rows[0], recent_products: pRes.rows } });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 

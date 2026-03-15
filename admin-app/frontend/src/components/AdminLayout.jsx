@@ -69,7 +69,18 @@ export default function AdminLayout() {
   const searchRef   = useRef(null);
   const searchTimer = useRef(null);
 
+  const ROLE_ACCESS = {
+    moderator: new Set(['dashboard','products','users','entities','launcher','suggestions','platformprofile']),
+    editor:    new Set(['dashboard','products','entities','featured','platformprofile']),
+  };
+
   const handleNavChange = (key) => {
+    const role = user?.role;
+    const allowed = ROLE_ACCESS[role];
+    if (allowed && !allowed.has(key)) {
+      toast.error(`Your ${role} role does not have access to that section.`);
+      return;
+    }
     setPage(key);
     setNavOpen(false);
   };
@@ -292,7 +303,7 @@ export default function AdminLayout() {
 
         {/* Page content */}
         <div className="admin-content">
-          <Component />
+          <Component onNavigate={handleNavChange}/>
         </div>
       </div>
     </div>

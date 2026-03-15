@@ -1,24 +1,37 @@
 import React from 'react';
 
-const NAV_PLATFORM = [
+const ALL_NAV_PLATFORM = [
   { key:'dashboard',    icon:'📊', label:'Dashboard' },
   { key:'products',     icon:'🚀', label:'Products' },
   { key:'users',        icon:'👥', label:'Users' },
 ];
-const NAV_CONTENT = [
+const ALL_NAV_CONTENT = [
   { key:'entities',     icon:'🏢', label:'Entities' },
   { key:'applications', icon:'📋', label:'Applications' },
   { key:'featured',     icon:'⭐', label:'Featured' },
   { key:'launcher',     icon:'🔥', label:'Launcher Activity' },
-];
-const NAV_SYSTEM = [
-  { key:'activity',     icon:'📝', label:'Audit Log' },
-  { key:'settings',     icon:'⚙️',  label:'Settings' },
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
-const NAV_PROFILE = [
+const ALL_NAV_SYSTEM = [
+  { key:'activity',     icon:'📝', label:'Audit Log' },
+  { key:'settings',     icon:'⚙️',  label:'Settings' },
+];
+const ALL_NAV_PLATFORM_SECTION = [
   { key:'platformprofile', icon:'🌐', label:'Public Profile' },
 ];
+
+// Pages each role can access
+const ROLE_ACCESS = {
+  admin:     null, // null = all pages
+  moderator: new Set(['dashboard','products','users','entities','launcher','suggestions','platformprofile']),
+  editor:    new Set(['dashboard','products','entities','featured','platformprofile']),
+};
+
+function filterNav(items, role) {
+  const allowed = ROLE_ACCESS[role];
+  if (!allowed) return items; // admin sees everything
+  return items.filter(i => allowed.has(i.key));
+}
 
 function CollapseIcon({ collapsed }) {
   return (
@@ -33,110 +46,93 @@ function CollapseIcon({ collapsed }) {
   );
 }
 
+const ROLE_PILL = {
+  admin:     { bg:'rgba(225,80,51,.18)', color:'#E15033' },
+  moderator: { bg:'rgba(37,99,235,.15)', color:'#2563eb' },
+  editor:    { bg:'rgba(124,58,237,.15)', color:'#7c3aed' },
+};
+
 export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose, collapsed, onToggleCollapse, panelName, panelAvatar }) {
   const role = user?.role || 'admin';
+  const pill = ROLE_PILL[role] || ROLE_PILL.admin;
+
+  const navPlatform = filterNav(ALL_NAV_PLATFORM, role);
+  const navContent  = filterNav(ALL_NAV_CONTENT,  role);
+  const navSystem   = filterNav(ALL_NAV_SYSTEM,   role);
+  const navPlatformSection = filterNav(ALL_NAV_PLATFORM_SECTION, role);
+
   const classes = [
     'admin-sidebar',
-    isOpen     ? 'nav-open'       : '',
-    collapsed  ? 'sidebar-collapsed' : '',
+    isOpen    ? 'nav-open'         : '',
+    collapsed ? 'sidebar-collapsed': '',
   ].filter(Boolean).join(' ');
+
+  const NavItem = ({ item }) => (
+    <div
+      className={`nav-item${current===item.key?' active':''}`}
+      onClick={() => onChange(item.key)}
+      title={item.label}>
+      <span className="nav-icon">{item.icon}</span>
+      <span className="nav-label">{item.label}</span>
+    </div>
+  );
 
   return (
     <div className={classes}>
-      {/* Mobile close button */}
-      <button className="sidebar-close-btn" onClick={onClose} aria-label="Close navigation">
-        ✕
-      </button>
+      <button className="sidebar-close-btn" onClick={onClose} aria-label="Close navigation">✕</button>
 
-      {/* Logo + collapse toggle */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
           {panelAvatar
-            ? <img src={panelAvatar} alt={panelName || 'TL MENA'} className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,objectFit:'cover',display:'block',flexShrink:0}} />
+            ? <img src={panelAvatar} alt={panelName||'TL MENA'} className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,objectFit:'cover',display:'block',flexShrink:0}}/>
             : <div className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,background:'#E15033',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>TL</div>
           }
-          <div className="sidebar-logo-text">{panelName || 'TL MENA'}</div>
-          {/* Desktop collapse toggle — hidden on mobile via CSS */}
-          <button
-            className="sidebar-toggle-btn"
-            onClick={onToggleCollapse}
-            title={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-            aria-label={collapsed ? 'Expand sidebar' : 'Collapse sidebar'}
-          >
-            <CollapseIcon collapsed={collapsed} />
+          <div className="sidebar-logo-text">{panelName||'TL MENA'}</div>
+          <button className="sidebar-toggle-btn" onClick={onToggleCollapse} title={collapsed?'Expand sidebar':'Collapse sidebar'} aria-label={collapsed?'Expand sidebar':'Collapse sidebar'}>
+            <CollapseIcon collapsed={collapsed}/>
           </button>
         </div>
         <span className="sidebar-badge">Admin Panel</span>
       </div>
 
-      {/* When collapsed, show the toggle icon centred below the logo */}
       {collapsed && (
-        <button
-          className="sidebar-toggle-btn sidebar-toggle-collapsed"
-          onClick={onToggleCollapse}
-          title="Expand sidebar"
-          aria-label="Expand sidebar"
-        >
-          <CollapseIcon collapsed={true} />
+        <button className="sidebar-toggle-btn sidebar-toggle-collapsed" onClick={onToggleCollapse} title="Expand sidebar" aria-label="Expand sidebar">
+          <CollapseIcon collapsed={true}/>
         </button>
       )}
 
-      {/* Nav */}
       <nav>
-        <div className="nav-section">Platform</div>
-        {NAV_PLATFORM.map(item => (
-          <div key={item.key}
-            className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}
-            title={collapsed ? item.label : undefined}>
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </div>
-        ))}
+        {navPlatform.length > 0 && <>
+          <div className="nav-section">Platform</div>
+          {navPlatform.map(item => <NavItem key={item.key} item={item}/>)}
+        </>}
 
-        <div className="nav-section">Content</div>
-        {NAV_CONTENT.map(item => (
-          <div key={item.key}
-            className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}
-            title={collapsed ? item.label : undefined}>
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </div>
-        ))}
+        {navContent.length > 0 && <>
+          <div className="nav-section">Content</div>
+          {navContent.map(item => <NavItem key={item.key} item={item}/>)}
+        </>}
 
-        <div className="nav-section">System</div>
-        {NAV_SYSTEM.map(item => (
-          <div key={item.key}
-            className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}
-            title={collapsed ? item.label : undefined}>
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </div>
-        ))}
+        {navSystem.length > 0 && <>
+          <div className="nav-section">System</div>
+          {navSystem.map(item => <NavItem key={item.key} item={item}/>)}
+        </>}
 
-        <div className="nav-section">Account</div>
-        {NAV_PROFILE.map(item => (
-          <div key={item.key}
-            className={`nav-item${current===item.key?' active':''}`}
-            onClick={() => onChange(item.key)}
-            title={collapsed ? item.label : undefined}>
-            <span className="nav-icon">{item.icon}</span>
-            <span className="nav-label">{item.label}</span>
-          </div>
-        ))}
+        {navPlatformSection.length > 0 && <>
+          <div className="nav-section">Platform</div>
+          {navPlatformSection.map(item => <NavItem key={item.key} item={item}/>)}
+        </>}
       </nav>
 
-      {/* Footer */}
       <div className="sidebar-footer">
         <div className="sidebar-admin-user">
           <div className="admin-avatar" style={{background:user?.avatar_color||'var(--orange)'}}>
             {(user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
           </div>
           <div className="sidebar-user-info" style={{flex:1,minWidth:0}}>
-            <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
-            <div className="admin-role">{role}</div>
+            <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
+              <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
+              <span style={{fontSize:10,fontWeight:700,borderRadius:5,padding:'2px 7px',background:pill.bg,color:pill.color,whiteSpace:'nowrap',textTransform:'capitalize',flexShrink:0}}>{role}</span>
+            </div>
           </div>
           <button onClick={onLogout} title="Sign out"
             style={{background:'none',border:'none',cursor:'pointer',padding:4,borderRadius:6,color:'#AAAAAA',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}
