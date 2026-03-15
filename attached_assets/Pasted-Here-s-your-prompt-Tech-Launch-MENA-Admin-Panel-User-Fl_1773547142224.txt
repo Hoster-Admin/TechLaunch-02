@@ -1,0 +1,97 @@
+Here's your prompt:
+
+Tech Launch MENA — Admin Panel User Flow Test
+You are simulating real team members using the Tech Launch admin panel for the first time. Each person has a specific role and a list of tasks to complete. After completing their tasks they report back exactly what they experienced — what worked, what confused them, what broke, and what they couldn't find.
+Read each character's profile and task list, then simulate their experience going through the admin panel step by step.
+
+CHARACTER 1 — Reem Al-Otaibi
+
+Role: Moderator
+Background: 28 years old, based in Riyadh. Previously worked in community management at a Saudi tech startup. Comfortable with web tools but not technical. First day using the Tech Launch admin panel.
+Personality: Organized, detail-oriented, will notice if something feels off. Gets frustrated when she has to click more than necessary to complete a task.
+
+Reem's Task List:
+
+Log in to the admin panel
+Check if there are any products waiting for review
+Open one pending product and read its full details before deciding
+Approve one product with a note
+Reject one product and write a clear reason for the founder
+Find a user named "Ahmed Al-Mansouri" and check his submission history
+Issue a warning to Ahmed with a written reason
+Check the community feed for any posts that need moderation
+Delete an inappropriate comment from Launcher Activity
+Check recent activity on the Dashboard to confirm her actions were logged
+Try to access Settings — note what happens
+Try to access Audit Log — note what happens
+Log out
+
+After completing all tasks Reem writes a report:
+
+What was easy and intuitive
+What confused her or required extra clicks
+What she couldn't find or couldn't do
+Any errors or unexpected behavior
+Her overall confidence level: would she use this daily without support?
+
+
+CHARACTER 2 — Tariq Mahmoud
+
+Role: Editor
+Background: 32 years old, based in Dubai. Content writer and curator. Responsible for featuring products and managing the homepage. Not technical at all — if something requires more than 2 clicks he'll look for a simpler way.
+Personality: Creative, impatient, wants to get things done fast. Will abandon a task if it's not obvious how to complete it.
+
+Tariq's Task List:
+
+Log in to the admin panel
+Find the Featured & Spotlight page
+Feature a live product on the homepage
+Update the Homepage Banner text
+Write a new Editor's Pick note for this week
+Browse the Products list to find something worth featuring next week
+Check the Launcher community for interesting articles to promote
+Try to access Users — note what happens
+Try to access Audit Log — note what happens
+Try to access Settings — note what happens
+Log out
+
+After completing all tasks Tariq writes a report:
+
+What was fast and obvious
+What slowed him down
+What he tried to access and couldn't
+Whether the panel feels right for his role or has too much / too little
+His overall confidence level: could he do his job here every day without help?
+
+
+CHARACTER 3 — Omar Al-Rashidi
+
+Role: Admin
+Background: 35 years old, founder of the platform. Technical, has built products before, reads error messages carefully. Responsible for everything — user management, platform settings, reviewing audit logs, managing the team.
+Personality: Thorough, will test edge cases, will try things he's not supposed to just to verify they're blocked.
+
+Omar's Task List:
+
+Log in as Admin
+Review the Dashboard — does it tell him what he needs to know immediately?
+Check the full Audit Log — verify Reem and Tariq's actions are recorded
+Go to Settings and invite a new team member with Moderator role
+Manage tag visibility — hide one role tag from the public site
+Go to Users — find a suspended user and reinstate them
+Export the full user list as CSV
+Go to Products — bulk approve 3 pending products at once
+Try to delete his own account — note what happens
+Check the platform Public Profile and post an update as @techlaunchmena
+Go to Applications — review one accelerator application
+Check Suggestions — respond to one user suggestion
+Change a platform setting
+Verify that Reem (Moderator) cannot see Settings in her nav
+Log out
+
+After completing all tasks Omar writes a report:
+
+What the panel does well as a complete admin tool
+What gaps he found — missing features, broken flows, unclear UI
+Any security concerns he noticed while testing
+What he would prioritize fixing before giving the panel to a real team
+His confidence level: is this ready for a real moderation team?
