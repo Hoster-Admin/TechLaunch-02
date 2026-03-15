@@ -47,7 +47,26 @@ const q = (sql, p) => pool.query(sql, p);
 // ─── MIDDLEWARE ───────────────────────────────────────────────────────────────
 app.set('trust proxy', 1);
 // FIX 4: Re-enabled Helmet CSP and frameguard
-app.use(helmet());
+// Allow Replit canvas/preview iframes to embed the admin app
+const replitDevDomain = process.env.REPLIT_DEV_DOMAIN ? `https://${process.env.REPLIT_DEV_DOMAIN}` : null;
+app.use(helmet({
+  frameguard: false,
+  contentSecurityPolicy: {
+    directives: {
+      defaultSrc:     ["'self'"],
+      scriptSrc:      ["'self'", "'unsafe-inline'"],
+      styleSrc:       ["'self'", 'https:', "'unsafe-inline'"],
+      fontSrc:        ["'self'", 'https:', 'data:'],
+      imgSrc:         ["'self'", 'data:', 'https:'],
+      connectSrc:     ["'self'"],
+      objectSrc:      ["'none'"],
+      baseUri:        ["'self'"],
+      formAction:     ["'self'"],
+      frameAncestors: ["'self'", 'https://*.replit.dev', 'https://*.replit.com', 'https://*.picard.replit.dev', ...(replitDevDomain ? [replitDevDomain] : [])],
+      upgradeInsecureRequests: [],
+    },
+  },
+}));
 const isProd = process.env.NODE_ENV === 'production';
 const ALLOWED_ORIGINS = [
   'https://tlmena.com',
@@ -63,8 +82,10 @@ const ALLOWED_ORIGINS = [
 app.use(cors({
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);  // same-origin / server-to-server
-    if (ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + '/'))) return cb(null, true);
-    if (!isProd && (origin.startsWith('http://localhost') || origin.includes('.replit.dev'))) return cb(null, true);
+    if (ALLOWED_ORIGINS.some(o => origin === o || origin.startsWith(o + '/') || origin.startsWith(o + ':'))) return cb(null, true);
+    if (origin.includes('.replit.dev') && process.env.REPLIT_DEV_DOMAIN && origin.includes(process.env.REPLIT_DEV_DOMAIN)) return cb(null, true);
+    if (origin.startsWith('http://localhost') || origin.startsWith('https://localhost')) return cb(null, true);
+    if (!isProd && origin.includes('.replit.dev')) return cb(null, true);
     cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
