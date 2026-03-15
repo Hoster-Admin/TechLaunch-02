@@ -119,10 +119,14 @@ export default function PlatformProfile() {
   useEffect(() => {
     Promise.all([
       adminAPI.platformProfile(),
+      adminAPI.publicProfile(),
       adminAPI.platformActivity('all'),
       adminAPI.tags(),
-    ]).then(([pd, ad, td]) => {
-      setProfile(pd.data.data);
+    ]).then(([pd, pub, ad, td]) => {
+      const panelData  = pd.data.data  || {};
+      const publicData = pub.data.data || {};
+      // Merge: panel identity supplies avatar/name overrides; public profile has handle, bio, links
+      setProfile({ ...publicData, ...panelData });
       setActivity(ad.data.data.activity || []);
       const all = td.data.data || [];
       setArticleTags(all.filter(t => t.category === 'article'));
@@ -162,6 +166,12 @@ export default function PlatformProfile() {
   const openEdit = () => {
     setEditData({
       name:       profile?.name       || '',
+      handle:     profile?.handle     || '',
+      headline:   profile?.headline   || '',
+      bio:        profile?.bio        || '',
+      website:    profile?.website    || '',
+      twitter:    profile?.twitter    || '',
+      linkedin:   profile?.linkedin   || '',
       avatar_url: profile?.avatar_url || '',
     });
     setSaveError(''); setSaveSuccess(false);
@@ -171,7 +181,7 @@ export default function PlatformProfile() {
   const handleSave = async () => {
     setSaving(true); setSaveError(''); setSaveSuccess(false);
     try {
-      const { data: d } = await adminAPI.savePlatformProfile(editData);
+      const { data: d } = await adminAPI.savePublicProfile(editData);
       setProfile(prev => ({ ...prev, ...d.data }));
       setSaveSuccess(true);
       setTimeout(() => { setEditMode(false); setSaveSuccess(false); }, 800);
@@ -211,34 +221,55 @@ export default function PlatformProfile() {
         </button>
       </div>
 
-      {/* ── Edit Panel Identity ──────────────────────────────────── */}
+      {/* ── Edit Public Profile ──────────────────────────────────── */}
       {editMode && (
         <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--orange)', padding: 24, marginBottom: 20 }}>
           <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <div>
-              <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>✏️ Edit Panel Identity</h3>
-              <div style={{ fontSize: 11, color: 'var(--gray-400)', marginTop: 3 }}>Only changes how the account appears inside the admin panel. Does not affect the public profile.</div>
-            </div>
+            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>✏️ Edit Public Profile</h3>
             <button onClick={() => setEditMode(false)}
               style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-400)', lineHeight: 1, marginLeft: 12 }}>×</button>
-          </div>
-
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>Display Name</label>
-            <input
-              value={editData.name || ''}
-              onChange={e => setEditData(prev => ({ ...prev, name: e.target.value }))}
-              placeholder="TechLaunch MENA"
-              style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-              onFocus={e => e.target.style.borderColor = 'var(--orange)'}
-              onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
-            />
           </div>
 
           <AvatarUploader
             currentUrl={editData.avatar_url}
             onUploaded={url => setEditData(prev => ({ ...prev, avatar_url: url }))}
           />
+
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 16 }}>
+            {[
+              { key: 'name',     label: 'Display Name',     placeholder: 'TechLaunch MENA' },
+              { key: 'handle',   label: 'Handle',           placeholder: 'techlaunchmena' },
+              { key: 'headline', label: 'Tagline / Headline', placeholder: "MENA's Product Discovery Platform" },
+              { key: 'website',  label: 'Website',          placeholder: 'https://tlmena.com' },
+              { key: 'twitter',  label: 'Twitter Handle',   placeholder: '@techlaunchmena' },
+              { key: 'linkedin', label: 'LinkedIn URL',     placeholder: 'company/techlaunch-mena' },
+            ].map(f => (
+              <div key={f.key}>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>{f.label}</label>
+                <input
+                  value={editData[f.key] || ''}
+                  onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                  placeholder={f.placeholder}
+                  style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
+                  onFocus={e => e.target.style.borderColor = 'var(--orange)'}
+                  onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
+                />
+              </div>
+            ))}
+          </div>
+
+          <div style={{ marginTop: 14 }}>
+            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>Bio</label>
+            <textarea
+              value={editData.bio || ''}
+              onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
+              placeholder="Short description shown on the public profile…"
+              rows={3}
+              style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.5, transition: 'border-color .15s' }}
+              onFocus={e => e.target.style.borderColor = 'var(--orange)'}
+              onBlur={e => e.target.style.borderColor = 'var(--gray-200)'}
+            />
+          </div>
 
           {saveError   && <div style={{ marginTop: 12, fontSize: 12, color: '#E15033' }}>{saveError}</div>}
           {saveSuccess && <div style={{ marginTop: 12, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</div>}

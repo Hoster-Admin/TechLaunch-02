@@ -575,12 +575,16 @@ admin.put('/settings', async (req, res) => {
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
 });
 
+// Platform account UUID (shared by all platform-profile routes)
+const TLMENA_ID = 'e0cb08b1-3c3d-4db5-8e39-70a099d4f77d';
+
 // ── Public Profile (Settings page) — reads/writes the actual users table ──────
 admin.get('/public-profile', async (req, res) => {
   try {
     const { rows } = await q(
       `SELECT id,name,handle,headline,bio,website,twitter,linkedin,avatar_url,avatar_color,verified,followers_count
-       FROM users WHERE handle='techlaunchmena' LIMIT 1`
+       FROM users WHERE id=$1 LIMIT 1`,
+      [TLMENA_ID]
     );
     if (!rows.length) return res.status(404).json({ success:false, message:'Platform profile not found' });
     res.json({ success:true, data: rows[0] });
@@ -590,16 +594,23 @@ admin.get('/public-profile', async (req, res) => {
 admin.put('/public-profile', async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
   try {
-    const { name, headline, bio, website, twitter, linkedin, avatar_url } = req.body;
+    const { name, handle, headline, bio, website, twitter, linkedin, avatar_url } = req.body;
     const { rows } = await q(
       `UPDATE users SET
-         name=COALESCE($1,name), headline=COALESCE($2,headline), bio=COALESCE($3,bio),
-         website=COALESCE($4,website), twitter=COALESCE($5,twitter), linkedin=COALESCE($6,linkedin),
-         avatar_url=COALESCE($7,avatar_url), updated_at=NOW()
-       WHERE handle='techlaunchmena'
+         name=COALESCE(NULLIF($1,''),name),
+         handle=COALESCE(NULLIF($2,''),handle),
+         headline=COALESCE(NULLIF($3,''),headline),
+         bio=COALESCE(NULLIF($4,''),bio),
+         website=COALESCE(NULLIF($5,''),website),
+         twitter=COALESCE(NULLIF($6,''),twitter),
+         linkedin=COALESCE(NULLIF($7,''),linkedin),
+         avatar_url=COALESCE(NULLIF($8,''),avatar_url),
+         updated_at=NOW()
+       WHERE id=$9
        RETURNING id,name,handle,headline,bio,website,twitter,linkedin,avatar_url,followers_count`,
-      [name||null, headline||null, bio||null, website||null, twitter||null, linkedin||null, avatar_url||null]
+      [name||'', handle||'', headline||'', bio||'', website||'', twitter||'', linkedin||'', avatar_url||'', TLMENA_ID]
     );
+    if (!rows.length) return res.status(404).json({ success:false, message:'Platform account not found' });
     await logAction(req.user.id, 'public_profile.updated', 'user', rows[0].id, { name:rows[0].name });
     res.json({ success:true, data: rows[0], message:'Public profile updated' });
   } catch(e) { res.status(500).json({ success:false, message:e.message }); }
@@ -647,8 +658,6 @@ admin.put('/platform-profile', async (req, res) => {
 });
 
 // ── Platform Profile: Activity Feed ──────────────────────────────────────────
-const TLMENA_ID = 'e0cb08b1-3c3d-4db5-8e39-70a099d4f77d';
-
 admin.get('/platform-profile/activity', async (req, res) => {
   try {
     const { type = 'all', limit = 40, offset = 0 } = req.query;
