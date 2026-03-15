@@ -156,12 +156,12 @@ export default function AuthModal() {
             <div className="form-group">
               <label className="form-label">Full Name</label>
               <input className="form-input" type="text" value={sName} onChange={e => setSName(e.target.value)} placeholder="Ahmad Al-Rashid" autoComplete="name"/>
-              {handlePreview && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your handle: <span style={{ color:'#555', fontWeight:600 }}>@{handlePreview}</span></div>}
+              {sName.trim() && handlePreview && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your handle: <span style={{ color:'#555', fontWeight:600 }}>@{handlePreview}</span></div>}
             </div>
             <div className="form-group">
               <label className="form-label">Email</label>
               <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
-              {handlePreview && sEmail.trim() && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your profile: <span style={{ color:'#555', fontWeight:600 }}>tlmena.com/{handlePreview}</span></div>}
+              {sName.trim() && handlePreview && sEmail.trim() && <div style={{ fontSize:11, color:'#999', marginTop:4 }}>Your profile: <span style={{ color:'#555', fontWeight:600 }}>tlmena.com/{handlePreview}</span></div>}
             </div>
             <div className="form-group">
               <label className="form-label">Password</label>
