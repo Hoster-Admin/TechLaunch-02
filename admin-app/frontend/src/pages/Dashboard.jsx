@@ -32,7 +32,7 @@ export default function Dashboard() {
     { icon:'🚀', label:'Live Products',    value:s.products?.live    ?? 0,  delta:`↑ ${s.products?.pending??0} pending review`, color:'orange' },
     { icon:'👥', label:'Registered Users', value:s.users?.total      ?? 0,  delta:`${s.users?.active??0} active now`,           color:'green'  },
     { icon:'🎉', label:'Total Upvotes',    value:s.upvotes           ?? 0,  delta:'Across all products',                        color:'blue'   },
-    { icon:'⏳', label:'Pending Review',   value:s.products?.pending ?? 0,  delta:(s.products?.pending??0)>0?'↑ needs attention':'For product', color:'purple' },
+    { icon:'⏳', label:'Waitlist Signups',  value:s.products?.pending ?? 0,  delta:(s.products?.pending??0)>0?'↑ needs attention':'For product', color:'purple' },
   ];
 
   const ICON_COLORS = { orange:'#E15033', green:'#16a34a', blue:'#2563eb', purple:'#7c3aed' };
