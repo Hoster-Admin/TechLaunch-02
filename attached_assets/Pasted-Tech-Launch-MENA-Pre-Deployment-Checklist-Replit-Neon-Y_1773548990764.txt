@@ -1,0 +1,178 @@
+Tech Launch MENA — Pre-Deployment Checklist (Replit + Neon)
+You are doing a final check before Tech Launch goes live on Replit with a Neon PostgreSQL database. Go through every item and report ✅ pass or ❌ fail for each one.
+
+1. ENVIRONMENT VARIABLES (Replit Secrets)
+
+ JWT_SECRET is set in Replit Secrets — long, random string, never the default
+ NEON_DATABASE_URL is set in Replit Secrets and points to production Neon branch
+ RESEND_API_KEY is set in Replit Secrets
+ Server crashes on startup if any required secret is missing
+ No hardcoded secrets anywhere in the codebase
+ Run: grep -r "tlmena_dev_secret" . — must return nothing
+ Run: grep -r "neon.tech" . — no hardcoded DB URLs in code files
+
+
+2. NEON DATABASE
+
+ You are connected to the correct Neon branch (production, not dev/preview)
+ All migrations have been run on the production branch
+ These tables exist and have correct columns:
+
+ users — includes warnings_count, force_password_change
+ products — includes approval_note
+ entities
+ activity_log
+ platform_settings — includes key, value, updated_at
+ user_warnings — includes user_id, warned_by, reason, created_at
+ entity_applications
+ password_reset_tokens — includes token, user_id, expires_at, used
+
+
+ At least one admin account exists
+ No test/seed data in production (Cookie User, Audit User, Test User accounts deleted)
+ Connection pool configured correctly (max: 10)
+ Neon database is on a paid plan or free tier limits are understood
+ Neon automatic backups are enabled
+
+
+3. SECURITY
+
+ JWT_SECRET fallback removed — server crashes if missing
+ Rate limiting on POST /api/auth/login (10 attempts / 15 min)
+ Helmet enabled with CSP on
+ frameguard enabled
+ CORS set to your production Replit domain only — no wildcard *.replit.dev
+ All API errors return generic message — no raw e.message exposed
+ Moderators cannot create admin accounts
+ Last admin deletion blocked
+ Bulk action validation uses UUID regex
+ All /admin/* routes protected by authenticate + requireAdmin
+ No SQL injection risk — all queries parameterized
+
+
+4. BACKEND
+
+ morgan set to combined not dev
+ express.json body limit set to 100kb
+ Global error handler at bottom of server.js
+ Health check endpoint: GET /health returns { status: 'ok' }
+ All email flows tested and working via Resend:
+
+ Welcome email on signup
+ Team member invite email
+ Product submission confirmation email
+ Product approval email with optional note
+ Product rejection email with reason
+ Password reset email
+
+
+ Password reset token expiry set to 1 hour
+ force_password_change redirect works on invited team member first login
+ Banner save persists to platform_settings table
+ Editor's Pick save persists to platform_settings table
+
+
+5. FRONTEND BUILD
+
+ npm run build completes with no errors
+ No console.log statements in production code
+ API base URL points to production Replit URL — not localhost
+ DM Sans and DM Mono loading from Google Fonts
+ No Inter font references remaining in CSS
+ Favicon set — not default Vite favicon
+ All pages load without console errors
+ react-helmet-async installed and dynamic meta tags working
+
+
+6. REPLIT CONFIGURATION
+
+ Replit project is set to "Always On" — server stays up without activity
+ The run command starts both frontend and backend correctly
+ Replit deployment URL is your custom domain tlmena.com (if configured)
+ Custom domain SSL is active — HTTPS working
+ .replit config file is correct
+ replit.nix has all required system dependencies
+ No sensitive files exposed in the Replit file tree
+
+
+7. PUBLIC SITE CHECKS
+
+ Homepage loads correctly
+ "Community" nav link works (was "Join Launcher")
+ Sign up works end to end
+ Product submission works — logo and screenshots upload and save correctly
+ Submission confirmation email sends
+ Forgot password email sends — reset link works
+ Search returns live products only — no pending products visible
+ User profile loads and is shareable
+ OG tags working — test at https://developers.facebook.com/tools/debug/
+ Twitter card working — test at https://cards-dev.twitter.com/validator
+ robots.txt at https://tlmena.com/robots.txt
+ sitemap.xml at https://tlmena.com/sitemap.xml
+ Footer "Events" link removed
+ Weekly Digest input removed
+ Social footer links go to real URLs or removed
+ No 404s on any footer or nav link
+
+
+8. ADMIN PANEL SMOKE TEST
+Log in and verify these work on the live Replit URL:
+
+ Login works
+ Dashboard loads with real data
+ Stat cards navigate correctly on click
+ Pending queue shows correct count
+ Approve a product — confirmation email sends to founder
+ Reject a product with reason — rejection email sends
+ Warn a user — warning logged in drawer with history
+ Suspend a user — confirmation modal fires
+ Audit Log loads with filters working
+ Settings — banner save persists after page refresh
+ Settings — Editor's Pick persists after refresh
+ Featured page — Feature a Product modal works
+ Invite team member — invite email sends
+ Export users CSV — real file downloads
+ Export applications CSV — real file downloads
+ Role-based nav correct — log in as Moderator, verify Settings hidden
+ Log out works
+
+
+9. SEO & SHARING
+
+ Each product page has unique <title> tag
+ Each product page has og:title, og:description, og:image
+ User profile pages have unique OG tags
+ Directory page has descriptive title and meta
+ robots.txt allows all crawlers and references sitemap
+ sitemap.xml lists all live product and entity pages
+ JSON-LD structured data on product detail pages
+ Test a product page share on WhatsApp — preview shows correctly
+
+
+10. MONITORING
+
+ UptimeRobot (free) configured to ping https://tlmena.com/health every 5 minutes
+ Alert email set for downtime notifications
+ Neon database dashboard bookmarked — you can check DB health
+ Resend dashboard bookmarked — you can monitor email delivery
+ You know how to restart the Replit server if it crashes
+ Replit logs accessible for debugging errors
+
+
+OUTPUT FORMAT
+For each item:
+
+✅ Pass
+❌ Fail — what needs fixing
+⚠️ Partial — describe the gap
+⏭️ Skip — with reason
+
+End with:
+
+Total score: X / Y checks passed
+All ❌ failures listed
+What must be fixed before going live vs after
+Final verdict: READY TO DEPLOY or NOT READY — FIX THESE FIRST
+
+
+Paste this with your Replit configuration, server.js, and .replit file for a complete pre-deployment report.
