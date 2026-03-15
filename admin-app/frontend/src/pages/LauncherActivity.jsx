@@ -18,6 +18,13 @@ const POST_TYPE_LABEL = {
   milestone: 'Milestone',
   feature:   'Feature',
   news:      'News',
+  post:      'Post',
+  Tip:       'Tip',
+  Question:  'Question',
+  Update:    'Update',
+  Discussion:'Discussion',
+  Showcase:  'Showcase',
+  Feedback:  'Feedback',
 };
 
 function timeAgo(dateStr) {
@@ -216,7 +223,7 @@ export default function LauncherActivity() {
                   <div style={{display:'flex',alignItems:'center',gap:10,flexWrap:'wrap'}}>
                     {item.kind === 'comment' && item.product_name && (
                       <span style={{fontSize:11,color:'#666',background:'#F5F5F5',borderRadius:6,padding:'3px 8px',fontWeight:500}}>
-                        📦 {item.product_name}
+                        💬 In reply to: {item.product_name.length > 50 ? item.product_name.slice(0,50)+'…' : item.product_name}
                       </span>
                     )}
                     <span style={{fontSize:11,color:'#bbb'}}>❤️ {item.likes}</span>

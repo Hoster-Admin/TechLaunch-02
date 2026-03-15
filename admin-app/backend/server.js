@@ -1031,25 +1031,29 @@ admin.get('/launcher-activity', async (req, res) => {
       const parts = [];
       if (type === 'all' || type === 'comments') {
         parts.push(`
-          SELECT 'comment' AS kind, c.id, c.body, c.created_at, c.likes,
+          SELECT 'comment' AS kind, lpc.id, lpc.body, lpc.created_at, lpc.likes_count AS likes,
             u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
             u.avatar_url, u.avatar_color, u.verified,
-            p.id::text AS product_id, p.name AS product_name, NULL::text AS post_type
-          FROM comments c
-          JOIN users u ON u.id = c.user_id
-          JOIN products p ON p.id = c.product_id
-          WHERE ($1 = '' OR c.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2 OR p.name ILIKE $2)
+            lp.id::text AS product_id,
+            CASE WHEN lp.title IS NOT NULL AND lp.title <> '' THEN lp.title
+                 ELSE LEFT(lp.content, 60) END AS product_name,
+            NULL::text AS post_type
+          FROM launcher_post_comments lpc
+          JOIN users u ON u.id = lpc.user_id
+          JOIN launcher_posts lp ON lp.id = lpc.post_id
+          WHERE ($1 = '' OR lpc.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
         `);
       }
       if (type === 'all' || type === 'posts') {
         parts.push(`
-          SELECT 'post' AS kind, pp.id, pp.body, pp.created_at, pp.likes,
+          SELECT 'post' AS kind, lp.id, lp.content AS body, lp.created_at, lp.likes_count AS likes,
             u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
             u.avatar_url, u.avatar_color, u.verified,
-            NULL::text AS product_id, NULL::text AS product_name, pp.type::text AS post_type
-          FROM platform_posts pp
-          JOIN users u ON u.id = pp.author_id
-          WHERE ($1 = '' OR pp.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
+            NULL::text AS product_id, NULL::text AS product_name,
+            COALESCE(lp.tag, lp.post_type) AS post_type
+          FROM launcher_posts lp
+          JOIN users u ON u.id = lp.user_id
+          WHERE ($1 = '' OR lp.content ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
         `);
       }
       return parts.join(' UNION ALL ');
@@ -1072,11 +1076,11 @@ admin.get('/launcher-activity', async (req, res) => {
 admin.delete('/launcher-activity/comment/:id', async (req, res) => {
   try {
     const { rows } = await q(
-      `DELETE FROM comments WHERE id=$1 RETURNING id, user_id, body`,
+      `DELETE FROM launcher_post_comments WHERE id=$1 RETURNING id, user_id, body`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: 'Comment not found' });
-    await logAction(req.user.id, 'comment.delete', 'comment', req.params.id, { body: rows[0].body?.slice(0,80) }, req.ip);
+    await logAction(req.user.id, 'launcher_comment.delete', 'launcher_post_comment', req.params.id, { body: rows[0].body?.slice(0,80) }, req.ip);
     res.json({ success: true, message: 'Comment deleted' });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success: false, message:'Internal server error' }); }
 });
@@ -1084,11 +1088,11 @@ admin.delete('/launcher-activity/comment/:id', async (req, res) => {
 admin.delete('/launcher-activity/post/:id', async (req, res) => {
   try {
     const { rows } = await q(
-      `DELETE FROM platform_posts WHERE id=$1 RETURNING id, body`,
+      `DELETE FROM launcher_posts WHERE id=$1 RETURNING id, content AS body`,
       [req.params.id]
     );
     if (!rows.length) return res.status(404).json({ success: false, message: 'Post not found' });
-    await logAction(req.user.id, 'platform_post.delete', 'platform_post', req.params.id, { body: rows[0].body?.slice(0,80) }, req.ip);
+    await logAction(req.user.id, 'launcher_post.delete', 'launcher_post', req.params.id, { body: rows[0].body?.slice(0,80) }, req.ip);
     res.json({ success: true, message: 'Post deleted' });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success: false, message:'Internal server error' }); }
 });
