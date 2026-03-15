@@ -1,0 +1,88 @@
+You are conducting a thorough UI/UX review of the TLMENA admin panel frontend. Analyze every screen, component, and user flow.
+
+CONTEXT
+
+Admin panel for a Product Hunt-style platform targeting the MENA/Arab market
+Users: Admin, Moderator, Editor roles
+Stack: React, pages/ and components/ folders
+Fonts: DM Sans, DM Mono
+Current known issues: no optimistic UI, no real-time updates, Audit Log not linked from Dashboard
+
+
+REVIEW THESE AREAS:
+1. Navigation & Information Architecture
+
+Is the sidebar grouping logical?
+Are the most-used actions reachable in ≤2 clicks?
+Any orphaned pages with no clear entry point?
+Does the active state clearly show where the user is?
+
+2. Dashboard
+
+Does it surface the right information at a glance?
+Are stat cards actionable or just decorative?
+What's missing that an admin would want to see first thing?
+
+3. Tables & Data Lists
+
+Are columns the right width and priority?
+Is sorting and filtering intuitive?
+Are empty states handled?
+Are long strings (names, emails, URLs) truncated gracefully?
+
+4. Forms & Input
+
+Are error states clear and inline?
+Are required fields marked?
+Is there confirmation before destructive actions?
+Are success/failure feedback messages consistent?
+
+5. Modals & Dialogs
+
+Are they dismissible in expected ways (ESC, backdrop click)?
+Is the primary action always visually dominant?
+Are they appropriately sized for their content?
+
+6. Role-Based UI
+
+Do moderators and editors see actions they can't perform?
+Are disabled/restricted actions hidden or just greyed out?
+Is the role clearly visible somewhere in the UI?
+
+7. Feedback & Loading States
+
+Are there loading skeletons or spinners on data fetches?
+Do actions give immediate feedback before the server responds?
+Are error toasts specific enough to be actionable?
+
+8. RTL & Bilingual Readiness
+
+Is the layout RTL-compatible for Arabic?
+Are there any hardcoded LTR assumptions (padding, flex direction, icons)?
+Are Arabic strings handled gracefully in tables and truncation?
+
+9. Mobile & Responsiveness
+
+Is the panel usable on tablet?
+Does the sidebar collapse correctly?
+Are touch targets large enough?
+
+10. Consistency
+
+Are spacing, color, and typography consistent across all pages?
+Are button styles and variants used consistently?
+Are icons from a single coherent set?
+
+
+OUTPUT FORMAT
+For each area:
+
+✅ What works well
+🔴 Critical issues (broken or confusing)
+🟡 Improvements (friction or missing polish)
+Specific fix recommendation for each issue found
+
+End with:
+
+Overall UX score out of 100
+Top 5 highest-impact fixes ranked by effort vs improvement
