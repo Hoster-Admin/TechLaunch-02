@@ -1,0 +1,216 @@
+Tech Launch MENA — Public Site Pre-Deployment Checklist (Replit + Neon)
+You are doing a final check on the Tech Launch public site before going live. Go through every item and report ✅ pass or ❌ fail for each one.
+
+1. ENVIRONMENT VARIABLES (Replit Secrets)
+
+ NEON_DATABASE_URL set and points to production Neon branch
+ RESEND_API_KEY set to live Resend key — not a test key
+ JWT_SECRET matches the admin backend secret exactly
+ Server crashes on startup if RESEND_API_KEY is missing
+ Server crashes on startup if NEON_DATABASE_URL is missing
+ No hardcoded secrets anywhere in public site codebase
+ NODE_ENV=production set in the public API workflow command
+
+
+2. DATABASE
+
+ users table has warnings_count and force_password_change columns
+ products table has approval_note and stage columns
+ password_reset_tokens table exists with token, user_id, expires_at, used
+ user_warnings table exists
+ platform_settings table exists
+ No test users in production DB (testuser_, audituser_, cookieuser_* all deleted)
+ Public API only returns status = 'live' products to unauthenticated users — pending/rejected never exposed
+ Connection pool has max configured on public backend
+
+
+3. SECURITY
+
+ CORS locked to https://tlmena.com and https://www.tlmena.com only — no wildcard *.replit.dev
+ Rate limiting on POST /api/auth/login
+ Rate limiting on POST /api/auth/forgot-password — prevent email bombing
+ Helmet enabled with CSP on
+ express.json body limit set to 100kb not 10mb
+ All API errors return generic messages — no raw e.message exposed
+ All SQL queries use parameterized values — no SQL injection risk
+ JWT tokens expire in 24 hours
+ Password reset tokens expire in 1 hour
+ Used password reset tokens are invalidated after use
+
+
+4. BACKEND
+
+ morgan running in combined mode — NODE_ENV=production is set
+ Global error handler middleware at bottom of server.js
+ Health check at GET /health returns { status: 'ok' }
+ GET /sitemap.xml returns valid XML with live product URLs
+ robots.txt accessible at /robots.txt
+ All 6 email functions exist and are wired to correct routes:
+
+ Welcome email fires on signup
+ Submission confirmation fires on product submit
+ Approval email fires on admin approve
+ Rejection email fires on admin reject
+ Password reset email fires on forgot password
+ Team invite email fires on admin creating team member
+
+
+ emailService.js has no localhost fallback URLs — all links point to https://tlmena.com
+ No console.log statements remaining in backend code
+ force_password_change redirect works on first login for invited members
+
+
+5. FRONTEND BUILD
+
+ npm run build completes with zero errors
+ No console.log statements in frontend source code
+ API base URL points to production Replit URL — not localhost
+ DM Sans and DM Mono loading from Google Fonts — verify in browser
+ Noto Kufi Arabic loaded from Google Fonts — verify in browser
+ No Inter font references remaining in CSS
+ Favicon is set — not the default Vite logo
+ All pages load with no console errors in browser DevTools
+ react-helmet-async installed and HelmetProvider wraps App root
+
+
+6. PUBLIC SITE PAGES — SPOT CHECK EVERY PAGE
+
+ / — Homepage loads, hero visible, product feed loads
+ /products — All Products page loads, filters work, stage filter present
+ /directory — Directory loads, Industries and Countries tabs work
+ /launcher — Community feed loads, tabs work
+ /list/startup — Companies page loads
+ /list/accelerator — Accelerators page loads
+ /list/investor — Investment Firms page loads
+ /list/venture — Venture Studios page loads
+ /about — About page loads with real team content
+ /contact — Contact page loads, email address visible, form works
+ /privacy — Privacy Policy loads
+ /terms — Terms of Use loads
+ /settings — Loads for logged-in users, all tabs work
+ /u/:handle — User profile page loads and is publicly accessible
+ Any unknown URL → 404 page with Navbar, Footer, search, and quick-links
+
+
+7. NAVIGATION & FOOTER
+
+ "Community" nav item works — renamed from "Join Launcher"
+ "Community" link present in mobile hamburger menu
+ "List ▼" dropdown has all 4 entity types
+ Search bar works on desktop
+ Search icon visible and functional on mobile
+ Footer X/Twitter icon links to https://x.com/tlmenacom
+ Footer LinkedIn icon removed
+ Footer Instagram icon removed
+ No href="#" on any footer icon or link
+ Footer "Events" link removed from Community column
+ Footer "Launcher" link present in Community column
+ Weekly Digest input and button removed from homepage
+ Copyright year uses new Date().getFullYear() not hardcoded "2026"
+ No 404s on any footer link — test every single one
+
+
+8. AUTHENTICATION FLOWS
+
+ Sign up works end to end — welcome email arrives
+ Handle field shows in signup form with auto-suggestion from name
+ Handle preview shows tlmena.com/@handle live as user types
+ Arabic name entered → handle pre-filled with transliterated or user + 4 digits fallback
+ Country dropdown present in signup modal
+ Login works
+ Forgot password — email arrives with working reset link
+ Reset password page loads and works — token validated, password updated, token invalidated
+ Logged-out user clicking "Submit a Product" → auth gate modal opens (not silent)
+ Logged-out user clicking upvote → auth gate modal opens
+ Auth modal sign in secondary button is ghost/outline style not black
+ Loading spinner visible in auth modal during API call
+
+
+9. PRODUCT SUBMISSION FLOW
+
+ Submit modal opens for logged-in users
+ Step 1: Product type selection works
+ Step 2: All fields present — Name (60 char limit + counter), Tagline (120 char limit + counter), Description (500 char limit + counter), Website, Industry, Country, Stage
+ Step 2: Website field validates — "notaurl" is rejected
+ Step 2: Description asterisk matches validation (either both present or both absent)
+ Step 3: Logo upload works — PNG/JPG accepted
+ Step 3: Screenshots upload works — up to 4 images
+ Step 3: "Continue without media →" label (not "Skip for now →")
+ Step 5: Review card shows correct logo (uploaded image, not 🚀 emoji)
+ Step 5: Review card shows screenshots
+ Submit: logo URL saved to database — not just emoji
+ Submit: screenshots saved to database
+ Submit: submission confirmation email arrives in founder's inbox
+ Step 6: Success screen shows "View in My Products →" link
+ Draft save works — closing modal and reopening shows restore prompt
+
+
+10. SEO & SHARING
+
+ Product detail page has unique <title> — "[Product Name] — Tech Launch MENA"
+ Product detail page has og:title, og:description, og:image, og:url
+ User profile page has unique <title> — "[Name] (@handle) — Tech Launch MENA"
+ User profile page has og:title, og:description, og:image
+ Directory page has descriptive <title> and meta description
+ Homepage <title> is "Tech Launch MENA — Discover & Submit MENA Startups"
+ Test product page share on WhatsApp — product name and image appear in preview
+ Test product page share on LinkedIn — rich card with product image appears
+ Test at https://developers.facebook.com/tools/debug/ — OG tags correct
+ robots.txt accessible at https://tlmena.com/robots.txt
+ sitemap.xml accessible at https://tlmena.com/sitemap.xml — contains live product URLs
+ JSON-LD structured data on product detail pages
+ No page has duplicate <title>Tech Launch</title> — every page is unique
+
+
+11. KEY USER FLOWS — END TO END
+Run each flow manually and confirm it completes without errors:
+
+ New user signs up → welcome email → lands on homepage → submits product → confirmation email → product shows as pending in Settings
+ Admin approves product → approval email sent to founder → product visible on public site
+ Admin rejects product → rejection email with reason sent → reason visible in founder's Settings
+ User forgets password → reset email → clicks link → resets password → logs in with new password
+ User shares product page on WhatsApp → rich preview with product name and logo appears
+ Logged-out user browses homepage → clicks upvote → auth gate opens → signs up → upvote registered
+
+
+12. CONTACT & SUGGESTIONS
+
+ Contact page shows hello@tlmena.com email address visibly
+ Contact form submits successfully
+ Suggestions page exists at /suggestions for logged-in users
+ Suggestion form submits and appears in admin panel Suggestions section
+
+
+13. VERIFIED BADGE
+
+ Verified badge (✅) has tooltip on hover: "Verified by Tech Launch — identity and product ownership confirmed"
+ Tooltip appears on product cards, product detail page, and user profiles
+
+
+14. MONITORING
+
+ UptimeRobot configured to ping https://tlmena.com/health every 5 minutes
+ Alert email set for downtime
+ Resend dashboard bookmarked — email delivery logs accessible
+ Neon dashboard bookmarked — DB health and query logs accessible
+ You know how to restart the Replit server if it goes down
+ Replit deployment logs accessible
+
+
+OUTPUT FORMAT
+For each item:
+
+✅ Pass
+❌ Fail — describe exactly what is wrong
+⚠️ Partial — describe the gap
+⏭️ Skip — with reason
+
+End with:
+
+Total score: X / Y checks passed
+All ❌ failures listed in order of severity
+Items that must be fixed before going live vs can wait
+Final verdict: READY TO DEPLOY or NOT READY — FIX THESE FIRST
+
+
+Paste this with your public site codebase and Replit configuration for a complete pre-deployment report.
