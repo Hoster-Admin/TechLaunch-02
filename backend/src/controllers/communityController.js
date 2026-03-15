@@ -96,7 +96,7 @@ const getPost = async (req, res, next) => {
 // ── POST /api/community-posts  (create draft or publish)
 const createPost = async (req, res, next) => {
   try {
-    const { type, title, body, tag_id, status = 'draft' } = req.body;
+    const { type, title, body, tag_id, status = 'draft', image_url } = req.body;
     if (!type || !['post', 'article'].includes(type)) {
       return res.status(400).json({ success: false, message: 'type must be post or article' });
     }
@@ -108,9 +108,9 @@ const createPost = async (req, res, next) => {
     }
     const publishedAt = status === 'published' ? new Date() : null;
     const { rows } = await query(
-      `INSERT INTO community_posts (type, status, title, body, tag_id, author_id, published_at)
-       VALUES ($1,$2,$3,$4,$5,$6,$7) RETURNING *`,
-      [type, status, title?.trim() || null, body?.trim() || '', tag_id || null, req.user.id, publishedAt]
+      `INSERT INTO community_posts (type, status, title, body, tag_id, author_id, published_at, image_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8) RETURNING *`,
+      [type, status, title?.trim() || null, body?.trim() || '', tag_id || null, req.user.id, publishedAt, image_url || null]
     );
     res.status(201).json({ success: true, data: rows[0] });
   } catch (err) { next(err); }
@@ -124,20 +124,21 @@ const updatePost = async (req, res, next) => {
     if (existing[0].author_id !== req.user.id && req.user.role !== 'admin') {
       return res.status(403).json({ success: false, message: 'Not authorized' });
     }
-    const { title, body, tag_id, status } = req.body;
+    const { title, body, tag_id, status, image_url } = req.body;
     const post = existing[0];
     const newStatus = status || post.status;
     const publishedAt = (newStatus === 'published' && !post.published_at) ? new Date() : post.published_at;
     const { rows } = await query(
       `UPDATE community_posts SET
-         title=$1, body=$2, tag_id=$3, status=$4, published_at=$5, updated_at=NOW()
-       WHERE id=$6 RETURNING *`,
+         title=$1, body=$2, tag_id=$3, status=$4, published_at=$5, image_url=$6, updated_at=NOW()
+       WHERE id=$7 RETURNING *`,
       [
         title?.trim() ?? post.title,
         body?.trim() ?? post.body,
         tag_id !== undefined ? (tag_id || null) : post.tag_id,
         newStatus,
         publishedAt,
+        image_url !== undefined ? (image_url || null) : post.image_url,
         req.params.id,
       ]
     );

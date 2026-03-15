@@ -164,6 +164,11 @@ export const uploadAPI = {
     fd.append('image', file);
     return api.post('/upload/post-image', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
   },
+  postMedia: (file) => {
+    const fd = new FormData();
+    fd.append('media', file);
+    return api.post('/upload/post-media', fd, { headers: { 'Content-Type': 'multipart/form-data' } });
+  },
 };
 
 export const launcherAPI = {

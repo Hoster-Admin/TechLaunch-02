@@ -58,6 +58,27 @@ const uploadPostImg = multer({
   },
 });
 
+// ── Multer config for post media (images + videos)
+const postMediaStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    const dir = path.join(__dirname, '../../uploads/posts');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || '.bin';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+const uploadPostMedia = multer({
+  storage: postMediaStorage,
+  limits: { fileSize: 50 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    if (file.mimetype.startsWith('image/') || file.mimetype.startsWith('video/')) cb(null, true);
+    else cb(new Error('Images and videos only'));
+  },
+});
+
 // Controllers
 const authCtrl      = require('../controllers/authController');
 const productCtrl   = require('../controllers/productController');
@@ -402,6 +423,12 @@ uploadRouter.post('/post-image', authenticate, uploadPostImg.single('image'), (r
   if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
   const url = `/uploads/posts/${req.file.filename}`;
   res.json({ success: true, data: { url } });
+});
+uploadRouter.post('/post-media', authenticate, uploadPostMedia.single('media'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  const url = `/uploads/posts/${req.file.filename}`;
+  const isVideo = req.file.mimetype.startsWith('video/');
+  res.json({ success: true, data: { url, type: isVideo ? 'video' : 'image' } });
 });
 
 // ── Mount all routers

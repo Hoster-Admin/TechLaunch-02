@@ -7,6 +7,7 @@ import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { usersAPI, productsAPI } from '../../utils/api';
 import ProductCard from '../../components/home/ProductCard';
+import SubmitPostModal from '../../components/home/SubmitPostModal';
 
 const PERSONA_ICONS = { Founder:'🚀', Investor:'💰', Builder:'⚡', 'Product Manager':'🧠', Accelerator:'🏢', Enthusiast:'⭐', 'Venture Studio':'🏗️' };
 const PERSONA_MAP   = { founder:'Founder', investor:'Investor', builder:'Builder', pm:'Product Manager', accelerator:'Accelerator', enthusiast:'Enthusiast', venture:'Venture Studio', 'product manager':'Product Manager', 'venture studio':'Venture Studio' };
@@ -41,6 +42,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [loadingFollowList, setLoadingFollowList] = useState(false);
   const [deletingId, setDeletingId]         = useState(null);
   const [showWelcome, setShowWelcome]       = useState(searchParams.get('welcome') === '1');
+  const [showPostModal, setShowPostModal]   = useState(false);
 
   // tab data
   const [profileProducts, setProfileProducts] = useState([]);
@@ -293,10 +295,16 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               {/* Action buttons */}
               <div style={{ display:'flex', justifyContent:'flex-end', paddingTop:12, marginBottom:8, gap:10 }}>
                 {isOwn ? (
-                  <button onClick={() => navigate('/settings')}
-                    style={{ padding:'8px 16px', borderRadius:10, background:'#f4f4f4', color:'#444', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
-                    ⚙️ Edit Profile
-                  </button>
+                  <>
+                    <button onClick={() => setShowPostModal(true)}
+                      style={{ padding:'8px 18px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                      ✏️ Write
+                    </button>
+                    <button onClick={() => navigate('/settings')}
+                      style={{ padding:'8px 16px', borderRadius:10, background:'#f4f4f4', color:'#444', border:'none', fontSize:13, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6 }}>
+                      ⚙️ Edit Profile
+                    </button>
+                  </>
                 ) : (
                   <>
                     <button onClick={handleFollowClick} disabled={followLoading}
@@ -496,6 +504,20 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         </div>
       </div>
       <Footer/>
+
+      {/* ── Write Post / Article modal ── */}
+      {showPostModal && (
+        <SubmitPostModal
+          onClose={() => setShowPostModal(false)}
+          onPublished={(post) => {
+            setShowPostModal(false);
+            setActiveTab('activity');
+            usersAPI.activity(profile.handle.replace('@',''))
+              .then(({ data }) => setActivityItems(data.data || []))
+              .catch(() => {});
+          }}
+        />
+      )}
 
       {/* ── Followers / Following modal ── */}
       {followModal && (

@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { communityAPI } from '../../utils/api';
+import { communityAPI, uploadAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 
 const TYPE_OPTIONS = [
@@ -10,7 +10,7 @@ const TYPE_OPTIONS = [
     desc: 'Share a quick thought, question, or update with the community',
     fields: ['body', 'tag'],
     bodyLabel: 'Your post',
-    bodyPlaceholder: "What\u2019s on your mind? Share a question, insight, or update\u2026",
+    bodyPlaceholder: "What's on your mind? Share a question, insight, or update…",
     bodyMin: 10,
     bodyMax: 1000,
   },
@@ -27,6 +27,9 @@ const TYPE_OPTIONS = [
   },
 ];
 
+const ACCEPTED_IMG = 'image/jpeg,image/png,image/gif,image/webp';
+const ACCEPTED_VID = 'video/mp4,video/webm,video/quicktime';
+
 export default function SubmitPostModal({ onClose, editDraft = null, initialDraft = null, defaultType = null, onPublished, onSaved }) {
   const draft = initialDraft || editDraft;
   const initType = draft?.type || defaultType;
@@ -38,6 +41,12 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
   const [tags, setTags]       = useState([]);
   const [saving, setSaving]   = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
+
+  const [mediaFile, setMediaFile]       = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(draft?.image_url || null);
+  const [mediaType, setMediaType]       = useState(null);
+  const [uploading, setUploading]       = useState(false);
+  const mediaInputRef = useRef(null);
   const bodyRef = useRef(null);
 
   const typeCfg = TYPE_OPTIONS.find(t => t.id === type);
@@ -61,11 +70,40 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
     onClose();
   };
 
+  const handleMediaSelect = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    if (file.size > 50 * 1024 * 1024) { toast.error('File must be under 50 MB'); return; }
+    setMediaFile(file);
+    setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
+    setMediaPreview(URL.createObjectURL(file));
+  };
+
+  const removeMedia = () => {
+    setMediaFile(null);
+    setMediaPreview(null);
+    setMediaType(null);
+    if (mediaInputRef.current) mediaInputRef.current.value = '';
+  };
+
+  const uploadMediaIfNeeded = async () => {
+    if (!mediaFile) return mediaPreview;
+    setUploading(true);
+    try {
+      const res = await uploadAPI.postMedia(mediaFile);
+      return res.data?.data?.url || null;
+    } catch {
+      toast.error('Media upload failed');
+      return null;
+    } finally { setUploading(false); }
+  };
+
   const saveDraft = async () => {
     if (!body.trim() && !title.trim()) { onClose(); return; }
     setSaving(true);
     try {
-      const payload = { type, title: title.trim() || null, body: body.trim() || '', tag_id: tagId || null, status: 'draft' };
+      const imageUrl = await uploadMediaIfNeeded();
+      const payload = { type, title: title.trim() || null, body: body.trim() || '', tag_id: tagId || null, status: 'draft', image_url: imageUrl };
       let result;
       if (draft?.id) {
         result = await communityAPI.update(draft.id, payload);
@@ -85,7 +123,8 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
     if (type === 'article' && !title.trim()) { toast.error('Articles need a title'); return; }
     setSaving(true);
     try {
-      const payload = { type, title: title.trim() || null, body: body.trim(), tag_id: tagId || null, status: 'published' };
+      const imageUrl = await uploadMediaIfNeeded();
+      const payload = { type, title: title.trim() || null, body: body.trim(), tag_id: tagId || null, status: 'published', image_url: imageUrl };
       let result;
       if (draft?.id) {
         result = await communityAPI.update(draft.id, payload);
@@ -103,6 +142,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
   const charCount = body.length;
   const charMax   = typeCfg?.bodyMax || 1000;
   const charOver  = charCount > charMax;
+  const busy      = saving || uploading;
 
   const inp = {
     width: '100%', padding: '12px 14px', borderRadius: 12,
@@ -125,9 +165,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 {step === 'type' ? 'What do you want to share?' : typeCfg?.id === 'article' ? 'Write an Article' : 'Write a Post'}
               </div>
               {step === 'write' && (
-                <div style={{ fontSize:12, color:'#aaa', marginTop:2 }}>
-                  {typeCfg?.desc}
-                </div>
+                <div style={{ fontSize:12, color:'#aaa', marginTop:2 }}>{typeCfg?.desc}</div>
               )}
             </div>
             <button onClick={handleClose}
@@ -178,8 +216,8 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 </label>
                 <textarea ref={bodyRef} value={body} onChange={e => setBody(e.target.value)}
                   placeholder={typeCfg?.bodyPlaceholder}
-                  rows={type === 'article' ? 12 : 6}
-                  style={{ ...inp, resize:'vertical', lineHeight:1.7, minHeight: type === 'article' ? 280 : 140 }}
+                  rows={type === 'article' ? 10 : 5}
+                  style={{ ...inp, resize:'vertical', lineHeight:1.7, minHeight: type === 'article' ? 220 : 120 }}
                   onFocus={e => e.target.style.borderColor='var(--orange)'}
                   onBlur={e => e.target.style.borderColor='#e8e8e8'}/>
                 <div style={{ fontSize:11, color: charOver ? '#e11d48' : '#bbb', textAlign:'right', marginTop:4 }}>
@@ -187,10 +225,51 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 </div>
               </div>
 
+              {/* Media upload */}
+              <div>
+                <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:8 }}>
+                  {type === 'article' ? 'Cover Image (optional)' : 'Photo / Video (optional)'}
+                </label>
+
+                {mediaPreview ? (
+                  <div style={{ position:'relative', borderRadius:12, overflow:'hidden', border:'1.5px solid #e8e8e8' }}>
+                    {mediaType === 'video' ? (
+                      <video src={mediaPreview} controls style={{ width:'100%', maxHeight:240, objectFit:'cover', display:'block', background:'#000' }}/>
+                    ) : (
+                      <img src={mediaPreview} alt="preview" style={{ width:'100%', maxHeight:240, objectFit:'cover', display:'block' }}/>
+                    )}
+                    <button onClick={removeMedia}
+                      style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(0,0,0,.6)', color:'#fff', fontSize:14, cursor:'pointer', display:'grid', placeItems:'center' }}>
+                      ✕
+                    </button>
+                  </div>
+                ) : (
+                  <button onClick={() => mediaInputRef.current?.click()}
+                    style={{ width:'100%', padding:'20px', borderRadius:12, border:'2px dashed #e8e8e8', background:'#fafafa', cursor:'pointer', display:'flex', flexDirection:'column', alignItems:'center', gap:8, transition:'all .15s' }}
+                    onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.background='#fff8f6'; }}
+                    onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.background='#fafafa'; }}>
+                    <div style={{ fontSize:28 }}>{type === 'article' ? '🖼️' : '📸'}</div>
+                    <div style={{ fontSize:13, fontWeight:700, color:'#555' }}>
+                      {type === 'article' ? 'Upload cover image' : 'Upload photo or video'}
+                    </div>
+                    <div style={{ fontSize:11, color:'#bbb' }}>
+                      {type === 'article' ? 'JPG, PNG, GIF, WebP — max 8 MB' : 'Images up to 8 MB · Videos up to 50 MB'}
+                    </div>
+                  </button>
+                )}
+
+                <input
+                  ref={mediaInputRef}
+                  type="file"
+                  accept={type === 'article' ? ACCEPTED_IMG : `${ACCEPTED_IMG},${ACCEPTED_VID}`}
+                  onChange={handleMediaSelect}
+                  style={{ display:'none' }}/>
+              </div>
+
               {/* Tag selector */}
               {tags.length > 0 && (
                 <div>
-                  <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:8 }}>Tag (optional — choose one)</label>
+                  <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:8 }}>Tag (optional)</label>
                   <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                     {tags.map(t => (
                       <button key={t.id} onClick={() => setTagId(tagId === t.id ? '' : t.id)}
@@ -212,13 +291,13 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 ← Change type
               </button>
               <div style={{ display:'flex', gap:10 }}>
-                <button onClick={saveDraft} disabled={saving}
+                <button onClick={saveDraft} disabled={busy}
                   style={{ padding:'10px 20px', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#fff', color:'#444', fontSize:13, fontWeight:700, cursor:'pointer' }}>
                   {saving ? 'Saving…' : 'Save Draft'}
                 </button>
-                <button onClick={handlePublish} disabled={saving || charOver || !body.trim()}
-                  style={{ padding:'10px 24px', borderRadius:12, border:'none', background: (!body.trim() || charOver) ? '#f0f0f0' : 'var(--orange)', color: (!body.trim() || charOver) ? '#bbb' : '#fff', fontSize:13, fontWeight:700, cursor: (!body.trim() || charOver) ? 'not-allowed' : 'pointer', transition:'all .15s' }}>
-                  {saving ? 'Publishing…' : 'Publish →'}
+                <button onClick={handlePublish} disabled={busy || charOver || !body.trim()}
+                  style={{ padding:'10px 24px', borderRadius:12, border:'none', background: (!body.trim() || charOver) ? '#f0f0f0' : 'var(--orange)', color: (!body.trim() || charOver) ? '#bbb' : '#fff', fontSize:13, fontWeight:700, cursor: (!body.trim() || charOver) ? 'not-allowed' : 'pointer', transition:'all .15s', minWidth:110 }}>
+                  {uploading ? 'Uploading…' : saving ? 'Publishing…' : 'Publish →'}
                 </button>
               </div>
             </div>
