@@ -1,5 +1,12 @@
 import React, { useState, useEffect, useRef } from 'react';
 import AdminSidebar from './AdminSidebar.jsx';
+
+function getPublicBaseUrl() {
+  const { protocol, hostname } = window.location;
+  if (hostname === 'admin.tlmena.com') return 'https://tlmena.com';
+  if (hostname.includes('.replit.dev')) return `${protocol}//${hostname}:3001`;
+  return 'https://tlmena.com';
+}
 import AdminDashboard    from '../pages/Dashboard.jsx';
 import AdminProducts     from '../pages/Products.jsx';
 import AdminUsers        from '../pages/Users.jsx';
@@ -351,7 +358,11 @@ export default function AdminLayout() {
               )}
             </div>
 
-            <a href="https://tlmena.com" target="_blank" rel="noreferrer" className="topbar-view-site"
+            <a href={`${getPublicBaseUrl()}/@techlaunchmena`} target="_blank" rel="noreferrer"
+              style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid var(--orange)',background:'var(--orange-light)',fontSize:12,fontWeight:600,color:'var(--orange)',textDecoration:'none',whiteSpace:'nowrap',display:'flex',alignItems:'center',gap:5}}>
+              🌐 View Public Profile
+            </a>
+            <a href={`${getPublicBaseUrl()}`} target="_blank" rel="noreferrer" className="topbar-view-site"
               style={{padding:'7px 14px',borderRadius:9,border:'1.5px solid var(--gray-200)',background:'var(--gray-50)',fontSize:12,fontWeight:600,color:'var(--ink)',textDecoration:'none',whiteSpace:'nowrap'}}>
               ↗ View Site
             </a>

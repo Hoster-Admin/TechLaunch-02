@@ -5,6 +5,13 @@ import { SCard, Badge, Tbl, ActionBtn, EmptyState, SkeletonRows, Pagination, Con
 
 const PAGE_SIZE = 20;
 
+function getPublicBaseUrl() {
+  const { protocol, hostname } = window.location;
+  if (hostname === 'admin.tlmena.com') return 'https://tlmena.com';
+  if (hostname.includes('.replit.dev')) return `${protocol}//${hostname}:3001`;
+  return 'https://tlmena.com';
+}
+
 const FILTERS = [
   {key:'all',label:'All'},{key:'startup',label:'Startups'},{key:'investor',label:'Investors & VCs'},
   {key:'verified',label:'Verified ✓'},{key:'suspended',label:'Suspended'},
@@ -203,8 +210,13 @@ function UserDrawer({ userId, onClose, onAction }) {
                   <span style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>{detail.name}</span>
                   {detail.verified && <span style={{fontSize:10,fontWeight:700,color:'var(--orange)'}}>✓ Verified</span>}
                 </div>
-                <div style={{fontSize:12,color:'#888'}}>@{detail.handle}</div>
-                {detail.email && <div style={{fontSize:12,color:'#888'}}>{detail.email}</div>}
+                <div style={{fontSize:12,color:'#888',marginBottom:2}}>@{detail.handle}</div>
+                {detail.email && <div style={{fontSize:12,color:'#888',marginBottom:4}}>{detail.email}</div>}
+                <a href={`${getPublicBaseUrl()}/@${(detail.handle||'').replace('@','')}`}
+                  target="_blank" rel="noopener noreferrer"
+                  style={{fontSize:11,fontWeight:700,color:'var(--orange)',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:6,background:'var(--orange-light)',border:'1px solid rgba(225,80,51,.2)'}}>
+                  🌐 View Public Profile ↗
+                </a>
               </div>
             </div>
 
