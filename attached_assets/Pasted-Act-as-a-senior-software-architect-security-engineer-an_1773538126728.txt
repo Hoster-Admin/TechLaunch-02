@@ -1,0 +1,241 @@
+Act as a senior software architect, security engineer, and QA engineer.
+
+Your task is to perform a full production-level audit of my ADMIN PANEL system.
+
+Assume this admin panel controls the entire platform, including users, data, and system configuration. Security, permissions, and reliability are critical.
+
+Analyze the admin panel codebase and produce a detailed report.
+
+--------------------------------------------------
+
+1. Admin Panel Architecture Review
+
+Analyze the structure of the admin panel.
+
+Check for:
+
+- clear modular architecture
+- separation between UI, business logic, and API calls
+- reusable components
+- clear folder structure
+
+Identify:
+
+- tightly coupled components
+- duplicated logic
+- overly complex components
+
+Ensure the system is easy for developers to maintain and expand.
+
+--------------------------------------------------
+
+2. Access Control & Permission System
+
+Verify the role-based access control system (RBAC).
+
+Check:
+
+- admin roles and permission levels
+- whether sensitive actions require proper authorization
+- whether different roles have restricted access
+
+Examples to verify:
+
+- super admin
+- admin
+- support
+- operations
+
+Ensure users cannot access restricted routes by manually modifying URLs or API requests.
+
+--------------------------------------------------
+
+3. Authentication Security
+
+Check the admin authentication system.
+
+Verify:
+
+- secure login process
+- session or token protection
+- secure password handling
+- protection against brute force login attempts
+
+Check for:
+
+- token leakage
+- weak session handling
+- missing logout logic
+- insecure cookie configuration
+
+--------------------------------------------------
+
+4. Admin Actions Safety
+
+Review all critical admin actions.
+
+Check if the system protects against dangerous actions such as:
+
+- deleting users
+- modifying billing or data
+- changing system configuration
+- removing content
+
+Verify:
+
+- confirmation steps for destructive actions
+- audit logs for admin actions
+- ability to trace who performed actions
+
+--------------------------------------------------
+
+5. Data Protection
+
+Check how sensitive data is handled in the admin panel.
+
+Ensure that:
+
+- sensitive user data is protected
+- passwords or tokens are never exposed
+- private data is not visible unless required
+
+Verify API responses do not expose unnecessary information.
+
+--------------------------------------------------
+
+6. API Security
+
+Review all admin APIs.
+
+Check for:
+
+- missing authentication checks
+- missing permission validation
+- insecure endpoints
+- improper error messages
+
+Ensure all admin endpoints verify:
+
+- authenticated user
+- correct permission level
+
+--------------------------------------------------
+
+7. UI & Admin Workflow Review
+
+Analyze admin workflows.
+
+Check for:
+
+- logical navigation
+- clear dashboard structure
+- easy access to critical tools
+- consistent UI behavior
+
+Detect:
+
+- confusing workflows
+- broken links
+- inconsistent actions
+
+--------------------------------------------------
+
+8. Admin Panel Performance
+
+Review performance issues such as:
+
+- slow dashboard loading
+- inefficient API calls
+- large unoptimized queries
+- repeated data fetching
+
+Suggest improvements such as:
+
+- pagination
+- caching
+- lazy loading
+
+--------------------------------------------------
+
+9. Logging & Audit Trail
+
+Verify the system logs critical admin actions.
+
+Examples:
+
+- user creation
+- user deletion
+- permission changes
+- system configuration changes
+
+Ensure logs include:
+
+- admin ID
+- action performed
+- timestamp
+
+--------------------------------------------------
+
+10. Error Handling
+
+Check if the admin panel properly handles errors.
+
+Verify:
+
+- user-friendly error messages
+- backend error logging
+- protection against crashes
+
+Ensure errors do not expose internal system details.
+
+--------------------------------------------------
+
+11. Edge Case Testing
+
+Simulate admin usage scenarios and detect edge cases.
+
+Test scenarios like:
+
+- deleting active users
+- editing records while another admin edits them
+- invalid inputs
+- failed API responses
+
+Detect hidden bugs or system instability.
+
+--------------------------------------------------
+
+12. Production Readiness
+
+Verify the admin panel is safe for production.
+
+Check:
+
+- environment variable usage
+- configuration management
+- deployment safety
+- feature flags if necessary
+
+--------------------------------------------------
+
+13. Final Audit Report
+
+Provide a structured report including:
+
+1. Critical security vulnerabilities
+2. Permission system weaknesses
+3. Architecture improvements
+4. Performance optimizations
+5. Admin workflow improvements
+6. Code refactoring suggestions
+7. Maintainability issues
+
+End with:
+
+ADMIN PANEL SECURITY SCORE (0–100)
+
+and a final recommendation:
+
+SAFE FOR PRODUCTION
+or
+NOT SAFE FOR PRODUCTION
