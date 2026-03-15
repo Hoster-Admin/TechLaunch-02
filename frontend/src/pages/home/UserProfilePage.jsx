@@ -162,7 +162,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
-        <div style={{ maxWidth:900, margin:'0 auto', paddingTop:24, paddingLeft:32, paddingRight:32, paddingBottom:80 }}>
+        <div className="profile-page-inner" style={{ maxWidth:900, margin:'0 auto', paddingTop:24, paddingLeft:32, paddingRight:32, paddingBottom:80 }}>
           <BackButton/>
           <div style={{ display:'flex', justifyContent:'center', padding:'80px 20px' }}>
             <div style={{ width:32, height:32, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
@@ -176,7 +176,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
-        <div style={{ maxWidth:900, margin:'0 auto', paddingTop:24, paddingLeft:32, paddingRight:32, paddingBottom:80 }}>
+        <div className="profile-page-inner" style={{ maxWidth:900, margin:'0 auto', paddingTop:24, paddingLeft:32, paddingRight:32, paddingBottom:80 }}>
           <BackButton/>
           <div style={{ display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', minHeight:'60vh', padding:'40px 20px', textAlign:'center' }}>
             <div style={{ fontSize:52, marginBottom:16 }}>👤</div>

@@ -307,10 +307,9 @@ export default function SettingsPage() {
     <>
       <Navbar/>
       <style>{`
+        .settings-form-grid { grid-template-columns: repeat(2,1fr); }
+        .settings-persona-grid { grid-template-columns: repeat(3,1fr); }
         @media(max-width:768px){
-          .settings-layout { flex-direction:column !important; padding:16px 12px 60px !important; }
-          .settings-sidebar { width:100% !important; position:static !important; display:flex; flex-wrap:wrap; }
-          .settings-sidebar button { flex:1 1 auto; min-width:120px; }
           .settings-form-grid { grid-template-columns:1fr !important; }
           .settings-persona-grid { grid-template-columns:repeat(2,1fr) !important; }
         }
@@ -325,14 +324,15 @@ export default function SettingsPage() {
           <div className="settings-sidebar" style={{ width:190, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, overflow:'hidden', position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
             {NAV_ITEMS.map(item => (
               <button key={item.key} onClick={()=>handleTabNav(item.key)}
-                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'13px 16px', border:'none', borderBottom:'1px solid #f4f4f4', background:activeTab===item.key?'var(--orange-light)':'#fff', color:activeTab===item.key?'var(--orange)':'#444', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', fontFamily:'Inter,sans-serif' }}>
-                <span style={{ fontSize:15 }}>{item.icon}</span>{item.label}
+                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'13px 16px', border:'none', borderBottom:'1px solid #f4f4f4', background:activeTab===item.key?'var(--orange-light)':'#fff', color:activeTab===item.key?'var(--orange)':'#444', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', transition:'background .12s,color .12s' }}>
+                <span style={{ fontSize:16 }}>{item.icon}</span>
+                <span>{item.label}</span>
               </button>
             ))}
           </div>
 
           {/* Main content */}
-          <div style={{ flex:1, minWidth:0 }}>
+          <div className="settings-content-wrap" style={{ flex:1, minWidth:0 }}>
             {activeTab === 'profile' && (
               <ProfileTab
                 user={user} navigate={navigate} initials={initials} personaObj={personaObj} handleClean={handleClean}

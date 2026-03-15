@@ -258,6 +258,15 @@ export default function Navbar() {
                 </svg>
                 {unreadCount > 0 && <span className="notif-dot">{unreadCount > 9 ? '9+' : unreadCount}</span>}
               </div>
+              <div
+                onClick={() => navigate(`/u/${handle}`)}
+                style={{ width:32, height:32, borderRadius:'50%', background:user.avatar_color||'var(--orange)', color:'#fff', fontSize:13, fontWeight:900, display:'grid', placeItems:'center', cursor:'pointer', flexShrink:0, overflow:'hidden', border:'2px solid #fff', boxShadow:'0 1px 4px rgba(0,0,0,.15)' }}
+              >
+                {user.avatar_url
+                  ? <img src={user.avatar_url} alt={user.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  : initials
+                }
+              </div>
             </>
           ) : (
             <button className="btn-nav-ghost" style={{ fontSize:13, padding:'7px 14px' }} onClick={() => setAuthModal('login')}>Sign In</button>

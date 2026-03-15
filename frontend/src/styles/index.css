@@ -600,11 +600,22 @@ nav {
   .filter-inner { padding: 0 12px; }
   .filter-tab { padding: 14px 12px; font-size: 12px; }
 
-  /* Modals full-screen on mobile */
+  /* Modals — full-screen bottom sheet on mobile */
   .modal-overlay { padding: 0; align-items: flex-end; }
-  .modal { border-radius: 20px 20px 0 0; max-width: 100%; padding: 28px 20px 36px; max-height: 92vh; overflow-y: auto; }
+  .modal {
+    border-radius: 24px 24px 0 0;
+    max-width: 100%;
+    width: 100%;
+    padding: 20px 18px 40px;
+    max-height: 94vh;
+    overflow-y: auto;
+  }
+  .modal-drag-handle {
+    width: 36px; height: 4px; background: #e0e0e0; border-radius: 2px;
+    margin: 0 auto 18px; display: block;
+  }
 
-  /* Sidebar hidden on mobile (already 1-col grid) */
+  /* Sidebar */
   .sidebar-card { padding: 18px; }
 
   /* Stats grid */
@@ -618,12 +629,64 @@ nav {
   .entity-grid, .startup-grid, .listing-grid { grid-template-columns: 1fr !important; }
 
   /* Profile page */
-  .profile-page-inner { padding: 16px 12px 60px !important; }
+  .profile-page-inner { padding: 12px 12px 60px !important; }
   .profile-header-inner { flex-direction: column !important; align-items: flex-start !important; }
 
-  /* Settings */
-  .settings-layout { flex-direction: column !important; }
-  .settings-sidebar { width: 100% !important; border-right: none !important; border-bottom: 1px solid var(--gray-200) !important; }
+  /* ── Settings: horizontal scrollable tab strip ── */
+  .settings-layout {
+    flex-direction: column !important;
+    padding: 0 0 80px !important;
+    gap: 0 !important;
+    max-width: 100% !important;
+  }
+  .settings-sidebar {
+    width: 100% !important;
+    position: sticky !important;
+    top: var(--nav-h) !important;
+    z-index: 50 !important;
+    border-radius: 0 !important;
+    border: none !important;
+    border-bottom: 1.5px solid var(--gray-200) !important;
+    background: #fff !important;
+    display: flex !important;
+    flex-direction: row !important;
+    overflow-x: auto !important;
+    overflow-y: hidden !important;
+    -webkit-overflow-scrolling: touch;
+    scrollbar-width: none;
+    padding: 0 !important;
+    gap: 0 !important;
+    box-shadow: 0 2px 8px rgba(0,0,0,.05);
+  }
+  .settings-sidebar::-webkit-scrollbar { display: none; }
+  .settings-sidebar button {
+    flex: 0 0 auto !important;
+    border-bottom: 3px solid transparent !important;
+    border-right: none !important;
+    border-top: none !important;
+    border-left: none !important;
+    min-width: auto !important;
+    width: auto !important;
+    padding: 12px 14px !important;
+    white-space: nowrap !important;
+    font-size: 12px !important;
+    border-radius: 0 !important;
+    background: transparent !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    gap: 3px !important;
+    font-weight: 700 !important;
+  }
+  .settings-sidebar button[style*="var(--orange-light)"],
+  .settings-sidebar button[style*="orange"] {
+    border-bottom-color: var(--orange) !important;
+    background: transparent !important;
+    color: var(--orange) !important;
+  }
+  .settings-content-wrap {
+    padding: 16px 14px 40px !important;
+  }
 
   /* Admin (keep desktop-only) */
   .admin-sidebar { display: none; }
@@ -633,6 +696,15 @@ nav {
   .page-header-section { padding: 20px 16px 16px; }
   .page-header-inner { flex-direction: column; gap: 12px; }
   .page-header-cta { width: 100%; text-align: center; }
+
+  /* Touch targets: ensure min 44px tap areas */
+  button, a, [role="button"] { min-height: 44px; }
+  .upvote-btn { min-height: 44px !important; }
+  .filter-tab { min-height: 44px; display: flex; align-items: center; justify-content: center; }
+
+  /* Messages UI on mobile */
+  .adm-msg-wrap { grid-template-columns: 1fr !important; }
+  .adm-threads { max-height: 260px; overflow-y: auto; border-right: none; border-bottom: 1.5px solid #f0f0f0; }
 }
 
 @media(max-width:480px) {
@@ -647,7 +719,7 @@ nav {
   .product-name { font-size: 14px; }
   .upvote-btn { min-width: 46px; }
 
-  .modal { padding: 24px 16px 32px; }
+  .modal { padding: 20px 14px 36px; }
 
   .filter-tab { padding: 12px 10px; font-size: 11px; }
 
@@ -656,6 +728,10 @@ nav {
 
   /* Nav */
   .logo-en { display: none; }
+
+  /* Settings tab strip on tiny phones */
+  .settings-sidebar button { padding: 10px 11px !important; font-size: 11px !important; }
+  .settings-sidebar button span:first-child { font-size: 16px !important; }
 }
 
 /* ── PAGE HEADER (shared across all top-level pages) ── */
