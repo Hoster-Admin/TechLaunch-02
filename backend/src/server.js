@@ -43,17 +43,21 @@ app.use(helmet({
 }));
 
 // ── CORS
+const replitDevDomain = process.env.REPLIT_DEV_DOMAIN;
 const allowedOrigins = process.env.NODE_ENV === 'production'
   ? [
       'https://tlmena.com',
       'https://www.tlmena.com',
+      /\.replit\.dev(:\d+)?$/,
+      /\.replit\.app(:\d+)?$/,
+      ...(replitDevDomain ? [`https://${replitDevDomain}`, `https://${replitDevDomain}:5000`] : []),
     ]
   : [
       'http://localhost:3000',
       'http://localhost:5000',
       'http://localhost:5173',
-      /\.replit\.dev$/,
-      /\.replit\.app$/,
+      /\.replit\.dev(:\d+)?$/,
+      /\.replit\.app(:\d+)?$/,
     ];
 
 app.use(cors({
