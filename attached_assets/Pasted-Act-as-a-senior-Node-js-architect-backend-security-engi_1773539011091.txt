@@ -1,0 +1,194 @@
+Act as a senior Node.js architect, backend security engineer, and senior full-stack developer.
+
+You previously performed a production audit of this web application and identified several critical and medium-priority issues. Your task now is to safely refactor and fix these issues while preserving the current functionality of the system.
+
+IMPORTANT RULES
+
+1. Do NOT break existing features.
+2. Maintain the current API response format:
+   `{ success, data, pagination }`
+3. Follow best practices for security, maintainability, and performance.
+4. Clearly show each file you modify and explain the change.
+5. Do not rewrite the whole project unless necessary — refactor incrementally.
+
+---
+
+STEP 1 — FIX SQL INJECTION RISKS
+
+Find all SQL queries that use template literals or string interpolation such as:
+
+`${req.user.id}`
+
+Refactor them to use parameterized queries with placeholders.
+
+Example:
+
+BAD
+
+```sql
+LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = '${req.user.id}'
+```
+
+GOOD
+
+```sql
+LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = $1
+```
+
+Ensure parameters are safely passed in the query execution.
+
+Apply this fix to all affected files such as:
+
+* productController.js
+* any controller that builds SQL dynamically
+
+---
+
+STEP 2 — FIX CORS SECURITY ISSUE
+
+The current CORS configuration allows all origins.
+
+Replace it with a strict allowlist.
+
+Example secure configuration:
+
+* Allow only production domain
+* Allow localhost for development
+
+Implement a proper origin validation function.
+
+---
+
+STEP 3 — IMPROVE TOKEN SECURITY
+
+Current system stores tokens in localStorage.
+
+Prepare the backend to support secure cookie-based authentication.
+
+Implement:
+
+* HttpOnly cookies
+* Secure flag
+* SameSite protection
+
+Do not break existing authentication flow.
+
+---
+
+STEP 4 — HASH REFRESH TOKENS
+
+Currently refresh tokens are stored in plaintext.
+
+Refactor token storage so that:
+
+1. Refresh tokens are hashed using SHA-256 before storing in the database.
+2. When validating refresh tokens, hash the incoming token and compare hashes.
+
+Ensure this change does not break login and refresh flows.
+
+---
+
+STEP 5 — ADD RATE LIMITING TO WRITE ENDPOINTS
+
+Add specific rate limits to endpoints such as:
+
+POST /products
+POST /comments
+POST /launcher
+POST /upvote
+
+Use express-rate-limit and implement stricter limits for write operations.
+
+---
+
+STEP 6 — FIX COUNTER RACE CONDITIONS
+
+Functions such as:
+
+toggleLike
+toggleUpvote
+
+currently perform two separate queries:
+
+1. insert/delete
+2. update counter
+
+Refactor these operations so they are:
+
+* transactional
+  OR
+* atomic using SQL expressions
+
+Ensure counters remain correct under concurrent requests.
+
+---
+
+STEP 7 — ADD VALIDATION FOR USER INPUT
+
+Ensure proper validation exists for:
+
+* comment body length
+* URLs (website, twitter)
+* text fields
+
+Prevent extremely large or malformed inputs.
+
+---
+
+STEP 8 — IMPROVE ADMIN CONTROLLER STRUCTURE
+
+Refactor the large adminController.js file by splitting it into smaller controllers:
+
+* adminProductController
+* adminUserController
+* adminEntityController
+* adminTagController
+
+Update routes accordingly.
+
+---
+
+STEP 9 — PREVENT UNBOUNDED LOOPS
+
+Replace any `while(true)` loops (e.g., slug generation) with safe logic that includes a maximum attempt limit.
+
+---
+
+STEP 10 — IMPROVE ERROR HANDLING
+
+Ensure all asynchronous functions:
+
+* properly catch errors
+* log failures
+* never silently fail
+
+Specifically fix fire-and-forget operations such as:
+
+sendWelcomeEmail
+
+Add proper logging.
+
+---
+
+STEP 11 — MAINTAIN CODE QUALITY
+
+While applying fixes:
+
+* eliminate duplicated SQL logic
+* extract reusable query helpers
+* keep controllers small and readable
+* maintain consistent naming conventions
+
+---
+
+FINAL OUTPUT REQUIRED
+
+Provide a structured report containing:
+
+1. Files modified
+2. Security fixes applied
+3. Refactoring improvements
+4. Performance improvements
+5. Remaining technical debt (if any)
+
+Ensure the system remains fully functional and production-ready.

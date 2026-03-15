@@ -71,15 +71,19 @@ const createEntity = async (req, res, next) => {
     const validTypes = ['startup','accelerator','investor','venture_studio'];
     if (!validTypes.includes(type)) return res.status(400).json({ success:false, message:'Invalid entity type' });
 
-    // Generate slug from name
+    // Generate slug from name (bounded loop — max 20 attempts)
     const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     let slug = base;
     let attempt = 0;
-    while (true) {
+    const MAX_SLUG_ATTEMPTS = 20;
+    while (attempt < MAX_SLUG_ATTEMPTS) {
       const { rows: existing } = await query('SELECT id FROM entities WHERE slug=$1', [slug]);
       if (!existing.length) break;
       attempt++;
       slug = `${base}-${attempt}`;
+    }
+    if (attempt === MAX_SLUG_ATTEMPTS) {
+      slug = `${base}-${Date.now()}`;
     }
 
     const { rows } = await query(`

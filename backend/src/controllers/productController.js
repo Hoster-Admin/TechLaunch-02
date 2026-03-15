@@ -41,11 +41,13 @@ const getProducts = async (req, res, next) => {
     };
     const order = orderMap[sort] || 'p.upvotes_count DESC';
 
-    // Get user vote/bookmark state if authenticated
+    // Get user vote/bookmark state if authenticated (parameterized — no template interpolation)
     let voteJoin = '', bookmarkJoin = '';
     if (req.user) {
-      voteJoin     = `LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = '${req.user.id}'`;
-      bookmarkJoin = `LEFT JOIN bookmarks bm ON bm.product_id = p.id AND bm.user_id = '${req.user.id}'`;
+      params.push(req.user.id);
+      const uidIdx = params.length;
+      voteJoin     = `LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = $${uidIdx}`;
+      bookmarkJoin = `LEFT JOIN bookmarks bm ON bm.product_id = p.id AND bm.user_id = $${uidIdx}`;
     }
 
     params.push(parseInt(limit), offset);
@@ -83,11 +85,13 @@ const getProduct = async (req, res, next) => {
   try {
     const { id } = req.params;
     if (!UUID_RE.test(id)) return res.status(404).json({ success: false, message: 'Product not found' });
+    const queryParams = [id];
     let voteJoin = '', bookmarkJoin = '', waitlistJoin = '';
     if (req.user) {
-      voteJoin     = `LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = '${req.user.id}'`;
-      bookmarkJoin = `LEFT JOIN bookmarks bm ON bm.product_id = p.id AND bm.user_id = '${req.user.id}'`;
-      waitlistJoin = `LEFT JOIN waitlist_signups ws ON ws.product_id = p.id AND ws.user_id = '${req.user.id}'`;
+      queryParams.push(req.user.id);
+      voteJoin     = `LEFT JOIN upvotes uv ON uv.product_id = p.id AND uv.user_id = $2`;
+      bookmarkJoin = `LEFT JOIN bookmarks bm ON bm.product_id = p.id AND bm.user_id = $2`;
+      waitlistJoin = `LEFT JOIN waitlist_signups ws ON ws.product_id = p.id AND ws.user_id = $2`;
     }
 
     const { rows } = await query(`
@@ -97,7 +101,7 @@ const getProduct = async (req, res, next) => {
       FROM products p
       JOIN users u ON u.id = p.submitted_by
       ${voteJoin} ${bookmarkJoin} ${waitlistJoin}
-      WHERE p.id = $1`, [id]
+      WHERE p.id = $1`, queryParams
     );
 
     if (!rows.length) return res.status(404).json({ success:false, message:'Product not found' });
@@ -246,25 +250,36 @@ const deleteProduct = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── POST /api/products/:id/upvote
+// ── POST /api/products/:id/upvote  (atomic transaction — no counter race condition)
 const toggleUpvote = async (req, res, next) => {
+  const client = await getClient();
   try {
     const { id } = req.params;
     const userId = req.user.id;
 
-    const { rows: existing } = await query(
+    await client.query('BEGIN');
+
+    const { rows: existing } = await client.query(
       'SELECT id FROM upvotes WHERE user_id=$1 AND product_id=$2', [userId, id]
     );
 
     if (existing.length) {
-      await query('DELETE FROM upvotes WHERE user_id=$1 AND product_id=$2', [userId, id]);
+      await client.query('DELETE FROM upvotes WHERE user_id=$1 AND product_id=$2', [userId, id]);
+      await client.query('UPDATE products SET upvotes_count = GREATEST(0, upvotes_count - 1) WHERE id=$1', [id]);
     } else {
-      await query('INSERT INTO upvotes (user_id, product_id) VALUES ($1,$2)', [userId, id]);
+      await client.query('INSERT INTO upvotes (user_id, product_id) VALUES ($1,$2)', [userId, id]);
+      await client.query('UPDATE products SET upvotes_count = upvotes_count + 1 WHERE id=$1', [id]);
     }
 
-    const { rows } = await query('SELECT upvotes_count FROM products WHERE id=$1', [id]);
+    const { rows } = await client.query('SELECT upvotes_count FROM products WHERE id=$1', [id]);
+    await client.query('COMMIT');
     res.json({ success:true, data: { voted: !existing.length, upvotes_count: rows[0]?.upvotes_count || 0 } });
-  } catch (err) { next(err); }
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
 };
 
 // ── POST /api/products/:id/bookmark
@@ -336,9 +351,15 @@ const getComments = async (req, res, next) => {
 const addComment = async (req, res, next) => {
   try {
     const { body, parent_id } = req.body;
+    if (!body || !body.trim()) {
+      return res.status(422).json({ success:false, message:'Comment body is required' });
+    }
+    if (body.trim().length > 2000) {
+      return res.status(422).json({ success:false, message:'Comment must be 2000 characters or fewer' });
+    }
     const { rows } = await query(
       'INSERT INTO comments (product_id, user_id, body, parent_id) VALUES ($1,$2,$3,$4) RETURNING *',
-      [req.params.id, req.user.id, body, parent_id||null]
+      [req.params.id, req.user.id, body.trim(), parent_id||null]
     );
     res.status(201).json({ success:true, data:rows[0] });
   } catch (err) { next(err); }

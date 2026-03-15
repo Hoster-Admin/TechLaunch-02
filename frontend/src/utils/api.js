@@ -4,9 +4,10 @@ const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '/api',
   timeout: 15000,
   headers: { 'Content-Type': 'application/json' },
+  withCredentials: true,
 });
 
-// ── Request interceptor: attach token
+// ── Request interceptor: attach token from localStorage (hybrid with HttpOnly cookie)
 api.interceptors.request.use((config) => {
   const token = localStorage.getItem('accessToken');
   if (token) config.headers.Authorization = `Bearer ${token}`;
@@ -40,18 +41,12 @@ api.interceptors.response.use(
       isRefreshing = true;
 
       const refreshToken = localStorage.getItem('refreshToken');
-      if (!refreshToken) {
-        localStorage.removeItem('accessToken');
-        localStorage.removeItem('refreshToken');
-        window.location.href = '/login';
-        return Promise.reject(error);
-      }
 
       try {
-        const { data } = await axios.post('/api/auth/refresh', { refreshToken });
+        const { data } = await axios.post('/api/auth/refresh', { refreshToken }, { withCredentials: true });
         const { accessToken, refreshToken: newRefresh } = data.data;
-        localStorage.setItem('accessToken',  accessToken);
-        localStorage.setItem('refreshToken', newRefresh);
+        if (accessToken) localStorage.setItem('accessToken',  accessToken);
+        if (newRefresh)  localStorage.setItem('refreshToken', newRefresh);
         api.defaults.headers.common.Authorization = `Bearer ${accessToken}`;
         processQueue(null, accessToken);
         original.headers.Authorization = `Bearer ${accessToken}`;
@@ -134,6 +129,7 @@ export const adminAPI = {
   verifyUser:  (id)     => api.post(`/admin/users/${id}/verify`),
   suspendUser: (id)     => api.post(`/admin/users/${id}/suspend`),
   reinstate:   (id)     => api.post(`/admin/users/${id}/reinstate`),
+  inviteUser:  (d)      => api.post('/admin/users/invite', d),
   // Entities
   entities:    (p)      => api.get('/admin/entities', { params: p }),
   verifyEntity:(id)     => api.post(`/admin/entities/${id}/verify`),

@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 
 // ── GET /api/launcher  — fetch all posts newest-first
 const getPosts = async (req, res, next) => {
@@ -56,28 +56,42 @@ const createPost = async (req, res, next) => {
 const toggleLike = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { rows } = await query(
-      'SELECT 1 FROM launcher_post_likes WHERE post_id=$1 AND user_id=$2',
-      [id, req.user.id]
-    );
-    if (rows.length) {
-      await query('DELETE FROM launcher_post_likes WHERE post_id=$1 AND user_id=$2', [id, req.user.id]);
-      await query('UPDATE launcher_posts SET likes_count=GREATEST(0,likes_count-1) WHERE id=$1', [id]);
-      res.json({ success: true, data: { liked: false } });
-    } else {
-      await query('INSERT INTO launcher_post_likes (post_id, user_id) VALUES ($1,$2)', [id, req.user.id]);
-      await query('UPDATE launcher_posts SET likes_count=likes_count+1 WHERE id=$1', [id]);
-      // Fire notification to post author (if not self-like)
+    const client = await getClient();
+    let liked;
+    try {
+      await client.query('BEGIN');
+      const { rows } = await client.query(
+        'SELECT 1 FROM launcher_post_likes WHERE post_id=$1 AND user_id=$2',
+        [id, req.user.id]
+      );
+      if (rows.length) {
+        await client.query('DELETE FROM launcher_post_likes WHERE post_id=$1 AND user_id=$2', [id, req.user.id]);
+        await client.query('UPDATE launcher_posts SET likes_count=GREATEST(0,likes_count-1) WHERE id=$1', [id]);
+        liked = false;
+      } else {
+        await client.query('INSERT INTO launcher_post_likes (post_id, user_id) VALUES ($1,$2)', [id, req.user.id]);
+        await client.query('UPDATE launcher_posts SET likes_count=likes_count+1 WHERE id=$1', [id]);
+        liked = true;
+      }
+      await client.query('COMMIT');
+    } catch (txErr) {
+      await client.query('ROLLBACK').catch(() => {});
+      throw txErr;
+    } finally {
+      client.release();
+    }
+
+    if (liked) {
       const { rows: post } = await query('SELECT user_id FROM launcher_posts WHERE id=$1', [id]);
       if (post.length && post[0].user_id !== req.user.id) {
-        await query(
+        query(
           `INSERT INTO notifications (user_id, type, title, body, link, data)
            VALUES ($1,'like','Someone liked your post',$2,$3,$4)`,
           [post[0].user_id, `${req.user.name} liked your post`, `/launcher`, JSON.stringify({ actor_id: req.user.id, post_id: id })]
         ).catch(() => {});
       }
-      res.json({ success: true, data: { liked: true } });
     }
+    res.json({ success: true, data: { liked } });
   } catch (err) { next(err); }
 };
 

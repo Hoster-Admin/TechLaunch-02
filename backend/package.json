@@ -7,7 +7,14 @@
     "start": "node src/server.js",
     "dev": "nodemon src/server.js",
     "migrate": "node src/migrations/run.js",
-    "seed": "node src/seeders/run.js"
+    "seed": "node src/seeders/run.js",
+    "test": "jest --testEnvironment=node --forceExit --detectOpenHandles"
+  },
+  "jest": {
+    "testEnvironment": "node",
+    "testMatch": ["**/tests/**/*.test.js"],
+    "forceExit": true,
+    "detectOpenHandles": true
   },
   "dependencies": {
     "bcryptjs": "^2.4.3",
@@ -27,6 +34,8 @@
     "uuid": "^9.0.0"
   },
   "devDependencies": {
-    "nodemon": "^3.0.1"
+    "jest": "^30.3.0",
+    "nodemon": "^3.0.1",
+    "supertest": "^7.2.2"
   }
 }

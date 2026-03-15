@@ -1,18 +1,27 @@
 const jwt  = require('jsonwebtoken');
 const { query } = require('../config/database');
 
+const USER_FIELDS = 'id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at';
+
+// ── Extract token from cookie or Authorization header
+const extractToken = (req) => {
+  if (req.cookies?.accessToken) return req.cookies.accessToken;
+  const authHeader = req.headers.authorization;
+  if (authHeader?.startsWith('Bearer ')) return authHeader.split(' ')[1];
+  return null;
+};
+
 // ── Verify JWT and attach user to req
 const authenticate = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) {
+    const token = extractToken(req);
+    if (!token) {
       return res.status(401).json({ success:false, message:'No token provided' });
     }
-    const token = authHeader.split(' ')[1];
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
 
     const { rows } = await query(
-      'SELECT id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at FROM users WHERE id=$1',
+      `SELECT ${USER_FIELDS} FROM users WHERE id=$1`,
       [decoded.userId]
     );
     if (!rows.length) return res.status(401).json({ success:false, message:'User not found' });
@@ -33,12 +42,11 @@ const authenticate = async (req, res, next) => {
 // ── Optional auth (attaches user if token present, doesn't fail if not)
 const optionalAuth = async (req, res, next) => {
   try {
-    const authHeader = req.headers.authorization;
-    if (!authHeader || !authHeader.startsWith('Bearer ')) return next();
-    const token = authHeader.split(' ')[1];
+    const token = extractToken(req);
+    if (!token) return next();
     const decoded = jwt.verify(token, process.env.JWT_SECRET);
     const { rows } = await query(
-      'SELECT id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at FROM users WHERE id=$1',
+      `SELECT ${USER_FIELDS} FROM users WHERE id=$1`,
       [decoded.userId]
     );
     if (rows.length && rows[0].status === 'active') req.user = rows[0];

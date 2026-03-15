@@ -1,4 +1,5 @@
 const express = require('express');
+const rateLimit = require('express-rate-limit');
 const { body, query: qv } = require('express-validator');
 const { authenticate, optionalAuth, requireAdmin, requireMod, requireEditor } = require('../middleware/auth');
 const { validate } = require('../middleware/error');
@@ -6,6 +7,26 @@ const { query: dbQuery } = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
+
+// ── Write-endpoint rate limiters
+const writeLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  max: 30,
+  standardHeaders: true, legacyHeaders: false,
+  message: { success:false, message:'Too many submissions. Please try again later.' },
+});
+const commentLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 50,
+  standardHeaders: true, legacyHeaders: false,
+  message: { success:false, message:'Too many comments. Please slow down.' },
+});
+const upvoteLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 150,
+  standardHeaders: true, legacyHeaders: false,
+  message: { success:false, message:'Too many votes. Please slow down.' },
+});
 
 // ── Multer config for post images
 const postImgStorage = multer.diskStorage({
@@ -33,10 +54,13 @@ const authCtrl      = require('../controllers/authController');
 const productCtrl   = require('../controllers/productController');
 const entityCtrl    = require('../controllers/entityController');
 const userCtrl      = require('../controllers/userController');
-const adminCtrl     = require('../controllers/adminController');
-const msgCtrl       = require('../controllers/messageController');
-const launcherCtrl  = require('../controllers/launcherController');
-const communityCtrl = require('../controllers/communityController');
+const adminCtrl       = require('../controllers/adminController');
+const adminProdCtrl   = require('../controllers/adminProductController');
+const adminUserCtrl   = require('../controllers/adminUserController');
+const adminEntityCtrl = require('../controllers/adminEntityController');
+const msgCtrl         = require('../controllers/messageController');
+const launcherCtrl    = require('../controllers/launcherController');
+const communityCtrl   = require('../controllers/communityController');
 
 const router = express.Router();
 
@@ -75,7 +99,7 @@ const productsRouter = express.Router();
 
 productsRouter.get ('/',          optionalAuth, productCtrl.getProducts);
 productsRouter.get ('/:id',       optionalAuth, productCtrl.getProduct);
-productsRouter.post('/',          authenticate,
+productsRouter.post('/',          authenticate, writeLimiter,
   [
     body('name').trim().notEmpty().isLength({ max:120 }),
     body('tagline').trim().notEmpty().isLength({ max:255 }),
@@ -86,14 +110,14 @@ productsRouter.post('/',          authenticate,
 );
 productsRouter.put ('/:id',       authenticate, productCtrl.updateProduct);
 productsRouter.delete('/:id',     authenticate, productCtrl.deleteProduct);
-productsRouter.post('/:id/upvote',    authenticate, productCtrl.toggleUpvote);
+productsRouter.post('/:id/upvote',    authenticate, upvoteLimiter, productCtrl.toggleUpvote);
 productsRouter.post('/:id/bookmark',  authenticate, productCtrl.toggleBookmark);
 productsRouter.post('/:id/waitlist',  optionalAuth,
   [body('email').isEmail()], validate, productCtrl.joinWaitlist);
 productsRouter.post('/:id/discount-signup', optionalAuth,
   [body('email').isEmail()], validate, productCtrl.addDiscountSignup);
 productsRouter.get ('/:id/comments',  optionalAuth, productCtrl.getComments);
-productsRouter.post('/:id/comments',  authenticate,
+productsRouter.post('/:id/comments',  authenticate, commentLimiter,
   [body('body').trim().notEmpty().isLength({ max:2000 })], validate, productCtrl.addComment);
 
 // ══════════════════════════════════════════════════
@@ -177,25 +201,25 @@ adminRouter.use(authenticate);
 adminRouter.get('/dashboard', requireMod, adminCtrl.getDashboard);
 
 // Products
-adminRouter.get   ('/products',               requireMod,    adminCtrl.adminGetProducts);
-adminRouter.post  ('/products/:id/approve',   requireMod,    adminCtrl.approveProduct);
-adminRouter.post  ('/products/:id/reject',    requireMod,    adminCtrl.rejectProduct);
-adminRouter.post  ('/products/:id/featured',  requireEditor, adminCtrl.toggleFeatured);
+adminRouter.get   ('/products',               requireMod,    adminProdCtrl.adminGetProducts);
+adminRouter.post  ('/products/:id/approve',   requireMod,    adminProdCtrl.approveProduct);
+adminRouter.post  ('/products/:id/reject',    requireMod,    adminProdCtrl.rejectProduct);
+adminRouter.post  ('/products/:id/featured',  requireEditor, adminProdCtrl.toggleFeatured);
 
 // Users
-adminRouter.get ('/users',                requireMod,   adminCtrl.adminGetUsers);
-adminRouter.post('/users/invite',         requireAdmin, adminCtrl.inviteUser);
-adminRouter.get ('/users/:id',            requireMod,   adminCtrl.adminGetUser);
-adminRouter.post('/users/:id/verify',     requireMod,   adminCtrl.verifyUser);
-adminRouter.post('/users/:id/suspend',    requireMod,   adminCtrl.suspendUser);
-adminRouter.post('/users/:id/reinstate',  requireMod,   adminCtrl.reinstateUser);
+adminRouter.get ('/users',                requireMod,   adminUserCtrl.adminGetUsers);
+adminRouter.post('/users/invite',         requireAdmin, adminUserCtrl.inviteUser);
+adminRouter.get ('/users/:id',            requireMod,   adminUserCtrl.adminGetUser);
+adminRouter.post('/users/:id/verify',     requireMod,   adminUserCtrl.verifyUser);
+adminRouter.post('/users/:id/suspend',    requireMod,   adminUserCtrl.suspendUser);
+adminRouter.post('/users/:id/reinstate',  requireMod,   adminUserCtrl.reinstateUser);
 
 // Entities
-adminRouter.get ('/entities',        requireMod,    adminCtrl.adminGetEntities);
-adminRouter.post('/entities/:id/verify', requireMod, adminCtrl.verifyEntity);
+adminRouter.get ('/entities',        requireMod,    adminEntityCtrl.adminGetEntities);
+adminRouter.post('/entities/:id/verify', requireMod, adminEntityCtrl.verifyEntity);
 
 // Applications (read-only)
-adminRouter.get('/applications', requireMod, adminCtrl.adminGetApplications);
+adminRouter.get('/applications', requireMod, adminEntityCtrl.adminGetApplications);
 
 // Settings
 adminRouter.get('/settings',     requireAdmin, adminCtrl.getSettings);
@@ -320,14 +344,14 @@ pitchRouter.post('/',
 // ══════════════════════════════════════════════════
 const launcherRouter = express.Router();
 launcherRouter.get ('/',                       optionalAuth, launcherCtrl.getPosts);
-launcherRouter.post('/',                       authenticate,
+launcherRouter.post('/',                       authenticate, writeLimiter,
   [body('content').trim().notEmpty().isLength({ max:2000 })],
   validate, launcherCtrl.createPost);
 launcherRouter.get ('/:id',                    optionalAuth, launcherCtrl.getPost);
-launcherRouter.post('/:id/like',               authenticate, launcherCtrl.toggleLike);
+launcherRouter.post('/:id/like',               authenticate, upvoteLimiter, launcherCtrl.toggleLike);
 launcherRouter.delete('/:id',                  authenticate, launcherCtrl.deletePost);
 launcherRouter.get ('/:id/comments',           optionalAuth, launcherCtrl.getComments);
-launcherRouter.post('/:id/comments',           authenticate,
+launcherRouter.post('/:id/comments',           authenticate, commentLimiter,
   [body('body').trim().notEmpty().isLength({ max:2000 })],
   validate, launcherCtrl.addComment);
 launcherRouter.post('/comments/:id/like',      authenticate, launcherCtrl.toggleCommentLike);
@@ -366,8 +390,10 @@ communityRouter.put('/:id',              authenticate, communityCtrl.updatePost)
 communityRouter.delete('/:id',           authenticate, communityCtrl.deletePost);
 router.use('/community-posts',  communityRouter);
 
-// ── Stats endpoints
-router.get('/stats/summary', async (req, res, next) => {
+// ── Stats endpoints (cached 5 min)
+const { cacheMiddleware } = require('../utils/cache');
+
+router.get('/stats/summary', cacheMiddleware(300, 'stats'), async (req, res, next) => {
   try {
     const [products, founders, countries, accelerators] = await Promise.all([
       dbQuery(`SELECT COUNT(*)::int AS c FROM products WHERE status='live'`),
@@ -384,7 +410,7 @@ router.get('/stats/summary', async (req, res, next) => {
   } catch(err){ next(err); }
 });
 
-router.get('/stats/directory', async (req, res, next) => {
+router.get('/stats/directory', cacheMiddleware(300, 'stats'), async (req, res, next) => {
   try {
     const [industryRows, countryRows] = await Promise.all([
       dbQuery(`SELECT industry AS name, COUNT(*)::int AS count FROM products WHERE status='live' AND industry IS NOT NULL GROUP BY industry ORDER BY count DESC`),

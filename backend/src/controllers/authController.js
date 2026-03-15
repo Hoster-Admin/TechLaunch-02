@@ -1,8 +1,12 @@
 const bcrypt = require('bcryptjs');
+const crypto = require('crypto');
 const jwt    = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const { query } = require('../config/database');
 const { sendWelcomeEmail } = require('../services/emailService');
+
+// ── Helper: hash a refresh token before storing / looking up
+const hashToken = (token) => crypto.createHash('sha256').update(token).digest('hex');
 
 // ── Helper: generate tokens
 const generateTokens = (userId) => {
@@ -13,6 +17,24 @@ const generateTokens = (userId) => {
   );
   const refreshToken = uuid();
   return { accessToken, refreshToken };
+};
+
+// ── Cookie options
+const COOKIE_OPTS = {
+  httpOnly: true,
+  secure: process.env.NODE_ENV === 'production',
+  sameSite: 'strict',
+  path: '/',
+};
+
+const setAuthCookies = (res, accessToken, refreshToken) => {
+  res.cookie('accessToken',  accessToken,  { ...COOKIE_OPTS, maxAge: 7  * 24 * 60 * 60 * 1000 });
+  res.cookie('refreshToken', refreshToken, { ...COOKIE_OPTS, maxAge: 30 * 24 * 60 * 60 * 1000 });
+};
+
+const clearAuthCookies = (res) => {
+  res.clearCookie('accessToken',  { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' });
+  res.clearCookie('refreshToken', { httpOnly: true, secure: process.env.NODE_ENV === 'production', sameSite: 'strict', path: '/' });
 };
 
 // ── POST /api/auth/register
@@ -38,10 +60,10 @@ const register = async (req, res, next) => {
     const user = rows[0];
     const { accessToken, refreshToken } = generateTokens(user.id);
 
-    // Store refresh token
+    // Store hashed refresh token
     await query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
-      [user.id, refreshToken]
+      [user.id, hashToken(refreshToken)]
     );
 
     // Log activity
@@ -53,6 +75,7 @@ const register = async (req, res, next) => {
     // Send welcome email (non-blocking)
     sendWelcomeEmail({ name: user.name, email: user.email });
 
+    setAuthCookies(res, accessToken, refreshToken);
     res.status(201).json({
       success: true,
       message: 'Account created successfully',
@@ -86,12 +109,14 @@ const login = async (req, res, next) => {
 
     const { accessToken, refreshToken } = generateTokens(user.id);
 
+    // Store hashed refresh token
     await query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
-      [user.id, refreshToken]
+      [user.id, hashToken(refreshToken)]
     );
 
     const { password_hash, ...safeUser } = user;
+    setAuthCookies(res, accessToken, refreshToken);
     res.json({
       success: true,
       data: { user: safeUser, accessToken, refreshToken },
@@ -102,28 +127,30 @@ const login = async (req, res, next) => {
 // ── POST /api/auth/refresh
 const refresh = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    // Accept from cookie or request body (backwards compat)
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     if (!refreshToken) return res.status(400).json({ success:false, message:'Refresh token required' });
 
     const { rows } = await query(
       `SELECT rt.user_id, u.status FROM refresh_tokens rt
        JOIN users u ON u.id = rt.user_id
        WHERE rt.token=$1 AND rt.revoked=false AND rt.expires_at > NOW()`,
-      [refreshToken]
+      [hashToken(refreshToken)]
     );
     if (!rows.length) return res.status(401).json({ success:false, message:'Invalid or expired refresh token' });
 
     const { user_id, status } = rows[0];
     if (status === 'suspended') return res.status(403).json({ success:false, message:'Account suspended' });
 
-    // Rotate token
-    await query('UPDATE refresh_tokens SET revoked=true WHERE token=$1', [refreshToken]);
+    // Rotate token — revoke old hash, store new hash
+    await query('UPDATE refresh_tokens SET revoked=true WHERE token=$1', [hashToken(refreshToken)]);
     const tokens = generateTokens(user_id);
     await query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
-      [user_id, tokens.refreshToken]
+      [user_id, hashToken(tokens.refreshToken)]
     );
 
+    setAuthCookies(res, tokens.accessToken, tokens.refreshToken);
     res.json({ success:true, data: tokens });
   } catch (err) { next(err); }
 };
@@ -131,10 +158,11 @@ const refresh = async (req, res, next) => {
 // ── POST /api/auth/logout
 const logout = async (req, res, next) => {
   try {
-    const { refreshToken } = req.body;
+    const refreshToken = req.cookies?.refreshToken || req.body?.refreshToken;
     if (refreshToken) {
-      await query('UPDATE refresh_tokens SET revoked=true WHERE token=$1', [refreshToken]);
+      await query('UPDATE refresh_tokens SET revoked=true WHERE token=$1', [hashToken(refreshToken)]);
     }
+    clearAuthCookies(res);
     res.json({ success:true, message:'Logged out' });
   } catch (err) { next(err); }
 };
@@ -179,9 +207,10 @@ const setPassword = async (req, res, next) => {
     const { accessToken, refreshToken } = generateTokens(user.id);
     await query(
       `INSERT INTO refresh_tokens (user_id, token, expires_at) VALUES ($1,$2, NOW() + INTERVAL '30 days')`,
-      [user.id, refreshToken]
+      [user.id, hashToken(refreshToken)]
     );
 
+    setAuthCookies(res, accessToken, refreshToken);
     res.json({
       success: true,
       message: 'Password set successfully',

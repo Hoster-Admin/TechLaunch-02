@@ -6,6 +6,7 @@ const morgan      = require('morgan');
 const rateLimit   = require('express-rate-limit');
 const path        = require('path');
 
+const cookieParser        = require('cookie-parser');
 const routes              = require('./routes');
 const { errorHandler, notFound } = require('./middleware/error');
 
@@ -49,7 +50,7 @@ app.use(cors({
     if (allowedOrigins.includes(origin) || origin.endsWith('.replit.dev') || origin.endsWith('.replit.app') || origin.endsWith('.tlmena.com')) {
       return cb(null, true);
     }
-    cb(null, true);
+    cb(new Error('Not allowed by CORS'));
   },
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
@@ -59,6 +60,7 @@ app.use(cors({
 // ── Body parsing
 app.use(express.json({ limit: '10mb' }));
 app.use(express.urlencoded({ extended: true, limit: '10mb' }));
+app.use(cookieParser());
 
 // ── HTTP logger (dev only)
 if (process.env.NODE_ENV !== 'production') {
@@ -111,11 +113,13 @@ if (process.env.NODE_ENV === 'production') {
 app.use(notFound);
 app.use(errorHandler);
 
-// ── Start server
-app.listen(PORT, () => {
-  console.log(`\n🚀 Tech Launch API running on port ${PORT}`);
-  console.log(`   Mode:    ${process.env.NODE_ENV || 'development'}`);
-  console.log(`   Health:  http://localhost:${PORT}/api/health\n`);
-});
+// ── Start server only when run directly (not when imported by tests)
+if (require.main === module) {
+  app.listen(PORT, () => {
+    console.log(`\n🚀 Tech Launch API running on port ${PORT}`);
+    console.log(`   Mode:    ${process.env.NODE_ENV || 'development'}`);
+    console.log(`   Health:  http://localhost:${PORT}/api/health\n`);
+  });
+}
 
 module.exports = app;

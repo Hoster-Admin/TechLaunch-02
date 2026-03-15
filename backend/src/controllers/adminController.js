@@ -1,7 +1,4 @@
 const { query } = require('../config/database');
-const bcrypt = require('bcryptjs');
-const { v4: uuid } = require('uuid');
-const { sendInviteEmail } = require('../services/emailService');
 
 // ═══════════════════════════════════════════════
 // DASHBOARD
@@ -75,264 +72,7 @@ const getDashboard = async (req, res, next) => {
 };
 
 // ═══════════════════════════════════════════════
-// PRODUCTS (admin)
-// ═══════════════════════════════════════════════
-const adminGetProducts = async (req, res, next) => {
-  try {
-    const { status, search, page = 1, limit = 50 } = req.query;
-    const offset = (parseInt(page) - 1) * parseInt(limit);
-    const params = [];
-    const conditions = [];
-
-    if (status && status !== 'all') {
-      if (status === 'featured') {
-        conditions.push(`p.featured = true`);
-      } else {
-        params.push(status);
-        conditions.push(`p.status = $${params.length}`);
-      }
-    }
-    if (search) {
-      params.push(`%${search}%`);
-      conditions.push(`(p.name ILIKE $${params.length} OR p.tagline ILIKE $${params.length})`);
-    }
-    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
-
-    params.push(parseInt(limit), offset);
-    const { rows } = await query(`
-      SELECT p.*, u.name AS submitter_name, u.handle AS submitter_handle,
-             a.name AS approver_name,
-             COUNT(*) OVER() AS total_count
-      FROM products p
-      JOIN users u ON u.id = p.submitted_by
-      LEFT JOIN users a ON a.id = p.approved_by
-      ${where}
-      ORDER BY p.created_at DESC
-      LIMIT $${params.length - 1} OFFSET $${params.length}`, params);
-
-    const total = rows[0]?.total_count || 0;
-    res.json({
-      success: true,
-      data: rows.map(({ total_count, ...r }) => r),
-      pagination: { total: parseInt(total), page: parseInt(page), limit: parseInt(limit) },
-    });
-  } catch (err) { next(err); }
-};
-
-const approveProduct = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await query(`
-      UPDATE products SET status='live', approved_by=$1, approved_at=NOW()
-      WHERE id=$2 RETURNING name, submitted_by`, [req.user.id, id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await query('INSERT INTO activity_log (actor_id,action,entity,entity_id) VALUES ($1,$2,$3,$4)',
-      [req.user.id, 'product.approve', 'products', id]);
-    // Notify the submitter
-    await query(
-      `INSERT INTO notifications (user_id, type, title, body, link)
-       VALUES ($1,'product_approved','🎉 Product Approved!',$2,$3)`,
-      [rows[0].submitted_by,
-       `"${rows[0].name}" has been approved and is now live on Tech Launch MENA! 🚀`,
-       `/products/${id}`]
-    ).catch(() => {});
-    res.json({ success:true, message:`${rows[0].name} approved` });
-  } catch (err) { next(err); }
-};
-
-const rejectProduct = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { reason } = req.body;
-    const { rows } = await query(`
-      UPDATE products SET status='rejected', rejected_reason=$1
-      WHERE id=$2 RETURNING name, submitted_by`, [reason||null, id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    await query('INSERT INTO activity_log (actor_id,action,entity,entity_id) VALUES ($1,$2,$3,$4)',
-      [req.user.id, 'product.reject', 'products', id]);
-    // Notify the submitter
-    const reasonText = reason ? ` Reason: ${reason}` : '';
-    await query(
-      `INSERT INTO notifications (user_id, type, title, body, link)
-       VALUES ($1,'product_rejected','❌ Product Not Approved',$2,$3)`,
-      [rows[0].submitted_by,
-       `"${rows[0].name}" was not approved at this time.${reasonText} You can update and resubmit.`,
-       `/settings`]
-    ).catch(() => {});
-    res.json({ success:true, message:`${rows[0].name} rejected` });
-  } catch (err) { next(err); }
-};
-
-const toggleFeatured = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await query(`
-      UPDATE products SET featured = NOT featured WHERE id=$1
-      RETURNING name, featured`, [id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    res.json({ success:true, data: rows[0] });
-  } catch (err) { next(err); }
-};
-
-// ═══════════════════════════════════════════════
-// USERS (admin)
-// ═══════════════════════════════════════════════
-const adminGetUsers = async (req, res, next) => {
-  try {
-    const { status, persona, verified, search, page = 1, limit = 50 } = req.query;
-    const params = [];
-    const conditions = [`u.role = 'user'`];
-
-    if (status)   { params.push(status);  conditions.push(`u.status = $${params.length}`); }
-    if (persona)  { params.push(persona); conditions.push(`u.persona = $${params.length}`); }
-    if (verified === 'true') conditions.push(`u.verified = true`);
-    if (search) {
-      params.push(`%${search}%`);
-      conditions.push(`(u.name ILIKE $${params.length} OR u.handle ILIKE $${params.length})`);
-    }
-
-    const offset = (parseInt(page)-1)*parseInt(limit);
-    params.push(parseInt(limit), offset);
-
-    const { rows } = await query(`
-      SELECT u.id, u.name, u.handle, u.email, u.persona, u.country, u.verified,
-             u.status, u.role, u.avatar_color, u.created_at,
-             u.products_count, u.votes_given, u.followers_count,
-             COUNT(*) OVER() AS total_count
-      FROM users u
-      WHERE ${conditions.join(' AND ')}
-      ORDER BY u.created_at DESC
-      LIMIT $${params.length-1} OFFSET $${params.length}`, params);
-
-    const total = rows[0]?.total_count || 0;
-    res.json({
-      success: true,
-      data: rows.map(({ total_count, ...r }) => r),
-      pagination: { total: parseInt(total), page: parseInt(page), limit: parseInt(limit) },
-    });
-  } catch (err) { next(err); }
-};
-
-const adminGetUser = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const [userRes, prodsRes] = await Promise.all([
-      query(`SELECT u.id, u.name, u.handle, u.email, u.persona, u.country, u.bio,
-                    u.verified, u.status, u.role, u.avatar_color, u.created_at,
-                    u.products_count, u.votes_given, u.followers_count, u.following_count
-             FROM users u WHERE u.id=$1`, [id]),
-      query(`SELECT id, name, logo_emoji, industry, status, upvotes_count, created_at
-             FROM products WHERE submitted_by=$1 ORDER BY created_at DESC`, [id]),
-    ]);
-    if (!userRes.rows.length) return res.status(404).json({ success:false, message:'User not found' });
-    res.json({ success:true, data: { ...userRes.rows[0], products: prodsRes.rows } });
-  } catch (err) { next(err); }
-};
-
-const verifyUser = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await query(
-      `UPDATE users SET verified=true WHERE id=$1 RETURNING name`, [id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    res.json({ success:true, message:`${rows[0].name} verified` });
-  } catch (err) { next(err); }
-};
-
-const suspendUser = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await query(
-      `UPDATE users SET status='suspended' WHERE id=$1 AND role='user' RETURNING name`, [id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    res.json({ success:true, message:`${rows[0].name} suspended` });
-  } catch (err) { next(err); }
-};
-
-const reinstateUser = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await query(
-      `UPDATE users SET status='active' WHERE id=$1 RETURNING name`, [id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    res.json({ success:true, message:`${rows[0].name} reinstated` });
-  } catch (err) { next(err); }
-};
-
-// ═══════════════════════════════════════════════
-// ENTITIES (admin)
-// ═══════════════════════════════════════════════
-const adminGetEntities = async (req, res, next) => {
-  try {
-    const { type, search, page=1, limit=50 } = req.query;
-    const params = [];
-    const conditions = [];
-    if (type)   { params.push(type);   conditions.push(`e.type=$${params.length}`); }
-    if (search) { params.push(`%${search}%`); conditions.push(`e.name ILIKE $${params.length}`); }
-    const where = conditions.length ? 'WHERE '+conditions.join(' AND ') : '';
-    const offset = (parseInt(page)-1)*parseInt(limit);
-    params.push(parseInt(limit), offset);
-
-    const { rows } = await query(`
-      SELECT *, COUNT(*) OVER() AS total_count FROM entities ${where}
-      ORDER BY created_at DESC
-      LIMIT $${params.length-1} OFFSET $${params.length}`, params);
-    const total = rows[0]?.total_count || 0;
-    res.json({ success:true, data: rows.map(({total_count,...r})=>r), pagination:{total:parseInt(total)} });
-  } catch (err) { next(err); }
-};
-
-const verifyEntity = async (req, res, next) => {
-  try {
-    const { id } = req.params;
-    const { rows } = await query(
-      `UPDATE entities SET verified=true, verified_by=$1 WHERE id=$2 RETURNING name`,
-      [req.user.id, id]);
-    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
-    res.json({ success:true, message:`${rows[0].name} verified` });
-  } catch (err) { next(err); }
-};
-
-// ═══════════════════════════════════════════════
-// APPLICATIONS (admin read-only view)
-// ═══════════════════════════════════════════════
-const adminGetApplications = async (req, res, next) => {
-  try {
-    const [accelApps, pitches, waitlists] = await Promise.all([
-      query(`
-        SELECT aa.*, u.name AS applicant_name, u.handle AS applicant_handle,
-               e.name AS entity_name, p.name AS product_name
-        FROM accelerator_applications aa
-        JOIN users u ON u.id = aa.applicant_id
-        JOIN entities e ON e.id = aa.entity_id
-        LEFT JOIN products p ON p.id = aa.product_id
-        ORDER BY aa.created_at DESC`),
-      query(`
-        SELECT ip.*, u.name AS founder_name, u.handle AS founder_handle,
-               e.name AS investor_name, p.name AS product_name
-        FROM investor_pitches ip
-        JOIN users u ON u.id = ip.founder_id
-        JOIN entities e ON e.id = ip.investor_id
-        LEFT JOIN products p ON p.id = ip.product_id
-        ORDER BY ip.created_at DESC`),
-      query(`
-        SELECT pr.id, pr.name, pr.logo_emoji, pr.waitlist_count,
-               COUNT(ws.id) FILTER (WHERE ws.created_at > NOW()-INTERVAL '24h') AS last_24h
-        FROM products pr
-        LEFT JOIN waitlist_signups ws ON ws.product_id = pr.id
-        WHERE pr.waitlist_count > 0
-        GROUP BY pr.id ORDER BY pr.waitlist_count DESC`),
-    ]);
-    res.json({ success:true, data: {
-      accelerator_apps: accelApps.rows,
-      investor_pitches: pitches.rows,
-      waitlists: waitlists.rows,
-    }});
-  } catch (err) { next(err); }
-};
-
-// ═══════════════════════════════════════════════
-// SETTINGS (admin)
+// SETTINGS
 // ═══════════════════════════════════════════════
 const getSettings = async (req, res, next) => {
   try {
@@ -359,7 +99,7 @@ const updateSettings = async (req, res, next) => {
 };
 
 // ═══════════════════════════════════════════════
-// TEAM (admin)
+// TEAM
 // ═══════════════════════════════════════════════
 const getTeam = async (req, res, next) => {
   try {
@@ -368,7 +108,6 @@ const getTeam = async (req, res, next) => {
              u.id AS user_id, u.name, u.email, u.handle, u.avatar_color
       FROM team_members tm JOIN users u ON u.id = tm.user_id
       ORDER BY tm.created_at ASC`);
-    // Also include the owner (admin)
     const { rows: owner } = await query(
       `SELECT id AS user_id, name, email, handle, avatar_color, role FROM users WHERE role='admin' LIMIT 1`
     );
@@ -399,7 +138,7 @@ const removeTeamMember = async (req, res, next) => {
 };
 
 // ═══════════════════════════════════════════════
-// REPORTS (admin)
+// REPORTS
 // ═══════════════════════════════════════════════
 const getReports = async (req, res, next) => {
   try {
@@ -433,13 +172,11 @@ const getReports = async (req, res, next) => {
 };
 
 // ═══════════════════════════════════════════════
-// PLATFORM POSTS (My Profile section)
+// PLATFORM POSTS
 // ═══════════════════════════════════════════════
 const getPlatformPosts = async (req, res, next) => {
   try {
-    const { rows } = await query(
-      'SELECT * FROM platform_posts ORDER BY created_at DESC'
-    );
+    const { rows } = await query('SELECT * FROM platform_posts ORDER BY created_at DESC');
     res.json({ success:true, data:rows });
   } catch (err) { next(err); }
 };
@@ -462,10 +199,13 @@ const deletePlatformPost = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ═══════════════════════════════════════════════
+// SUGGESTIONS
+// ═══════════════════════════════════════════════
 const getSuggestions = async (req, res, next) => {
   try {
     const { status } = req.query;
-    let sql = `
+    const sql = `
       SELECT s.*, u.name AS user_name, u.handle AS user_handle, u.avatar_color,
              r.name AS responder_name
       FROM suggestions s
@@ -498,49 +238,8 @@ const respondSuggestion = async (req, res, next) => {
 };
 
 // ═══════════════════════════════════════════════
-// INVITE USER (admin creates user, sends invite email)
+// EMAIL SIGNUPS
 // ═══════════════════════════════════════════════
-const inviteUser = async (req, res, next) => {
-  try {
-    const { name, email, role = 'user', persona = 'Founder', country } = req.body;
-
-    if (!name || !email) {
-      return res.status(400).json({ success: false, message: 'Name and email are required' });
-    }
-
-    const { rows: existing } = await query(
-      'SELECT id FROM users WHERE email=$1', [email]
-    );
-    if (existing.length) {
-      return res.status(409).json({ success: false, message: 'A user with this email already exists' });
-    }
-
-    const inviteToken = uuid();
-    const handle = email.split('@')[0].replace(/[^a-zA-Z0-9_]/g, '') + '_' + Math.random().toString(36).slice(2, 6);
-
-    const { rows } = await query(
-      `INSERT INTO users (name, handle, email, role, persona, country, invite_token, invite_token_expires_at)
-       VALUES ($1, $2, $3, $4, $5, $6, $7, NOW() + INTERVAL '48 hours')
-       RETURNING id, name, email, role, handle, created_at`,
-      [name, handle, email, role, persona, country || null, inviteToken]
-    );
-
-    await sendInviteEmail({ name, email, token: inviteToken, role });
-
-    await query(
-      'INSERT INTO activity_log (actor_id, action, entity, entity_id) VALUES ($1,$2,$3,$4)',
-      [req.user.id, 'admin.invite_user', 'users', rows[0].id]
-    );
-
-    res.status(201).json({
-      success: true,
-      message: `Invite sent to ${email}`,
-      data: { user: rows[0] },
-    });
-  } catch (err) { next(err); }
-};
-
-// ── GET /api/admin/email-signups
 const getEmailSignups = async (req, res, next) => {
   try {
     const [waitlists, discounts] = await Promise.all([
@@ -571,15 +270,10 @@ const getEmailSignups = async (req, res, next) => {
 
 module.exports = {
   getDashboard,
-  adminGetProducts, approveProduct, rejectProduct, toggleFeatured,
-  adminGetUsers, adminGetUser, verifyUser, suspendUser, reinstateUser,
-  adminGetEntities, verifyEntity,
-  adminGetApplications,
   getSettings, updateSettings,
   getTeam, addTeamMember, removeTeamMember,
   getReports,
   getPlatformPosts, createPlatformPost, deletePlatformPost,
   getSuggestions, respondSuggestion,
-  inviteUser,
   getEmailSignups,
 };
