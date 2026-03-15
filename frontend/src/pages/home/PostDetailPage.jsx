@@ -401,8 +401,13 @@ export default function PostDetailPage() {
               }}>{post.tag}</span>
             </div>
 
+            {post.post_type === 'article' && post.title && (
+              <h2 style={{ fontSize: 24, fontWeight: 900, letterSpacing: '-.02em', lineHeight: 1.3, color: '#0a0a0a', margin: '0 0 14px' }}>
+                {post.title}
+              </h2>
+            )}
             <p style={{
-              margin: `0 0 ${post.image_url ? '14px' : '18px'}`, fontSize: 16, color: '#1e293b',
+              margin: `0 0 ${post.image_url ? '14px' : '18px'}`, fontSize: post.post_type === 'article' ? 16 : 16, color: '#1e293b',
               lineHeight: 1.75, whiteSpace: 'pre-wrap', fontWeight: 400,
             }}>{post.content}</p>
 
