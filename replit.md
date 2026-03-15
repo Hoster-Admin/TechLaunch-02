@@ -8,6 +8,9 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 - **Product Comments**: Show real user name/handle/avatar (fixed "Anonymous" bug — backend returns `author_name`/`author_handle` flat fields).
 - **Admin Email Signups**: `/admin/email-signups` page shows both waitlist and discount signup emails with product info, with CSV export.
 - **Threaded Launcher Comments**: Replies nested under parent comments with collapsible toggle.
+- **Community Posts System**: Full CRUD for posts and articles. `SubmitPostModal` supports drafts, publish, edit. Auth-gated buttons on Articles/Home pages.
+- **Settings My Drafts Tab**: Users can view, edit, publish, and delete their drafts from the Settings page.
+- **Signup Welcome Flow**: New users redirected to `/u/:handle?welcome=1` showing a welcome modal.
 
 ## Architecture
 
@@ -35,7 +38,7 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 │   │   ├── config/      (database.js - pg Pool, uses NEON_DATABASE_URL if set)
 │   │   ├── controllers/ (auth, products, entities, users, admin)
 │   │   ├── middleware/  (auth JWT, error handling)
-│   │   ├── migrations/  (001_schema.sql, 002_invite_tokens.sql)
+│   │   ├── migrations/  (001_schema.sql, 002_invite_tokens.sql, 003_community.sql)
 │   │   ├── services/    (emailService.js - Resend transactional email)
 │   │   └── routes/
 │   └── .env             (PORT=5000 in production, DB credentials)
