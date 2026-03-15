@@ -112,7 +112,8 @@ export default function PlatformProfile() {
   const [posting,     setPosting]     = useState(false);
   const [postError,   setPostError]   = useState('');
 
-  const [articleTags,    setArticleTags]    = useState([]);
+  const [articleTags, setArticleTags] = useState([]);
+  const [postTags,    setPostTags]    = useState([]);
   const [selectedTagIds, setSelectedTagIds] = useState([]);
 
   const [editMode,    setEditMode]    = useState(false);
@@ -142,6 +143,7 @@ export default function PlatformProfile() {
       setActivity(ad.data.data.activity || []);
       const all = td.data.data || [];
       setArticleTags(all.filter(t => t.category === 'article'));
+      setPostTags(all.filter(t => t.category === 'post'));
     }).catch(() => {}).finally(() => setLoading(false));
   }, []);
 
@@ -483,7 +485,7 @@ export default function PlatformProfile() {
         {/* Post type */}
         <div style={{ display: 'flex', gap: 6, marginBottom: 12 }}>
           {POST_TYPES.map(pt => (
-            <button key={pt.value} onClick={() => setPostType(pt.value)}
+            <button key={pt.value} onClick={() => { setPostType(pt.value); setSelectedTagIds([]); }}
               style={{ fontSize: 12, padding: '6px 16px', borderRadius: 8, border: '1.5px solid', cursor: 'pointer', fontWeight: 600, transition: 'all .15s',
                 borderColor: postType === pt.value ? 'var(--orange)' : 'var(--gray-200)',
                 background:  postType === pt.value ? 'rgba(225,80,51,.08)' : 'var(--gray-50)',
@@ -493,23 +495,29 @@ export default function PlatformProfile() {
           ))}
         </div>
 
-        {/* Tag selector */}
-        {articleTags.length > 0 && (
-          <div style={{ marginBottom: 12 }}>
-            <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-400)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .6 }}>Tags</div>
-            <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-              {articleTags.map(tag => {
-                const sel = selectedTagIds.includes(tag.id);
-                return (
-                  <button key={tag.id} onClick={() => toggleTag(tag.id)}
-                    style={{ padding: '4px 11px', borderRadius: 20, border: `1.5px solid ${sel ? 'var(--orange)' : 'var(--gray-200)'}`, background: sel ? (tag.color || 'rgba(225,80,51,.1)') : 'transparent', color: sel ? (tag.text_color || 'var(--orange)') : 'var(--gray-500)', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}>
-                    {tag.name}
-                  </button>
-                );
-              })}
+        {/* Tag selector — shows post tags for Post type, article tags for Article type */}
+        {(() => {
+          const activeTags = postType === 'article' ? articleTags : postTags;
+          if (!activeTags.length) return null;
+          return (
+            <div style={{ marginBottom: 12 }}>
+              <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-400)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .6 }}>
+                {postType === 'article' ? 'Article Tags' : 'Post Tags'}
+              </div>
+              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                {activeTags.map(tag => {
+                  const sel = selectedTagIds.includes(tag.id);
+                  return (
+                    <button key={tag.id} onClick={() => toggleTag(tag.id)}
+                      style={{ padding: '4px 11px', borderRadius: 20, border: `1.5px solid ${sel ? 'var(--orange)' : 'var(--gray-200)'}`, background: sel ? (tag.color || 'rgba(225,80,51,.1)') : 'transparent', color: sel ? (tag.text_color || 'var(--orange)') : 'var(--gray-500)', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}>
+                      {tag.name}
+                    </button>
+                  );
+                })}
+              </div>
             </div>
-          </div>
-        )}
+          );
+        })()}
 
         <textarea
           value={composeText}
