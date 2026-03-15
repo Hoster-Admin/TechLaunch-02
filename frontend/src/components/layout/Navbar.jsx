@@ -242,7 +242,7 @@ export default function Navbar() {
           ) : (
             <>
               <button className="btn-nav-ghost" onClick={() => setAuthModal('login')}>Sign In</button>
-              <button className="btn-nav-primary" onClick={() => setAuthModal('signup')}>🚀 Join Free</button>
+              <button className="btn-nav-primary" onClick={() => setAuthModal('signup')}>🚀 Join Now</button>
             </>
           )}
         </div>
@@ -336,7 +336,7 @@ export default function Navbar() {
           ) : (
             <div style={{ padding:'8px 16px 24px' }}>
               <div style={{ height:1, background:'#f0f0f0', margin:'4px 0 12px' }}/>
-              <button className="btn-full" style={{ marginBottom:10 }} onClick={() => { setAuthModal('signup'); setMobileOpen(false); }}>Create Free Account 🚀</button>
+              <button className="btn-full" style={{ marginBottom:10 }} onClick={() => { setAuthModal('signup'); setMobileOpen(false); }}>🚀 Join Now</button>
               <button onClick={() => { setAuthModal('login'); setMobileOpen(false); }}
                 style={{ width:'100%', padding:'13px', borderRadius:12, fontSize:15, fontWeight:800, border:'1.5px solid #e8e8e8', background:'#fff', color:'#0a0a0a', cursor:'pointer' }}>
                 Sign In
