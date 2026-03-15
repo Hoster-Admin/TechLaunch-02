@@ -7,7 +7,7 @@ const getProducts = async (req, res, next) => {
     const {
       status = 'live', industry, country, search,
       sort = 'upvotes', page = 1, limit = 20,
-      featured, submitter
+      featured, submitter, stage
     } = req.query;
 
     const offset = (parseInt(page) - 1) * parseInt(limit);
@@ -26,6 +26,7 @@ const getProducts = async (req, res, next) => {
     }
     if (industry) { params.push(industry); conditions.push(`p.industry = $${params.length}`); }
     if (country)  { params.push(country);  conditions.push(`$${params.length} = ANY(p.countries)`); }
+    if (stage && stage !== 'all') { params.push(stage); conditions.push(`p.stage = $${params.length}`); }
     if (featured === 'true') conditions.push(`p.featured = true`);
     if (search) {
       params.push(`%${search}%`);
@@ -142,7 +143,7 @@ const createProduct = async (req, res, next) => {
   try {
     const {
       name, tagline, description, logo_emoji, logo_url, website, demo_url, video_url,
-      industry, countries, tags, launch_date, maker_ids = []
+      industry, countries, tags, launch_date, stage, maker_ids = []
     } = req.body;
 
     // Check platform setting: manual_approval
@@ -154,12 +155,12 @@ const createProduct = async (req, res, next) => {
 
     const { rows } = await query(`
       INSERT INTO products (name, tagline, description, logo_emoji, logo_url, website, demo_url, video_url,
-        industry, countries, tags, launch_date, status, submitted_by,
+        industry, countries, tags, launch_date, stage, status, submitted_by,
         approved_by, approved_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
       RETURNING *`,
       [name, tagline, description||null, logo_emoji||'🚀', logo_url||null, website||null, demo_url||null, video_url||null,
-       industry, countries||[], tags||[], launch_date||null, status,
+       industry, countries||[], tags||[], launch_date||null, stage||null, status,
        req.user.id,
        !manualApproval ? req.user.id : null,
        !manualApproval ? new Date() : null]

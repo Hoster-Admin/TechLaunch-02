@@ -152,6 +152,10 @@ export default function ContactPage() {
         <div style={{ maxWidth:1100, margin:'0 auto', padding:'48px 32px 80px', display:'grid', gridTemplateColumns:'1fr 360px', gap:48, alignItems:'start' }} className="contact-grid">
 
           <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:20, padding:'36px 32px' }}>
+            <p style={{ margin:'0 0 20px', fontSize:13, color:'#888', lineHeight:1.7 }}>
+              Or email us directly at{' '}
+              <a href="mailto:hello@tlmena.com" style={{ color:'var(--orange)', fontWeight:700, textDecoration:'none' }}>hello@tlmena.com</a>
+            </p>
             <ContactForm/>
           </div>
 

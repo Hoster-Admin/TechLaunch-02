@@ -92,6 +92,43 @@ app.use('/uploads', express.static(path.join(__dirname, '../uploads')));
 // ── API routes
 app.use('/api', routes);
 
+// ── Sitemap
+const { query: dbQuery } = require('./config/database');
+app.get('/sitemap.xml', async (req, res) => {
+  try {
+    const products = await dbQuery(`SELECT id, updated_at FROM products WHERE status = 'live'`);
+    const productUrls = products.rows.map(p => `
+  <url>
+    <loc>https://tlmena.com/products/${p.id}</loc>
+    <lastmod>${new Date(p.updated_at).toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('');
+
+    const staticUrls = [
+      '/', '/products', '/directory', '/launcher', '/accelerators',
+      '/list/startup', '/list/accelerator', '/list/investor', '/list/venture',
+      '/about', '/contact', '/articles',
+    ].map(path => `
+  <url>
+    <loc>https://tlmena.com${path}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>`).join('');
+
+    const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+${staticUrls}
+${productUrls}
+</urlset>`;
+
+    res.setHeader('Content-Type', 'application/xml');
+    res.send(xml);
+  } catch (err) {
+    res.status(500).send('<?xml version="1.0"?><error>Failed to generate sitemap</error>');
+  }
+});
+
 // ── Serve React build in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuild = path.join(__dirname, '../../frontend/build');

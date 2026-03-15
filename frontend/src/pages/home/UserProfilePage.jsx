@@ -306,7 +306,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               <div style={{ marginTop:8 }}>
                 <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
                   <span style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em' }}>{profile.name}</span>
-                  {profile.verified && <span style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#eff6ff', color:'#2563eb' }}>✓ Verified</span>}
+                  {profile.verified && <span title="Verified by Tech Launch — identity and product ownership confirmed" style={{ fontSize:12, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#eff6ff', color:'#2563eb', cursor:'help' }}>✓ Verified</span>}
                 </div>
                 <div style={{ fontSize:13, color:'#aaa', fontWeight:600, marginBottom:8 }}>{profile.handle}</div>
                 <div style={{ display:'inline-flex', alignItems:'center', gap:5, background:'var(--orange-light)', padding:'3px 10px', borderRadius:20, fontSize:11, fontWeight:700, color:'var(--orange)', marginBottom:8 }}>
@@ -517,7 +517,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                     <div style={{ fontSize:14, fontWeight:700 }}>{u.name}</div>
                     <div style={{ fontSize:12, color:'#aaa' }}>@{u.handle}{u.headline ? ` · ${u.headline.slice(0,40)}` : ''}</div>
                   </div>
-                  {u.verified && <span style={{ fontSize:14 }}>✅</span>}
+                  {u.verified && <span title="Verified by Tech Launch — identity and product ownership confirmed" style={{ fontSize:14, cursor:'help' }}>✅</span>}
                 </div>
               ))}
             </div>

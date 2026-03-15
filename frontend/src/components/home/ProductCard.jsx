@@ -64,6 +64,7 @@ export default function ProductCard({ product, rank, onVote }) {
         <div className="product-tagline">{product.tagline}</div>
         <div className="product-meta">
           {product.industry && <span className="meta-tag">{product.industry}</span>}
+          {product.stage    && <span className="meta-tag">📊 {product.stage}</span>}
           {product.country  && <span className="meta-tag">{product.country}</span>}
           {(product.tags || []).map(t => <span key={t} className="meta-tag">{t}</span>)}
         </div>

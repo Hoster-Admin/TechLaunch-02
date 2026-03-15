@@ -1,0 +1,194 @@
+Here's your prompt:
+
+Tech Launch MENA — Public Site Simulation Fixes
+You are fixing the issues found during a 5-character user simulation of the Tech Launch public site. These are new findings not covered in previous fix prompts. Fix them in the order listed.
+
+CONTEXT
+
+Stack: React + Vite frontend, Node.js/Express backend
+Social media: Only X (Twitter) exists — handle is @tlmenacom
+LinkedIn and Instagram do not exist yet
+Email service: Resend
+Product submission modal: SubmitProductModal.jsx
+Footer: Footer.jsx
+Homepage: HomePage.jsx
+Auth modal: AuthModal.jsx
+Contact page: ContactPage.jsx or equivalent
+
+
+FIX 1 — Social Links in Footer
+File: Footer.jsx
+
+X/Twitter icon: set href="https://x.com/tlmenacom" and target="_blank" rel="noopener noreferrer"
+LinkedIn icon: remove entirely — no account exists yet
+Instagram icon: remove entirely — no account exists yet
+Do not leave any icon with href="#"
+Only the X icon should remain in the social icons row
+
+
+FIX 2 — "Submit a Product" Button Silent When Logged Out
+File: HomePage.jsx
+
+Find the "Submit a Product" hero CTA button
+Current code: if (user) setSubmitOpen(true) with no else clause
+Fix:
+
+jsxif (user) {
+  setSubmitOpen(true);
+} else {
+  setAuthModal('gate'); // or whatever the auth gate trigger is called
+}
+
+Logged-out users clicking "Submit a Product" must see the auth gate modal prompting them to sign in or register
+Same fix applies anywhere else on the site where a submit button silently does nothing for logged-out users
+
+
+FIX 3 — Page Title
+File: frontend/public/index.html
+
+Change:
+
+html<title>Tech Launch</title>
+
+To:
+
+html<title>Tech Launch MENA — Discover & Submit MENA Startups</title>
+
+Also update the default meta description:
+
+html<meta name="description" content="Discover and submit the best startups, products, and companies from the MENA region. Built for Arab founders, investors, and builders." />
+
+FIX 4 — Stage Filter on Products Page
+File: wherever the /products page filter controls are rendered
+
+Add a "Stage" filter dropdown alongside the existing Industry and Country filters
+Options:
+
+All Stages
+Idea Stage
+Pre-Seed
+Seed
+Series A
+Series B+
+Bootstrapped
+
+
+Filter applies via query param: ?stage=Seed
+Backend GET /api/products must accept stage param and filter accordingly:
+
+javascriptif (stage && stage !== 'all') {
+  conditions.push(`p.stage = $${params.length + 1}`);
+  params.push(stage);
+}
+
+If stage column does not exist on products table add it:
+
+sqlALTER TABLE products ADD COLUMN IF NOT EXISTS stage TEXT;
+
+On the product submission modal Step 2 — add a Stage dropdown field so founders can set their stage when submitting
+Stage should also appear on the product detail page and product cards where space allows
+
+
+FIX 5 — Add Email to Contact Page
+File: ContactPage.jsx or wherever /contact renders
+
+Add a visible direct email address below the contact form heading:
+
+jsx<p>
+  Or email us directly at{' '}
+  <a href="mailto:hello@tlmena.com">hello@tlmena.com</a>
+</p>
+
+Style the email link in orange
+Place it above the contact form so institutional users see it immediately without scrolling
+
+
+FIX 6 — Verified Badge Tooltip
+File: wherever the ✅ verified badge renders on product cards, product detail pages, and user profiles
+
+Add a tooltip on hover explaining what the badge means
+If a tooltip component already exists use it
+If not, use the title attribute as a minimum:
+
+jsx<span title="Verified by Tech Launch — identity and product ownership confirmed">
+  ✅
+</span>
+
+Preferred: a proper styled tooltip that appears on hover with the text:
+"Verified by Tech Launch — identity and product ownership confirmed"
+Apply to all three locations: product cards, product detail page, user profile page
+
+
+FIX 7 — Description Character Count in Submission Modal
+File: SubmitProductModal.jsx Step 2
+
+Add a live character counter below the description textarea
+Show: X / 500 characters (or whatever the max is — if no max exists set it to 500)
+Add maxLength={500} to the textarea
+Counter turns orange when within 50 characters of limit
+Counter turns red when at the limit
+Same pattern as Name and Tagline counters if already implemented
+
+
+FIX 8 — Sitemap.xml
+File: server.js or a dedicated routes file
+
+Add GET /sitemap.xml route:
+
+javascriptapp.get('/sitemap.xml', async (req, res) => {
+  const products = await q(`SELECT slug, updated_at FROM products WHERE status = 'live'`);
+  const entities = await q(`SELECT id, updated_at FROM entities WHERE verified = true`);
+
+  const productUrls = products.rows.map(p => `
+  <url>
+    <loc>https://tlmena.com/products/${p.slug}</loc>
+    <lastmod>${new Date(p.updated_at).toISOString().split('T')[0]}</lastmod>
+    <changefreq>weekly</changefreq>
+    <priority>0.8</priority>
+  </url>`).join('');
+
+  const staticUrls = [
+    '/', '/products', '/directory', '/launcher',
+    '/list/startup', '/list/accelerator', '/list/investor', '/list/venture'
+  ].map(path => `
+  <url>
+    <loc>https://tlmena.com${path}</loc>
+    <changefreq>daily</changefreq>
+    <priority>0.6</priority>
+  </url>`).join('');
+
+  const xml = `<?xml version="1.0" encoding="UTF-8"?>
+<urlset xmlns="http://www.sitemaps.org/schemas/sitemap/0.9">
+  ${staticUrls}
+  ${productUrls}
+</urlset>`;
+
+  res.setHeader('Content-Type', 'application/xml');
+  res.send(xml);
+});
+
+FIX 9 — Verify RESEND_API_KEY and Test Email Delivery
+This is a configuration check, not a code fix.
+
+Open Replit Secrets
+Confirm RESEND_API_KEY exists and is set to the live Resend API key (not a test key)
+Confirm RESEND_FROM_EMAIL or equivalent is set to noreply@tlmena.com
+Test each email by triggering it manually:
+
+Sign up a test account → welcome email should arrive
+Submit a test product → confirmation email should arrive
+Trigger a password reset → reset email should arrive
+
+
+If any email fails check Resend dashboard logs for delivery errors
+If RESEND_API_KEY is missing add it now — without it all email flows are silently broken
+
+
+HOW TO PROCEED
+
+Fix one item at a time in the order listed
+Show only the changed file with enough surrounding context to locate each change
+Fix 9 is a manual configuration check — confirm it is done before considering this prompt complete
+Do not modify anything outside of what each fix describes
+
+Start with Fix 1.

@@ -66,7 +66,7 @@ export default function SubmitProductModal({ open, onClose }) {
   const { addNotification } = useUI();
   const [step, setStep] = useState(1);
   const [type, setType] = useState(null);
-  const [form, setForm] = useState({ name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
+  const [form, setForm] = useState({ name:'', tagline:'', industry:'', stage:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
   const [logoFile, setLogoFile] = useState(null);
   const [logoRawFile, setLogoRawFile] = useState(null);
   const [selectedCountries, setCountries] = useState([]);
@@ -117,7 +117,7 @@ export default function SubmitProductModal({ open, onClose }) {
     if (!pendingDraft) return;
     setStep(pendingDraft.step || 1);
     setType(pendingDraft.type || null);
-    setForm(pendingDraft.form || { name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
+    setForm(pendingDraft.form || { name:'', tagline:'', industry:'', stage:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
     setCountries(pendingDraft.selectedCountries || []);
     setSelectedEntity(pendingDraft.selectedEntity || null);
     setEntityQ(pendingDraft.selectedEntity?.name || '');
@@ -134,7 +134,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
   const reset = () => {
     setStep(1); setType(null);
-    setForm({ name:'', tagline:'', industry:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
+    setForm({ name:'', tagline:'', industry:'', stage:'', description:'', website:'', logoEmoji:'🚀', videoUrl:'', linkProfile:true });
     setLogoFile(null); setLogoRawFile(null); setCountries([]); setScreenshots([null,null,null,null]); setScreenshotFiles([null,null,null,null]);
     setEntityQ(''); setSelectedEntity(null); setEntityResults([]);
     setFounderQ(''); setFounderResults([]); setCoFounders([]);
@@ -246,6 +246,7 @@ export default function SubmitProductModal({ open, onClose }) {
         name: form.name.trim(),
         tagline: form.tagline.trim(),
         industry: form.industry,
+        stage: form.stage || null,
         description: form.description.trim() || null,
         website: form.website.trim() || null,
         logo_emoji: form.logoEmoji || '🚀',
@@ -394,6 +395,15 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
 
           <div style={{ marginBottom:16 }}>
+            <label style={lbl}>Stage</label>
+            <select value={form.stage||''} onChange={e => setForm(f=>({...f,stage:e.target.value}))}
+              style={{ ...inp, cursor:'pointer' }} onFocus={fo} onBlur={bl}>
+              <option value="">Select stage (optional)</option>
+              {['Idea Stage','Pre-Seed','Seed','Series A','Series B+','Bootstrapped'].map(s => <option key={s}>{s}</option>)}
+            </select>
+          </div>
+
+          <div style={{ marginBottom:16 }}>
             <label style={lbl}>Available In * <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
             <div style={{ display:'flex', flexWrap:'wrap', gap:7, padding:10, border:'1.5px solid #e8e8e8', borderRadius:12, background:'#fafafa', minHeight:48 }}>
               {COUNTRIES.map(([v,flag,name]) => (
@@ -407,9 +417,14 @@ export default function SubmitProductModal({ open, onClose }) {
 
           <div style={{ marginBottom:16 }}>
             <label style={lbl}>Short Description * <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>3 sentences max</span></label>
-            <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} rows={3}
+            <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value.slice(0,500)}))} rows={3}
+              maxLength={500}
               placeholder="What it does, who it's for, why it's different..."
               style={{ ...inp, resize:'vertical', lineHeight:1.6 }} onFocus={fo} onBlur={bl}/>
+            <div style={{ textAlign:'right', fontSize:11, marginTop:4, fontWeight:600,
+              color: form.description.length >= 500 ? '#dc2626' : form.description.length >= 450 ? 'var(--orange)' : '#bbb' }}>
+              {form.description.length} / 500
+            </div>
           </div>
 
           {/* Associated Entity — shows all 17 on focus */}

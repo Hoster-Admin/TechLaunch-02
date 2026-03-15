@@ -292,6 +292,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
           {/* Tags */}
           <div style={{ display:'flex', flexWrap:'wrap', gap:6, marginBottom:20 }}>
             {tags.map(t => <span key={t} style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#f4f4f4', color:'#555' }}>{t}</span>)}
+            {p.stage && <span key="stage" style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#eff6ff', color:'#2563eb' }}>📊 {p.stage}</span>}
             {p.country && <span key="country" style={{ fontSize:11, fontWeight:700, padding:'4px 11px', borderRadius:5, background:'#f4f4f4', color:'#555' }}>{p.country}</span>}
           </div>
 

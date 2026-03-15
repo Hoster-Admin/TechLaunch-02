@@ -16,6 +16,8 @@ const INDUSTRY_ICONS = {
   'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
   'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
 };
+const STAGES = ['Idea Stage','Pre-Seed','Seed','Series A','Series B+','Bootstrapped'];
+
 const COUNTRIES = [
   ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],       ['eg','🇪🇬 Egypt'],
   ['jo','🇯🇴 Jordan'],     ['ma','🇲🇦 Morocco'],   ['kw','🇰🇼 Kuwait'],
@@ -43,6 +45,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
   const [selIndustries, setSelIndustries] = useState(searchParams.get('industry') ? [searchParams.get('industry')] : []);
   const [selCountries, setSelCountries]   = useState([]);
+  const [selStage,     setSelStage]       = useState(searchParams.get('stage') || '');
   const [sortBy, setSortBy] = useState('top');
 
   const [industryOpen, setIndustryOpen] = useState(false);
@@ -71,6 +74,14 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
   const toggleIndustry = (ind) => setSelIndustries(prev => prev.includes(ind) ? prev.filter(i => i !== ind) : [...prev, ind]);
   const toggleCountry  = (code) => setSelCountries(prev => prev.includes(code) ? prev.filter(c => c !== code) : [...prev, code]);
 
+  const handleStageChange = (val) => {
+    setSelStage(val);
+    setSearchParams(prev => {
+      if (val) { prev.set('stage', val); } else { prev.delete('stage'); }
+      return prev;
+    }, { replace: true });
+  };
+
   const sorted = [...products].sort((a, b) => {
     if (sortBy === 'top')   return (b.upvotes_count||0) - (a.upvotes_count||0);
     if (sortBy === 'new')   return b.id - a.id;
@@ -84,12 +95,13 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
     const matchQ = !q || p.name.toLowerCase().includes(q) || (p.tagline||'').toLowerCase().includes(q) || (p.industry||'').toLowerCase().includes(q);
     const matchI = !selIndustries.length || selIndustries.includes(p.industry);
     const matchC = !selCountries.length  || selCountries.some(c => (p.country||'').toLowerCase().includes(COUNTRY_MATCH[c] || c));
-    return matchQ && matchI && matchC;
+    const matchS = !selStage || (p.stage || '').toLowerCase() === selStage.toLowerCase();
+    return matchQ && matchI && matchC && matchS;
   });
 
-  const hasFilters = selIndustries.length || selCountries.length || searchQ;
+  const hasFilters = selIndustries.length || selCountries.length || searchQ || selStage;
 
-  const clearAll = () => { setSelIndustries([]); setSelCountries([]); setSearchQ(''); };
+  const clearAll = () => { setSelIndustries([]); setSelCountries([]); setSearchQ(''); setSelStage(''); setSearchParams({}, { replace: true }); };
 
   const btnBase = { padding:'8px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', fontSize:12, fontWeight:700, cursor:'pointer', display:'flex', alignItems:'center', gap:6, whiteSpace:'nowrap', fontFamily:"'DM Sans',sans-serif" };
   const dropMenuStyle = { position:'absolute', top:'calc(100% + 6px)', left:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:10, width:220, boxShadow:'0 8px 32px rgba(0,0,0,.12)', zIndex:500 };
@@ -180,6 +192,14 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
                 </div>
               )}
             </div>
+
+            {/* Stage select */}
+            <select value={selStage} onChange={e => handleStageChange(e.target.value)}
+              style={{ ...btnBase, appearance:'none', paddingRight:28, backgroundImage:`url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='10' height='6' viewBox='0 0 10 6'%3E%3Cpath d='M0 0l5 6 5-6z' fill='%23aaa'/%3E%3C/svg%3E")`, backgroundRepeat:'no-repeat', backgroundPosition:'right 10px center', cursor:'pointer', outline:'none',
+                borderColor: selStage ? 'var(--orange)' : '#e8e8e8', color: selStage ? 'var(--orange)' : '#555', background: selStage ? 'var(--orange-light)' : '#fff' }}>
+              <option value="">📊 All Stages</option>
+              {STAGES.map(s => <option key={s} value={s}>{s}</option>)}
+            </select>
 
             {/* Sort select */}
             <select value={sortBy} onChange={e => setSortBy(e.target.value)}
