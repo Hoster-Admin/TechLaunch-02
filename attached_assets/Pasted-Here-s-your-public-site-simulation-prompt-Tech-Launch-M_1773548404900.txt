@@ -1,0 +1,206 @@
+Here's your public site simulation prompt:
+
+Tech Launch MENA — Public Site User Flow Simulation
+You are simulating real users visiting the Tech Launch public site (tlmena.com) for the first time. Each character has a different background, goal, and device. After completing their tasks they report back exactly what they experienced — what worked, what confused them, what broke, and what made them trust or distrust the platform.
+
+CHARACTER 1 — Sara Khalil
+
+Age: 26, Cairo, Egypt
+Role: Founder of a fintech startup called "Tafqeed" — a bill-splitting app for Egyptian families
+Device: iPhone 13, Safari, on a home WiFi connection
+How she found the platform: A friend sent her the link on WhatsApp saying "submit your product here"
+Personality: Skeptical, busy, gives a new platform 60 seconds before deciding if it's worth her time. Will not read instructions. If a button isn't obvious she won't look for it.
+Goal: Submit her product and get visibility
+
+Sara's Task List:
+
+Open the WhatsApp link and land on the homepage
+Understand within 10 seconds what this platform is for
+Find the Fintech category and browse existing products
+Try to upvote a product she likes without being logged in
+Sign up as a Founder
+Check what handle was generated for her — does it make sense?
+Submit her product "Tafqeed"
+Upload her company logo (a real PNG file)
+Add 2 product screenshots
+Fill in all required fields and complete all 6 steps
+Check if she received a confirmation email after submitting
+Find her submitted product in her account
+Share her profile link on WhatsApp — check what the preview looks like
+Try to find where to submit a suggestion or feedback
+Try to switch the site to Arabic
+
+Sara's Report:
+
+First impression of the platform — does it feel credible for a MENA founder?
+What made her trust it or doubt it
+What slowed her down or confused her
+Whether she would actually come back after submitting
+Her confidence that her product will be reviewed and go live
+One thing she would tell the founder to fix immediately
+
+
+CHARACTER 2 — Khalid Al-Mutairi
+
+Age: 38, Kuwait City, Kuwait
+Role: Partner at a small venture capital firm focused on Gulf region B2B SaaS
+Device: MacBook Pro, Chrome, fast office connection
+How he found the platform: Saw it mentioned in a LinkedIn post about MENA startup ecosystems
+Personality: Analytical, reads everything before clicking anything. Evaluates platforms for credibility before engaging. Will check the footer, About page, and team before trusting anything.
+Goal: Discover investable startups from the MENA region, particularly Saudi Arabia and Egypt
+
+Khalid's Task List:
+
+Land on the homepage
+Evaluate the platform's credibility in the first 30 seconds — what signals does he see?
+Browse products filtered by country (Saudi Arabia) and industry (Fintech)
+Click into a product he finds interesting — what does the product page show him?
+Try to find the founder's profile from the product page
+Check if there's a way to contact the founder directly
+Browse the Entities section — find accelerators operating in Saudi Arabia
+Check the Directory page — does it give him useful ecosystem data?
+Try to find an "Investors" section to list his firm
+Go through the listing flow for Investment Firms
+Check the Launcher community — is there content worth reading?
+Try to find an About page or team page — who built this?
+Check all footer links — are they working?
+Sign up as an Investor
+Complete his profile with LinkedIn and website
+
+Khalid's Report:
+
+Does the platform feel credible enough for a professional investor?
+What information is missing that he'd expect on a discovery platform?
+What would make him come back regularly?
+What would stop him from listing his firm?
+One thing he would tell the founder to fix immediately
+
+
+CHARACTER 3 — Nour Abdallah
+
+Age: 22, Amman, Jordan
+Role: Computer science student, building her first side project — an Arabic language learning app called "Huroof"
+Device: Android phone, Chrome mobile, on a university WiFi network
+How she found the platform: Searched "submit startup MENA" on Google and found the site
+Personality: Curious and enthusiastic but easily discouraged. Will try things multiple times before giving up. More forgiving than Sara but will notice broken things and lose confidence quickly.
+Goal: Submit her app and connect with other builders in the Arab world
+
+Nour's Task List:
+
+Land on the homepage from a Google search result
+Read the page title and meta description in the search result — does it tell her what the site is?
+Browse the homepage to understand what kind of products are here
+Look for other student or early-stage projects similar to hers
+Sign up for an account — she enters her name in Arabic: "نور عبدالله"
+Check what handle was auto-generated — can she read it?
+Try to switch the interface to Arabic
+Submit her app "Huroof" — Arabic learning app
+In Step 2, try to enter her app description in Arabic
+Upload a logo
+Complete all 6 steps
+Visit the Launcher community — find content relevant to student builders
+Try to write a post in the Launcher as herself
+Find another builder to follow
+Check if her profile looks good in Arabic
+
+Nour's Report:
+
+Does the platform feel welcoming to an Arabic-speaking student builder?
+How did the Arabic name handle generation feel?
+Was the Arabic language option available and working?
+Did the community feel active and relevant to her?
+One thing she would tell the founder to fix for Arabic-speaking users
+
+
+CHARACTER 4 — Faisal Al-Dosari
+
+Age: 45, Riyadh, Saudi Arabia
+Role: Director of a government-backed accelerator program (SDAIA ecosystem partner)
+Device: iPad, Safari
+How he found the platform: A colleague forwarded the link in a WhatsApp group for Saudi startup ecosystem stakeholders
+Personality: Professional, cautious, represents an institution. Will not submit anything unless the platform looks serious and trustworthy. Reads every word carefully. Notices spelling errors, broken links, and unprofessional copy.
+Goal: List his accelerator program and find promising Saudi startups to invite to their next cohort
+
+Faisal's Task List:
+
+Land on the homepage on his iPad
+Evaluate the platform's professionalism in the first 60 seconds
+Check the footer — are the legal pages there? (Privacy Policy, Terms of Use)
+Read the Privacy Policy — does it look real or templated?
+Find the Accelerators section and check how accelerators are listed
+Go through the "List Your Program" flow for his accelerator
+Check what information is required — is it appropriate for an institutional program?
+Look for a way to contact the Tech Launch team before submitting
+Browse Saudi startups on the platform
+Try to filter products by stage (early stage, seed)
+Check if there is a way to reach out to a founder directly from their product page
+Check the homepage on his iPad in landscape and portrait mode
+Try to find a "Verified" badge explanation — what does it mean?
+Check if the platform has a LinkedIn or Twitter presence — clicks footer icons
+Decide whether to submit his accelerator — what would make him say yes or no?
+
+Faisal's Report:
+
+Does the platform look serious enough for an institutional partner?
+What trust signals are present or missing?
+What would make him submit his accelerator program?
+What would make him recommend this platform to Saudi founders?
+One thing he would tell the founder to fix for institutional credibility
+
+
+CHARACTER 5 — Mona Hassan
+
+Age: 31, Dubai, UAE
+Role: Tech journalist writing a piece about MENA startup discovery platforms for a regional publication
+Device: MacBook Air, Firefox
+How she found the platform: Researching competitors to Product Hunt for her article
+Personality: Thorough, investigative. Will click every link, check every page, try to break things. Compares everything to international standards.
+Goal: Evaluate the platform comprehensively for her article — strengths, weaknesses, how it compares to Product Hunt
+
+Mona's Task List:
+
+Land on the homepage
+Compare the first impression to Product Hunt — what's similar, what's different?
+Check every nav link — do they all work?
+Check every footer link — do they all work?
+Try to share a product page on LinkedIn — what does the preview look like?
+Try to share a user profile on Twitter — what does the preview look like?
+Search for "fintech" — evaluate the search experience
+Check the Directory — is the data useful or just placeholder?
+Read the Launcher community — is the content real or seeded?
+Try to sign up and go through the full onboarding
+Submit a test product — does the flow work end to end?
+Check her email after submitting — did she get a confirmation?
+Try to reset her password — does it work?
+Check the platform on mobile — how does it compare to desktop?
+Look for any broken features, dead links, or placeholder content
+Look for any spelling errors or inconsistent copy across pages
+
+Mona's Report:
+
+How does Tech Launch compare to Product Hunt as a product?
+What does it do better than Product Hunt for the MENA market?
+What are the 3 biggest gaps vs Product Hunt?
+Is this ready to be written about publicly — or would coverage embarrass the platform?
+What headline would she write about the platform today?
+
+
+HOW TO RUN THIS SIMULATION
+Go through each character one at a time. For each task:
+
+Describe exactly what the character sees on screen
+Describe what they click or type
+Describe what happens next
+Note any confusion, hesitation, error, or delight
+Use the character's personality and device to color their reaction — Sara on iPhone reacts differently than Khalid on MacBook
+
+After all 5 characters are done produce a combined findings report:
+
+Issues found by only one character
+Issues found by multiple characters (higher priority)
+Flows that worked smoothly end to end
+Delight moments — things that impressed characters unexpectedly
+Top 10 issues ranked by how many characters were affected and severity
+Comparison to Product Hunt: where Tech Launch wins, where it loses
+Final verdict: READY FOR PUBLIC LAUNCH or NEEDS FIXES BEFORE GOING PUBLIC
+
