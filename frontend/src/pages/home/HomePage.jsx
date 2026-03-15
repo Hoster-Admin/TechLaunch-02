@@ -86,19 +86,6 @@ export default function HomePage() {
           <div className="hero-badge">🌍 MENA's #1 Product Discovery Platform</div>
           <h1>Discover the <span>Next Big Thing</span><br/>from the MENA Region</h1>
           <p>The home for MENA companies, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
-          <div className="hero-actions">
-            {user ? (
-              <>
-                <button className="btn-hero-primary" onClick={handleSubmitProduct}>🚀 Submit a Product</button>
-                <button className="btn-hero-ghost" onClick={() => navigate('/launcher')}>Write a Post</button>
-              </>
-            ) : (
-              <>
-                <button className="btn-hero-primary" onClick={() => setAuthModal('signup')}>🚀 Join Free</button>
-                <button className="btn-hero-ghost" onClick={() => navigate('/products')}>Browse Products</button>
-              </>
-            )}
-          </div>
         </div>
 
         {/* FILTER BAR */}

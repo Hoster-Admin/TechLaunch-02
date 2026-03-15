@@ -107,7 +107,7 @@ export default function Navbar() {
 
           <div className="nav-links nav-links-desktop">
             <Link to="/" className="nav-link">Home</Link>
-            <Link to="/launcher" className="nav-link">Launcher</Link>
+            <Link to="/launcher" className="nav-link">Join Launcher</Link>
 
             <div className="nav-dropdown" ref={listRef}>
               <button className="nav-link dropdown-trigger" onClick={() => setListOpen(v => !v)}>
@@ -301,7 +301,7 @@ export default function Navbar() {
           {/* Nav links */}
           <div className="mobile-menu-links">
             <div className="mobile-menu-item" onClick={() => navGo('/')}>🏠 Home</div>
-            <div className="mobile-menu-item" onClick={() => navGo('/launcher')}>🚀 Launcher</div>
+            <div className="mobile-menu-item" onClick={() => navGo('/launcher')}>Join Launcher</div>
             <div className="mobile-menu-item" onClick={() => navGo('/products')}>🔍 All Products</div>
             <div style={{ height:1, background:'#f0f0f0', margin:'4px 16px' }}/>
             <div className="mobile-menu-item" onClick={() => navGo('/list/startup')}>🚀 Companies</div>
