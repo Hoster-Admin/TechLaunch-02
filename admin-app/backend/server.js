@@ -1323,7 +1323,7 @@ admin.post('/tags', async (req, res) => {
   try {
     const { name, category, color, text_color } = req.body;
     if (!name?.trim() || !category) return res.status(400).json({ success:false, message:'name and category required' });
-    if (!['user','product','article','role'].includes(category))
+    if (!['user','product','article','role','post'].includes(category))
       return res.status(400).json({ success:false, message:'Invalid category' });
     const { rows } = await q(
       'INSERT INTO tags (name,category,color,text_color) VALUES ($1,$2,$3,$4) RETURNING *',
@@ -1358,6 +1358,87 @@ admin.delete('/tags/:id', async (req, res) => {
     const { rows } = await q('DELETE FROM tags WHERE id=$1 RETURNING id', [req.params.id]);
     if (!rows.length) return res.status(404).json({ success:false, message:'Tag not found' });
     res.json({ success:true });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+// ── Auto-assign user tags based on activity/profile criteria ─────────────────
+admin.post('/tags/auto-assign-user-tags', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
+  try {
+    const results = { top_creator: { assigned:0, removed:0 }, verified: { assigned:0, removed:0 } };
+
+    // Find 'Top Creator' and 'Verified' tags
+    const { rows: userTags } = await q(
+      `SELECT id, name FROM tags WHERE category='user' AND LOWER(name) IN ('top creator','verified')`
+    );
+    const topCreatorTag = userTags.find(t => t.name.toLowerCase() === 'top creator');
+    const verifiedTag   = userTags.find(t => t.name.toLowerCase() === 'verified');
+
+    // ── Top Creator: 50+ posts + 35+ comments + 5+ articles ──────────────────
+    if (topCreatorTag) {
+      const { rows: eligible } = await q(`
+        SELECT u.id
+        FROM users u
+        WHERE
+          (SELECT COUNT(*) FROM launcher_posts lp WHERE lp.user_id = u.id) >= 50
+          AND (SELECT COUNT(*) FROM launcher_post_comments lpc WHERE lpc.user_id = u.id) >= 35
+          AND (SELECT COUNT(*) FROM platform_posts pp WHERE pp.author_id = u.id AND pp.type = 'article') >= 5
+      `);
+      const eligibleIds = eligible.map(r => r.id);
+      // Assign to eligible users not already tagged
+      for (const uid of eligibleIds) {
+        const { rowCount } = await q(
+          `INSERT INTO user_tags (user_id, tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [uid, topCreatorTag.id]
+        );
+        results.top_creator.assigned += rowCount;
+      }
+      // Remove from users who no longer qualify
+      if (eligibleIds.length > 0) {
+        const { rowCount } = await q(
+          `DELETE FROM user_tags WHERE tag_id=$1 AND user_id NOT IN (${eligibleIds.map((_,i)=>'$'+(i+2)).join(',')})`,
+          [topCreatorTag.id, ...eligibleIds]
+        );
+        results.top_creator.removed += rowCount;
+      } else {
+        const { rowCount } = await q(`DELETE FROM user_tags WHERE tag_id=$1`, [topCreatorTag.id]);
+        results.top_creator.removed += rowCount;
+      }
+    }
+
+    // ── Verified: all key profile fields filled ───────────────────────────────
+    if (verifiedTag) {
+      const { rows: eligible } = await q(`
+        SELECT id FROM users
+        WHERE name IS NOT NULL AND name <> ''
+          AND bio IS NOT NULL AND bio <> ''
+          AND headline IS NOT NULL AND headline <> ''
+          AND country IS NOT NULL AND country <> ''
+          AND avatar_url IS NOT NULL AND avatar_url <> ''
+          AND email_verified = true
+      `);
+      const eligibleIds = eligible.map(r => r.id);
+      for (const uid of eligibleIds) {
+        const { rowCount } = await q(
+          `INSERT INTO user_tags (user_id, tag_id) VALUES ($1,$2) ON CONFLICT DO NOTHING`,
+          [uid, verifiedTag.id]
+        );
+        results.verified.assigned += rowCount;
+      }
+      if (eligibleIds.length > 0) {
+        const { rowCount } = await q(
+          `DELETE FROM user_tags WHERE tag_id=$1 AND user_id NOT IN (${eligibleIds.map((_,i)=>'$'+(i+2)).join(',')})`,
+          [verifiedTag.id, ...eligibleIds]
+        );
+        results.verified.removed += rowCount;
+      } else {
+        const { rowCount } = await q(`DELETE FROM user_tags WHERE tag_id=$1`, [verifiedTag.id]);
+        results.verified.removed += rowCount;
+      }
+    }
+
+    await logAction(req.user.id, 'tags.auto_assign', 'tag', null, results, req.ip);
+    res.json({ success:true, data: results });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 

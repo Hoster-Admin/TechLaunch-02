@@ -83,12 +83,62 @@ function TagPill({ tag }) {
   );
 }
 
+function EditTagModal({ tag, onSave, onClose }) {
+  const [form, setForm] = useState({ name: tag.name, color: tag.color || '#FEF3C7', text_color: tag.text_color || '#92400E' });
+  const [saving, setSaving] = useState(false);
+  const handleSave = async () => {
+    if (!form.name.trim()) return toast.error('Tag name is required');
+    setSaving(true);
+    try { await onSave(tag.id, form); }
+    finally { setSaving(false); }
+  };
+  return (
+    <Modal title="Edit Tag" onClose={onClose}>
+      <div style={{marginBottom:14}}>
+        <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:5}}>Tag Name</label>
+        <input style={inputS} value={form.name} onChange={e=>setForm(f=>({...f,name:e.target.value}))}
+          onKeyDown={e=>e.key==='Enter'&&handleSave()} autoFocus/>
+      </div>
+      <div style={{marginBottom:20}}>
+        <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:8}}>Color</label>
+        <div style={{display:'flex',gap:4,flexWrap:'wrap',marginBottom:10}}>
+          {PRESET_COLORS.map((c,i) => (
+            <button key={i} onClick={() => setForm(f=>({...f,color:c.bg,text_color:c.text}))}
+              style={{width:22,height:22,borderRadius:6,background:c.bg,border:form.color===c.bg?'2px solid #0A0A0A':'1.5px solid rgba(0,0,0,.1)',cursor:'pointer',padding:0}}/>
+          ))}
+        </div>
+        <div style={{display:'flex',alignItems:'center',gap:10}}>
+          <span style={{fontSize:11,color:'#888'}}>Preview:</span>
+          <TagPill tag={{name:form.name||'Tag',color:form.color,text_color:form.text_color,is_active:true}}/>
+        </div>
+      </div>
+      <div style={{display:'flex',gap:8}}>
+        <button onClick={handleSave} disabled={saving}
+          style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'10px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.6:1}}>
+          {saving?'Saving…':'Save Changes'}
+        </button>
+        <button onClick={onClose}
+          style={{padding:'10px 16px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
+          Cancel
+        </button>
+      </div>
+    </Modal>
+  );
+}
+
+const USER_TAG_RULES = {
+  'top creator': '50+ posts · 35+ comments · 5+ articles',
+  'verified':    'Name, bio, headline, country, avatar & verified email',
+};
+
 function TagManagement({ settings, onSettingChange, isAdmin }) {
   const [activeTab, setActiveTab] = useState('role');
   const [tags, setTags]           = useState([]);
   const [loading, setLoading]     = useState(true);
   const [newTag, setNewTag]       = useState({ name:'', color:'#FEF3C7', text_color:'#92400E' });
   const [saving, setSaving]       = useState(false);
+  const [editTag, setEditTag]     = useState(null);
+  const [assigning, setAssigning] = useState(false);
 
   const loadTags = useCallback(() => {
     adminAPI.tags()
@@ -127,6 +177,15 @@ function TagManagement({ settings, onSettingChange, isAdmin }) {
     }
   };
 
+  const handleEditSave = async (id, form) => {
+    try {
+      const { data: d } = await adminAPI.updateTag(id, { name: form.name, color: form.color, text_color: form.text_color });
+      setTags(t => t.map(x => x.id === id ? d.data : x));
+      setEditTag(null);
+      toast.success('Tag updated');
+    } catch(e) { toast.error(e.message || 'Failed to update tag'); }
+  };
+
   const handleAddTag = async () => {
     if (!isAdmin) return toast.error('Admin only');
     if (!newTag.name.trim()) return toast.error('Tag name is required');
@@ -140,10 +199,25 @@ function TagManagement({ settings, onSettingChange, isAdmin }) {
     finally { setSaving(false); }
   };
 
+  const handleAutoAssign = async () => {
+    if (!isAdmin) return toast.error('Admin only');
+    setAssigning(true);
+    try {
+      const { data: d } = await adminAPI.autoAssignUserTags();
+      const r = d.data;
+      toast.success(`Auto-assign complete — Top Creator: +${r.top_creator.assigned}/${r.top_creator.removed} removed · Verified: +${r.verified.assigned}/${r.verified.removed} removed`);
+    } catch(e) { toast.error(e.message || 'Auto-assign failed'); }
+    finally { setAssigning(false); }
+  };
+
   return (
     <div>
+      {editTag && (
+        <EditTagModal tag={editTag} onSave={handleEditSave} onClose={() => setEditTag(null)}/>
+      )}
+
       {/* Category Tabs */}
-      <div style={{display:'flex',gap:4,padding:'0 20px',borderBottom:'1px solid #F4F4F4',marginBottom:0}}>
+      <div style={{display:'flex',gap:4,padding:'0 20px',borderBottom:'1px solid #F4F4F4',marginBottom:0,flexWrap:'wrap'}}>
         {CATEGORIES.map(cat => (
           <button key={cat.key} onClick={() => setActiveTab(cat.key)}
             style={{
@@ -161,18 +235,39 @@ function TagManagement({ settings, onSettingChange, isAdmin }) {
       {/* Tab Content */}
       <div style={{padding:'16px 20px'}}>
         {/* Category description + master toggle */}
-        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'#F9F9F9',borderRadius:10,marginBottom:16}}>
-          <div>
+        <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',padding:'10px 14px',background:'#F9F9F9',borderRadius:10,marginBottom:16,gap:12}}>
+          <div style={{flex:1}}>
             <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A'}}>{activeCat?.label} on Public Site</div>
             <div style={{fontSize:11,color:'#AAAAAA',marginTop:2}}>{activeCat?.desc}</div>
           </div>
-          <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none'}}>
-            <Toggle
-              checked={settings[activeCat?.settingKey] !== false}
-              onChange={v => onSettingChange(activeCat.settingKey, v)}
-            />
+          <div style={{display:'flex',alignItems:'center',gap:12}}>
+            {activeTab === 'user' && isAdmin && (
+              <button onClick={handleAutoAssign} disabled={assigning}
+                style={{padding:'6px 13px',borderRadius:8,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:11,fontWeight:700,cursor:'pointer',color:'#555',fontFamily:'inherit',whiteSpace:'nowrap',opacity:assigning?0.6:1}}>
+                {assigning ? '⏳ Running…' : '⚡ Auto-assign'}
+              </button>
+            )}
+            <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none'}}>
+              <Toggle
+                checked={settings[activeCat?.settingKey] !== false}
+                onChange={v => onSettingChange(activeCat.settingKey, v)}
+              />
+            </div>
           </div>
         </div>
+
+        {/* User tag rules info box */}
+        {activeTab === 'user' && (
+          <div style={{background:'#F0F7FF',border:'1px solid #BFDBFE',borderRadius:10,padding:'10px 14px',marginBottom:14,fontSize:11,color:'#1E40AF'}}>
+            <div style={{fontWeight:700,marginBottom:6}}>🤖 Auto-assign rules (admin-controlled only):</div>
+            {Object.entries(USER_TAG_RULES).map(([tag, rule]) => (
+              <div key={tag} style={{marginBottom:2}}>
+                <strong style={{textTransform:'capitalize'}}>{tag}</strong> — {rule}
+              </div>
+            ))}
+            <div style={{marginTop:6,color:'#3B82F6'}}>Click "Auto-assign" above to run the rules now and sync all users.</div>
+          </div>
+        )}
 
         {/* Tags list */}
         {loading ? (
@@ -187,9 +282,20 @@ function TagManagement({ settings, onSettingChange, isAdmin }) {
                 <div style={{flex:1}}>
                   <TagPill tag={tag}/>
                 </div>
+                {activeTab === 'user' && USER_TAG_RULES[tag.name.toLowerCase()] && (
+                  <div style={{fontSize:10,color:'#9CA3AF',maxWidth:160,textAlign:'right',lineHeight:1.3}}>
+                    {USER_TAG_RULES[tag.name.toLowerCase()]}
+                  </div>
+                )}
                 <div style={{fontSize:11,color:'#AAAAAA',marginRight:4}}>{tag.is_active?'Visible':'Hidden'}</div>
-                <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none',display:'flex',alignItems:'center',gap:8}}>
+                <div style={{opacity:isAdmin?1:0.45,pointerEvents:isAdmin?'auto':'none',display:'flex',alignItems:'center',gap:6}}>
                   <Toggle checked={tag.is_active} onChange={() => handleToggleTag(tag)}/>
+                  <button onClick={() => setEditTag(tag)} title="Edit tag"
+                    style={{background:'none',border:'none',cursor:'pointer',color:'#AAAAAA',fontSize:13,lineHeight:1,padding:'2px 4px',borderRadius:4,transition:'color .15s'}}
+                    onMouseEnter={e=>e.currentTarget.style.color='#2563EB'}
+                    onMouseLeave={e=>e.currentTarget.style.color='#AAAAAA'}>
+                    ✎
+                  </button>
                   <button onClick={() => handleDeleteTag(tag)}
                     style={{background:'none',border:'none',cursor:'pointer',color:'#CCCCCC',fontSize:14,lineHeight:1,padding:'2px',borderRadius:4,transition:'color .15s'}}
                     onMouseEnter={e=>e.currentTarget.style.color='#EF4444'}

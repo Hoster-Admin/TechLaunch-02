@@ -98,12 +98,13 @@ export const adminAPI = {
   warnUser:     (userId, note) => req('POST', `/admin/launcher-activity/warn/${userId}`, { note }),
   suggestions:  (p={})      => req('GET',  '/admin/suggestions?' + new URLSearchParams(p)),
   respondSuggestion:(id,r)  => req('POST', `/admin/suggestions/${id}/respond`, { response: r }),
-  tags:         ()          => req('GET',  '/admin/tags'),
-  createTag:    (body)      => req('POST', '/admin/tags', body),
-  updateTag:    (id, body)  => req('PUT',  `/admin/tags/${id}`, body),
-  deleteTag:    (id)        => req('DELETE',`/admin/tags/${id}`),
-  assignTag:    (id, body)  => req('POST', `/admin/tags/${id}/assign`, body),
-  unassignTag:  (id, body)  => req('DELETE',`/admin/tags/${id}/assign`, body),
+  tags:                ()          => req('GET',  '/admin/tags'),
+  createTag:           (body)      => req('POST', '/admin/tags', body),
+  updateTag:           (id, body)  => req('PUT',  `/admin/tags/${id}`, body),
+  deleteTag:           (id)        => req('DELETE',`/admin/tags/${id}`),
+  assignTag:           (id, body)  => req('POST', `/admin/tags/${id}/assign`, body),
+  unassignTag:         (id, body)  => req('DELETE',`/admin/tags/${id}/assign`, body),
+  autoAssignUserTags:  ()          => req('POST', '/admin/tags/auto-assign-user-tags'),
 };
 
 export async function uploadFile(file) {
