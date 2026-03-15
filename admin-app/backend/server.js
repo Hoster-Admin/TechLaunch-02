@@ -1406,6 +1406,19 @@ app.post('/api/upload', authenticate, adminUpload.single('file'), (req, res) => 
 // Serve uploaded files (forwarded from public backend at port 3001, but also reachable here)
 app.use('/uploads', express.static(uploadsDir, { maxAge:'7d', immutable:true }));
 
+// ─── CONFIG ───────────────────────────────────────────────────────────────────
+app.get('/admin/config', (req, res) => {
+  let publicBaseUrl = process.env.APP_URL || 'https://tlmena.com';
+  const dev = process.env.REPLIT_DEV_DOMAIN;
+  if (dev && !process.env.APP_URL) {
+    // Replit uses subdomain-based port routing: <base>-<port>.<cluster>.replit.dev
+    const parts = dev.split('.');
+    parts[0] = parts[0] + '-3001';
+    publicBaseUrl = 'https://' + parts.join('.');
+  }
+  res.json({ publicBaseUrl });
+});
+
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 const DIST = path.join(__dirname, '..', 'frontend', 'dist');
 // Hashed assets (JS/CSS) — long cache since filenames change on each build

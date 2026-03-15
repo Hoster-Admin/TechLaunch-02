@@ -8,7 +8,12 @@ const PAGE_SIZE = 20;
 function getPublicBaseUrl() {
   const { protocol, hostname } = window.location;
   if (hostname === 'admin.tlmena.com') return 'https://tlmena.com';
-  if (hostname.includes('.replit.dev')) return `${protocol}//${hostname}:3001`;
+  if (hostname.includes('.replit.dev')) {
+    const dot = hostname.indexOf('.');
+    const sub = hostname.slice(0, dot).replace(/-\d+$/, '');
+    const rest = hostname.slice(dot);
+    return `${protocol}//${sub}-3001${rest}`;
+  }
   return 'https://tlmena.com';
 }
 
