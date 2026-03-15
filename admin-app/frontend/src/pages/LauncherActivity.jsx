@@ -4,13 +4,15 @@ import toast from 'react-hot-toast';
 
 const TABS = [
   { key: 'all',      label: 'All Activity' },
-  { key: 'comments', label: 'Comments' },
   { key: 'posts',    label: 'Posts' },
+  { key: 'articles', label: 'Articles' },
+  { key: 'comments', label: 'Comments' },
 ];
 
 const KIND_BADGE = {
   comment: { label: 'Comment', color: '#2563eb', bg: '#eff6ff', icon: '💬' },
   post:    { label: 'Post',    color: '#7c3aed', bg: '#f5f3ff', icon: '📢' },
+  article: { label: 'Article', color: '#059669', bg: '#ecfdf5', icon: '📝' },
 };
 
 const POST_TYPE_LABEL = {

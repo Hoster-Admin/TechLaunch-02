@@ -1056,6 +1056,17 @@ admin.get('/launcher-activity', async (req, res) => {
           WHERE ($1 = '' OR lp.content ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
         `);
       }
+      if (type === 'all' || type === 'articles') {
+        parts.push(`
+          SELECT 'article' AS kind, pp.id, pp.body, pp.created_at, pp.likes,
+            u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
+            u.avatar_url, u.avatar_color, u.verified,
+            NULL::text AS product_id, NULL::text AS product_name, pp.type::text AS post_type
+          FROM platform_posts pp
+          JOIN users u ON u.id = pp.author_id
+          WHERE ($1 = '' OR pp.body ILIKE $2 OR u.name ILIKE $2 OR u.handle ILIKE $2)
+        `);
+      }
       return parts.join(' UNION ALL ');
     };
 
