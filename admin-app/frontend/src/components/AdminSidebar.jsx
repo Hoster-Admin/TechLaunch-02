@@ -33,7 +33,7 @@ function CollapseIcon({ collapsed }) {
   );
 }
 
-export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose, collapsed, onToggleCollapse }) {
+export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose, collapsed, onToggleCollapse, panelName, panelAvatar }) {
   const role = user?.role || 'admin';
   const classes = [
     'admin-sidebar',
@@ -51,8 +51,11 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
       {/* Logo + collapse toggle */}
       <div className="sidebar-logo">
         <div className="sidebar-logo-top">
-          <img src="/logo.png" alt="Tech Launch MENA" className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,display:'block',flexShrink:0}} />
-          <div className="sidebar-logo-text">TL MENA</div>
+          {panelAvatar
+            ? <img src={panelAvatar} alt={panelName || 'TL MENA'} className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,objectFit:'cover',display:'block',flexShrink:0}} />
+            : <div className="sidebar-logo-icon" style={{width:32,height:32,borderRadius:8,background:'#E15033',display:'flex',alignItems:'center',justifyContent:'center',fontSize:13,fontWeight:800,color:'#fff',flexShrink:0}}>TL</div>
+          }
+          <div className="sidebar-logo-text">{panelName || 'TL MENA'}</div>
           {/* Desktop collapse toggle — hidden on mobile via CSS */}
           <button
             className="sidebar-toggle-btn"

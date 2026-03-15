@@ -36,7 +36,17 @@ export default function AdminLayout() {
   const [collapsed, setCollapsed] = useState(
     () => localStorage.getItem('tlmena-sidebar-collapsed') === 'true'
   );
+  const [panelProfile, setPanelProfile] = useState({ name: 'TL MENA', avatar_url: '' });
   const { user, logout } = useAuth();
+
+  useEffect(() => {
+    adminAPI.platformProfile()
+      .then(r => {
+        const d = r.data?.data || {};
+        setPanelProfile({ name: d.name || 'TL MENA', avatar_url: d.avatar_url || '' });
+      })
+      .catch(() => {});
+  }, []);
   const { title, sub, Component } = PAGES[page] || PAGES.dashboard;
 
   const [searchQuery,   setSearchQuery]   = useState('');
@@ -118,6 +128,8 @@ export default function AdminLayout() {
         onClose={() => setNavOpen(false)}
         collapsed={collapsed}
         onToggleCollapse={toggleCollapse}
+        panelName={panelProfile.name}
+        panelAvatar={panelProfile.avatar_url}
       />
 
       <div className="admin-main">
