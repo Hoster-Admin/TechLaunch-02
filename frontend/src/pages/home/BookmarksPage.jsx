@@ -88,6 +88,7 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <style>{`
+        .bm-sidebar { overflow: hidden; }
         @media(max-width:768px){
           .bm-layout { flex-direction:column !important; padding:0 0 80px !important; gap:0 !important; max-width:100% !important; }
           .bm-sidebar {
@@ -95,7 +96,7 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
             z-index:50 !important; border-radius:0 !important; border:none !important;
             border-bottom:1.5px solid #e8e8e8 !important; background:#fff !important;
             display:flex !important; flex-direction:row !important;
-            overflow-x:auto !important; overflow-y:hidden !important;
+            overflow-x:auto; overflow-y:hidden;
             -webkit-overflow-scrolling:touch; scrollbar-width:none;
             padding:0 !important; gap:0 !important;
             box-shadow:0 2px 8px rgba(0,0,0,.05);
@@ -112,6 +113,11 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
             display:flex !important; flex-direction:column !important;
             align-items:center !important; gap:3px !important; font-weight:700 !important;
           }
+          .bm-sidebar button[style*="var(--orange)"],
+          .bm-sidebar button[style*="orange"] {
+            border-bottom-color: var(--orange) !important;
+            color: var(--orange) !important;
+          }
           .bm-content { padding:16px 14px 40px !important; }
         }
         @media(max-width:480px){
@@ -123,7 +129,7 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
         <div className="bm-layout" style={{ maxWidth:1000, margin:'0 auto', padding:'32px 32px 80px', display:'flex', gap:24, alignItems:'flex-start' }}>
 
           {/* Sidebar / tab strip */}
-          <div className="bm-sidebar" style={{ width:200, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, overflow:'hidden', position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
+          <div className="bm-sidebar" style={{ width:200, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
             <div className="bm-sidebar-label" style={{ padding:'16px 16px 10px', fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:'.08em', color:'#bbb' }}>My Library</div>
             {TABS.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
