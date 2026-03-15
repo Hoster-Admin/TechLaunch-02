@@ -25,7 +25,7 @@ const PAGES = {
   activity:     { title:'Audit Log',               sub:'Full history of admin actions',         Component: AdminActivityLog },
   settings:     { title:'Settings',                sub:'Configure platform behaviour',          Component: AdminSettings },
   suggestions:      { title:'Suggestions',             sub:'User feedback and feature requests',    Component: AdminSuggestions },
-  platformprofile:  { title:'Platform Profile',        sub:'Manage TechLaunch public account',      Component: PlatformProfile },
+  platformprofile:  { title:'Admin Profile',            sub:'Manage TechLaunch public account',      Component: PlatformProfile },
 };
 
 const TYPE_ICON = { product: '📦', user: '👤', entity: '🏢' };

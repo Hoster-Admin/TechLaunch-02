@@ -17,7 +17,7 @@ const NAV_SYSTEM = [
   { key:'suggestions',  icon:'💡', label:'Suggestions' },
 ];
 const NAV_PROFILE = [
-  { key:'platformprofile', icon:'🌐', label:'Platform Profile' },
+  { key:'platformprofile', icon:'🌐', label:'Admin Profile' },
 ];
 
 function CollapseIcon({ collapsed }) {
