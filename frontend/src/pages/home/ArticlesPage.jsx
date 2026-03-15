@@ -178,7 +178,7 @@ function ArticleDetail({ onSignIn }) {
       <div style={{ maxWidth:600, margin:'120px auto 80px', textAlign:'center', padding:'0 20px', paddingTop:'calc(var(--nav-h) + 60px)' }}>
         <div style={{ fontSize:48, marginBottom:16 }}>📄</div>
         <div style={{ fontSize:22, fontWeight:800, marginBottom:8 }}>Article not found</div>
-        <button onClick={() => navigate('/articles')} style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Back to Articles</button>
+        <button onClick={() => navigate('/launcher?tab=Articles')} style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Back to Articles</button>
       </div>
       <Footer/>
     </>
@@ -191,7 +191,7 @@ function ArticleDetail({ onSignIn }) {
         <div style={{ maxWidth:720, margin:'0 auto', padding:'48px 32px 80px' }}>
 
           {/* Back */}
-          <button onClick={() => navigate('/articles')}
+          <button onClick={() => navigate('/launcher?tab=Articles')}
             style={{ display:'inline-flex', alignItems:'center', gap:7, fontSize:14, fontWeight:700, color:'#666', border:'none', background:'transparent', cursor:'pointer', marginBottom:36, transition:'color .15s' }}
             onMouseOver={e=>e.currentTarget.style.color='var(--orange)'} onMouseOut={e=>e.currentTarget.style.color='#666'}>
             ← Back to Articles
