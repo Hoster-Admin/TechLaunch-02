@@ -292,7 +292,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
       </Helmet>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', background:'#fff', minHeight:'100vh' }}>
-        <div style={{ maxWidth:860, margin:'0 auto', padding:'40px 32px 80px' }}>
+        <div className="product-detail-wrap">
 
           {/* Back */}
           <button onClick={() => navigate(-1)}

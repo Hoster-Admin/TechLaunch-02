@@ -172,7 +172,7 @@ export function RegisterPage() {
             </div>
           )}
           <form onSubmit={handleSubmit}>
-            <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:12, marginBottom:16 }}>
+            <div className="auth-name-grid" style={{ marginBottom:16 }}>
               <div>
                 <label style={labelStyle}>Full Name</label>
                 <input value={form.name} onChange={set('name')} placeholder="Sara Al-Mahmoud"

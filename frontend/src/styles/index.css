@@ -852,6 +852,64 @@ nav {
 .adm-compose-send:hover { opacity: .85; }
 @media(max-width: 640px) { .adm-msg-wrap { grid-template-columns: 1fr; } }
 
+/* ── CONTACT PAGE ── */
+.contact-grid { display: grid; grid-template-columns: 1fr 360px; gap: 48px; align-items: start; }
+
+/* ── LAUNCHER FEED ── */
+.launcher-feed-wrap { max-width: 720px; margin: 0 auto; padding: 32px 24px 80px; }
+
+/* ── PRODUCT DETAIL ── */
+.product-detail-wrap { max-width: 860px; margin: 0 auto; padding: 40px 32px 80px; }
+
+/* ── POST DETAIL ── */
+.post-detail-wrap { max-width: 680px; margin: 0 auto; padding: 20px 20px 0; }
+
+/* ── ABOUT / GENERAL DARK HERO ── */
+.dark-hero { background: #0a0a0a; padding: 80px 40px; text-align: center; }
+.dark-hero h1 { font-size: clamp(26px, 5vw, 44px); font-weight: 900; letter-spacing: -.04em; color: #fff; line-height: 1.15; margin: 0 auto 20px; max-width: 720px; }
+.dark-hero p { font-size: 16px; color: rgba(255,255,255,.55); line-height: 1.75; max-width: 580px; margin: 0 auto 32px; }
+
+/* ── DIRECTORY HERO ── */
+.dir-hero { background: #0a0a0a; padding: 60px 32px 52px; text-align: center; }
+.dir-tab-bar { max-width: 1100px; margin: 0 auto; padding: 0 32px; display: flex; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; }
+.dir-tab-bar::-webkit-scrollbar { display: none; }
+
+/* ── ABOUT VALUES GRID ── */
+.about-values-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(300px, 1fr)); gap: 20px; }
+.about-team-grid   { display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr)); gap: 20px; }
+
+/* ── AUTH FORM GRID ── */
+.auth-name-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 12px; }
+
+/* ── RESPONSIVE ADDITIONS ── */
+@media(max-width: 900px) {
+  .contact-grid { grid-template-columns: 1fr !important; gap: 24px !important; }
+  .dark-hero { padding: 48px 24px 40px; }
+  .dir-hero  { padding: 40px 20px 36px; }
+  .dir-tab-bar { padding: 0 16px; }
+  .launcher-feed-wrap { padding: 24px 16px 60px; }
+  .product-detail-wrap { padding: 28px 20px 60px; }
+}
+
+@media(max-width: 768px) {
+  .contact-grid { padding: 28px 16px 60px !important; }
+  .about-values-grid { grid-template-columns: 1fr !important; }
+  .about-team-grid   { grid-template-columns: repeat(2, 1fr) !important; }
+  .dark-hero { padding: 40px 20px 36px; }
+  .dark-hero h1 { font-size: clamp(24px, 7vw, 36px); }
+  .launcher-feed-wrap { padding: 16px 12px 60px; }
+  .product-detail-wrap { padding: 20px 14px 60px; }
+  .auth-name-grid { grid-template-columns: 1fr !important; }
+}
+
+@media(max-width: 480px) {
+  .contact-grid { padding: 20px 12px 60px !important; }
+  .about-team-grid { grid-template-columns: 1fr 1fr !important; }
+  .dark-hero { padding: 32px 16px 28px; }
+  .dir-hero  { padding: 28px 14px 24px; }
+  .product-detail-wrap { padding: 16px 12px 60px; }
+}
+
 [dir="rtl"] {
   font-family: 'Noto Kufi Arabic', sans-serif;
 }

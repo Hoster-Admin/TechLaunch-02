@@ -118,16 +118,16 @@ function ArticlesList({ onSignIn }) {
       <Navbar/>
       <div style={{ paddingTop:'var(--nav-h)', background:'#fff', minHeight:'100vh' }}>
         {/* Header */}
-        <div style={{ borderBottom:'1px solid #f0f0f0', padding:'48px 40px 36px' }}>
+        <div style={{ borderBottom:'1px solid #f0f0f0', padding:'clamp(28px,5vw,48px) clamp(16px,5vw,40px) 36px' }}>
           <div style={{ maxWidth:800, margin:'0 auto' }}>
             <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--orange)', marginBottom:10 }}>✍️ Community</div>
-            <h1 style={{ fontSize:36, fontWeight:900, letterSpacing:'-.03em', marginBottom:12 }}>From the Community</h1>
+            <h1 style={{ fontSize:'clamp(24px,5vw,36px)', fontWeight:900, letterSpacing:'-.03em', marginBottom:12 }}>From the Community</h1>
             <p style={{ fontSize:15, color:'#666', lineHeight:1.7, margin:0 }}>Insights, guides, and perspectives from founders, investors, and builders across the MENA region.</p>
           </div>
         </div>
 
         {/* Articles grid */}
-        <div style={{ maxWidth:800, margin:'0 auto', padding:'40px 40px 80px' }}>
+        <div style={{ maxWidth:800, margin:'0 auto', padding:'40px clamp(16px,5vw,40px) 80px' }}>
           <div style={{ display:'flex', flexDirection:'column', gap:0 }}>
             {ARTICLES.map((a, i) => (
               <div key={a.slug} onClick={() => navigate(`/articles/${a.slug}`)}
@@ -188,7 +188,7 @@ function ArticleDetail({ onSignIn }) {
     <>
       <Navbar/>
       <div style={{ paddingTop:'var(--nav-h)', background:'#fff', minHeight:'100vh' }}>
-        <div style={{ maxWidth:720, margin:'0 auto', padding:'48px 32px 80px' }}>
+        <div style={{ maxWidth:720, margin:'0 auto', padding:'clamp(24px,5vw,48px) clamp(16px,4vw,32px) 80px' }}>
 
           {/* Back */}
           <button onClick={() => navigate('/launcher?tab=Articles')}
@@ -230,7 +230,7 @@ function ArticleDetail({ onSignIn }) {
           </div>
 
           {/* Bottom CTA */}
-          <div style={{ marginTop:48, padding:'28px 32px', background:'#0a0a0a', borderRadius:20, textAlign:'center' }}>
+          <div style={{ marginTop:48, padding:'28px clamp(16px,4vw,32px)', background:'#0a0a0a', borderRadius:20, textAlign:'center' }}>
             <div style={{ fontSize:16, fontWeight:800, color:'#fff', marginBottom:8 }}>Want to write for the community?</div>
             <p style={{ fontSize:13, color:'rgba(255,255,255,.5)', marginBottom:18 }}>Share your insights with thousands of MENA founders, investors, and builders.</p>
             <button onClick={handleSubmit} style={{ padding:'11px 22px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>

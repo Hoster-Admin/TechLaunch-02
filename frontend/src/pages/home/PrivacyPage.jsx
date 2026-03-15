@@ -67,15 +67,15 @@ export default function PrivacyPage() {
       <Navbar/>
       <div style={{ paddingTop:'var(--nav-h)', background:'#fff', minHeight:'100vh' }}>
         {/* Header */}
-        <div style={{ borderBottom:'1px solid #f0f0f0', padding:'52px 40px 40px' }}>
+        <div style={{ borderBottom:'1px solid #f0f0f0', padding:'clamp(28px,5vw,52px) clamp(16px,5vw,40px) 40px' }}>
           <div style={{ maxWidth:760, margin:'0 auto' }}>
-            <h1 style={{ fontSize:36, fontWeight:900, letterSpacing:'-.03em', marginBottom:10 }}>Privacy Policy</h1>
+            <h1 style={{ fontSize:'clamp(24px,5vw,36px)', fontWeight:900, letterSpacing:'-.03em', marginBottom:10 }}>Privacy Policy</h1>
             <p style={{ fontSize:14, color:'#888', margin:0 }}>Last updated: March 1, 2026 · Effective: March 1, 2026</p>
           </div>
         </div>
 
         {/* Content */}
-        <div style={{ maxWidth:760, margin:'0 auto', padding:'48px 40px 80px' }}>
+        <div style={{ maxWidth:760, margin:'0 auto', padding:'clamp(24px,5vw,48px) clamp(16px,5vw,40px) 80px' }}>
           <p style={{ fontSize:15, color:'#555', lineHeight:1.8, marginBottom:40 }}>
             Tech Launch MENA ("we", "our", or "us") is committed to protecting your privacy. This Privacy Policy explains how we collect, use, share, and protect information about you when you use our platform at tlmena.com.
           </p>

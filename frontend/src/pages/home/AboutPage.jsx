@@ -45,9 +45,9 @@ export default function AboutPage() {
       <div style={{ paddingTop:'var(--nav-h)', background:'#fff', minHeight:'100vh' }}>
 
         {/* Hero */}
-        <div style={{ background:'#0a0a0a', padding:'80px 40px', textAlign:'center' }}>
+        <div className="dark-hero">
           <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--orange)', marginBottom:14 }}>About Tech Launch MENA</div>
-          <h1 style={{ fontSize:44, fontWeight:900, letterSpacing:'-.04em', color:'#fff', lineHeight:1.15, margin:'0 auto 20px', maxWidth:720 }}>
+          <h1 style={{ fontWeight:900, letterSpacing:'-.04em', color:'#fff', lineHeight:1.15, margin:'0 auto 20px', maxWidth:720 }}>
             The home for MENA's best<br/><span style={{ color:'var(--orange)' }}>products, startups & builders</span>
           </h1>
           <p style={{ fontSize:16, color:'rgba(255,255,255,.55)', lineHeight:1.75, maxWidth:580, margin:'0 auto 32px' }}>
@@ -63,7 +63,7 @@ export default function AboutPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth:900, margin:'0 auto', padding:'72px 40px 80px' }}>
+        <div style={{ maxWidth:900, margin:'0 auto', padding:'clamp(40px,6vw,72px) clamp(16px,4vw,40px) 80px' }}>
 
           {/* Mission */}
           <div style={{ marginBottom:72, textAlign:'center' }}>
@@ -81,7 +81,7 @@ export default function AboutPage() {
           <div style={{ marginBottom:72 }}>
             <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--orange)', marginBottom:14, textAlign:'center' }}>Our Values</div>
             <h2 style={{ fontSize:28, fontWeight:900, letterSpacing:'-.03em', textAlign:'center', marginBottom:40 }}>What we stand for</h2>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(380px,1fr))', gap:20 }}>
+            <div className="about-values-grid">
               {VALUES.map(v => (
                 <div key={v.title} style={{ background:'#fafafa', border:'1px solid #f0f0f0', borderRadius:18, padding:'28px 28px' }}>
                   <div style={{ fontSize:28, marginBottom:12 }}>{v.icon}</div>
@@ -96,7 +96,7 @@ export default function AboutPage() {
           <div style={{ marginBottom:72 }}>
             <div style={{ fontSize:12, fontWeight:800, letterSpacing:'.1em', textTransform:'uppercase', color:'var(--orange)', marginBottom:14, textAlign:'center' }}>The Team</div>
             <h2 style={{ fontSize:28, fontWeight:900, letterSpacing:'-.03em', textAlign:'center', marginBottom:40 }}>Built by builders, for builders</h2>
-            <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill,minmax(200px,1fr))', gap:20 }}>
+            <div className="about-team-grid">
               {TEAM.map(m => (
                 <div key={m.name} style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, padding:'24px 20px', textAlign:'center' }}>
                   <div style={{ width:56, height:56, borderRadius:16, background:m.color, color:'#fff', display:'grid', placeItems:'center', fontSize:18, fontWeight:900, margin:'0 auto 14px' }}>{m.initials}</div>
@@ -109,7 +109,7 @@ export default function AboutPage() {
           </div>
 
           {/* CTA */}
-          <div style={{ background:'#0a0a0a', borderRadius:24, padding:'48px 40px', textAlign:'center' }}>
+          <div style={{ background:'#0a0a0a', borderRadius:24, padding:'clamp(28px,5vw,48px) clamp(20px,4vw,40px)', textAlign:'center' }}>
             <h2 style={{ fontSize:28, fontWeight:900, color:'#fff', letterSpacing:'-.03em', marginBottom:12 }}>Join the community</h2>
             <p style={{ fontSize:15, color:'rgba(255,255,255,.5)', marginBottom:24 }}>Submit your product, discover what MENA builders are launching, and connect with the ecosystem.</p>
             <div style={{ display:'flex', justifyContent:'center', gap:12, flexWrap:'wrap' }}>

@@ -96,7 +96,7 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
         {/* Hero */}
-        <div style={{ background:'#0a0a0a', padding:'60px 32px 52px', textAlign:'center' }}>
+        <div className="dir-hero">
           <div style={{ display:'inline-flex', alignItems:'center', gap:8, background:'rgba(232,98,26,.15)', border:'1px solid rgba(232,98,26,.3)', color:'var(--orange)', fontSize:12, fontWeight:700, letterSpacing:'.1em', textTransform:'uppercase', padding:'5px 16px', borderRadius:100, marginBottom:24 }}>🌍 MENA Ecosystem Directory</div>
           <h1 style={{ fontSize:'clamp(30px,5vw,52px)', fontWeight:800, color:'#fff', letterSpacing:'-.03em', marginBottom:12, lineHeight:1.1 }}>
             Explore by <span style={{ color:'var(--orange)' }}>Industry</span> or <span style={{ color:'var(--orange)' }}>Country</span>
@@ -111,7 +111,7 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
 
         {/* Tabs */}
         <div style={{ background:'#fff', borderBottom:'1px solid #e8e8e8', position:'sticky', top:'var(--nav-h)', zIndex:100 }}>
-          <div style={{ maxWidth:1100, margin:'0 auto', padding:'0 32px', display:'flex' }}>
+          <div className="dir-tab-bar">
             {[['industries','🏭 Industries'],['countries','🌍 Countries']].map(([t,label]) => (
               <button key={t} onClick={() => setActiveTab(t)}
                 style={{ padding:'16px 20px', border:'none', background:'transparent', fontSize:14, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
@@ -121,7 +121,7 @@ export default function DirectoryPage({ onSignIn, onSignUp }) {
           </div>
         </div>
 
-        <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px 32px 80px' }}>
+        <div style={{ maxWidth:1100, margin:'0 auto', padding:'32px clamp(16px,3vw,32px) 80px' }}>
           {loading ? (
             <div style={{ textAlign:'center', padding:60, color:'#aaa' }}>Loading…</div>
           ) : (

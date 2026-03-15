@@ -555,7 +555,7 @@ export default function LauncherPage() {
           </div>
         </div>
 
-        <div style={{ maxWidth: activeTab === 'People' ? 1100 : 720, margin: '0 auto', padding: '32px 24px 80px', transition: 'max-width .2s' }}>
+        <div style={{ maxWidth: activeTab === 'People' ? 1100 : 720, margin: '0 auto', padding: 'clamp(16px,3vh,32px) clamp(12px,3.5vw,24px) 80px', transition: 'max-width .2s' }}>
 
           <div style={{ display: 'flex', gap: 8, marginBottom: 28, borderBottom: '1.5px solid #ebebeb', paddingBottom: 0 }}>
             {TABS.map(tab => (
