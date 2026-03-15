@@ -1,5 +1,4 @@
 import axios from 'axios';
-import toast from 'react-hot-toast';
 
 const api = axios.create({
   baseURL: process.env.REACT_APP_API_URL || '/api',
@@ -66,12 +65,6 @@ api.interceptors.response.use(
       } finally {
         isRefreshing = false;
       }
-    }
-
-    // Show error toast for non-401 errors
-    const message = error.response?.data?.message || 'Something went wrong';
-    if (error.response?.status !== 401) {
-      toast.error(message);
     }
 
     return Promise.reject(error);

@@ -7,7 +7,6 @@ import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
 import toast from 'react-hot-toast';
-import WaitlistModal from '../../components/home/WaitlistModal';
 
 function DiscountSignupBox({ product }) {
   const { user } = useAuth();
@@ -417,7 +416,6 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
         </div>
       </div>
 
-      <WaitlistModal product={null} onClose={() => setWaitlistModal(null)}/>
       <Footer/>
     </>
   );

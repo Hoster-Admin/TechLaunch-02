@@ -81,22 +81,6 @@ const toggleLike = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-// ── GET /api/launcher/:id/comments
-const getComments = async (req, res, next) => {
-  try {
-    const { rows } = await query(`
-      SELECT c.id, c.body, c.created_at,
-             u.name AS author, u.handle AS author_handle,
-             u.avatar_color, u.avatar_url
-      FROM launcher_post_comments c
-      JOIN users u ON u.id = c.user_id
-      WHERE c.post_id=$1
-      ORDER BY c.created_at ASC
-    `, [req.params.id]);
-    res.json({ success: true, data: rows });
-  } catch (err) { next(err); }
-};
-
 // ── POST /api/launcher/:id/comments
 const addComment = async (req, res, next) => {
   try {

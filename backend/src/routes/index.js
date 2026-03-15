@@ -2,6 +2,7 @@ const express = require('express');
 const { body, query: qv } = require('express-validator');
 const { authenticate, optionalAuth, requireAdmin, requireMod, requireEditor } = require('../middleware/auth');
 const { validate } = require('../middleware/error');
+const { query: dbQuery } = require('../config/database');
 const multer = require('multer');
 const path = require('path');
 const fs = require('fs');
@@ -234,7 +235,6 @@ suggestionsRouter.post('/', authenticate,
   validate,
   async (req, res, next) => {
     try {
-      const { query: dbQuery } = require('../config/database');
       const result = await dbQuery(
         'INSERT INTO suggestions (user_id, body) VALUES ($1, $2) RETURNING *',
         [req.user.id, req.body.body]
@@ -263,8 +263,6 @@ messagesRouter.post('/:handle',
 // ══════════════════════════════════════════════════
 // APPLICATIONS  /api/applications
 // ══════════════════════════════════════════════════
-const { query: dbQuery } = require('../config/database');
-
 const applyRouter = express.Router();
 applyRouter.post('/',
   authenticate,

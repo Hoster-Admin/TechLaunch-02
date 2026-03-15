@@ -17,6 +17,7 @@ app.set('trust proxy', 1);
 
 // ── Security headers
 app.use(helmet({
+  frameguard: false,                                    // allow iframe embedding (Replit preview, partner embeds)
   crossOriginResourcePolicy: { policy: 'cross-origin' },
   contentSecurityPolicy: {
     directives: {
@@ -25,10 +26,11 @@ app.use(helmet({
       styleSrc:    ["'self'", "'unsafe-inline'", 'https:'],
       imgSrc:      ["'self'", 'data:', 'blob:', 'https:'],
       fontSrc:     ["'self'", 'https:', 'data:'],
-      connectSrc:  ["'self'", 'https:'],
+      connectSrc:  ["'self'", 'https:', 'wss:'],
       mediaSrc:    ["'self'", 'https:'],
-      frameSrc:    ["'none'"],
-      objectSrc:   ["'none'"],
+      frameSrc:        ["'self'", 'https:'],
+      objectSrc:       ["'none'"],
+      frameAncestors:  ["'self'", 'https:'],
     },
   },
 }));

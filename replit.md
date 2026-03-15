@@ -14,10 +14,25 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 
 ## Architecture
 
-- **Frontend**: React (Vite) — served by Express in production on port 5000
+- **Frontend**: React (CRA) — served by Express in production on port 5000
 - **Backend**: Express.js REST API — runs on port 5000 (production)
-- **Database**: PostgreSQL (Replit built-in, also mirrors Neon via NEON_DATABASE_URL)
-- **Standalone Admin**: Separate Express + React Vite app — runs on port 4000
+- **Database**: PostgreSQL on Neon (via NEON_DATABASE_URL)
+- **Auth**: JWT (access token 7d) + UUID refresh tokens stored in `refresh_tokens` table
+
+## Security Notes (Production-hardened)
+
+- Helmet `frameguard` is **disabled** (`frameguard: false`) to allow iframe embedding (Replit preview, partner embeds). CSP `frame-ancestors 'self' https:` allows embedding from any HTTPS origin.
+- CSP `connectSrc` includes `wss:` for WebSocket support.
+- Rate limiting: 100 req/15 min on `/api/*`, 20 req/15 min on `/api/auth/login` and `/api/auth/register`.
+- API client (`frontend/src/utils/api.js`) does NOT show global error toasts — each component handles its own errors. This prevents double-toast scenarios.
+- `entity_type` enum values: `startup`, `accelerator`, `investor`, `venture_studio` (NOT "company").
+
+## Database (Neon)
+
+- Server uses `NEON_DATABASE_URL` (not `DATABASE_URL`)
+- All community tables have UUID primary keys
+- `community_tags.created_by` is UUID type
+- DB is currently empty (purged for launch). Tags preserved: 5 community tags, 11 product tags.
 
 ## Project Structure
 
