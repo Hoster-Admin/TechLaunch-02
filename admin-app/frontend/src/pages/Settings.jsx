@@ -454,7 +454,7 @@ export default function Settings() {
 
       {/* Platform Profile */}
       <SCard
-        title="Admin Profile"
+        title="Public Profile"
         sub="Admin panel identity — logo and display name shown in the sidebar"
       >
         <PlatformProfileCard isAdmin={isAdmin}/>
