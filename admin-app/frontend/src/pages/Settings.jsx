@@ -381,7 +381,7 @@ export default function Settings() {
       setShowModal(false);
       setForm({ name:'', email:'', role:'moderator' });
       loadTeam();
-    } catch(e) { toast.error(e.message || 'Failed to add team member'); }
+    } catch(e) { toast.error(e.response?.data?.message || e.message || 'Failed to add team member'); }
     finally { setSaving(false); }
   };
 

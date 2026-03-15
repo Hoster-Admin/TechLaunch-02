@@ -506,7 +506,23 @@ admin.post('/users', async (req, res) => {
     }
     res.json({ success:true, data:rows[0], message:`${rows[0].name} added successfully` });
   } catch(e) {
-    if (e.code==='23505') return res.status(409).json({ success:false, message:'Email already in use' });
+    if (e.code==='23505') {
+      try {
+        const { rows: existing } = await q('SELECT id,name,role FROM users WHERE email=$1', [req.body.email.toLowerCase().trim()]);
+        if (existing.length && existing[0].role === 'user') {
+          const targetRole = req.body.role || 'moderator';
+          if (targetRole === 'admin' && req.user.role !== 'admin')
+            return res.status(403).json({ success:false, message:'Only admins can promote to admin' });
+          await q('UPDATE users SET role=$1, verified=true, email_verified=true WHERE id=$2', [targetRole, existing[0].id]);
+          await logAction(req.user.id, 'user.promoted', 'user', existing[0].id, { name:existing[0].name, from:'user', to:targetRole }, req.ip);
+          return res.json({ success:true, data:{ id:existing[0].id, name:existing[0].name, email:req.body.email, role:targetRole }, message:`${existing[0].name} already had an account — they've been promoted to ${targetRole.charAt(0).toUpperCase()+targetRole.slice(1)}` });
+        }
+        if (existing.length && ['admin','moderator','editor'].includes(existing[0].role)) {
+          return res.status(409).json({ success:false, message:`${existing[0].name} is already a team member (${existing[0].role})` });
+        }
+      } catch(inner) { /* fall through to generic error */ }
+      return res.status(409).json({ success:false, message:'Email already in use' });
+    }
     res.status(500).json({ success:false, message:'Internal server error' });
   }
 });
