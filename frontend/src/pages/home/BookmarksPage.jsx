@@ -19,10 +19,10 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
   const { user } = useAuth();
   const { bookmarks, toggleBookmark, votes, toggleVote } = useUI();
 
-  const [activeTab, setActiveTab]       = useState('saved');
-  const [savedProds, setSavedProds]     = useState(null);
-  const [myProds, setMyProds]           = useState(null);
-  const [loading, setLoading]           = useState(true);
+  const [activeTab, setActiveTab]   = useState('saved');
+  const [savedProds, setSavedProds] = useState(null);
+  const [myProds, setMyProds]       = useState(null);
+  const [loading, setLoading]       = useState(true);
 
   useEffect(() => {
     if (!user) { setLoading(false); return; }
@@ -82,82 +82,113 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
     );
   };
 
+  const active = TABS.find(t => t.key === activeTab);
+
   return (
     <>
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
+      <style>{`
+        @media(max-width:768px){
+          .bm-layout { flex-direction:column !important; padding:0 0 80px !important; gap:0 !important; max-width:100% !important; }
+          .bm-sidebar {
+            width:100% !important; position:sticky !important; top:var(--nav-h) !important;
+            z-index:50 !important; border-radius:0 !important; border:none !important;
+            border-bottom:1.5px solid #e8e8e8 !important; background:#fff !important;
+            display:flex !important; flex-direction:row !important;
+            overflow-x:auto !important; overflow-y:hidden !important;
+            -webkit-overflow-scrolling:touch; scrollbar-width:none;
+            padding:0 !important; gap:0 !important;
+            box-shadow:0 2px 8px rgba(0,0,0,.05);
+          }
+          .bm-sidebar::-webkit-scrollbar { display:none; }
+          .bm-sidebar-label { display:none !important; }
+          .bm-sidebar button {
+            flex:0 0 auto !important; min-width:auto !important; width:auto !important;
+            border-bottom:3px solid transparent !important;
+            border-right:none !important; border-top:none !important; border-left:none !important;
+            padding:10px 14px !important; white-space:nowrap !important;
+            font-size:12px !important; border-radius:0 !important;
+            background:transparent !important;
+            display:flex !important; flex-direction:column !important;
+            align-items:center !important; gap:3px !important; font-weight:700 !important;
+          }
+          .bm-content { padding:16px 14px 40px !important; }
+        }
+        @media(max-width:480px){
+          .bm-sidebar button { padding:10px 11px !important; font-size:11px !important; }
+          .bm-sidebar button span:first-child { font-size:16px !important; }
+        }
+      `}</style>
       <div style={{ paddingTop:'var(--nav-h)', minHeight:'100vh', background:'#f8f8f8' }}>
-        <div style={{ maxWidth:1000, margin:'0 auto', padding:'32px 32px 80px', display:'flex', gap:24, alignItems:'flex-start' }}>
+        <div className="bm-layout" style={{ maxWidth:1000, margin:'0 auto', padding:'32px 32px 80px', display:'flex', gap:24, alignItems:'flex-start' }}>
 
-          {/* Sidebar nav */}
-          <div style={{ width:200, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, overflow:'hidden', position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
-            <div style={{ padding:'16px 16px 10px', fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:'.08em', color:'#bbb' }}>My Library</div>
+          {/* Sidebar / tab strip */}
+          <div className="bm-sidebar" style={{ width:200, flexShrink:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, overflow:'hidden', position:'sticky', top:'calc(var(--nav-h) + 20px)' }}>
+            <div className="bm-sidebar-label" style={{ padding:'16px 16px 10px', fontSize:11, fontWeight:800, textTransform:'uppercase', letterSpacing:'.08em', color:'#bbb' }}>My Library</div>
             {TABS.map(tab => (
               <button key={tab.key} onClick={() => setActiveTab(tab.key)}
-                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'13px 16px', border:'none', borderBottom:'1px solid #f4f4f4', background:activeTab===tab.key?'var(--orange-light)':'#fff', color:activeTab===tab.key?'var(--orange)':'#444', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', fontFamily:'Inter,sans-serif' }}>
-                <span style={{ fontSize:15 }}>{tab.icon}</span>{tab.label}
+                style={{ width:'100%', display:'flex', alignItems:'center', gap:10, padding:'13px 16px', border:'none', borderBottom:'1px solid #f4f4f4', background:activeTab===tab.key?'var(--orange-light)':'#fff', color:activeTab===tab.key?'var(--orange)':'#444', fontSize:13, fontWeight:600, cursor:'pointer', textAlign:'left', fontFamily:'DM Sans,sans-serif', transition:'background .12s,color .12s' }}>
+                <span style={{ fontSize:16 }}>{tab.icon}</span>
+                <span>{tab.label}</span>
               </button>
             ))}
           </div>
 
           {/* Main content */}
-          <div style={{ flex:1, minWidth:0 }}>
+          <div className="bm-content" style={{ flex:1, minWidth:0 }}>
 
-            {/* ── SAVED PRODUCTS ── */}
+            {/* Page title */}
+            <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>{active?.icon} {active?.label}</div>
+            <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>
+              {activeTab === 'saved'      && "Products you've bookmarked."}
+              {activeTab === 'applied'    && "Accelerators and investors you've applied to."}
+              {activeTab === 'myproducts' && "Products you've submitted to Tech Launch MENA."}
+            </div>
+
+            {/* SAVED PRODUCTS */}
             {activeTab === 'saved' && (
-              <>
-                <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>🔖 Products Saved</div>
-                <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>Products you've bookmarked.</div>
-                {loading ? (
-                  <div style={{ display:'flex', justifyContent:'center', padding:80 }}><Spinner size="lg"/></div>
-                ) : !savedProds?.length ? (
-                  <div style={{ textAlign:'center', padding:'80px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
-                    <div style={{ fontSize:48, marginBottom:16 }}>🔖</div>
-                    <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No saved products yet</div>
-                    <p style={{ color:'#888', marginBottom:24 }}>Browse products and click the bookmark icon to save them here.</p>
-                    <button onClick={() => navigate('/products')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>Browse Products →</button>
-                  </div>
-                ) : (
-                  <div style={{ display:'flex', flexDirection:'column' }}>
-                    {savedProds.map((p, i) => <ProductRow key={p.id} p={p} i={i} showRemove={true}/>)}
-                  </div>
-                )}
-              </>
-            )}
-
-            {/* ── APPLIED ── */}
-            {activeTab === 'applied' && (
-              <>
-                <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>📋 Applications</div>
-                <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>Accelerators and investors you've applied to.</div>
-                <div style={{ textAlign:'center', padding:'80px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
-                  <div style={{ fontSize:48, marginBottom:16 }}>📋</div>
-                  <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No applications yet</div>
-                  <p style={{ color:'#888', marginBottom:24, maxWidth:360, margin:'0 auto 24px' }}>Apply to accelerators and investors to track your applications here.</p>
-                  <button onClick={() => navigate('/accelerators')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>Browse Accelerators →</button>
+              loading ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:80 }}><Spinner size="lg"/></div>
+              ) : !savedProds?.length ? (
+                <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                  <div style={{ fontSize:48, marginBottom:16 }}>🔖</div>
+                  <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No saved products yet</div>
+                  <p style={{ color:'#888', marginBottom:24, maxWidth:340, margin:'0 auto 24px' }}>Browse products and click the bookmark icon to save them here.</p>
+                  <button onClick={() => navigate('/products')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>Browse Products →</button>
                 </div>
-              </>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column' }}>
+                  {savedProds.map((p, i) => <ProductRow key={p.id} p={p} i={i} showRemove={true}/>)}
+                </div>
+              )
             )}
 
-            {/* ── MY PRODUCTS ── */}
+            {/* APPLIED */}
+            {activeTab === 'applied' && (
+              <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                <div style={{ fontSize:48, marginBottom:16 }}>📋</div>
+                <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No applications yet</div>
+                <p style={{ color:'#888', marginBottom:24, maxWidth:360, margin:'0 auto 24px' }}>Apply to accelerators and investors to track your applications here.</p>
+                <button onClick={() => navigate('/list/accelerator')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>Browse Accelerators →</button>
+              </div>
+            )}
+
+            {/* MY PRODUCTS */}
             {activeTab === 'myproducts' && (
-              <>
-                <div style={{ fontSize:22, fontWeight:800, letterSpacing:'-.02em', marginBottom:4 }}>🚀 My Products</div>
-                <div style={{ fontSize:13, color:'#aaa', marginBottom:20 }}>Products you've submitted to Tech Launch MENA.</div>
-                {loading ? (
-                  <div style={{ display:'flex', justifyContent:'center', padding:80 }}><Spinner size="lg"/></div>
-                ) : !myProds?.length ? (
-                  <div style={{ textAlign:'center', padding:'80px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
-                    <div style={{ fontSize:48, marginBottom:16 }}>🚀</div>
-                    <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No products submitted yet</div>
-                    <p style={{ color:'#888', marginBottom:24 }}>Submit your first product to get discovered by the MENA tech community.</p>
-                    <button onClick={() => navigate('/submit')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>+ Submit a Product</button>
-                  </div>
-                ) : (
-                  <div style={{ display:'flex', flexDirection:'column' }}>
-                    {myProds.map((p, i) => <ProductRow key={p.id} p={p} i={i} showRemove={false}/>)}
-                  </div>
-                )}
-              </>
+              loading ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:80 }}><Spinner size="lg"/></div>
+              ) : !myProds?.length ? (
+                <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                  <div style={{ fontSize:48, marginBottom:16 }}>🚀</div>
+                  <div style={{ fontSize:18, fontWeight:800, marginBottom:8 }}>No products submitted yet</div>
+                  <p style={{ color:'#888', marginBottom:24, maxWidth:360, margin:'0 auto 24px' }}>Submit your first product to get discovered by the MENA tech community.</p>
+                  <button onClick={() => navigate('/submit')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>+ Submit a Product</button>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column' }}>
+                  {myProds.map((p, i) => <ProductRow key={p.id} p={p} i={i} showRemove={false}/>)}
+                </div>
+              )
             )}
 
           </div>
