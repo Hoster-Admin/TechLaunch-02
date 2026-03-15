@@ -1,108 +1,119 @@
-# Tech Launch MENA
+# TechLaunch MENA
 
-A full-stack product discovery platform for the MENA region, similar to Product Hunt.
+A full-stack product discovery platform for the MENA region.
 
 ## Architecture
 
-- **Frontend**: React (Create React App) — runs on port 5000
-- **Backend**: Express.js REST API — runs on port 3001
-- **Database**: PostgreSQL (Replit built-in)
+Two separate applications share one PostgreSQL database:
+
+| App | Port | Purpose |
+|-----|------|---------|
+| `admin-app/` | 5000 | Admin panel (Vite React + Express) |
+| `backend/` | 3001 | Public REST API (Express) |
+| `frontend/` | — | Public-facing React site (built/served by backend in production) |
+
+## Workflows
+
+- **Start application**: `ADMIN_PORT=5000 NODE_ENV=production node admin-app/backend/server.js`
+  - Serves the built Vite frontend from `admin-app/frontend/dist/`
+  - Rebuild: `cd admin-app/frontend && npm run build`
+- **Public API**: `PORT=3001 node backend/src/server.js`
 
 ## Project Structure
 
 ```
 /
-├── frontend/          # React CRA app
-│   ├── src/
-│   │   ├── App.jsx
-│   │   ├── components/  (ui, layout, home, admin)
-│   │   ├── context/     (AuthContext)
-│   │   ├── pages/       (home, admin)
-│   │   ├── styles/      (index.css - custom CSS + Tailwind)
-│   │   └── utils/       (api.js - axios client)
-│   ├── .env             (PORT=5000, HOST=0.0.0.0, proxy config)
-│   └── package.json     (proxy → http://localhost:3001)
+├── admin-app/
+│   ├── backend/server.js       # Admin Express server (port 5000)
+│   └── frontend/
+│       ├── src/
+│       │   ├── components/     # AdminLayout, AdminSidebar
+│       │   ├── pages/          # Dashboard, Products, Users, Settings, PlatformProfile, …
+│       │   └── utils/api.js    # All admin API helpers
+│       └── dist/               # Built output (served by admin backend)
 │
-├── backend/           # Express API
-│   ├── src/
-│   │   ├── server.js
-│   │   ├── config/      (database.js - pg Pool)
-│   │   ├── controllers/ (auth, products, entities, users, admin)
-│   │   ├── middleware/  (auth JWT, error handling)
-│   │   ├── migrations/  (001_schema.sql)
-│   │   ├── routes/      (index.js)
-│   │   └── seeders/
-│   └── .env             (PORT=3001, DB credentials, JWT secrets)
+├── backend/
+│   └── src/
+│       ├── server.js           # Public API
+│       ├── config/database.js
+│       ├── controllers/        # auth, products, entities, users
+│       ├── middleware/
+│       ├── migrations/001_schema.sql
+│       ├── seeders/run.js      # Dev-only seeder — do NOT run in production
+│       └── services/emailService.js
 │
-└── prototypes/        # Static HTML prototypes
+└── frontend/                   # Public React site
+    └── src/
 ```
-
-## Workflows
-
-- **Start application**: runs the admin panel in production mode on port 5000 (webview)
-  - Command: `ADMIN_PORT=5000 NODE_ENV=production node admin-app/backend/server.js`
-  - Serves the built admin Vite frontend from `admin-app/frontend/dist`
-  - To rebuild the admin frontend: `cd admin-app/frontend && npm run build`
-  - To run the public site instead: `cd backend && PORT=3001 node src/server.js & cd frontend && BROWSER=none PORT=5000 npm start`
 
 ## Database
 
-Uses both Replit built-in PostgreSQL (heliumdb) and Neon (NEON_DATABASE_URL). The admin panel uses Neon (same DB as public site). Schema includes:
-- `users` — roles: user/admin/moderator/editor; status: active/suspended/banned/pending_verification; persona: Founder/Investor/Product Manager/etc.
-- `products` — status enum: pending/live/soon/rejected/draft
-- `entities` — type enum: accelerator/investor/venture_studio
-- `accelerator_applications` — status enum (app_status): pending/reviewing/accepted/rejected; fields: applicant_id, entity_id, product_id, startup_name, stage, pitch, notes, reviewed_by, reviewed_at
-- `investor_pitches` — status enum (pitch_status): sent/reviewing/interested/follow-up/rejected/funded; fields: founder_id, investor_id, product_id, ask_amount, pitch_deck, description, notes
-- `waitlist_signups` — product_id, email, user_id
-- `comments, upvotes, bookmarks, suggestions, notifications, platform_settings, team_members, activity_log, refresh_tokens`
+PostgreSQL (Replit built-in + Neon NEON_DATABASE_URL). Key tables:
+
+- `users` — roles: user/admin/moderator/editor
+- `products` — status: pending/live/soon/rejected/draft
+- `entities` — type: accelerator/investor/venture_studio
+- `platform_settings` — key/value store for all platform config
+- `platform_posts` — posts made by the TechLaunch MENA platform account
+- `tags` — category: role/user/product/article
+- `activity_log`, `refresh_tokens`, `notifications`, `comments`, `upvotes`, `follows`, `bookmarks`
 
 Run migrations: `cd backend && node src/migrations/run.js`
 
-## Environment
+## Production Database State (Clean)
 
-- Backend `.env`: DB_HOST=helium, DB_PORT=5432, DB_NAME=heliumdb, DB_USER=postgres, PORT=3001
-- Frontend `.env`: PORT=5000, HOST=0.0.0.0, DANGEROUSLY_DISABLE_HOST_CHECK=true
+After cleanup, the database contains only:
+
+| Table | Contents |
+|-------|----------|
+| `users` | 2 rows: `admin@tlmena.com` (admin) + `platform@techlaunchmena.com` (platform account) |
+| `products` | Empty — ready for real submissions |
+| `tags` | 13 system tags (role/user/product/article categories) |
+| `platform_settings` | 35 config rows — platform name, feature flags, notification prefs |
+| All others | Empty |
+
+## Platform Account
+
+- **Handle**: `techlaunchmena`
+- **UUID**: `e0cb08b1-3c3d-4db5-8e39-70a099d4f77d` (hardcoded in `admin-app/backend/server.js` as `TLMENA_ID`)
+- **Purpose**: Official posting identity used on Platform Profile page
+- **Email**: `platform@techlaunchmena.com` (internal — not used for login)
+
+## Admin Panel Identity vs Public Profile
+
+Two separate concepts:
+
+- **Settings → Public Profile** — controls logo + display name shown in the admin panel sidebar (stored in `platform_settings` keys `panel_display_name`, `panel_avatar_url`)
+- **Admin Profile page (Public Profile)** — edits the public TechLaunch MENA user account (stored in `users` table via `TLMENA_ID`). Fields: name, handle, headline, bio, website, twitter, linkedin, avatar
 
 ## File Uploads
 
-- **Endpoint**: `POST /api/upload` — authenticated, accepts `multipart/form-data` with field `file` (images only, max 5MB)
-- **Storage**: `backend/uploads/` directory (shared by both servers)
-- **Served at**: `/uploads/<filename>` on both the public API (port 3001) and admin panel (port 5000)
-- **Used for**: entity logos, user avatars, product images
-- **Available in**: public backend (`routes/index.js`) and admin backend (`admin-app/backend/server.js`)
-
-## Platform Profile (TechLaunch MENA Account)
-
-- **DB record**: user with `handle='techlaunchmena'`, `role='user'`, `verified=true`
-- **ID**: `e0cb08b1-3c3d-4db5-8e39-70a099d4f77d`
-- **Purpose**: Official platform account; all new users auto-follow it on registration
-- **Auto-follow**: Added to `authController.js` `register` function — inserts into `follows` table after user creation
-- **Public endpoint**: `GET /api/platform-profile` (read-only, public)
-- **Admin endpoint**: `GET/PUT /api/admin/platform-profile` (admin-only write)
-- **Admin UI**: "Platform Profile" card in Settings page — edits name, headline, bio, website, twitter, linkedin, avatar
+- **Endpoint**: `POST /api/upload` — authenticated, `multipart/form-data`, field `file` (images only, max 5 MB)
+- **Storage**: `backend/uploads/`
+- **Served at**: `/uploads/<filename>` on both servers
 
 ## Email (Resend)
 
-- **Package**: `resend` installed in both `backend/` and root `node_modules`
-- **Service**: `backend/src/services/emailService.js` — `sendWelcomeEmail`, `sendAdminCreatedAccountEmail`
-- **Triggers**:
-  - `authController.js` — welcome email on public registration
-  - `admin-app/backend/server.js` — invitation email with activation link on admin user creation
-- **Secrets**: `RESEND_API_KEY`, `RESEND_FROM_EMAIL` (hello@tlmena.com), `APP_URL` (https://tlmena.com)
+- **Service**: `backend/src/services/emailService.js`
+- **Secrets**: `RESEND_API_KEY`, `RESEND_FROM_EMAIL`, `APP_URL`
+- **Triggers**: welcome email on registration; invitation email when admin creates a user
 
-## Account Activation Flow
+## Account Activation
 
-When admin creates a user via the admin panel:
-1. A 72-hour token is generated and stored in `activation_tokens` table
-2. An invitation email is sent with an "Activate My Account" button linking to `APP_URL/activate?token=...`
-3. User sets their own password at `/activate?token=...` (ActivatePage in AuthPages.jsx)
-4. On success, user is redirected to `/login` to sign in normally
+Admin-created users receive an invitation email with a 72-hour activation link (`/activate?token=…`). User sets their own password there.
 
-- **Backend routes**: `GET /api/auth/activate/:token` (validate), `POST /api/auth/activate` (set password)
-- **Frontend page**: `/activate` — `ActivatePage` in `frontend/src/pages/home/AuthPages.jsx`
+## Security Notes
 
-## Production Deployment
+- JWT secret: `JWT_SECRET` env var
+- Admin password for `admin@tlmena.com` should be changed before go-live
+- `backend/src/seeders/run.js` is dev-only — never run in production (it TRUNCATEs all data)
 
-- Build: `cd frontend && npm run build`
-- Run: `cd backend && NODE_ENV=production PORT=5000 node src/server.js`
-  - In production, Express serves the built React app as static files
+## Environment Variables Required
+
+| Variable | Used By |
+|----------|---------|
+| `DATABASE_URL` / `NEON_DATABASE_URL` | Both servers |
+| `JWT_SECRET` | Both servers |
+| `RESEND_API_KEY` | Public backend (emails) |
+| `RESEND_FROM_EMAIL` | Public backend |
+| `APP_URL` | Public backend |
