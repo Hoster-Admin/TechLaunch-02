@@ -13,6 +13,7 @@ import AdminActivityLog  from '../pages/ActivityLog.jsx';
 import PlatformProfile   from '../pages/PlatformProfile.jsx';
 import { useAuth } from '../App.jsx';
 import { adminAPI } from '../utils/api.js';
+import toast from 'react-hot-toast';
 
 const PAGES = {
   dashboard:    { title:'Dashboard',               sub:'Overview of platform activity',        Component: AdminDashboard },
@@ -37,6 +38,11 @@ export default function AdminLayout() {
     () => localStorage.getItem('tlmena-sidebar-collapsed') === 'true'
   );
   const [panelProfile, setPanelProfile] = useState({ name: 'TL MENA', avatar_url: '' });
+  const [exportOpen, setExportOpen]   = useState(false);
+  const [exportFrom, setExportFrom]   = useState('');
+  const [exportTo,   setExportTo]     = useState('');
+  const [exporting,  setExporting]    = useState('');
+  const exportRef = useRef(null);
   const { user, logout } = useAuth();
 
   useEffect(() => {
@@ -120,6 +126,25 @@ export default function AdminLayout() {
     setSearchQuery('');
     setShowSearch(false);
     setSearchResults([]);
+  };
+
+  // Close export dropdown on outside click
+  useEffect(() => {
+    const h = e => { if (exportRef.current && !exportRef.current.contains(e.target)) setExportOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
+
+  const doExport = async (type) => {
+    setExporting(type);
+    try {
+      const p = {};
+      if (exportFrom) p.from = exportFrom;
+      if (exportTo)   p.to   = exportTo;
+      await adminAPI.exportCSV(type, p);
+      toast.success(`${type} CSV downloaded`);
+    } catch(e) { toast.error(e.message || 'Export failed'); }
+    finally { setExporting(''); }
   };
 
   return (
@@ -210,6 +235,50 @@ export default function AdminLayout() {
                       </div>
                     </>
                   )}
+                </div>
+              )}
+            </div>
+
+            {/* Export dropdown */}
+            <div ref={exportRef} style={{position:'relative'}}>
+              <button
+                onClick={() => setExportOpen(v => !v)}
+                style={{padding:'7px 12px',borderRadius:9,border:'1.5px solid var(--gray-200)',background: exportOpen ? 'var(--orange-light)' : 'var(--gray-50)',fontSize:12,fontWeight:600,color: exportOpen ? 'var(--orange)' : 'var(--ink)',cursor:'pointer',display:'flex',alignItems:'center',gap:6,whiteSpace:'nowrap',transition:'all .15s'}}>
+                ↓ Export
+                <span style={{fontSize:9,opacity:.6,transition:'transform .2s',display:'inline-block',transform: exportOpen ? 'rotate(180deg)' : 'rotate(0deg)'}}>▼</span>
+              </button>
+
+              {exportOpen && (
+                <div style={{position:'absolute',top:'calc(100% + 8px)',right:0,background:'#fff',border:'1.5px solid var(--gray-200)',borderRadius:14,boxShadow:'0 12px 40px rgba(0,0,0,.14)',zIndex:1000,minWidth:310,padding:18}}>
+                  {/* Date range */}
+                  <div style={{fontSize:11,fontWeight:700,color:'#aaa',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:10}}>Date Range</div>
+                  <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:14}}>
+                    <span style={{fontSize:11,color:'#888',whiteSpace:'nowrap'}}>From</span>
+                    <input type="date" value={exportFrom} onChange={e=>setExportFrom(e.target.value)}
+                      style={{flex:1,border:'1.5px solid var(--gray-200)',borderRadius:8,padding:'6px 9px',fontSize:12,outline:'none',background:'var(--gray-50)',fontFamily:'inherit'}}/>
+                    <span style={{fontSize:11,color:'#888',whiteSpace:'nowrap'}}>To</span>
+                    <input type="date" value={exportTo} onChange={e=>setExportTo(e.target.value)}
+                      style={{flex:1,border:'1.5px solid var(--gray-200)',borderRadius:8,padding:'6px 9px',fontSize:12,outline:'none',background:'var(--gray-50)',fontFamily:'inherit'}}/>
+                    {(exportFrom||exportTo) && (
+                      <button onClick={()=>{setExportFrom('');setExportTo('');}}
+                        style={{padding:'6px 10px',borderRadius:7,border:'1px solid var(--gray-200)',background:'#fff',fontSize:11,color:'#888',cursor:'pointer',fontWeight:600,whiteSpace:'nowrap'}}>
+                        ✕
+                      </button>
+                    )}
+                  </div>
+                  {/* CSV buttons */}
+                  <div style={{fontSize:11,fontWeight:700,color:'#aaa',textTransform:'uppercase',letterSpacing:'.06em',marginBottom:8}}>Download CSV</div>
+                  <div style={{display:'flex',flexDirection:'column',gap:7}}>
+                    {['products','users','applications'].map(t => (
+                      <button key={t} onClick={()=>doExport(t)} disabled={!!exporting}
+                        style={{padding:'9px 14px',borderRadius:9,border:'1.5px solid var(--gray-200)',background:'#fff',fontSize:12,color:'#444',cursor:exporting?'not-allowed':'pointer',fontWeight:600,textAlign:'left',display:'flex',alignItems:'center',gap:8,opacity:exporting===t?.6:1,transition:'background .12s'}}
+                        onMouseEnter={e=>{if(!exporting)e.currentTarget.style.background='var(--gray-50)'}}
+                        onMouseLeave={e=>e.currentTarget.style.background='#fff'}>
+                        <span style={{fontSize:14}}>{exporting===t ? '⏳' : '↓'}</span>
+                        {exporting===t ? 'Downloading…' : `${t.charAt(0).toUpperCase()+t.slice(1)} CSV`}
+                      </button>
+                    ))}
+                  </div>
                 </div>
               )}
             </div>
