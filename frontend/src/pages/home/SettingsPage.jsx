@@ -713,7 +713,7 @@ export default function SettingsPage() {
       const filledReasons = coWhyReasons.map(r=>r.trim()).filter(Boolean);
       await entitiesAPI.create({
         name: coName.trim(),
-        type: typeMap[coType] || 'company',
+        type: typeMap[coType] || 'startup',
         description: coAbout || null,
         website: coWebsite || null,
         country: countryLabel,
