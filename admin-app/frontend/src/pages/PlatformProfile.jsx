@@ -316,64 +316,128 @@ export default function PlatformProfile() {
 
       {/* ── Edit Public Profile ──────────────────────────────────── */}
       {editMode && (
-        <div style={{ background: '#fff', borderRadius: 16, border: '1.5px solid var(--orange)', padding: 24, marginBottom: 20 }}>
-          <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 18 }}>
-            <h3 style={{ margin: 0, fontSize: 15, fontWeight: 700, color: 'var(--ink)' }}>✏️ Edit Public Profile</h3>
-            <button onClick={() => setEditMode(false)}
-              style={{ background: 'none', border: 'none', fontSize: 18, cursor: 'pointer', color: 'var(--gray-400)', lineHeight: 1, marginLeft: 12 }}>×</button>
-          </div>
+        <div style={{ marginBottom: 20 }}>
 
-          <AvatarUploader
-            currentUrl={editData.avatar_url}
-            onUploaded={url => setEditData(prev => ({ ...prev, avatar_url: url }))}
-          />
+          {/* Section: Identity */}
+          <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 18, padding: '24px 28px', marginBottom: 16 }}>
+            <div style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: 20 }}>
+              <div style={{ fontSize: 14, fontWeight: 800, color: '#0a0a0a' }}>🪪 Identity</div>
+              <button onClick={() => setEditMode(false)}
+                style={{ background: 'none', border: 'none', fontSize: 20, cursor: 'pointer', color: 'var(--gray-400)', lineHeight: 1, padding: 4 }}>×</button>
+            </div>
 
-          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14, marginTop: 16 }}>
-            {[
-              { key: 'name',     label: 'Display Name',       placeholder: 'TechLaunch MENA' },
-              { key: 'handle',   label: 'Handle',             placeholder: 'techlaunchmena' },
-              { key: 'headline', label: 'Tagline / Headline', placeholder: "MENA's Product Discovery Platform" },
-              { key: 'website',  label: 'Website',            placeholder: 'https://tlmena.com' },
-              { key: 'twitter',  label: 'Twitter Handle',     placeholder: '@techlaunchmena' },
-              { key: 'linkedin', label: 'LinkedIn URL',       placeholder: 'company/techlaunch-mena' },
-            ].map(f => (
-              <div key={f.key}>
-                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>{f.label}</label>
-                <input
-                  value={editData[f.key] || ''}
-                  onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
-                  placeholder={f.placeholder}
-                  style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', transition: 'border-color .15s' }}
-                  onFocus={e => e.target.style.borderColor = 'var(--orange)'}
-                  onBlur={e  => e.target.style.borderColor = 'var(--gray-200)'}
+            {/* Avatar */}
+            <div style={{ marginBottom: 20 }}>
+              <AvatarUploader
+                currentUrl={editData.avatar_url}
+                onUploaded={url => setEditData(prev => ({ ...prev, avatar_url: url }))}
+              />
+            </div>
+
+            {/* Full Name + Handle */}
+            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 16, marginBottom: 16 }}>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 7 }}>DISPLAY NAME</label>
+                <div style={{ border: '1.5px solid #e8e8e8', borderRadius: 10, background: '#fff', display: 'flex' }}
+                  onFocus={e => e.currentTarget.style.borderColor = 'var(--orange)'}
+                  onBlur={e  => e.currentTarget.style.borderColor = '#e8e8e8'}
+                  tabIndex={-1}>
+                  <input type="text"
+                    value={editData.name || ''}
+                    onChange={e => setEditData(prev => ({ ...prev, name: e.target.value }))}
+                    placeholder="TechLaunch MENA"
+                    style={{ flex: 1, padding: '10px 14px', border: 'none', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#0a0a0a', background: 'transparent' }}
+                    onFocus={e => e.currentTarget.parentElement.style.borderColor = 'var(--orange)'}
+                    onBlur={e  => e.currentTarget.parentElement.style.borderColor = '#e8e8e8'}
+                  />
+                </div>
+              </div>
+              <div>
+                <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 7 }}>HANDLE</label>
+                <div style={{ border: '1.5px solid #e8e8e8', borderRadius: 10, background: '#fff', display: 'flex', alignItems: 'center', overflow: 'hidden' }}
+                  tabIndex={-1}>
+                  <span style={{ padding: '10px 10px 10px 14px', fontSize: 13, color: '#aaa', background: '#fafafa', borderRight: '1px solid #f0f0f0', whiteSpace: 'nowrap' }}>tlmena.com/</span>
+                  <input type="text"
+                    value={(editData.handle || '').replace('@', '')}
+                    onChange={e => setEditData(prev => ({ ...prev, handle: e.target.value.replace(/[^a-z0-9_]/gi, '').toLowerCase() }))}
+                    placeholder="techlaunchmena"
+                    style={{ flex: 1, padding: '10px 14px', border: 'none', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#0a0a0a', background: 'transparent' }}
+                    onFocus={e => e.currentTarget.parentElement.style.borderColor = 'var(--orange)'}
+                    onBlur={e  => e.currentTarget.parentElement.style.borderColor = '#e8e8e8'}
+                  />
+                </div>
+              </div>
+            </div>
+
+            {/* Headline */}
+            <div style={{ marginBottom: 16 }}>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 7 }}>HEADLINE</label>
+              <div style={{ border: '1.5px solid #e8e8e8', borderRadius: 10, background: '#fff', display: 'flex' }}>
+                <input type="text"
+                  value={editData.headline || ''}
+                  onChange={e => setEditData(prev => ({ ...prev, headline: e.target.value }))}
+                  placeholder="MENA's Product Discovery Platform"
+                  style={{ flex: 1, padding: '10px 14px', border: 'none', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#0a0a0a', background: 'transparent' }}
+                  onFocus={e => e.currentTarget.parentElement.style.borderColor = 'var(--orange)'}
+                  onBlur={e  => e.currentTarget.parentElement.style.borderColor = '#e8e8e8'}
                 />
               </div>
-            ))}
+            </div>
+
+            {/* Bio */}
+            <div>
+              <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 7 }}>BIO</label>
+              <textarea
+                value={editData.bio || ''}
+                onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
+                placeholder="Passionate about connecting builders, investors and innovators across the Arab world."
+                rows={4}
+                style={{ width: '100%', padding: '10px 14px', border: '1.5px solid #e8e8e8', borderRadius: 10, fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#0a0a0a', resize: 'vertical', boxSizing: 'border-box', lineHeight: 1.6 }}
+                onFocus={e => e.target.style.borderColor = 'var(--orange)'}
+                onBlur={e  => e.target.style.borderColor = '#e8e8e8'}
+              />
+            </div>
           </div>
 
-          <div style={{ marginTop: 14 }}>
-            <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: 'var(--gray-500)', marginBottom: 5, textTransform: 'uppercase', letterSpacing: .6 }}>Bio</label>
-            <textarea
-              value={editData.bio || ''}
-              onChange={e => setEditData(prev => ({ ...prev, bio: e.target.value }))}
-              placeholder="Short description shown on the public profile…"
-              rows={3}
-              style={{ width: '100%', padding: '9px 12px', borderRadius: 9, border: '1.5px solid var(--gray-200)', fontSize: 13, fontFamily: 'inherit', outline: 'none', boxSizing: 'border-box', resize: 'vertical', lineHeight: 1.5, transition: 'border-color .15s' }}
-              onFocus={e => e.target.style.borderColor = 'var(--orange)'}
-              onBlur={e  => e.target.style.borderColor = 'var(--gray-200)'}
-            />
+          {/* Section: Links */}
+          <div style={{ background: '#fff', border: '1px solid #e8e8e8', borderRadius: 18, padding: '24px 28px', marginBottom: 16 }}>
+            <div style={{ fontSize: 14, fontWeight: 800, color: '#0a0a0a', marginBottom: 20 }}>🔗 Links</div>
+            <div style={{ display: 'grid', gap: 14 }}>
+              {[
+                { key: 'website',  label: 'WEBSITE',      placeholder: 'https://tlmena.com',           icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="#888" strokeWidth="1.8"><circle cx="12" cy="12" r="10"/><path d="M2 12h20"/><path d="M12 2a15.3 15.3 0 010 20M12 2a15.3 15.3 0 000 20"/></svg> },
+                { key: 'twitter',  label: 'TWITTER / X',  placeholder: '@techlaunchmena',              icon: <svg width="14" height="14" viewBox="0 0 24 24" fill="#0a0a0a"><path d="M18.244 2.25h3.308l-7.227 8.26 8.502 11.24H16.17l-4.714-6.231-5.401 6.231H2.742l7.745-8.867L1.254 2.25H8.08l4.253 5.622zm-1.161 17.52h1.833L7.084 4.126H5.117z"/></svg> },
+                { key: 'linkedin', label: 'LINKEDIN',     placeholder: 'company/techlaunch-mena',      icon: <svg width="16" height="16" viewBox="0 0 24 24" fill="#0A66C2"><path d="M20.447 20.452h-3.554v-5.569c0-1.328-.027-3.037-1.852-3.037-1.853 0-2.136 1.445-2.136 2.939v5.667H9.351V9h3.414v1.561h.046c.477-.9 1.637-1.85 3.37-1.85 3.601 0 4.267 2.37 4.267 5.455v6.286zM5.337 7.433c-1.144 0-2.063-.926-2.063-2.065 0-1.138.92-2.063 2.063-2.063 1.14 0 2.064.925 2.064 2.063 0 1.139-.925 2.065-2.064 2.065zm1.782 13.019H3.555V9h3.564v11.452zM22.225 0H1.771C.792 0 0 .774 0 1.729v20.542C0 23.227.792 24 1.771 24h20.451C23.2 24 24 23.227 24 22.271V1.729C24 .774 23.2 0 22.222 0h.003z"/></svg> },
+              ].map(f => (
+                <div key={f.key}>
+                  <label style={{ display: 'block', fontSize: 11, fontWeight: 700, color: '#aaa', textTransform: 'uppercase', letterSpacing: '.06em', marginBottom: 7 }}>{f.label}</label>
+                  <div style={{ border: '1.5px solid #e8e8e8', borderRadius: 10, display: 'flex', alignItems: 'center', overflow: 'hidden' }}>
+                    <span style={{ width: 44, minWidth: 44, height: 44, display: 'flex', alignItems: 'center', justifyContent: 'center', background: '#fafafa', borderRight: '1px solid #f0f0f0', flexShrink: 0 }}>
+                      {f.icon}
+                    </span>
+                    <input type="text"
+                      value={editData[f.key] || ''}
+                      onChange={e => setEditData(prev => ({ ...prev, [f.key]: e.target.value }))}
+                      placeholder={f.placeholder}
+                      style={{ flex: 1, padding: '10px 14px', border: 'none', fontSize: 14, fontFamily: 'inherit', outline: 'none', color: '#0a0a0a', background: 'transparent' }}
+                      onFocus={e => e.currentTarget.parentElement.style.borderColor = 'var(--orange)'}
+                      onBlur={e  => e.currentTarget.parentElement.style.borderColor = '#e8e8e8'}
+                    />
+                  </div>
+                </div>
+              ))}
+            </div>
           </div>
 
-          {saveError   && <div style={{ marginTop: 12, fontSize: 12, color: '#E15033' }}>{saveError}</div>}
-          {saveSuccess && <div style={{ marginTop: 12, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</div>}
+          {saveError   && <div style={{ marginBottom: 12, fontSize: 12, color: '#E15033' }}>{saveError}</div>}
+          {saveSuccess && <div style={{ marginBottom: 12, fontSize: 12, color: '#16a34a', fontWeight: 600 }}>✓ Saved!</div>}
 
-          <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'flex-end' }}>
+          <div style={{ display: 'flex', gap: 12, justifyContent: 'flex-end' }}>
             <button onClick={() => setEditMode(false)}
-              style={{ padding: '8px 18px', borderRadius: 9, border: '1.5px solid var(--gray-200)', background: 'var(--gray-50)', color: 'var(--gray-600)', fontSize: 13, fontWeight: 600, cursor: 'pointer' }}>
+              style={{ padding: '11px 22px', borderRadius: 12, background: '#fff', border: '1.5px solid #e8e8e8', color: '#555', fontSize: 14, fontWeight: 700, cursor: 'pointer' }}>
               Cancel
             </button>
             <button onClick={handleSave} disabled={saving}
-              style={{ padding: '8px 22px', borderRadius: 9, border: 'none', background: saving ? 'var(--gray-200)' : 'var(--orange)', color: '#fff', fontSize: 13, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', transition: 'background .15s' }}>
+              style={{ padding: '11px 28px', borderRadius: 12, border: 'none', background: saving ? 'var(--gray-200)' : 'var(--orange)', color: '#fff', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', opacity: saving ? 0.7 : 1, transition: 'background .15s' }}>
               {saving ? 'Saving…' : 'Save Changes'}
             </button>
           </div>
