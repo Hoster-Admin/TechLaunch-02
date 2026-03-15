@@ -84,8 +84,7 @@ export default function AuthModal() {
     if (sPass.length < 8) { setError('Password must be at least 8 characters'); return; }
     setLoading(true); setError('');
     try {
-      const rawHandle = sHandle.trim() || autoHandle(sName);
-      const handle = rawHandle + Math.floor(Math.random() * 100);
+      const handle = sHandle.trim() || autoHandle(sName);
       const dbPersona = PERSONA_DB_MAP[selectedPersona] || 'Enthusiast';
       const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle, persona:dbPersona });
       toast.success(`Welcome to Tech Launch, ${user.name.split(' ')[0]}! 🚀`);
@@ -194,10 +193,20 @@ export default function AuthModal() {
                     placeholder="your_handle" autoComplete="username"
                     style={{ paddingLeft:30 }}/>
                 </div>
+                {sHandle && (
+                  <div style={{ marginTop:6, fontSize:12, color:'#888', paddingLeft:2 }}>
+                    🔗 Your profile: <span style={{ color:'var(--orange)', fontWeight:600 }}>tlmena.com/@{sHandle}</span>
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">Email</label>
                 <input className="form-input" type="email" value={sEmail} onChange={e => setSEmail(e.target.value)} placeholder="ahmad@startup.sa" autoComplete="email"/>
+                {sEmail && (
+                  <div style={{ marginTop:6, fontSize:12, color:'#888', paddingLeft:2 }}>
+                    ✉️ Confirmation & login link will be sent here
+                  </div>
+                )}
               </div>
               <div className="form-group">
                 <label className="form-label">Password</label>
