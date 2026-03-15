@@ -85,17 +85,58 @@ function AddUserModal({ onClose, onSuccess }) {
   );
 }
 
+// ── Warn Modal (with reason input) ───────────────────────────────────────────
+function WarnModal({ userName, onConfirm, onCancel, loading }) {
+  const [reason, setReason] = React.useState('');
+  const ref = React.useRef(null);
+  useEffect(() => {
+    ref.current?.focus();
+    const h = e => { if (e.key === 'Escape') onCancel(); };
+    document.addEventListener('keydown', h);
+    return () => document.removeEventListener('keydown', h);
+  }, [onCancel]);
+  return (
+    <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.5)',zIndex:9100,display:'flex',alignItems:'center',justifyContent:'center'}}
+      onClick={onCancel}>
+      <div style={{background:'#fff',borderRadius:18,padding:28,width:420,maxWidth:'90vw',boxShadow:'0 24px 64px rgba(0,0,0,.22)'}}
+        onClick={e=>e.stopPropagation()}>
+        <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A',marginBottom:4}}>⚠ Warn {userName}</div>
+        <div style={{fontSize:13,color:'#888',marginBottom:16}}>This will be logged on their account. State the reason clearly.</div>
+        <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>
+          Reason <span style={{color:'#dc2626'}}>*</span>
+        </label>
+        <textarea ref={ref} value={reason} onChange={e=>setReason(e.target.value)}
+          placeholder="Describe the reason for this warning…"
+          rows={3}
+          style={{width:'100%',borderRadius:10,border:`1.5px solid ${reason.trim()?'#E8E8E8':'#fca5a5'}`,padding:'9px 11px',fontSize:13,fontFamily:'inherit',resize:'vertical',outline:'none',boxSizing:'border-box'}}/>
+        <div style={{display:'flex',gap:10,justifyContent:'flex-end',marginTop:16}}>
+          <button onClick={onCancel} style={{padding:'9px 18px',borderRadius:9,border:'1.5px solid #E8E8E8',background:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',color:'#555',fontFamily:'inherit'}}>Cancel</button>
+          <button onClick={()=>onConfirm(reason)} disabled={!reason.trim()||loading}
+            style={{padding:'9px 18px',borderRadius:9,border:'none',background:'#d97706',color:'#fff',fontSize:13,fontWeight:700,cursor:(!reason.trim()||loading)?'not-allowed':'pointer',fontFamily:'inherit',opacity:(!reason.trim()||loading)?0.6:1}}>
+            {loading?'Sending…':'⚠ Issue Warning'}
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ── User Detail Drawer ────────────────────────────────────────────────────────
 function UserDrawer({ userId, onClose, onAction }) {
-  const [detail,  setDetail]  = useState(null);
-  const [loading, setLoading] = useState(true);
-  const [acting,  setActing]  = useState('');
+  const [detail,       setDetail]       = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [acting,       setActing]       = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
+  const [warnings,     setWarnings]     = useState([]);
+  const [warnLoading,  setWarnLoading]  = useState(false);
+  const [showWarnModal, setShowWarnModal] = useState(false);
+
+  const loadDetail = () => adminAPI.getUser(userId).then(r => setDetail(r.data.data));
+  const loadWarnings = () => adminAPI.getUserWarnings(userId).then(r => setWarnings(r.data.data || []));
 
   useEffect(() => {
     setLoading(true);
-    adminAPI.getUser(userId)
-      .then(r => setDetail(r.data.data))
+    Promise.all([loadDetail(), loadWarnings()])
       .catch(() => toast.error('Failed to load user'))
       .finally(() => setLoading(false));
   }, [userId]);
@@ -108,12 +149,22 @@ function UserDrawer({ userId, onClose, onAction }) {
       toast.success(successMsg);
       onAction();
       if (action === 'delete') onClose();
-      else {
-        const r = await adminAPI.getUser(userId);
-        setDetail(r.data.data);
-      }
+      else await loadDetail();
     } catch(e) { toast.error(e.message || 'Action failed'); }
     finally { setActing(''); }
+  };
+
+  const doWarn = async (reason) => {
+    setWarnLoading(true);
+    try {
+      await adminAPI.warnUserWithReason(userId, reason);
+      toast.success(`⚠ Warning issued to ${detail.name}`);
+      setShowWarnModal(false);
+      onAction();
+      const [uRes] = await Promise.all([adminAPI.getUser(userId), loadWarnings()]);
+      setDetail(uRes.data.data);
+    } catch(e) { toast.error(e.message || 'Failed to issue warning'); }
+    finally { setWarnLoading(false); }
   };
 
   const CONFIRM_MAP = {
@@ -131,7 +182,7 @@ function UserDrawer({ userId, onClose, onAction }) {
 
   return (
     <>
-      <Drawer title={loading?'Loading…':detail?.name} subtitle={loading?'':(`@${detail?.handle} · ${detail?.persona||''}`)?.trim()} onClose={onClose} width={480}>
+      <Drawer title={loading?'Loading…':detail?.name} subtitle={loading?'':(`@${detail?.handle} · ${detail?.persona||''}`)?.trim()} onClose={onClose} width={500}>
         {loading ? (
           <div style={{display:'flex',flexDirection:'column',gap:12}}>
             {[...Array(5)].map((_,i)=>(
@@ -169,9 +220,9 @@ function UserDrawer({ userId, onClose, onAction }) {
               <DrawerField label="Products">{detail.products_count||0} submitted</DrawerField>
             </div>
 
-            {/* Recent products */}
+            {/* Recent submissions */}
             {detail.recent_products?.length > 0 && (
-              <div style={{marginTop:4}}>
+              <div style={{marginTop:4,marginBottom:20}}>
                 <div style={{fontSize:10,fontWeight:700,color:'#AAAAAA',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:10}}>Recent Submissions</div>
                 <div style={{display:'flex',flexDirection:'column',gap:6}}>
                   {detail.recent_products.map(p => (
@@ -180,9 +231,7 @@ function UserDrawer({ userId, onClose, onAction }) {
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
                       </div>
-                      <Badge variant={{live:'green',pending:'amber',rejected:'red',soon:'blue'}[p.status]||'gray'}>
-                        {p.status}
-                      </Badge>
+                      <Badge variant={{live:'green',pending:'amber',rejected:'red',soon:'blue'}[p.status]||'gray'}>{p.status}</Badge>
                       <span style={{fontSize:11,color:'#888',flexShrink:0}}>🎉 {p.upvotes_count}</span>
                     </div>
                   ))}
@@ -190,16 +239,41 @@ function UserDrawer({ userId, onClose, onAction }) {
               </div>
             )}
 
+            {/* Warnings history */}
+            <div style={{marginBottom:20,paddingTop:20,borderTop:'1px solid #F0F0F0'}}>
+              <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:12}}>
+                <div style={{fontSize:10,fontWeight:700,color:'#AAAAAA',textTransform:'uppercase',letterSpacing:'.08em'}}>Warnings</div>
+                {(detail.warnings_count > 0) && (
+                  <span style={{fontSize:10,fontWeight:800,padding:'2px 7px',borderRadius:99,background:'#FEF3C7',color:'#92400E'}}>
+                    {detail.warnings_count}
+                  </span>
+                )}
+              </div>
+              {warnings.length === 0 ? (
+                <div style={{fontSize:12,color:'#AAAAAA',fontStyle:'italic'}}>No warnings issued</div>
+              ) : (
+                <div style={{display:'flex',flexDirection:'column',gap:8}}>
+                  {warnings.map(w => (
+                    <div key={w.id} style={{padding:'10px 12px',background:'#FFFBEB',borderRadius:10,border:'1px solid #FDE68A'}}>
+                      <div style={{fontSize:12,color:'#92400E',marginBottom:4,lineHeight:1.45}}>{w.reason}</div>
+                      <div style={{fontSize:10,color:'#B45309'}}>
+                        by <strong>{w.warned_by_name}</strong> · {fmtDate(w.created_at)}
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </div>
+
             {/* Actions */}
-            <div style={{marginTop:24,paddingTop:20,borderTop:'1px solid #F0F0F0',display:'flex',flexWrap:'wrap',gap:8}}>
+            <div style={{paddingTop:20,borderTop:'1px solid #F0F0F0',display:'flex',flexWrap:'wrap',gap:8}}>
               {!detail.verified && (
                 <ActionBtn variant="verify" loading={acting==='verify'}
                   onClick={()=>perform('verify',()=>adminAPI.verifyUser(userId),`${detail.name} verified`)}>
                   ✓ Verify
                 </ActionBtn>
               )}
-              <ActionBtn variant="warn" loading={acting==='warn'}
-                onClick={()=>perform('warn',()=>adminAPI.warnUser(userId,'Administrative warning'),`Warning sent to ${detail.name}`)}>
+              <ActionBtn variant="warn" loading={warnLoading} onClick={()=>setShowWarnModal(true)}>
                 ⚠ Warn
               </ActionBtn>
               {detail.status==='active'
@@ -214,6 +288,15 @@ function UserDrawer({ userId, onClose, onAction }) {
           </>
         )}
       </Drawer>
+
+      {showWarnModal && (
+        <WarnModal
+          userName={detail?.name}
+          onConfirm={doWarn}
+          onCancel={()=>setShowWarnModal(false)}
+          loading={warnLoading}
+        />
+      )}
 
       {confirmAction && CONFIRM_MAP[confirmAction] && (
         <ConfirmModal

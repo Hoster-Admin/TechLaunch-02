@@ -86,6 +86,8 @@ export const adminAPI = {
   getProduct:   (id)        => req('GET',  `/admin/products/${id}`),
   getUser:      (id)        => req('GET',  `/admin/users/${id}`),
   deleteUser:   (id)        => req('DELETE', `/admin/users/${id}`),
+  warnUserWithReason: (id, reason) => req('POST', `/admin/users/${id}/warn`, { reason }),
+  getUserWarnings:    (id)        => req('GET',  `/admin/users/${id}/warnings`),
   launcherActivity: (p={})  => req('GET',  '/admin/launcher-activity?' + new URLSearchParams(p)),
   deleteActivityComment: (id) => req('DELETE', `/admin/launcher-activity/comment/${id}`),
   deleteActivityPost:    (id) => req('DELETE', `/admin/launcher-activity/post/${id}`),

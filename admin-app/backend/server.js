@@ -545,17 +545,50 @@ admin.delete('/users/:id', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
+admin.post('/users/:id/warn', async (req, res) => {
+  try {
+    const { reason } = req.body;
+    if (!reason?.trim()) return res.status(400).json({ success:false, message:'Reason is required' });
+    const { rows } = await q(`SELECT id,name FROM users WHERE id=$1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'User not found' });
+    await q(
+      `INSERT INTO user_warnings (user_id, warned_by, reason) VALUES ($1,$2,$3)`,
+      [req.params.id, req.user.id, reason.trim()]
+    );
+    await q(`UPDATE users SET warnings_count = COALESCE(warnings_count,0)+1 WHERE id=$1`, [req.params.id]);
+    await logAction(req.user.id, 'user.warned', 'user', req.params.id, { name:rows[0].name, reason:reason.trim().slice(0,80) }, req.ip);
+    res.json({ success:true, message:`Warning issued to ${rows[0].name}` });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+admin.get('/users/:id/warnings', async (req, res) => {
+  try {
+    const { rows } = await q(`
+      SELECT w.id, w.reason, w.created_at,
+             u.name AS warned_by_name, u.handle AS warned_by_handle
+      FROM user_warnings w
+      JOIN users u ON u.id = w.warned_by
+      WHERE w.user_id = $1
+      ORDER BY w.created_at DESC
+    `, [req.params.id]);
+    res.json({ success:true, data: rows });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
 // Entities
 admin.get('/entities', async (req, res) => {
   try {
-    const { type, search, page=1, limit=50 } = req.query;
+    const { type, search, page=1, limit=50, sortBy='created_at', sortOrder='desc' } = req.query;
+    const SAFE_COLS_E = { name:1, type:1, country:1, verified:1, created_at:1, industry:1 };
+    const col_e = SAFE_COLS_E[sortBy] ? `e.${sortBy}` : 'e.created_at';
+    const dir_e = sortOrder === 'asc' ? 'ASC' : 'DESC';
     const params=[], conds=[];
     if (type)   { params.push(type);   conds.push(`e.type=$${params.length}`); }
     if (search) { params.push(`%${search}%`); conds.push(`e.name ILIKE $${params.length}`); }
     const where = conds.length ? 'WHERE '+conds.join(' AND ') : '';
     const offset = (parseInt(page)-1)*parseInt(limit);
     params.push(parseInt(limit), offset);
-    const { rows } = await q(`SELECT *,COUNT(*) OVER() AS total_count FROM entities ${where} ORDER BY created_at DESC LIMIT $${params.length-1} OFFSET $${params.length}`, params);
+    const { rows } = await q(`SELECT *,COUNT(*) OVER() AS total_count FROM entities e ${where} ORDER BY ${col_e} ${dir_e} LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data:rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });

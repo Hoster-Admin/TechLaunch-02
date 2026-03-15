@@ -172,6 +172,8 @@ export default function Entities() {
   const [search, setSearch]         = useState('');
   const [loading, setLoading]       = useState(true);
   const [acting, setActing]         = useState({});
+  const [sortBy, setSortBy]         = useState('created_at');
+  const [sortOrder, setSortOrder]   = useState('desc');
   const [showModal, setShowModal]   = useState(false);
   const [saving, setSaving]         = useState(false);
   const [form, setForm]             = useState(EMPTY_FORM);
@@ -179,13 +181,22 @@ export default function Entities() {
   const [cropSrc, setCropSrc]       = useState(null);
   const fileRef = useRef();
 
+  const handleSort = (col) => {
+    if (sortBy === col) setSortOrder(d => d === 'asc' ? 'desc' : 'asc');
+    else { setSortBy(col); setSortOrder('desc'); }
+    setPage(1);
+  };
+  const SortArrow = ({ col }) => sortBy === col
+    ? <span style={{marginLeft:4,fontSize:9,color:'var(--orange)'}}>{sortOrder==='asc'?'▲':'▼'}</span>
+    : <span style={{marginLeft:4,fontSize:9,color:'#ddd'}}>▼</span>;
+
   const load = useCallback(() => {
     setLoading(true);
-    adminAPI.entities({ ...(tab && {type:tab}), ...(search && {search}), limit:ENT_PAGE_SIZE, page })
+    adminAPI.entities({ ...(tab && {type:tab}), ...(search && {search}), limit:ENT_PAGE_SIZE, page, sortBy, sortOrder })
       .then(({ data: d }) => { setEntities(d.data || []); setTotal(d.pagination?.total || 0); })
       .catch(() => setEntities([]))
       .finally(() => setLoading(false));
-  }, [tab, search, page]);
+  }, [tab, search, page, sortBy, sortOrder]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -424,7 +435,14 @@ export default function Entities() {
           </div>
         </div>
 
-        <Tbl heads={['Entity','Type','Country','Industry','Verified','Actions']}>
+        <Tbl heads={[
+          <span key="n" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('name')}>Entity<SortArrow col="name"/></span>,
+          <span key="t" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('type')}>Type<SortArrow col="type"/></span>,
+          <span key="c" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('country')}>Country<SortArrow col="country"/></span>,
+          'Industry',
+          <span key="v" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('verified')}>Verified<SortArrow col="verified"/></span>,
+          'Actions',
+        ]}>
           {loading
             ? <SkeletonRows cols={6} rows={5}/>
             : filtered.length===0

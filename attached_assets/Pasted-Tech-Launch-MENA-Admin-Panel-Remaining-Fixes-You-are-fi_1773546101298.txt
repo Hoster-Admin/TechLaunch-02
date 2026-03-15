@@ -1,0 +1,74 @@
+Tech Launch MENA — Admin Panel Remaining Fixes
+You are fixing the final 3 remaining issues in the Tech Launch admin panel. Everything else is already done and passing. Only fix what is listed here — do not touch anything else.
+
+CONTEXT
+
+Stack: React frontend, Node.js/Express backend, PostgreSQL
+Entities table already has pagination (20/page) but column headers are static text
+Users table already has sortable columns — use the exact same pattern for Entities
+warnings_count column does not exist yet in the users table
+
+
+FIX 1 — Entities Table Column Sorting
+File: pages/Entities.jsx (or wherever the Entities table is rendered)
+
+Add sortable headers to the Entities table
+Use the exact same sort pattern already implemented in Products and Users tables
+Sortable columns: Name, Type, Country, Verified
+Each header should toggle ▲ ascending / ▼ descending on click
+Active sort column shows the arrow indicator
+Sort is applied via query parameter to the backend: ?sortBy=name&sortOrder=asc
+Backend endpoint GET /admin/entities must accept sortBy and sortOrder params and apply ORDER BY accordingly
+
+
+FIX 2 — User Warning History (Schema + Backend + Frontend)
+This requires 3 steps in order:
+Step A — Database migration
+Add to the users table:
+sqlALTER TABLE users ADD COLUMN warnings_count INTEGER DEFAULT 0;
+Create a new warnings table:
+sqlCREATE TABLE user_warnings (
+  id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+  user_id UUID REFERENCES users(id) ON DELETE CASCADE,
+  warned_by UUID REFERENCES users(id),
+  reason TEXT NOT NULL,
+  created_at TIMESTAMPTZ DEFAULT NOW()
+);
+Step B — Backend
+
+Update POST /admin/users/:id/warn to:
+
+Insert a row into user_warnings
+Increment users.warnings_count by 1
+
+
+Add GET /admin/users/:id/warnings endpoint that returns all warnings for a user ordered by created_at DESC
+
+Step C — Frontend
+In the user detail drawer:
+
+Add a "Warnings" section below the submissions list
+On drawer open, fetch GET /admin/users/:id/warnings
+Show each warning as a row: date, reason, warned by (admin name)
+Show warnings_count as a badge next to the "Warnings" section header
+If no warnings: show "No warnings issued" in gray text
+The existing Warn button in the drawer should open a modal asking for a reason, then call POST /admin/users/:id/warn, then refresh the warnings list
+
+
+FIX 3 — Launcher Activity Inline Timestamps
+File: wherever Launcher Activity rows are rendered
+
+Replace the hover-only title attribute timestamp with an inline visible timestamp
+Format: "15 Mar, 05:04" — same fmtDate() function already used across the panel
+Show it as a second line below the action description in small gray text
+Remove the title attribute tooltip — it is now redundant
+
+
+HOW TO PROCEED
+
+Fix one item at a time in the order listed
+Show the changed file with enough surrounding context to locate each change
+For Fix 2, show all three steps (SQL, backend route, frontend component) separately
+Do not modify anything outside of these three fixes
+
+Start with Fix 1.
