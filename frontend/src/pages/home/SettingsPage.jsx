@@ -690,11 +690,15 @@ export default function SettingsPage() {
   const handleSave = async () => {
     setSaving(true);
     try {
-      await new Promise(r=>setTimeout(r,600));
-      updateUser({ name, headline, bio, website, twitter, linkedin, github, persona, country:countryVal, city:cityVal });
+      const res = await api.put('/users/me', {
+        name, headline, bio, website, twitter, linkedin, github,
+        persona, country: countryVal, city: cityVal,
+      });
+      updateUser(res.data?.data || { name, headline, bio, website, twitter, linkedin, github, persona, country:countryVal, city:cityVal });
       toast.success('Profile updated!');
-    } catch { toast.error('Failed to save changes'); }
-    finally { setSaving(false); }
+    } catch (err) {
+      toast.error(err.response?.data?.message || 'Failed to save changes');
+    } finally { setSaving(false); }
   };
 
   const handleTabNav = (key) => {

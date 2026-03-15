@@ -44,7 +44,7 @@ const getProfile = async (req, res, next) => {
 // ── PUT /api/users/me
 const updateProfile = async (req, res, next) => {
   try {
-    const allowed = ['name','headline','bio','website','twitter','linkedin','github','country','persona','avatar_url','avatar_color'];
+    const allowed = ['name','headline','bio','website','twitter','linkedin','github','country','city','persona','avatar_url','avatar_color'];
     const updates = {};
     allowed.forEach(k => { if (req.body[k] !== undefined) updates[k] = req.body[k]; });
     if (!Object.keys(updates).length) return res.status(400).json({ success:false, message:'Nothing to update' });
@@ -53,7 +53,7 @@ const updateProfile = async (req, res, next) => {
     const setClauses = keys.map((k,i) => `${k}=$${i+2}`).join(', ');
     const { rows } = await query(
       `UPDATE users SET ${setClauses} WHERE id=$1
-       RETURNING id,name,handle,email,persona,headline,country,bio,website,twitter,linkedin,github,avatar_url,avatar_color,verified,role`,
+       RETURNING id,name,handle,email,persona,headline,country,city,bio,website,twitter,linkedin,github,avatar_url,avatar_color,verified,role`,
       [req.user.id, ...Object.values(updates)]
     );
     res.json({ success:true, data:rows[0] });
