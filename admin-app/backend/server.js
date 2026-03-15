@@ -1122,8 +1122,16 @@ app.use('/uploads', express.static(uploadsDir, { maxAge:'7d', immutable:true }))
 
 // ─── SERVE REACT FRONTEND ─────────────────────────────────────────────────────
 const DIST = path.join(__dirname, '..', 'frontend', 'dist');
-app.use(express.static(DIST));
+// Hashed assets (JS/CSS) — long cache since filenames change on each build
+app.use('/assets', express.static(path.join(DIST, 'assets'), { maxAge: '1y', immutable: true }));
+// Everything else (including index.html) — never cache so updates are instant
+app.use(express.static(DIST, { etag: false, lastModified: false, setHeaders(res, filePath) {
+  if (filePath.endsWith('.html')) {
+    res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
+  }
+}}));
 app.get('/{*path}', (req, res) => {
+  res.setHeader('Cache-Control', 'no-store, no-cache, must-revalidate');
   res.sendFile(path.join(DIST, 'index.html'));
 });
 
