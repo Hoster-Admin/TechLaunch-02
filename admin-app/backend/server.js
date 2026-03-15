@@ -600,6 +600,41 @@ admin.post('/users/:id/reinstate', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
+admin.put('/users/team/:id', async (req, res) => {
+  if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
+  try {
+    if (req.params.id === req.user.id) return res.status(400).json({ success:false, message:'Use your profile settings to edit your own account' });
+    const { rows: target } = await q(`SELECT id, name, role FROM users WHERE id=$1`, [req.params.id]);
+    if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
+    const { name, email, role } = req.body;
+    if (role && !['admin','moderator','editor'].includes(role))
+      return res.status(400).json({ success:false, message:'Invalid role' });
+    // Prevent demoting the last admin
+    if (role && role !== 'admin' && target[0].role === 'admin') {
+      const { rows: adminCount } = await q(`SELECT COUNT(*) AS cnt FROM users WHERE role='admin' AND status='active'`);
+      if (parseInt(adminCount[0].cnt) <= 1)
+        return res.status(403).json({ success:false, message:'Cannot demote the last admin account' });
+    }
+    // Check email uniqueness if changing email
+    if (email && email.trim()) {
+      const { rows: exist } = await q(`SELECT id FROM users WHERE email=$1 AND id<>$2`, [email.trim().toLowerCase(), req.params.id]);
+      if (exist.length) return res.status(409).json({ success:false, message:'Email already in use' });
+    }
+    const { rows } = await q(
+      `UPDATE users SET
+         name       = COALESCE($1, name),
+         email      = COALESCE($2, email),
+         role       = COALESCE($3, role),
+         updated_at = NOW()
+       WHERE id=$4
+       RETURNING id, name, handle, email, role, status, verified, avatar_color, created_at`,
+      [name?.trim() || null, email?.trim().toLowerCase() || null, role || null, req.params.id]
+    );
+    await logAction(req.user.id, 'user.team.updated', 'user', req.params.id, { name, email: email ? '[changed]' : undefined, role }, req.ip);
+    res.json({ success:true, data: rows[0], message:'Member updated' });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
 admin.delete('/users/:id', async (req, res) => {
   try {
     if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Only admins can delete team members' });

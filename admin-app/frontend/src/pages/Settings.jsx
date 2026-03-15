@@ -466,6 +466,9 @@ export default function Settings() {
   const [saving, setSaving]     = useState(false);
   const [deleting, setDeleting] = useState({});
   const [form, setForm]         = useState({ name:'', email:'', role:'moderator' });
+  const [editMember, setEditMember] = useState(null);
+  const [editForm, setEditForm]     = useState({ name:'', email:'', role:'' });
+  const [editSaving, setEditSaving] = useState(false);
 
   const loadTeam = useCallback(() => {
     adminAPI.team().then(r => setTeam(r.data?.data || [])).catch(() => {});
@@ -490,6 +493,24 @@ export default function Settings() {
       loadTeam();
     } catch(e) { toast.error(e.response?.data?.message || e.message || 'Failed to add team member'); }
     finally { setSaving(false); }
+  };
+
+  const openEdit = (m) => {
+    setEditMember(m);
+    setEditForm({ name: m.name || '', email: m.email || '', role: m.role || 'moderator' });
+  };
+
+  const saveEdit = async () => {
+    if (!editForm.name.trim()) return toast.error('Name is required');
+    if (!editForm.email.trim()) return toast.error('Email is required');
+    setEditSaving(true);
+    try {
+      const { data: d } = await adminAPI.updateTeamMember(editMember.id, editForm);
+      toast.success(d.message || 'Member updated');
+      setTeam(t => t.map(m => m.id === editMember.id ? d.data : m));
+      setEditMember(null);
+    } catch(e) { toast.error(e.response?.data?.message || e.message || 'Failed to update member'); }
+    finally { setEditSaving(false); }
   };
 
   const deleteMember = async (m) => {
@@ -567,6 +588,43 @@ export default function Settings() {
         </Modal>
       )}
 
+      {/* Edit Member Modal */}
+      {editMember && (
+        <Modal title={`Edit — ${editMember.name}`} onClose={()=>setEditMember(null)}>
+          <Field label="Full Name">
+            <input style={inputS} value={editForm.name}
+              onChange={e=>setEditForm(f=>({...f,name:e.target.value}))} autoFocus/>
+          </Field>
+          <Field label="Email Address">
+            <input style={inputS} type="email" value={editForm.email}
+              onChange={e=>setEditForm(f=>({...f,email:e.target.value}))}/>
+          </Field>
+          <Field label="Role">
+            <select style={selectS} value={editForm.role}
+              onChange={e=>setEditForm(f=>({...f,role:e.target.value}))}>
+              <option value="moderator">Moderator</option>
+              <option value="editor">Editor</option>
+              <option value="admin">Admin</option>
+            </select>
+          </Field>
+          {editMember.role === 'admin' && editForm.role !== 'admin' && (
+            <div style={{fontSize:11,color:'#92400E',padding:'8px 10px',background:'#FFF7ED',borderRadius:8,marginBottom:12,border:'1px solid #FED7AA'}}>
+              ⚠️ You are demoting an admin account. Make sure another admin exists before saving.
+            </div>
+          )}
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={saveEdit} disabled={editSaving}
+              style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'10px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:editSaving?0.6:1}}>
+              {editSaving ? 'Saving…' : 'Save Changes'}
+            </button>
+            <button onClick={()=>setEditMember(null)}
+              style={{padding:'10px 16px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
+              Cancel
+            </button>
+          </div>
+        </Modal>
+      )}
+
       {/* Platform Profile */}
       <SCard
         title="Public Profile"
@@ -583,9 +641,10 @@ export default function Settings() {
       >
         {team.length === 0
           ? <EmptyState icon="👋" title="No team members yet" sub="Invite your first team member above"/>
-          : <Tbl heads={['Member','Email','Role','Status','Joined',...(isAdmin?['']:[]) ]}>
+          : <Tbl heads={['Member','Email','Role','Status','Joined',...(isAdmin?['Actions']:[]) ]}>
               {team.map(m => {
                 const isSelf    = m.id === user?.id;
+                const canEdit   = isAdmin && !isSelf;
                 const canDelete = isAdmin && !isSelf && m.role !== 'admin';
                 return (
                   <tr key={m.id} style={{borderBottom:'1px solid #F4F4F4'}}
@@ -612,15 +671,27 @@ export default function Settings() {
                     <td style={{padding:'10px 16px',fontSize:11,color:'#AAAAAA'}}>{new Date(m.created_at).toLocaleDateString()}</td>
                     {isAdmin && (
                       <td style={{padding:'10px 16px'}}>
-                        {canDelete && (
-                          <button
-                            onClick={()=>deleteMember(m)}
-                            disabled={deleting[m.id]}
-                            title="Remove from team"
-                            style={{background:'none',border:'1px solid #FECACA',borderRadius:7,padding:'4px 9px',cursor:'pointer',color:'#DC2626',fontSize:13,fontWeight:700,opacity:deleting[m.id]?0.5:1,lineHeight:1,display:'flex',alignItems:'center',gap:4}}>
-                            {deleting[m.id] ? '…' : '🗑'}
-                          </button>
-                        )}
+                        <div style={{display:'flex',gap:6,alignItems:'center'}}>
+                          {canEdit && (
+                            <button
+                              onClick={()=>openEdit(m)}
+                              title="Edit member"
+                              style={{background:'none',border:'1px solid #E8E8E8',borderRadius:7,padding:'4px 9px',cursor:'pointer',color:'#555',fontSize:12,fontWeight:600,lineHeight:1,display:'flex',alignItems:'center',gap:4,transition:'border-color .12s,color .12s'}}
+                              onMouseEnter={e=>{e.currentTarget.style.borderColor='#2563EB';e.currentTarget.style.color='#2563EB';}}
+                              onMouseLeave={e=>{e.currentTarget.style.borderColor='#E8E8E8';e.currentTarget.style.color='#555';}}>
+                              ✎ Edit
+                            </button>
+                          )}
+                          {canDelete && (
+                            <button
+                              onClick={()=>deleteMember(m)}
+                              disabled={deleting[m.id]}
+                              title="Remove from team"
+                              style={{background:'none',border:'1px solid #FECACA',borderRadius:7,padding:'4px 9px',cursor:'pointer',color:'#DC2626',fontSize:12,fontWeight:600,opacity:deleting[m.id]?0.5:1,lineHeight:1,display:'flex',alignItems:'center',gap:4}}>
+                              {deleting[m.id] ? '…' : '🗑 Delete'}
+                            </button>
+                          )}
+                        </div>
                       </td>
                     )}
                   </tr>
