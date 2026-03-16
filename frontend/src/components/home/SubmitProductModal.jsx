@@ -74,6 +74,34 @@ export default function SubmitProductModal({ open, onClose }) {
   const [screenshotFiles, setScreenshotFiles] = useState([null, null, null, null]);
   const [submitting, setSubmitting] = useState(false);
 
+  // Country tag-input
+  const [countrySearch, setCountrySearch] = useState('');
+  const [countryDDOpen, setCountryDDOpen] = useState(false);
+
+  // Custom dropdowns
+  const [industryDDOpen, setIndustryDDOpen] = useState(false);
+  const [stageDDOpen, setStageDDOpen] = useState(false);
+
+  // Inline field validation
+  const [fieldErrors, setFieldErrors] = useState({});
+  const validateField = (field, value) => {
+    if (field === 'name' && value.trim().length > 0 && value.trim().length < 3) return 'Minimum 3 characters';
+    if (field === 'tagline' && value.trim().length > 0 && value.trim().length < 10) return 'Minimum 10 characters';
+    if (field === 'website' && value.trim() && !/^https:\/\/.+\..+/.test(value.trim())) return 'Must start with https://';
+    return '';
+  };
+  const handleFieldBlur = (field, value) => {
+    const err = validateField(field, value);
+    setFieldErrors(prev => ({ ...prev, [field]: err }));
+  };
+  const handleFieldChange = (field, value) => {
+    setForm(f => ({ ...f, [field]: value }));
+    if (fieldErrors[field]) {
+      const err = validateField(field, value);
+      setFieldErrors(prev => ({ ...prev, [field]: err }));
+    }
+  };
+
   // Entity search
   const [entityQ, setEntityQ] = useState('');
   const [entityResults, setEntityResults] = useState([]);
@@ -227,11 +255,24 @@ export default function SubmitProductModal({ open, onClose }) {
   const [videoUrlError, setVideoUrlError] = useState('');
 
   const validateStep2 = () => {
-    if (!form.name.trim()) { toast.error('Product name is required'); return false; }
-    if (!form.tagline.trim()) { toast.error('Tagline is required'); return false; }
-    if (!form.industry) { toast.error('Please select an industry'); return false; }
-    if (selectedCountries.length === 0) { toast.error('Select at least one country'); return false; }
-    if (form.description.length >= 500) { toast.error('Short description exceeds the character limit'); return false; }
+    const errs = {};
+    const nameErr = validateField('name', form.name);
+    const tagErr = validateField('tagline', form.tagline);
+    const webErr = validateField('website', form.website);
+    if (!form.name.trim()) { errs.name = 'Product name is required'; }
+    else if (nameErr) { errs.name = nameErr; }
+    if (!form.tagline.trim()) { errs.tagline = 'Tagline is required'; }
+    else if (tagErr) { errs.tagline = tagErr; }
+    if (webErr) { errs.website = webErr; }
+    if (!form.industry) { toast.error('Please select an industry'); setFieldErrors(prev => ({ ...prev, ...errs })); return false; }
+    if (selectedCountries.length === 0) { toast.error('Select at least one country'); setFieldErrors(prev => ({ ...prev, ...errs })); return false; }
+    if (form.description.length >= 500) { toast.error('Short description exceeds the character limit'); setFieldErrors(prev => ({ ...prev, ...errs })); return false; }
+    if (Object.keys(errs).length > 0) {
+      setFieldErrors(prev => ({ ...prev, ...errs }));
+      const first = Object.values(errs)[0];
+      toast.error(first);
+      return false;
+    }
     return true;
   };
 
@@ -389,39 +430,92 @@ export default function SubmitProductModal({ open, onClose }) {
           {[['name','Product name *'],['tagline','Tagline *'],['website','Website URL']].map(([k,label]) => (
             <div key={k} style={{ marginBottom:16 }}>
               <label style={lbl}>{label}</label>
-              <input type={k==='website'?'url':'text'} value={form[k]} onChange={e => setForm(f=>({...f,[k]:e.target.value}))}
-                style={inp} onFocus={fo} onBlur={bl}/>
+              <input type={k==='website'?'url':'text'} value={form[k]}
+                onChange={e => handleFieldChange(k, e.target.value)}
+                style={{ ...inp, borderColor: fieldErrors[k] ? '#dc2626' : undefined }}
+                onFocus={fo}
+                onBlur={e => { bl(e); handleFieldBlur(k, e.target.value); }}
+                placeholder={k==='name'?'Your product name':k==='tagline'?'A short, catchy tagline':k==='website'?'https://yourproduct.com':''}/>
+              {fieldErrors[k] && <div style={{ fontSize:11, fontWeight:600, color:'#dc2626', marginTop:4 }}>{fieldErrors[k]}</div>}
             </div>
           ))}
 
-          <div style={{ marginBottom:16 }}>
+          <div style={{ marginBottom:16, position:'relative' }}>
             <label style={lbl}>Industry *</label>
-            <select value={form.industry} onChange={e => setForm(f=>({...f,industry:e.target.value}))}
-              style={{ ...inp, cursor:'pointer' }} onFocus={fo} onBlur={bl}>
-              <option value="">Select…</option>
-              {INDUSTRIES.map(i => <option key={i}>{i}</option>)}
-            </select>
-          </div>
-
-          <div style={{ marginBottom:16 }}>
-            <label style={lbl}>Stage</label>
-            <select value={form.stage||''} onChange={e => setForm(f=>({...f,stage:e.target.value}))}
-              style={{ ...inp, cursor:'pointer' }} onFocus={fo} onBlur={bl}>
-              <option value="">Select stage (optional)</option>
-              {['Idea Stage','Pre-Seed','Seed','Series A','Series B+','Bootstrapped'].map(s => <option key={s}>{s}</option>)}
-            </select>
-          </div>
-
-          <div style={{ marginBottom:16 }}>
-            <label style={lbl}>Available in * <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
-            <div style={{ display:'flex', flexWrap:'wrap', gap:7, padding:10, border:'1.5px solid #e8e8e8', borderRadius:12, background:'#fafafa', minHeight:48 }}>
-              {COUNTRIES.map(([v,flag,name]) => (
-                <span key={v} onClick={() => toggleCountry(v)}
-                  style={{ display:'inline-flex', alignItems:'center', gap:5, padding:'5px 10px', borderRadius:20, fontSize:12, fontWeight:600, cursor:'pointer', background:selectedCountries.includes(v)?'var(--orange)':'#f0f0f0', color:selectedCountries.includes(v)?'#fff':'#444', transition:'all .15s', userSelect:'none' }}>
-                  {flag} {name}
-                </span>
-              ))}
+            <div onClick={() => { setIndustryDDOpen(!industryDDOpen); setStageDDOpen(false); }}
+              style={{ ...inp, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', borderColor: industryDDOpen ? 'var(--orange)' : undefined }}>
+              <span style={{ color: form.industry ? '#0a0a0a' : '#aaa' }}>{form.industry || 'Select…'}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
+            {industryDDOpen && (
+              <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', marginTop:4, maxHeight:220, overflowY:'auto' }}>
+                {INDUSTRIES.map(i => (
+                  <div key={i} onClick={() => { setForm(f=>({...f,industry:i})); setIndustryDDOpen(false); }}
+                    style={{ padding:'10px 14px', cursor:'pointer', fontSize:13, fontWeight: form.industry===i?700:500, color: form.industry===i?'var(--orange)':'#333', background: form.industry===i?'var(--orange-light)':'#fff', borderBottom:'1px solid #f4f4f4', transition:'background .1s' }}
+                    onMouseEnter={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fafafa'; }}
+                    onMouseLeave={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fff'; }}>
+                    {i}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom:16, position:'relative' }}>
+            <label style={lbl}>Stage</label>
+            <div onClick={() => { setStageDDOpen(!stageDDOpen); setIndustryDDOpen(false); }}
+              style={{ ...inp, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', borderColor: stageDDOpen ? 'var(--orange)' : undefined }}>
+              <span style={{ color: form.stage ? '#0a0a0a' : '#aaa' }}>{form.stage || 'Select stage (optional)'}</span>
+              <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
+            </div>
+            {stageDDOpen && (
+              <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', marginTop:4, maxHeight:220, overflowY:'auto' }}>
+                {['Idea Stage','Pre-Seed','Seed','Series A','Series B+','Bootstrapped'].map(s => (
+                  <div key={s} onClick={() => { setForm(f=>({...f,stage:s})); setStageDDOpen(false); }}
+                    style={{ padding:'10px 14px', cursor:'pointer', fontSize:13, fontWeight: form.stage===s?700:500, color: form.stage===s?'var(--orange)':'#333', background: form.stage===s?'var(--orange-light)':'#fff', borderBottom:'1px solid #f4f4f4', transition:'background .1s' }}
+                    onMouseEnter={ev => { if(form.stage!==s) ev.currentTarget.style.background='#fafafa'; }}
+                    onMouseLeave={ev => { if(form.stage!==s) ev.currentTarget.style.background='#fff'; }}>
+                    {s}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
+
+          <div style={{ marginBottom:16, position:'relative' }}>
+            <label style={lbl}>Available in * <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
+            <div onClick={() => { setCountryDDOpen(true); setIndustryDDOpen(false); setStageDDOpen(false); }}
+              style={{ ...inp, display:'flex', flexWrap:'wrap', gap:6, padding:'8px 10px', minHeight:44, cursor:'text', borderColor: countryDDOpen ? 'var(--orange)' : undefined }}>
+              {selectedCountries.map(v => {
+                const c = COUNTRIES.find(([code]) => code === v);
+                if (!c) return null;
+                return <span key={v} style={{ display:'inline-flex', alignItems:'center', gap:4, padding:'3px 10px', borderRadius:16, fontSize:12, fontWeight:600, background:'var(--orange)', color:'#fff', whiteSpace:'nowrap' }}>
+                  {c[1]} {c[2]}
+                  <span onClick={e => { e.stopPropagation(); toggleCountry(v); }} style={{ cursor:'pointer', marginLeft:2, fontSize:14, lineHeight:1 }}>×</span>
+                </span>;
+              })}
+              <input value={countrySearch} onChange={e => setCountrySearch(e.target.value)}
+                placeholder={selectedCountries.length === 0 ? 'Search countries…' : ''}
+                style={{ border:'none', outline:'none', fontSize:13, flex:1, minWidth:80, background:'transparent', fontFamily:"'DM Sans',sans-serif", padding:'3px 0' }}
+                onFocus={() => setCountryDDOpen(true)}
+                onBlur={() => setTimeout(() => setCountryDDOpen(false), 180)}/>
+            </div>
+            {countryDDOpen && (() => {
+              const filtered = COUNTRIES.filter(([v,,name]) =>
+                !selectedCountries.includes(v) && name.toLowerCase().includes(countrySearch.toLowerCase())
+              );
+              if (filtered.length === 0) return null;
+              return <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', marginTop:4, maxHeight:200, overflowY:'auto' }}>
+                {filtered.map(([v, flag, name]) => (
+                  <div key={v} onMouseDown={e => e.preventDefault()} onClick={() => { toggleCountry(v); setCountrySearch(''); }}
+                    style={{ padding:'10px 14px', cursor:'pointer', fontSize:13, fontWeight:500, color:'#333', borderBottom:'1px solid #f4f4f4', display:'flex', alignItems:'center', gap:8, transition:'background .1s' }}
+                    onMouseEnter={ev => ev.currentTarget.style.background='#fafafa'}
+                    onMouseLeave={ev => ev.currentTarget.style.background='#fff'}>
+                    <span>{flag}</span> {name}
+                  </div>
+                ))}
+              </div>;
+            })()}
           </div>
 
           <div style={{ marginBottom:16 }}>
@@ -483,10 +577,14 @@ export default function SubmitProductModal({ open, onClose }) {
             )}
           </div>
 
-          <div style={{ display:'flex', gap:10 }}>
-            <button onClick={() => setStep(1)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button disabled={form.description.length >= 500} onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: form.description.length >= 500 ? '#e8e8e8' : 'var(--orange)', color: form.description.length >= 500 ? '#bbb' : '#fff', cursor: form.description.length >= 500 ? 'not-allowed' : 'pointer' }}>Next →</button>
-          </div>
+          {(() => {
+            const hasFieldErr = !!(fieldErrors.name || fieldErrors.tagline || fieldErrors.website);
+            const blocked = form.description.length >= 500 || hasFieldErr;
+            return <div style={{ display:'flex', gap:10 }}>
+              <button onClick={() => setStep(1)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
+              <button disabled={blocked} onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: blocked ? '#e8e8e8' : 'var(--orange)', color: blocked ? '#bbb' : '#fff', cursor: blocked ? 'not-allowed' : 'pointer' }}>Next →</button>
+            </div>;
+          })()}
         </>}
 
         {/* ── Step 3: Media ── */}
