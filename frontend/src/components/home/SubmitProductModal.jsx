@@ -231,7 +231,7 @@ export default function SubmitProductModal({ open, onClose }) {
     if (!form.tagline.trim()) { toast.error('Tagline is required'); return false; }
     if (!form.industry) { toast.error('Please select an industry'); return false; }
     if (selectedCountries.length === 0) { toast.error('Select at least one country'); return false; }
-    if (form.description.length > 500) { toast.error('Short description exceeds 500 characters'); return false; }
+    if (form.description.length >= 500) { toast.error('Short description exceeds the character limit'); return false; }
     return true;
   };
 
@@ -485,7 +485,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(1)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button disabled={form.description.length > 500} onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: form.description.length > 500 ? '#e8e8e8' : 'var(--orange)', color: form.description.length > 500 ? '#bbb' : '#fff', cursor: form.description.length > 500 ? 'not-allowed' : 'pointer' }}>Next →</button>
+            <button disabled={form.description.length >= 500} onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: form.description.length >= 500 ? '#e8e8e8' : 'var(--orange)', color: form.description.length >= 500 ? '#bbb' : '#fff', cursor: form.description.length >= 500 ? 'not-allowed' : 'pointer' }}>Next →</button>
           </div>
         </>}
 
