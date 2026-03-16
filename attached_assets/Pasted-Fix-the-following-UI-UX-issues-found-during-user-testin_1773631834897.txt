@@ -1,0 +1,89 @@
+Fix the following UI/UX issues found during user testing on the Tech Launch platform (tlmena.com). Address each issue in order:
+
+---
+
+**1. Home Screen Layout — Add Sidebar Filter**
+Move the filter component from its current inline position to a left sidebar.
+Place "Today's Top Products" in the center column.
+Keep "Top Industries" and "Explore Ecosystem" on the right.
+This creates a 3-column layout: [Filters | Products | Industries].
+
+---
+
+**2. Filter Dropdown — Broken Functionality**
+The Country and Industry filter dropdowns are completely non-functional:
+- Search bar does not accept input
+- Checkboxes cannot be selected
+- "Clear" button does nothing
+Fix all three interactions so the filter actually works.
+
+---
+
+**3. Filter Dropdown — Positioning Bug**
+The dropdown is positioned fixed to the screen instead of anchored to its trigger button.
+Fix it so the dropdown opens directly below its parent button and stays aligned when scrolling or resizing.
+
+---
+
+**4. Submit Product Form — Step Counter Overlaps Close Button (Step 1)**
+On the first step of the Submit Product modal, the "Step X of Y" text overlaps the X (close) button.
+Fix the header layout so they don't overlap — place the step counter on the left and the close button on the right with proper spacing.
+
+---
+
+**5. Submit Product Form — No Input Validation (Step 2)**
+The form accepts invalid data:
+- Product Name: accepts 1 character — add minimum 3 characters validation
+- Tagline: same issue — minimum 10 characters
+- Website URL: accepts any text — validate it starts with https:// and contains a valid domain
+- Show inline error messages under each field on blur or on Next click
+
+---
+
+**6. Available In — Replace Badge Grid with Multi-select Input**
+The current country selection shows all countries as static badge pills, which takes too much vertical space.
+Replace it with a multi-select tag input field: user types or clicks to select countries, selected ones appear as removable tags inside the input. Reference: similar to how tags work in Notion or Linear.
+
+---
+
+**7. Form Labels — Change ALL CAPS to Sentence Case**
+Labels like "PRODUCT NAME *", "TAGLINE *", "WEBSITE URL" are in all caps.
+Change all form labels to sentence case (e.g., "Product name *", "Tagline *", "Website URL").
+
+---
+
+**8. Modal Z-index — "Save your progress?" Popup**
+The save draft modal is appearing behind other elements (description textarea, bottom nav bar).
+Fix the z-index so the modal and its backdrop always render on top of all other page elements.
+Also ensure the backdrop dims everything behind it correctly.
+
+---
+
+**9. Industry & Stage Dropdowns — Replace Native Select with Custom Styled Dropdown**
+The Industry and Stage fields use the browser's default native <select> element which looks inconsistent with the rest of the UI.
+Replace both with custom-styled dropdown components that match the platform's design system (borders, fonts, border-radius, etc.).
+
+---
+
+**10. Short Description — Character Limit Handling**
+When the user reaches 500/500 characters:
+- Keep the counter turning red (already done)
+- Also show a tooltip or inline message: "Character limit reached"
+- Allow the user to keep seeing what they typed but block the Next button until they shorten it
+- Do NOT silently truncate the text
+
+---
+
+**11. YouTube URL Validation (Step 3 — Add Media)**
+The demo video URL field accepts any URL including invalid ones (e.g., Google search URLs).
+Add regex validation to only accept valid YouTube formats:
+- youtube.com/watch?v=...
+- youtu.be/...
+Show an error: "Please enter a valid YouTube URL." if the format doesn't match.
+
+---
+
+**12. Delete Button Overlap on Product Card**
+In the Products tab of the user profile, the "Delete" button overlaps the product icon/content beneath it.
+Fix positioning so Delete appears in a dedicated area (top-right corner of the card or inside a dropdown menu) without covering any other element.
+Add sufficient padding so each action element has clear visual separation.
