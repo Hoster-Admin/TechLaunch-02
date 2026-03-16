@@ -159,14 +159,17 @@ const createProduct = async (req, res, next) => {
     const manualApproval = settings[0]?.value !== 'false';
     const status = manualApproval ? 'pending' : 'live';
 
+    const nameBase = name.toLowerCase().replace(/[^a-z0-9\s-]/g, '').replace(/\s+/g, '-').slice(0, 40);
+    const slug = `${nameBase}-${Date.now().toString(36)}`;
+
     const { rows } = await query(`
       INSERT INTO products (name, tagline, description, logo_emoji, website, demo_url, video_url,
-        industry, countries, tags, launch_date, status, submitted_by,
+        industry, countries, tags, launch_date, status, slug, submitted_by,
         approved_by, approved_at)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16)
       RETURNING *`,
       [name, tagline, description||null, logo_emoji||'🚀', website||null, demo_url||null, video_url||null,
-       industry, countries||[], tags||[], launch_date||null, status,
+       industry, countries||[], tags||[], launch_date||null, status, slug,
        req.user.id,
        !manualApproval ? req.user.id : null,
        !manualApproval ? new Date() : null]
