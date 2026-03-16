@@ -485,7 +485,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(1)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>Next →</button>
+            <button disabled={form.description.length > 500} onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: form.description.length > 500 ? '#e8e8e8' : 'var(--orange)', color: form.description.length > 500 ? '#bbb' : '#fff', cursor: form.description.length > 500 ? 'not-allowed' : 'pointer' }}>Next →</button>
           </div>
         </>}
 
@@ -555,12 +555,12 @@ export default function SubmitProductModal({ open, onClose }) {
 
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(2)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button onClick={() => {
-              if (form.videoUrl.trim() && !isValidYouTubeUrl(form.videoUrl)) { setVideoUrlError('Please enter a valid YouTube URL.'); return; }
+            {(() => { const invalidVideo = !!(form.videoUrl.trim() && !isValidYouTubeUrl(form.videoUrl)); return <button onClick={() => {
+              if (invalidVideo) { setVideoUrlError('Please enter a valid YouTube URL.'); return; }
               setStep(4);
-            }} disabled={!!videoUrlError} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: videoUrlError ? '#e8e8e8' : 'var(--orange)', color: videoUrlError ? '#bbb' : '#fff', cursor: videoUrlError ? 'not-allowed' : 'pointer' }}>
+            }} disabled={invalidVideo} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: invalidVideo ? '#e8e8e8' : 'var(--orange)', color: invalidVideo ? '#bbb' : '#fff', cursor: invalidVideo ? 'not-allowed' : 'pointer' }}>
               {mediaOk ? 'Next →' : 'Skip for now →'}
-            </button>
+            </button>; })()}
           </div>
         </>})()}
 
