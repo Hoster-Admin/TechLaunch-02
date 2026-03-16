@@ -28,26 +28,26 @@ export default function ProductsTab({
         <>
           {localDraft && localDraft.form?.name && (
             <div style={{ background:'#fff9f7', border:'1.5px solid #ffd6c2', borderRadius:16, padding:20, marginBottom:16 }}>
-              <div style={{ display:'flex', alignItems:'center', gap:12, marginBottom:12 }}>
+              <div style={{ display:'flex', alignItems:'flex-start', gap:12, marginBottom:16 }}>
                 <div style={{ width:48, height:48, borderRadius:14, background:'#f0f0f0', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>
                   {localDraft.form.logoEmoji || '🚀'}
                 </div>
                 <div style={{ flex:1, minWidth:0 }}>
-                  <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:2 }}>
+                  <div style={{ display:'flex', alignItems:'center', gap:8, flexWrap:'wrap', marginBottom:2 }}>
                     <div style={{ fontSize:15, fontWeight:800 }}>{localDraft.form.name}</div>
                     <span style={{ fontSize:11, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#ffd6c2', color:'#c0600a' }}>DRAFT</span>
                   </div>
-                  <div style={{ fontSize:12, color:'#888' }}>{localDraft.form.tagline || 'No tagline yet'}</div>
+                  <div style={{ fontSize:12, color:'#888', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{localDraft.form.tagline || 'No tagline yet'}</div>
                   {localDraft.savedAt && <div style={{ fontSize:11, color:'#bbb', marginTop:2 }}>Saved {new Date(localDraft.savedAt).toLocaleDateString('en-US', { month:'short', day:'numeric' })}</div>}
                 </div>
               </div>
-              <div style={{ display:'flex', gap:8 }}>
+              <div style={{ display:'flex', gap:10, alignItems:'center' }}>
                 <button onClick={() => { setSubmitDraft(localDraft); setShowSubmitForm(true); }}
                   style={{ flex:1, padding:'10px 0', borderRadius:10, border:'none', background:'var(--orange)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
                   Continue Draft →
                 </button>
                 <button onClick={() => { try { localStorage.removeItem(DRAFT_KEY); } catch {} setLocalDraft(null); toast.success('Draft deleted'); }}
-                  style={{ padding:'10px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', color:'#e63946', fontSize:13, fontWeight:600, cursor:'pointer' }}>
+                  style={{ flexShrink:0, padding:'10px 16px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', color:'#e63946', fontSize:13, fontWeight:600, cursor:'pointer' }}>
                   Delete
                 </button>
               </div>
