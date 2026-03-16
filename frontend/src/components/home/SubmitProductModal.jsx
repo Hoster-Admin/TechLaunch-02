@@ -142,7 +142,8 @@ export default function SubmitProductModal({ open, onClose }) {
   };
 
   const handleClose = () => {
-    if (step > 1 && step < 6) {
+    const hasData = type !== null || form.name.trim() || form.tagline.trim() || form.description.trim() || selectedCountries.length > 0 || coFounders.length > 0;
+    if (hasData) {
       setDraftPrompt('save');
       return;
     }
