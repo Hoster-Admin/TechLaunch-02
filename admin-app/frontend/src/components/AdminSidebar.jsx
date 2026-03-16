@@ -145,15 +145,6 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
               <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
               <span style={{fontSize:10,fontWeight:700,borderRadius:5,padding:'2px 7px',background:pill.bg,color:pill.color,whiteSpace:'nowrap',textTransform:'capitalize',flexShrink:0}}>{role}</span>
             </div>
-            {user?.handle && (
-              <a href={`${getPublicBaseUrl()}/@${(user.handle||'').replace('@','')}`}
-                target="_blank" rel="noopener noreferrer"
-                style={{fontSize:10,color:'#AAAAAA',fontWeight:600,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:3,marginTop:2,transition:'color .15s'}}
-                onMouseEnter={e=>e.currentTarget.style.color='var(--orange)'}
-                onMouseLeave={e=>e.currentTarget.style.color='#AAAAAA'}>
-                👤 View my profile ↗
-              </a>
-            )}
           </div>
           <button onClick={onLogout} title="Sign out"
             style={{background:'none',border:'none',cursor:'pointer',padding:4,borderRadius:6,color:'#AAAAAA',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}
