@@ -2,14 +2,8 @@ import React, { useEffect, useState, useRef, useCallback } from 'react';
 import { adminAPI, uploadFile } from '../utils/api.js';
 
 function getPublicBaseUrl() {
-  const { protocol, hostname } = window.location;
+  const { hostname } = window.location;
   if (hostname === 'admin.tlmena.com') return 'https://tlmena.com';
-  if (hostname.includes('.replit.dev')) {
-    const dot = hostname.indexOf('.');
-    const sub = hostname.slice(0, dot).replace(/-\d+$/, '');
-    const rest = hostname.slice(dot);
-    return `${protocol}//${sub}-3001${rest}`;
-  }
   return 'https://tlmena.com';
 }
 
@@ -241,7 +235,7 @@ export default function PlatformProfile() {
 
           {/* Edit button top-right */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 12, marginBottom: 8 }}>
-            <a href={`${getPublicBaseUrl()}/@${(profile?.handle || 'techlaunchmena').replace('@','')}`}
+            <a href={`${getPublicBaseUrl()}/u/${(profile?.handle || 'techlaunchmena').replace('@','')}`}
               target="_blank" rel="noopener noreferrer"
               style={{ padding: '8px 16px', borderRadius: 10, background: '#f4f4f4', color: '#555', border: '1.5px solid #e8e8e8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
               🌐 View on Public Site
@@ -260,10 +254,10 @@ export default function PlatformProfile() {
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
               <span style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>@{(profile?.handle || 'techlaunchmena').replace('@', '')}</span>
-              <a href={`${getPublicBaseUrl()}/@${(profile?.handle || 'techlaunchmena').replace('@','')}`}
+              <a href={`${getPublicBaseUrl()}/u/${(profile?.handle || 'techlaunchmena').replace('@','')}`}
                 target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 600, textDecoration: 'none', opacity: 0.85 }}>
-                tlmena.com/@{(profile?.handle || 'techlaunchmena').replace('@','')} ↗
+                tlmena.com/u/{(profile?.handle || 'techlaunchmena').replace('@','')} ↗
               </a>
             </div>
 

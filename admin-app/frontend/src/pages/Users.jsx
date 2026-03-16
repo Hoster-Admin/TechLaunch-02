@@ -6,15 +6,13 @@ import { SCard, Badge, Tbl, ActionBtn, EmptyState, SkeletonRows, Pagination, Con
 const PAGE_SIZE = 20;
 
 function getPublicBaseUrl() {
-  const { protocol, hostname } = window.location;
+  const { hostname } = window.location;
   if (hostname === 'admin.tlmena.com') return 'https://tlmena.com';
-  if (hostname.includes('.replit.dev')) {
-    const dot = hostname.indexOf('.');
-    const sub = hostname.slice(0, dot).replace(/-\d+$/, '');
-    const rest = hostname.slice(dot);
-    return `${protocol}//${sub}-3001${rest}`;
-  }
   return 'https://tlmena.com';
+}
+
+function profileUrl(handle) {
+  return `${getPublicBaseUrl()}/u/${(handle||'techlaunchmena').replace('@','')}`;
 }
 
 const FILTERS = [
@@ -217,7 +215,7 @@ function UserDrawer({ userId, onClose, onAction }) {
                 </div>
                 <div style={{fontSize:12,color:'#888',marginBottom:2}}>@{detail.handle}</div>
                 {detail.email && <div style={{fontSize:12,color:'#888',marginBottom:4}}>{detail.email}</div>}
-                <a href={`${getPublicBaseUrl()}/@${(detail.handle||'').replace('@','')}`}
+                <a href={profileUrl(detail.handle)}
                   target="_blank" rel="noopener noreferrer"
                   style={{fontSize:11,fontWeight:700,color:'var(--orange)',textDecoration:'none',display:'inline-flex',alignItems:'center',gap:4,padding:'3px 8px',borderRadius:6,background:'var(--orange-light)',border:'1px solid rgba(225,80,51,.2)'}}>
                   🌐 View Public Profile ↗
@@ -333,6 +331,138 @@ function UserDrawer({ userId, onClose, onAction }) {
   );
 }
 
+// ── Platform Profile Card + Edit Modal ───────────────────────────────────────
+const EMPTY_PP = { name:'', handle:'', headline:'', bio:'', website:'', twitter:'', linkedin:'' };
+
+function PlatformProfileCard() {
+  const [profile,  setProfile]  = useState(null);
+  const [loading,  setLoading]  = useState(true);
+  const [editing,  setEditing]  = useState(false);
+  const [saving,   setSaving]   = useState(false);
+  const [form,     setForm]     = useState(EMPTY_PP);
+
+  const load = useCallback(async () => {
+    try {
+      const { data: d } = await adminAPI.publicProfile();
+      setProfile(d.data);
+    } catch { /* ignore */ }
+    finally { setLoading(false); }
+  }, []);
+
+  useEffect(() => { load(); }, [load]);
+
+  const openEdit = () => {
+    if (!profile) return;
+    setForm({
+      name:     profile.name     || '',
+      handle:   (profile.handle||'techlaunchmena').replace('@',''),
+      headline: profile.headline || '',
+      bio:      profile.bio      || '',
+      website:  profile.website  || '',
+      twitter:  profile.twitter  || '',
+      linkedin: profile.linkedin || '',
+    });
+    setEditing(true);
+  };
+
+  const save = async () => {
+    setSaving(true);
+    try {
+      await adminAPI.savePublicProfile({
+        name:     form.name     || null,
+        handle:   form.handle   || null,
+        headline: form.headline || null,
+        bio:      form.bio      || null,
+        website:  form.website  || null,
+        twitter:  form.twitter  || null,
+        linkedin: form.linkedin || null,
+      });
+      toast.success('Public profile updated!');
+      setEditing(false);
+      load();
+    } catch(e) { toast.error(e.message || 'Failed to save profile'); }
+    finally { setSaving(false); }
+  };
+
+  const handle = (profile?.handle||'techlaunchmena').replace('@','');
+  const initials = (profile?.name||'TL').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
+
+  if (loading) return null;
+
+  return (
+    <>
+      {/* Edit modal */}
+      {editing && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>setEditing(false)}>
+          <div style={{background:'#fff',borderRadius:16,padding:28,width:500,maxWidth:'94vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+              <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>Edit Public Profile</div>
+              <button onClick={()=>setEditing(false)} style={{background:'none',border:'none',fontSize:18,cursor:'pointer',color:'#AAAAAA'}}>✕</button>
+            </div>
+            {[
+              { key:'name',     label:'Display Name *',    ph:'TechLaunch MENA' },
+              { key:'handle',   label:'Handle (no @)',      ph:'techlaunchmena' },
+              { key:'headline', label:'Headline',           ph:'The MENA startup ecosystem hub' },
+              { key:'website',  label:'Website',            ph:'https://tlmena.com' },
+              { key:'twitter',  label:'Twitter / X',        ph:'@techlaunchmena' },
+              { key:'linkedin', label:'LinkedIn URL',       ph:'https://linkedin.com/company/…' },
+            ].map(({ key, label, ph }) => (
+              <div key={key} style={{marginBottom:14}}>
+                <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:5,textTransform:'uppercase',letterSpacing:'.04em'}}>{label}</label>
+                <input style={{width:'100%',border:'1px solid #E8E8E8',borderRadius:8,padding:'9px 11px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FAFAFA'}}
+                  value={form[key]} onChange={e=>setForm(f=>({...f,[key]:e.target.value}))} placeholder={ph}/>
+              </div>
+            ))}
+            <div style={{marginBottom:20}}>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:5,textTransform:'uppercase',letterSpacing:'.04em'}}>Bio</label>
+              <textarea style={{width:'100%',border:'1px solid #E8E8E8',borderRadius:8,padding:'9px 11px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',background:'#FAFAFA',resize:'vertical',minHeight:80}}
+                value={form.bio} onChange={e=>setForm(f=>({...f,bio:e.target.value}))} placeholder="About TechLaunch MENA…"/>
+            </div>
+            <div style={{display:'flex',gap:8}}>
+              <button onClick={save} disabled={saving} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'11px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?.7:1}}>
+                {saving ? 'Saving…' : 'Save Profile'}
+              </button>
+              <button onClick={()=>setEditing(false)} style={{padding:'11px 18px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Profile card */}
+      <div style={{background:'#fff',borderRadius:14,border:'1px solid #F0F0F0',boxShadow:'0 2px 8px rgba(0,0,0,.05)',padding:'20px 24px',display:'flex',alignItems:'center',gap:20,flexWrap:'wrap'}}>
+        <div style={{width:56,height:56,borderRadius:'50%',background:'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:800,color:'#fff',flexShrink:0}}>
+          {profile?.avatar_url
+            ? <img src={profile.avatar_url} alt={profile.name} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>
+            : initials
+          }
+        </div>
+        <div style={{flex:1,minWidth:200}}>
+          <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3,flexWrap:'wrap'}}>
+            <span style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>{profile?.name || 'TechLaunch MENA'}</span>
+            <span style={{fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:20,background:'#FFF5F2',color:'var(--orange)',border:'1px solid rgba(225,80,51,.2)'}}>Platform Account</span>
+            {profile?.verified && <span style={{fontSize:10,fontWeight:700,color:'var(--orange)'}}>✓ Verified</span>}
+          </div>
+          <div style={{fontSize:12,color:'#888',marginBottom:3}}>@{handle}</div>
+          {profile?.headline && <div style={{fontSize:12,color:'#555',marginBottom:3}}>{profile.headline}</div>}
+          {profile?.bio && <div style={{fontSize:12,color:'#888',lineHeight:1.5,maxWidth:480}}>{profile.bio.length>120?profile.bio.slice(0,120)+'…':profile.bio}</div>}
+        </div>
+        <div style={{display:'flex',gap:8,flexShrink:0,flexWrap:'wrap'}}>
+          <a href={profileUrl(handle)} target="_blank" rel="noopener noreferrer"
+            style={{padding:'7px 14px',borderRadius:9,background:'#FFF5F2',color:'var(--orange)',border:'1px solid rgba(225,80,51,.2)',fontSize:12,fontWeight:700,textDecoration:'none',display:'inline-flex',alignItems:'center',gap:5}}>
+            🌐 View Profile ↗
+          </a>
+          <button onClick={openEdit}
+            style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+            ✎ Edit Profile
+          </button>
+        </div>
+      </div>
+    </>
+  );
+}
+
 // ── Main Component ────────────────────────────────────────────────────────────
 export default function Users() {
   const [users,    setUsers]    = useState([]);
@@ -411,6 +541,8 @@ export default function Users() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+      <PlatformProfileCard/>
+
       {showAdd && <AddUserModal onClose={()=>setShowAdd(false)} onSuccess={load}/>}
 
       {suspendTarget && (

@@ -1,5 +1,5 @@
 import React, { useEffect } from 'react';
-import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, Navigate, useNavigate, useLocation, useParams } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UIProvider, useUI } from './context/UIContext';
@@ -110,6 +110,11 @@ function WithAuthCallbacks({ Component, ...props }) {
   return <Component {...props} onSignIn={onSignIn} onSignUp={onSignUp}/>;
 }
 
+function HandleRedirect() {
+  const { handle } = useParams();
+  return <Navigate to={`/u/${handle}`} replace/>;
+}
+
 function AppRoutes() {
   return (
     <>
@@ -144,6 +149,7 @@ function AppRoutes() {
         <Route path="/bookmarks"    element={<WithAuthCallbacks Component={BookmarksPage}/>}/>
         <Route path="/people"       element={<WithAuthCallbacks Component={PeoplePage}/>}/>
         <Route path="/u/:handle"    element={<WithAuthCallbacks Component={UserProfilePage}/>}/>
+        <Route path="/@:handle"     element={<HandleRedirect/>}/>
         <Route path="/settings"          element={<RequireAuth><SettingsPage/></RequireAuth>}/>
         <Route path="/articles"          element={<ArticlesList/>}/>
         <Route path="/articles/:slug"    element={<ArticleDetail/>}/>
