@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/home/ProductCard';
@@ -45,6 +45,46 @@ export default function HomePage() {
   const [selectedIndustries, setIndustries] = useState([]);
   const [countrySearch, setCountrySearch]   = useState('');
   const [industrySearch, setIndustrySearch] = useState('');
+  const countryBtnRef = useRef(null);
+  const industryBtnRef = useRef(null);
+  const [ddPos, setDdPos] = useState({ country: null, industry: null });
+
+  const openCountryDD = useCallback((e) => {
+    e.stopPropagation();
+    setIndDD(false);
+    setCountryDD(prev => {
+      if (prev) return false;
+      if (countryBtnRef.current) {
+        const r = countryBtnRef.current.getBoundingClientRect();
+        setDdPos(p => ({ ...p, country: { top: r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - 240)) } }));
+      }
+      return true;
+    });
+  }, []);
+
+  const openIndustryDD = useCallback((e) => {
+    e.stopPropagation();
+    setCountryDD(false);
+    setIndDD(prev => {
+      if (prev) return false;
+      if (industryBtnRef.current) {
+        const r = industryBtnRef.current.getBoundingClientRect();
+        setDdPos(p => ({ ...p, industry: { top: r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - 240)) } }));
+      }
+      return true;
+    });
+  }, []);
+
+  useEffect(() => {
+    const close = (e) => {
+      if (e.target && e.target.closest && e.target.closest('.country-dd-menu')) return;
+      setCountryDD(false); setIndDD(false);
+    };
+    const closeResize = () => { setCountryDD(false); setIndDD(false); };
+    window.addEventListener('scroll', close, true);
+    window.addEventListener('resize', closeResize);
+    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', closeResize); };
+  }, []);
 
   useEffect(() => {
     setLoading(true);
@@ -94,12 +134,12 @@ export default function HomePage() {
 
             {/* Country dropdown */}
             <div className="country-dropdown-wrap">
-              <button className={`filter-tab country-dd-trigger ${selectedCountries.length ? 'active' : ''}`}
-                onClick={e => { e.stopPropagation(); setCountryDD(v => !v); setIndDD(false); }}>
+              <button ref={countryBtnRef} className={`filter-tab country-dd-trigger ${selectedCountries.length ? 'active' : ''}`}
+                onClick={openCountryDD}>
                 🌍 {selectedCountries.length ? `${selectedCountries.length} Countries` : 'All Countries'} <span style={{ fontSize: 10, marginLeft: 3 }}>▼</span>
               </button>
-              {countryDDOpen && (
-                <div className="country-dd-menu open" style={{ position: 'fixed', top: 'auto', left: 'auto', marginTop: 4 }}>
+              {countryDDOpen && ddPos.country && (
+                <div className="country-dd-menu open" style={{ position: 'fixed', top: ddPos.country.top, left: ddPos.country.left }}>
                   <div className="country-dd-top">
                     <input className="country-dd-search" type="text" placeholder="Search country…" autoComplete="off"
                       value={countrySearch} onChange={e => setCountrySearch(e.target.value)}/>
@@ -121,12 +161,12 @@ export default function HomePage() {
 
             {/* Industry dropdown */}
             <div className="country-dropdown-wrap">
-              <button className={`filter-tab country-dd-trigger ${selectedIndustries.length ? 'active' : ''}`}
-                onClick={e => { e.stopPropagation(); setIndDD(v => !v); setCountryDD(false); }}>
+              <button ref={industryBtnRef} className={`filter-tab country-dd-trigger ${selectedIndustries.length ? 'active' : ''}`}
+                onClick={openIndustryDD}>
                 🏭 {selectedIndustries.length ? `${selectedIndustries.length} Industries` : 'All Industries'} <span style={{ fontSize: 10, marginLeft: 3 }}>▼</span>
               </button>
-              {industryDDOpen && (
-                <div className="country-dd-menu open" style={{ position: 'fixed', top: 'auto', left: 'auto', marginTop: 4 }}>
+              {industryDDOpen && ddPos.industry && (
+                <div className="country-dd-menu open" style={{ position: 'fixed', top: ddPos.industry.top, left: ddPos.industry.left }}>
                   <div className="country-dd-top">
                     <input className="country-dd-search" type="text" placeholder="Search industry…" autoComplete="off"
                       value={industrySearch} onChange={e => setIndustrySearch(e.target.value)}/>
