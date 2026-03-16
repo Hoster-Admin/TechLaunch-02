@@ -11,6 +11,10 @@ const { Pool }   = require('pg');
 const path       = require('path');
 const { sendAdminCreatedAccountEmail, sendPublicInvitationEmail } = require('../../backend/src/services/emailService');
 
+// ─── PUBLIC API ROUTES (merged — no separate server needed) ───────────────────
+const publicRoutes = require('../../backend/src/routes');
+const { errorHandler: publicErrorHandler, notFound: publicNotFound } = require('../../backend/src/middleware/error');
+
 // ─── FIX 15: Startup validation — crash fast if critical env vars are missing ─
 if (!process.env.JWT_SECRET) {
   console.error('FATAL: JWT_SECRET environment variable is not set. Refusing to start.');
@@ -1529,7 +1533,7 @@ app.post('/api/upload', authenticate, adminUpload.single('file'), (req, res) => 
   if (!req.file) return res.status(400).json({ success:false, message:'No file uploaded' });
   const base = process.env.REPLIT_DOMAINS
     ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0].trim()
-    : `${req.protocol}://${req.get('host').replace(':5000', ':3001')}`;
+    : `${req.protocol}://${req.get('host')}`;
   const url = `${base}/uploads/${req.file.filename}`;
   res.json({ success:true, url, filename: req.file.filename });
 });
@@ -1537,15 +1541,30 @@ app.post('/api/upload', authenticate, adminUpload.single('file'), (req, res) => 
 // Serve uploaded files (forwarded from public backend at port 3001, but also reachable here)
 app.use('/uploads', express.static(uploadsDir, { maxAge:'7d', immutable:true }));
 
+// ─── PUBLIC API — /api/* ──────────────────────────────────────────────────────
+const apiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 100,
+  standardHeaders: true,
+  legacyHeaders:   false,
+  message: { success:false, message:'Too many requests, please try again later' },
+});
+const authApiLimiter = rateLimit({
+  windowMs: 15 * 60 * 1000,
+  max: 20,
+  message: { success:false, message:'Too many login attempts' },
+});
+app.use('/api', apiLimiter);
+app.use('/api/auth/login',    authApiLimiter);
+app.use('/api/auth/register', authApiLimiter);
+app.use('/api', publicRoutes);
+
 // ─── CONFIG ───────────────────────────────────────────────────────────────────
 app.get('/admin/config', (req, res) => {
   let publicBaseUrl = process.env.APP_URL || 'https://tlmena.com';
   const dev = process.env.REPLIT_DEV_DOMAIN;
   if (dev && !process.env.APP_URL) {
-    // Replit uses subdomain-based port routing: <base>-<port>.<cluster>.replit.dev
-    const parts = dev.split('.');
-    parts[0] = parts[0] + '-3001';
-    publicBaseUrl = 'https://' + parts.join('.');
+    publicBaseUrl = 'https://' + dev;
   }
   res.json({ publicBaseUrl });
 });
