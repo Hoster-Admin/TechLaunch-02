@@ -428,13 +428,13 @@ export default function SubmitProductModal({ open, onClose }) {
             <label style={lbl}>Short description * <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>3 sentences max</span></label>
             <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} rows={3}
               placeholder="What it does, who it's for, why it's different..."
-              style={{ ...inp, resize:'vertical', lineHeight:1.6, borderColor: form.description.length > 500 ? '#dc2626' : undefined }} onFocus={fo} onBlur={bl}/>
+              style={{ ...inp, resize:'vertical', lineHeight:1.6, borderColor: form.description.length >= 500 ? '#dc2626' : undefined }} onFocus={fo} onBlur={bl}/>
             <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:4 }}>
               {form.description.length >= 500
                 ? <span style={{ fontSize:11, fontWeight:600, color:'#dc2626' }}>Character limit reached</span>
                 : <span/>}
               <span style={{ fontSize:11, fontWeight:600,
-                color: form.description.length > 500 ? '#dc2626' : form.description.length >= 450 ? 'var(--orange)' : '#bbb' }}>
+                color: form.description.length >= 500 ? '#dc2626' : form.description.length >= 450 ? 'var(--orange)' : '#bbb' }}>
                 {form.description.length} / 500
               </span>
             </div>
