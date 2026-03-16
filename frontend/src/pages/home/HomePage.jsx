@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useRef, useCallback } from 'react';
+import React, { useState, useEffect, useCallback } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/home/ProductCard';
@@ -45,34 +45,18 @@ export default function HomePage() {
   const [selectedIndustries, setIndustries] = useState([]);
   const [countrySearch, setCountrySearch]   = useState('');
   const [industrySearch, setIndustrySearch] = useState('');
-  const countryBtnRef = useRef(null);
-  const industryBtnRef = useRef(null);
-  const [ddPos, setDdPos] = useState({ country: null, industry: null });
+  const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
   const openCountryDD = useCallback((e) => {
     e.stopPropagation();
     setIndDD(false);
-    setCountryDD(prev => {
-      if (prev) return false;
-      if (countryBtnRef.current) {
-        const r = countryBtnRef.current.getBoundingClientRect();
-        setDdPos(p => ({ ...p, country: { top: r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - 240)) } }));
-      }
-      return true;
-    });
+    setCountryDD(prev => !prev);
   }, []);
 
   const openIndustryDD = useCallback((e) => {
     e.stopPropagation();
     setCountryDD(false);
-    setIndDD(prev => {
-      if (prev) return false;
-      if (industryBtnRef.current) {
-        const r = industryBtnRef.current.getBoundingClientRect();
-        setDdPos(p => ({ ...p, industry: { top: r.bottom + 4, left: Math.max(8, Math.min(r.left, window.innerWidth - 240)) } }));
-      }
-      return true;
-    });
+    setIndDD(prev => !prev);
   }, []);
 
   useEffect(() => {
@@ -123,78 +107,94 @@ export default function HomePage() {
           <p>The home for MENA companies, products, and innovation. Discover, upvote, and connect with the best of MENA tech.</p>
         </div>
 
-        {/* FILTER BAR */}
-        <div className="filter-section">
-          <div className="filter-inner">
-
-            {/* Country dropdown */}
-            <div className="country-dropdown-wrap">
-              <button ref={countryBtnRef} className={`filter-tab country-dd-trigger ${selectedCountries.length ? 'active' : ''}`}
-                onClick={openCountryDD}>
-                🌍 {selectedCountries.length ? `${selectedCountries.length} Countries` : 'All Countries'} <span style={{ fontSize: 10, marginLeft: 3 }}>▼</span>
-              </button>
-              {countryDDOpen && ddPos.country && (
-                <div className="country-dd-menu open" style={{ position: 'fixed', top: ddPos.country.top, left: ddPos.country.left }}>
-                  <div className="country-dd-top">
-                    <input className="country-dd-search" type="text" placeholder="Search country…" autoComplete="off"
-                      value={countrySearch} onChange={e => setCountrySearch(e.target.value)}/>
-                    <button className="country-dd-clear" onClick={() => { setCountries([]); setCountrySearch(''); }}>Clear</button>
-                  </div>
-                  <div className="country-dd-list">
-                    {COUNTRIES.filter(([, label]) => label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim().toLowerCase().includes(countrySearch.toLowerCase())).map(([v, label]) => (
-                      <label key={v} className="country-dd-item">
-                        <input type="checkbox" checked={selectedCountries.includes(v)}
-                          onChange={e => setCountries(prev => e.target.checked ? [...prev, v] : prev.filter(c => c !== v))}
-                          style={{ accentColor: 'var(--orange)', width: 15, height: 15 }}/>
-                        {label}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Industry dropdown */}
-            <div className="country-dropdown-wrap">
-              <button ref={industryBtnRef} className={`filter-tab country-dd-trigger ${selectedIndustries.length ? 'active' : ''}`}
-                onClick={openIndustryDD}>
-                🏭 {selectedIndustries.length ? `${selectedIndustries.length} Industries` : 'All Industries'} <span style={{ fontSize: 10, marginLeft: 3 }}>▼</span>
-              </button>
-              {industryDDOpen && ddPos.industry && (
-                <div className="country-dd-menu open" style={{ position: 'fixed', top: ddPos.industry.top, left: ddPos.industry.left }}>
-                  <div className="country-dd-top">
-                    <input className="country-dd-search" type="text" placeholder="Search industry…" autoComplete="off"
-                      value={industrySearch} onChange={e => setIndustrySearch(e.target.value)}/>
-                    <button className="country-dd-clear" onClick={() => { setIndustries([]); setIndustrySearch(''); }}>Clear</button>
-                  </div>
-                  <div className="country-dd-list">
-                    {INDUSTRIES.filter(ind => ind.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => (
-                      <label key={ind} className="country-dd-item">
-                        <input type="checkbox" checked={selectedIndustries.includes(ind)}
-                          onChange={e => setIndustries(prev => e.target.checked ? [...prev, ind] : prev.filter(i => i !== ind))}
-                          style={{ accentColor: 'var(--orange)', width: 15, height: 15 }}/>
-                        <span style={{ fontSize: 15 }}>{INDUSTRY_ICONS[ind] || '🏭'}</span>
-                        {ind}
-                      </label>
-                    ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            <div className="filter-divider"/>
+        {/* MOBILE FILTER TOGGLE (visible ≤768px only) */}
+        <div className="mobile-filter-toggle">
+          <button className="mobile-filter-btn" onClick={() => setMobileFiltersOpen(prev => !prev)}>
+            🔍 Filters {(selectedCountries.length + selectedIndustries.length > 0) ? `(${selectedCountries.length + selectedIndustries.length})` : ''}
+            <span style={{ fontSize: 10, marginLeft: 4 }}>{mobileFiltersOpen ? '▲' : '▼'}</span>
+          </button>
+          <div className="mobile-feed-tabs">
             {['all','new','soon','top'].map((type) => (
-              <button key={type} className={`filter-tab ${feedType === type ? 'active' : ''}`}
+              <button key={type} className={`mobile-feed-chip ${feedType === type ? 'active' : ''}`}
                 onClick={() => { setFeedType(type); setCountryDD(false); setIndDD(false); }}>
-                {type === 'all' ? 'All Products' : type === 'new' ? '🆕 Just Launched' : type === 'soon' ? '⏳ Coming Soon' : '🎉 Top Voted'}
+                {type === 'all' ? 'All' : type === 'new' ? '🆕 New' : type === 'soon' ? '⏳ Soon' : '🎉 Top'}
               </button>
             ))}
           </div>
         </div>
 
-        {/* MAIN LAYOUT */}
+        {/* MAIN 3-COLUMN LAYOUT */}
         <div className="main-layout" id="products-section">
-          {/* Feed */}
+          {/* Left: Filter sidebar (desktop: always visible; mobile: toggled) */}
+          <div className={`filter-sidebar ${mobileFiltersOpen ? 'mobile-open' : ''}`}>
+            <div className="filter-sidebar-section">
+              <div className="filter-sidebar-label">🌍 Country</div>
+              <div className="country-dropdown-wrap" style={{ position: 'relative' }}>
+                <button className={`filter-sidebar-btn ${selectedCountries.length ? 'active' : ''}`} onClick={openCountryDD}>
+                  {selectedCountries.length ? `${selectedCountries.length} selected` : 'All Countries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
+                </button>
+                {countryDDOpen && (
+                  <div className="filter-sidebar-dd">
+                    <div className="country-dd-top">
+                      <input className="country-dd-search" type="text" placeholder="Search country…" autoComplete="off"
+                        value={countrySearch} onChange={e => setCountrySearch(e.target.value)}/>
+                      <button className="country-dd-clear" onClick={() => { setCountries([]); setCountrySearch(''); }}>Clear</button>
+                    </div>
+                    <div className="country-dd-list">
+                      {COUNTRIES.filter(([, label]) => label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim().toLowerCase().includes(countrySearch.toLowerCase())).map(([v, label]) => (
+                        <label key={v} className="country-dd-item">
+                          <input type="checkbox" checked={selectedCountries.includes(v)}
+                            onChange={e => setCountries(prev => e.target.checked ? [...prev, v] : prev.filter(c => c !== v))}
+                            style={{ accentColor: 'var(--orange)', width: 15, height: 15 }}/>
+                          {label}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="filter-sidebar-section">
+              <div className="filter-sidebar-label">🏭 Industry</div>
+              <div className="country-dropdown-wrap" style={{ position: 'relative' }}>
+                <button className={`filter-sidebar-btn ${selectedIndustries.length ? 'active' : ''}`} onClick={openIndustryDD}>
+                  {selectedIndustries.length ? `${selectedIndustries.length} selected` : 'All Industries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
+                </button>
+                {industryDDOpen && (
+                  <div className="filter-sidebar-dd">
+                    <div className="country-dd-top">
+                      <input className="country-dd-search" type="text" placeholder="Search industry…" autoComplete="off"
+                        value={industrySearch} onChange={e => setIndustrySearch(e.target.value)}/>
+                      <button className="country-dd-clear" onClick={() => { setIndustries([]); setIndustrySearch(''); }}>Clear</button>
+                    </div>
+                    <div className="country-dd-list">
+                      {INDUSTRIES.filter(ind => ind.toLowerCase().includes(industrySearch.toLowerCase())).map(ind => (
+                        <label key={ind} className="country-dd-item">
+                          <input type="checkbox" checked={selectedIndustries.includes(ind)}
+                            onChange={e => setIndustries(prev => e.target.checked ? [...prev, ind] : prev.filter(i => i !== ind))}
+                            style={{ accentColor: 'var(--orange)', width: 15, height: 15 }}/>
+                          <span style={{ fontSize: 15 }}>{INDUSTRY_ICONS[ind] || '🏭'}</span>
+                          {ind}
+                        </label>
+                      ))}
+                    </div>
+                  </div>
+                )}
+              </div>
+            </div>
+
+            <div className="filter-sidebar-divider"/>
+            <div className="filter-sidebar-label">📋 Feed</div>
+            {['all','new','soon','top'].map((type) => (
+              <button key={type} className={`filter-sidebar-feed-btn ${feedType === type ? 'active' : ''}`}
+                onClick={() => { setFeedType(type); setCountryDD(false); setIndDD(false); }}>
+                {type === 'all' ? 'All Products' : type === 'new' ? '🆕 Just Launched' : type === 'soon' ? '⏳ Coming Soon' : '🎉 Top Voted'}
+              </button>
+            ))}
+          </div>
+
+          {/* Center: Product feed */}
           <div>
             <div className="list-header">
               <div className="list-title">{feedTitles[feedType]}</div>
