@@ -605,7 +605,7 @@ nav {
   nav { padding: 0 16px; }
   .hero { padding: 48px 20px 52px; }
   .main-layout { padding: 20px 16px 60px; gap: 20px; grid-template-columns: 200px 1fr; }
-  .main-layout .sidebar { display: none; }
+  .main-layout .sidebar { grid-column: 1 / -1; }
   .stats-grid { grid-template-columns: repeat(2,1fr); }
 }
 
@@ -631,6 +631,7 @@ nav {
   .filter-sidebar { display: none; }
   .filter-sidebar.mobile-open { display: block; }
   .mobile-filter-toggle { display: flex; }
+  .main-layout .sidebar { order: 3; }
 
   /* Product card: compact on mobile */
   .product-card { padding: 14px 14px; gap: 12px; }
