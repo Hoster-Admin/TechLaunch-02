@@ -708,17 +708,17 @@ admin.get('/entities', async (req, res) => {
 
 admin.post('/entities', async (req, res) => {
   try {
-    const { name, type, country, description, website, stage, industry, aum, portfolio_count, employees, founded_year, logo_url, focus, linkedin, twitter, why_us } = req.body;
+    const { name, type, country, description, website, stage, industry, aum, portfolio_count, employees, founded_year, logo_url, logo_emoji, focus, linkedin, twitter, why_us, verified } = req.body;
     if (!name || !type || !country) return res.status(400).json({ success:false, message:'name, type and country are required' });
     const validTypes = ['startup','accelerator','investor','venture_studio'];
     if (!validTypes.includes(type)) return res.status(400).json({ success:false, message:'Invalid entity type' });
     const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     const slug = `${base}-${Date.now().toString(36)}`;
     const { rows } = await q(`
-      INSERT INTO entities (name,slug,type,country,description,website,stage,industry,aum,portfolio_count,employees,founded_year,logo_url,focus,linkedin,twitter,why_us,verified,created_by)
-      VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,false,$18)
+      INSERT INTO entities (name,slug,type,country,description,website,stage,industry,aum,portfolio_count,employees,founded_year,logo_url,logo_emoji,focus,linkedin,twitter,why_us,verified,created_by)
+      VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
       RETURNING id,name,type,country`,
-      [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,portfolio_count||null,employees||null,founded_year||null,logo_url||null,focus||null,linkedin||null,twitter||null,why_us||null,req.user.id]);
+      [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,portfolio_count||null,employees||null,founded_year||null,logo_url||null,logo_emoji||null,focus||null,linkedin||null,twitter||null,why_us||null,verified===true||verified==='true',req.user.id]);
     await logAction(req.user.id, 'entity.created', 'entity', rows[0].id, { name:rows[0].name, type:rows[0].type }, req.ip);
     res.json({ success:true, data:rows[0], message:`${rows[0].name} created` });
   } catch(e) {

@@ -156,8 +156,9 @@ function ChipSelect({ options, selected, onChange, color='#E15033' }) {
 
 const EMPTY_FORM = {
   name:'', type:'accelerator', country:'', description:'', website:'',
-  stages:[], industries:[], logo_url:'',
-  linkedin:'', twitter:'', why_us_items:[''],
+  stages:[], industries:[], logo_url:'', logo_emoji:'',
+  employees:'', founded_year:'', aum:'', portfolio_count:'', focus:'',
+  linkedin:'', twitter:'', why_us_items:[''], verified:false,
 };
 
 // ─── Main Component ───────────────────────────────────────────────────────────
@@ -234,14 +235,27 @@ export default function Entities() {
     if (!form.country)     return toast.error('Country is required');
     setSaving(true);
     try {
-      const why_us   = form.why_us_items.filter(s=>s.trim()).join('\n') || null;
-      const stage    = form.stages.join(', ') || null;
-      const industry = form.industries.join(', ') || null;
+      const why_us        = form.why_us_items.filter(s=>s.trim()).join(' | ') || null;
+      const stage         = form.stages.join(', ')    || null;
+      const industry      = form.industries.join(', ') || null;
+      const founded_year  = form.founded_year ? parseInt(form.founded_year) : null;
+      const portfolio_count = form.portfolio_count ? parseInt(form.portfolio_count) : null;
       const { data: d } = await adminAPI.createEntity({
         name: form.name, type: form.type, country: form.country,
-        description: form.description, website: form.website,
-        stage, industry, logo_url: form.logo_url,
-        linkedin: form.linkedin, twitter: form.twitter, why_us,
+        description: form.description || null,
+        website: form.website || null,
+        stage, industry,
+        employees: form.employees || null,
+        founded_year,
+        aum: form.aum || null,
+        portfolio_count,
+        focus: form.focus || null,
+        logo_url: form.logo_url || null,
+        logo_emoji: form.logo_emoji || null,
+        linkedin: form.linkedin || null,
+        twitter: form.twitter || null,
+        why_us,
+        verified: form.verified,
       });
       toast.success(d.message || 'Entity created!');
       setShowModal(false);
@@ -376,10 +390,49 @@ export default function Entities() {
                 </Field>
               </div>
 
+              {/* Logo emoji fallback */}
+              <Field label="Logo Emoji (fallback)">
+                <input style={inputStyle} value={form.logo_emoji} onChange={e=>setForm(f=>({...f,logo_emoji:e.target.value}))} placeholder="🚀 🏢 💰 🎯"/>
+              </Field>
+
+              {/* Employees */}
+              <Field label="Team Size">
+                <select style={selectStyle} value={form.employees} onChange={e=>setForm(f=>({...f,employees:e.target.value}))}>
+                  <option value="">Select…</option>
+                  {['1-10','11-50','51-200','201-500','500+'].map(v=><option key={v} value={v}>{v}</option>)}
+                </select>
+              </Field>
+
+              {/* Founded year */}
+              <Field label="Founded Year">
+                <input style={inputStyle} type="number" min="1990" max="2030" value={form.founded_year} onChange={e=>setForm(f=>({...f,founded_year:e.target.value}))} placeholder="2019"/>
+              </Field>
+
+              {/* AUM — investors/venture studios */}
+              {(form.type==='investor'||form.type==='venture_studio') && (
+                <Field label="AUM / Fund Size">
+                  <input style={inputStyle} value={form.aum} onChange={e=>setForm(f=>({...f,aum:e.target.value}))} placeholder="$50M"/>
+                </Field>
+              )}
+
+              {/* Portfolio count — investors/accelerators/venture studios */}
+              {form.type!=='startup' && (
+                <Field label="Portfolio / Alumni Count">
+                  <input style={inputStyle} type="number" min="0" value={form.portfolio_count} onChange={e=>setForm(f=>({...f,portfolio_count:e.target.value}))} placeholder="45"/>
+                </Field>
+              )}
+
               {/* Industry — multi-select chips */}
               <div style={{gridColumn:'1/-1'}}>
                 <Field label="Industry / Focus">
                   <ChipSelect options={INDUSTRIES} selected={form.industries} onChange={v=>setForm(f=>({...f,industries:v}))} color="#E15033"/>
+                </Field>
+              </div>
+
+              {/* Focus text */}
+              <div style={{gridColumn:'1/-1'}}>
+                <Field label="Focus Description">
+                  <input style={inputStyle} value={form.focus} onChange={e=>setForm(f=>({...f,focus:e.target.value}))} placeholder="Short focus area e.g. Deep tech and digital infrastructure"/>
                 </Field>
               </div>
 
@@ -429,6 +482,15 @@ export default function Entities() {
               <Field label="Twitter / X">
                 <input style={inputStyle} value={form.twitter} onChange={e=>setForm(f=>({...f,twitter:e.target.value}))} placeholder="@handle"/>
               </Field>
+
+              {/* Verified toggle */}
+              <div style={{gridColumn:'1/-1',display:'flex',alignItems:'center',gap:10,padding:'10px 14px',borderRadius:10,background:'#F9F9F9',border:'1px solid #EFEFEF',cursor:'pointer'}} onClick={()=>setForm(f=>({...f,verified:!f.verified}))}>
+                <input type="checkbox" checked={form.verified} onChange={()=>setForm(f=>({...f,verified:!f.verified}))} style={{width:16,height:16,accentColor:'var(--orange)',cursor:'pointer',flexShrink:0}}/>
+                <div>
+                  <div style={{fontSize:12,fontWeight:700,color:'#333'}}>Mark as Verified</div>
+                  <div style={{fontSize:11,color:'#AAAAAA'}}>Shows ✓ Verified badge on the public profile</div>
+                </div>
+              </div>
 
             </div>
 
