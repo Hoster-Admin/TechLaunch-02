@@ -458,17 +458,24 @@ export default function Entities() {
               <div style={{fontWeight:800,color:'#0A0A0A',marginBottom:8,fontSize:12}}>📋 CSV Column Guide</div>
               <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 16px'}}>
                 {[
-                  ['name','Required. Entity display name'],
-                  ['type','Required. startup / accelerator / investor / venture_studio'],
-                  ['country','Required. Full name e.g. Saudi Arabia, UAE, Egypt'],
-                  ['description','Short bio / about text'],
-                  ['website','Full URL: https://…'],
-                  ['industry','Comma-separated: Fintech, AI & ML, Edtech…'],
-                  ['stage','Comma-separated: Pre-Seed, Seed, Series A…'],
-                  ['logo_url','Public image URL (PNG/JPG, square preferred)'],
-                  ['linkedin','LinkedIn URL'],
-                  ['twitter','@handle or full URL'],
-                  ['why_us','Pipe-separated bullets: "Reason 1 | Reason 2"'],
+                  ['name','Required — entity display name'],
+                  ['type','Required — startup / accelerator / investor / venture_studio'],
+                  ['country','Required — full name e.g. Saudi Arabia, UAE, Egypt'],
+                  ['description','1-3 sentences about the entity'],
+                  ['website','https://…'],
+                  ['industry','Fintech, AI & ML, Healthtech…'],
+                  ['stage','Pre-Seed, Seed, Series A, Growth'],
+                  ['employees','1-10 / 11-50 / 51-200 / 201-500 / 500+'],
+                  ['founded_year','Number: 2019'],
+                  ['aum','Investors only: $50M, $200M'],
+                  ['portfolio_count','Investors only: number of portfolio companies'],
+                  ['focus','Short focus area description'],
+                  ['logo_url','Use https://logo.clearbit.com/domain.com'],
+                  ['logo_emoji','Fallback emoji if no logo: 🚀 🏢 💰 🎯'],
+                  ['linkedin','Full LinkedIn URL'],
+                  ['twitter','@handle'],
+                  ['why_us','Pipe-separated: Reason 1 | Reason 2 | Reason 3'],
+                  ['verified','true or false (default false)'],
                 ].map(([col, desc]) => (
                   <div key={col} style={{display:'flex',gap:6}}>
                     <code style={{background:'#EFEFEF',borderRadius:4,padding:'1px 5px',fontSize:10,fontWeight:700,color:'#E15033',whiteSpace:'nowrap',flexShrink:0}}>{col}</code>
@@ -504,6 +511,12 @@ export default function Entities() {
                     <div style={{fontSize:22,fontWeight:800,color:'#16a34a'}}>{importResult.created}</div>
                     <div style={{fontSize:11,color:'#15803d',fontWeight:600}}>Created</div>
                   </div>
+                  {importResult.updated > 0 && (
+                    <div style={{flex:1,background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:8,padding:'10px 14px',textAlign:'center'}}>
+                      <div style={{fontSize:22,fontWeight:800,color:'#2563eb'}}>{importResult.updated}</div>
+                      <div style={{fontSize:11,color:'#1d4ed8',fontWeight:600}}>Updated</div>
+                    </div>
+                  )}
                   {importResult.failed > 0 && (
                     <div style={{flex:1,background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:8,padding:'10px 14px',textAlign:'center'}}>
                       <div style={{fontSize:22,fontWeight:800,color:'#dc2626'}}>{importResult.failed}</div>

@@ -729,56 +729,14 @@ admin.post('/entities', async (req, res) => {
 
 // ─── CSV TEMPLATE DOWNLOAD ────────────────────────────────────────────────────
 admin.get('/entities/csv-template', authenticate, (req, res) => {
-  const headers = [
-    'name','type','country','description','website',
-    'industry','stage','logo_url','linkedin','twitter','why_us'
-  ];
-  const examples = [
-    [
-      'MENA Ventures','investor','UAE',
-      'Early-stage fund focused on MENA founders',
-      'https://menaventures.com',
-      'Fintech,AI & ML','Pre-Seed,Seed',
-      'https://logo.clearbit.com/menaventures.com',
-      'https://linkedin.com/company/mena-ventures','@menaventures',
-      'Up to $500K first check | Access to 200+ portfolio | Dedicated support team'
-    ],
-    [
-      'Flat6Labs Cairo','accelerator','Egypt',
-      'Leading startup accelerator in MENA',
-      'https://flat6labs.com',
-      'Fintech,Edtech,Healthtech','',
-      'https://logo.clearbit.com/flat6labs.com',
-      'https://linkedin.com/company/flat6labs','@flat6labs',
-      '$30K equity-free grant | 4-month intensive program | Access to investor network'
-    ],
-    [
-      'Tamara','startup','Saudi Arabia',
-      'Buy now pay later platform for MENA',
-      'https://tamara.co',
-      'Fintech','Series A',
-      'https://logo.clearbit.com/tamara.co',
-      'https://linkedin.com/company/tamara','@tamara',
-      ''
-    ],
-    [
-      'Wa\'ed Ventures','venture_studio','Saudi Arabia',
-      'Saudi Aramco\'s corporate venture studio',
-      'https://waed.com',
-      'Cleantech,AI & ML','',
-      'https://logo.clearbit.com/waed.com',
-      'https://linkedin.com/company/waed','@waedventures',
-      'Co-build with Aramco | Access to NEOM & Vision 2030 | Up to $1M seed'
-    ],
-  ];
-  const escape = (v='') => {
-    const s = String(v).replace(/"/g,'""');
-    return /[,"\n\r]/.test(s) ? `"${s}"` : s;
-  };
-  const rows = [headers, ...examples].map(r => r.map(escape).join(',')).join('\r\n');
+  const CSV_TEMPLATE = `name,type,description,website,country,industry,stage,employees,founded_year,aum,portfolio_count,focus,logo_url,logo_emoji,linkedin,twitter,why_us,verified
+STC Ventures,investor,Corporate venture arm of STC Group investing in tech startups across MENA.,https://stcventures.com,Saudi Arabia,Fintech,,11-50,2018,$500M,45,Deep tech and digital infrastructure,https://logo.clearbit.com/stcventures.com,💰,https://linkedin.com/company/stc-ventures,@stcventures,Backed by one of MENA's largest telcos | $500M+ fund size | Access to STC network,true
+Flat6Labs,accelerator,Pan-regional startup accelerator running programs across MENA.,https://flat6labs.com,Egypt,Fintech,,51-200,2011,,500,Early-stage startups across all sectors,https://logo.clearbit.com/flat6labs.com,🏢,https://linkedin.com/company/flat6labs,@flat6labs,Over 500 startups accelerated across 8 cities | Equity-free grant | Regional network,true
+Foodics,startup,Restaurant management and POS platform for the MENA region.,https://foodics.com,Saudi Arabia,Fintech,Series B,201-500,2014,,,SaaS for F&B businesses,https://logo.clearbit.com/foodics.com,🚀,https://linkedin.com/company/foodics,@foodics,Used by 15000+ restaurants across MENA | Series B funded | Strong MENA network,true
+Wa'ed Ventures,venture_studio,"Aramco entrepreneurship center building and investing in startups.",https://waed.com,Saudi Arabia,Cleantech,,51-200,2011,$500M,80,Energy tech and sustainability,https://logo.clearbit.com/waed.com,🎯,https://linkedin.com/company/waed-ventures,,Backed by Saudi Aramco | Up to $1M seed | NEOM access,true`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="entities-template.csv"');
-  res.send('\uFEFF' + rows); // BOM for Excel compatibility
+  res.send('\uFEFF' + CSV_TEMPLATE);
 });
 
 // ─── CSV BULK IMPORT ──────────────────────────────────────────────────────────
@@ -817,6 +775,7 @@ admin.post('/entities/bulk-import', authenticate, csvUpload.single('file'), asyn
     'Saudi Arabia','UAE','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain',
     'Tunisia','Lebanon','Iraq','Oman','Libya','Algeria','Syria','Yemen','Palestine','Sudan','Other MENA'
   ];
+
   let text;
   try { text = req.file.buffer.toString('utf-8').replace(/^\uFEFF/,''); }
   catch { return res.status(400).json({ success:false, message:'Cannot read file — make sure it is UTF-8 encoded' }); }
@@ -827,46 +786,108 @@ admin.post('/entities/bulk-import', authenticate, csvUpload.single('file'), asyn
   if (!rows.length) return res.status(400).json({ success:false, message:'CSV is empty or has no data rows' });
   if (rows.length > 200) return res.status(400).json({ success:false, message:'Maximum 200 rows per import' });
 
-  const created = [], failed = [];
+  const created = [], updated = [], failed = [];
+
   for (let i = 0; i < rows.length; i++) {
     const r = rows[i];
     const rowNum = i + 2;
+
+    // ── Map & validate all fields ──────────────────────────────────────────────
     const name    = r.name?.trim();
-    const type    = r.type?.trim().toLowerCase().replace(/\s+/g,'_');
+    const type    = r.type?.trim().toLowerCase().replace(/[\s-]+/g,'_');
     const country = r.country?.trim();
-    if (!name)    { failed.push({ row:rowNum, name:name||'—', reason:'Name is required' }); continue; }
+
+    if (!name)    { failed.push({ row:rowNum, name:name||'—', reason:'name is required' }); continue; }
     if (!validTypes.includes(type)) { failed.push({ row:rowNum, name, reason:`Invalid type "${r.type}" — use: startup, accelerator, investor, venture_studio` }); continue; }
-    if (!country) { failed.push({ row:rowNum, name, reason:'Country is required' }); continue; }
-    if (!validCountries.includes(country)) { failed.push({ row:rowNum, name, reason:`Country "${country}" not recognised — use the full name e.g. "Saudi Arabia"` }); continue; }
-    const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
-    const slug  = `${base}-${Date.now().toString(36)}-${i}`;
-    const why_us   = r.why_us?.trim()   || null;
-    const logo_url = r.logo_url?.trim() || null;
-    const industry = r.industry?.trim() || null;
-    const stage    = r.stage?.trim()    || null;
-    const website  = r.website?.trim()  || null;
-    const linkedin = r.linkedin?.trim() || null;
-    const twitter  = r.twitter?.trim()  || null;
-    const description = r.description?.trim() || null;
+    if (!country) { failed.push({ row:rowNum, name, reason:'country is required' }); continue; }
+    if (!validCountries.includes(country)) { failed.push({ row:rowNum, name, reason:`Country "${country}" not recognised — use exact name e.g. "Saudi Arabia"` }); continue; }
+    if (r.website && r.website.trim() && !r.website.trim().startsWith('http')) { failed.push({ row:rowNum, name, reason:'website must start with http or https' }); continue; }
+
+    const founded_year    = r.founded_year    ? parseInt(r.founded_year)    : null;
+    const portfolio_count = r.portfolio_count ? parseInt(r.portfolio_count) : null;
+    if (r.founded_year    && isNaN(founded_year))    { failed.push({ row:rowNum, name, reason:'founded_year must be a number e.g. 2019' }); continue; }
+    if (r.portfolio_count && isNaN(portfolio_count)) { failed.push({ row:rowNum, name, reason:'portfolio_count must be a number' }); continue; }
+
+    const entity = {
+      name,
+      type,
+      country,
+      description:     r.description?.trim()     || null,
+      website:         r.website?.trim()          || null,
+      industry:        r.industry?.trim()         || null,
+      stage:           r.stage?.trim()            || null,
+      employees:       r.employees?.trim()        || null,
+      founded_year,
+      aum:             r.aum?.trim()              || null,
+      portfolio_count,
+      focus:           r.focus?.trim()            || null,
+      logo_url:        r.logo_url?.trim()         || null,
+      logo_emoji:      r.logo_emoji?.trim()       || null,
+      linkedin:        r.linkedin?.trim()         || null,
+      twitter:         r.twitter?.trim()          || null,
+      why_us:          r.why_us?.trim()           || null,
+      verified:        r.verified === 'true' || r.verified === true,
+    };
+
     try {
-      const { rows: ins } = await q(
-        `INSERT INTO entities (name,slug,type,country,description,website,stage,industry,logo_url,linkedin,twitter,why_us,verified,created_by)
-         VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,false,$13)
-         ON CONFLICT (slug) DO NOTHING
-         RETURNING id,name,type`,
-        [name,slug,type,country,description,website,stage,industry,logo_url,linkedin,twitter,why_us,req.user.id]
+      // Check for existing entity by name + type (upsert)
+      const { rows: existing } = await q(
+        `SELECT id FROM entities WHERE lower(name)=lower($1) AND type=$2::entity_type LIMIT 1`,
+        [name, type]
       );
-      if (ins.length) {
-        await logAction(req.user.id,'entity.created','entity',ins[0].id,{name:ins[0].name,type:ins[0].type,source:'csv_import'},req.ip);
-        created.push({ name, type });
+
+      if (existing.length) {
+        // UPDATE existing
+        await q(
+          `UPDATE entities SET
+             description=$1, website=$2, country=$3, industry=$4, stage=$5,
+             employees=$6, founded_year=$7, aum=$8, portfolio_count=$9, focus=$10,
+             logo_url=$11, logo_emoji=$12, linkedin=$13, twitter=$14, why_us=$15,
+             verified=$16, updated_at=NOW()
+           WHERE id=$17`,
+          [entity.description, entity.website, entity.country, entity.industry, entity.stage,
+           entity.employees, entity.founded_year, entity.aum, entity.portfolio_count, entity.focus,
+           entity.logo_url, entity.logo_emoji, entity.linkedin, entity.twitter, entity.why_us,
+           entity.verified, existing[0].id]
+        );
+        await logAction(req.user.id,'entity.updated','entity',existing[0].id,{name,source:'csv_import'},req.ip);
+        updated.push({ name, type });
       } else {
-        failed.push({ row:rowNum, name, reason:'Duplicate — an entity with a very similar name already exists' });
+        // INSERT new
+        const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+        const slug  = `${base}-${Date.now().toString(36)}-${i}`;
+        const { rows: ins } = await q(
+          `INSERT INTO entities (
+             name,slug,type,country,description,website,stage,industry,
+             employees,founded_year,aum,portfolio_count,focus,
+             logo_url,logo_emoji,linkedin,twitter,why_us,
+             verified,created_by,created_at,updated_at
+           ) VALUES (
+             $1,$2,$3::entity_type,$4,$5,$6,$7,$8,
+             $9,$10,$11,$12,$13,
+             $14,$15,$16,$17,$18,
+             $19,$20,NOW(),NOW()
+           ) RETURNING id,name,type`,
+          [name,slug,type,country,entity.description,entity.website,entity.stage,entity.industry,
+           entity.employees,entity.founded_year,entity.aum,entity.portfolio_count,entity.focus,
+           entity.logo_url,entity.logo_emoji,entity.linkedin,entity.twitter,entity.why_us,
+           entity.verified,req.user.id]
+        );
+        await logAction(req.user.id,'entity.created','entity',ins[0].id,{name,type,source:'csv_import'},req.ip);
+        created.push({ name, type });
       }
     } catch(e) {
-      failed.push({ row:rowNum, name, reason: e.code==='23505' ? 'Duplicate name' : e.message });
+      failed.push({ row:rowNum, name, reason: e.message });
     }
   }
-  res.json({ success:true, created: created.length, failed: failed.length, errors: failed });
+
+  res.json({
+    success: true,
+    created: created.length,
+    updated: updated.length,
+    failed:  failed.length,
+    errors:  failed,
+  });
 });
 
 admin.post('/entities/:id/verify', async (req, res) => {

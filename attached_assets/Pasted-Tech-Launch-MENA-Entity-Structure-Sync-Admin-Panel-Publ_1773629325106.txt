@@ -1,0 +1,224 @@
+Tech Launch MENA — Entity Structure Sync (Admin Panel + Public Site)
+You are fixing a mismatch between the entity CSV import in the admin panel and the full entity data structure used by the public site. The admin panel import currently ignores several columns that the public site displays. Fix this completely so a single CSV upload saves all fields correctly.
+
+CONTEXT
+
+Database: Neon PostgreSQL
+Admin panel: handles CSV import via an entity import route
+Public site: displays entity profiles with full data
+The goal: one CSV upload fills everything — nothing is silently dropped
+
+
+STEP 1 — Verify Database Columns
+Run this in the Neon SQL editor first and share the results before any code changes:
+sqlSELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'entities'
+ORDER BY column_name;
+Then compare against the required columns listed below. Add any that are missing:
+sql-- Add missing columns if they don't exist:
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS logo_emoji TEXT;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS employees TEXT;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS founded_year INTEGER;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS aum TEXT;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS portfolio_count INTEGER;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS focus TEXT;
+ALTER TABLE entities ADD COLUMN IF NOT EXISTS verified BOOLEAN DEFAULT false;
+
+-- Verify all columns now exist:
+SELECT column_name, data_type 
+FROM information_schema.columns 
+WHERE table_name = 'entities'
+ORDER BY column_name;
+
+STEP 2 — Fix the Admin Panel CSV Import Route
+File: wherever POST /admin/entities/import or the CSV upload route is defined
+The import handler must read and save ALL of these columns — not just the current subset:
+javascript// Full column mapping for entity CSV import
+const mapRowToEntity = (row) => ({
+  name:            row.name?.trim(),
+  type:            row.type?.trim(),
+  description:     row.description?.trim() || null,
+  website:         row.website?.trim() || null,
+  country:         row.country?.trim() || null,
+  industry:        row.industry?.trim() || null,
+  stage:           row.stage?.trim() || null,
+  employees:       row.employees?.trim() || null,
+  founded_year:    row.founded_year ? parseInt(row.founded_year) : null,
+  aum:             row.aum?.trim() || null,
+  portfolio_count: row.portfolio_count ? parseInt(row.portfolio_count) : null,
+  focus:           row.focus?.trim() || null,
+  logo_url:        row.logo_url?.trim() || null,
+  logo_emoji:      row.logo_emoji?.trim() || null,
+  linkedin:        row.linkedin?.trim() || null,
+  twitter:         row.twitter?.trim() || null,
+  why_us:          row.why_us?.trim() || null,
+  verified:        row.verified === 'true' || row.verified === true || false,
+});
+Update the INSERT query to include all columns:
+javascriptconst insertEntity = async (entity) => {
+  return await q(`
+    INSERT INTO entities (
+      name, type, description, website, country, industry,
+      stage, employees, founded_year, aum, portfolio_count,
+      focus, logo_url, logo_emoji, linkedin, twitter, why_us, verified,
+      created_at, updated_at
+    ) VALUES (
+      $1, $2, $3, $4, $5, $6,
+      $7, $8, $9, $10, $11,
+      $12, $13, $14, $15, $16, $17, $18,
+      NOW(), NOW()
+    )
+    ON CONFLICT (name, type) DO UPDATE SET
+      description    = EXCLUDED.description,
+      website        = EXCLUDED.website,
+      country        = EXCLUDED.country,
+      industry       = EXCLUDED.industry,
+      stage          = EXCLUDED.stage,
+      employees      = EXCLUDED.employees,
+      founded_year   = EXCLUDED.founded_year,
+      aum            = EXCLUDED.aum,
+      portfolio_count = EXCLUDED.portfolio_count,
+      focus          = EXCLUDED.focus,
+      logo_url       = EXCLUDED.logo_url,
+      logo_emoji     = EXCLUDED.logo_emoji,
+      linkedin       = EXCLUDED.linkedin,
+      twitter        = EXCLUDED.twitter,
+      why_us         = EXCLUDED.why_us,
+      verified       = EXCLUDED.verified,
+      updated_at     = NOW()
+    RETURNING id
+  `, [
+    entity.name, entity.type, entity.description, entity.website,
+    entity.country, entity.industry, entity.stage, entity.employees,
+    entity.founded_year, entity.aum, entity.portfolio_count, entity.focus,
+    entity.logo_url, entity.logo_emoji, entity.linkedin, entity.twitter,
+    entity.why_us, entity.verified
+  ]);
+};
+Note the ON CONFLICT clause — this means re-uploading the same CSV updates existing entities instead of creating duplicates.
+
+STEP 3 — Fix the Admin Panel CSV Template Download
+The template CSV that users download from the admin panel must include all columns. Update it to match the full structure:
+javascriptconst CSV_TEMPLATE = `name,type,description,website,country,industry,stage,employees,founded_year,aum,portfolio_count,focus,logo_url,logo_emoji,linkedin,twitter,why_us,verified
+STC Ventures,investor,Corporate venture arm of STC Group investing in tech startups across MENA.,https://stcventures.com,Saudi Arabia,Fintech,,11-50,2018,$500M,45,Deep tech and digital infrastructure,https://logo.clearbit.com/stcventures.com,💰,https://linkedin.com/company/stc-ventures,@stcventures,Backed by one of MENA's largest telcos,true
+Flat6Labs,accelerator,Pan-regional startup accelerator running programs across MENA.,https://flat6labs.com,Egypt,,,51-200,2011,,500,Early-stage startups across all sectors,https://logo.clearbit.com/flat6labs.com,🏢,https://linkedin.com/company/flat6labs,@flat6labs,Over 500 startups accelerated across 8 cities,true
+Foodics,startup,Restaurant management and POS platform for the MENA region.,https://foodics.com,Saudi Arabia,Fintech,,201-500,2014,,,SaaS for F&B businesses,https://logo.clearbit.com/foodics.com,🚀,https://linkedin.com/company/foodics,@foodics,Used by 15000+ restaurants across MENA,true
+Wa'ed Ventures,venture_studio,Aramco entrepreneurship center building and investing in startups.,https://waed.com,Saudi Arabia,Cleantech,,51-200,2011,$500M,80,Energy tech and sustainability,https://logo.clearbit.com/waed.com,🎯,https://linkedin.com/company/waed-ventures,,Backed by Saudi Aramco,true`;
+
+STEP 4 — Fix the Column Guide in the Admin Panel UI
+Update the column guide shown in the Import CSV modal to include all columns:
+javascriptconst COLUMN_GUIDE = [
+  { col: 'name',            required: true,  notes: 'Entity display name' },
+  { col: 'type',            required: true,  notes: 'startup / accelerator / investor / venture_studio' },
+  { col: 'country',         required: true,  notes: 'Full name: Saudi Arabia, UAE, Egypt...' },
+  { col: 'description',     required: false, notes: '1-3 sentences about the entity' },
+  { col: 'website',         required: false, notes: 'https://...' },
+  { col: 'industry',        required: false, notes: 'Fintech, AI & ML, Healthtech...' },
+  { col: 'stage',           required: false, notes: 'Pre-Seed, Seed, Series A, Growth' },
+  { col: 'employees',       required: false, notes: '1-10, 11-50, 51-200, 201-500, 500+' },
+  { col: 'founded_year',    required: false, notes: 'Number: 2019' },
+  { col: 'aum',             required: false, notes: 'Investors only: $50M, $200M' },
+  { col: 'portfolio_count', required: false, notes: 'Investors only: number of portfolio companies' },
+  { col: 'focus',           required: false, notes: 'Short focus area description' },
+  { col: 'logo_url',        required: false, notes: 'Use https://logo.clearbit.com/domain.com' },
+  { col: 'logo_emoji',      required: false, notes: 'Fallback emoji if no logo: 🚀 🏢 💰 🎯' },
+  { col: 'linkedin',        required: false, notes: 'Full LinkedIn URL' },
+  { col: 'twitter',         required: false, notes: '@handle' },
+  { col: 'why_us',          required: false, notes: 'Pipe-separated: Reason 1 | Reason 2' },
+  { col: 'verified',        required: false, notes: 'true or false — default false' },
+];
+
+STEP 5 — Fix Public Site Entity Display
+File: wherever entity cards and entity profile pages render
+Make sure every new field is displayed correctly:
+Entity Card (list view):
+
+Show logo_emoji as fallback when logo_url fails or is empty:
+
+jsx<div className="entity-logo">
+  {entity.logo_url ? (
+    <img
+      src={entity.logo_url}
+      alt={entity.name}
+      onError={(e) => {
+        e.target.style.display = 'none';
+        e.target.nextSibling.style.display = 'flex';
+      }}
+    />
+  ) : null}
+  <span
+    className="entity-logo-emoji"
+    style={{ display: entity.logo_url ? 'none' : 'flex' }}
+  >
+    {entity.logo_emoji || '🏢'}
+  </span>
+</div>
+
+Show employees badge if present: "51-200 employees"
+Show founded_year if present: "Est. 2014"
+Show verified badge if true: ✅
+
+Entity Profile Page:
+
+Show aum for investors: "Assets Under Management: $500M"
+Show portfolio_count for investors: "45 portfolio companies"
+Show focus as a section: "Focus Areas: Deep tech, Digital infrastructure"
+Show why_us as bullet points (split by |)
+Show founded_year and employees in the info row
+Show logo_emoji fallback when logo fails
+
+
+STEP 6 — Validation Rules
+Add these validation checks in the import route before inserting:
+javascriptconst validateRow = (row, index) => {
+  const errors = [];
+
+  if (!row.name?.trim()) {
+    errors.push(`Row ${index}: name is required`);
+  }
+
+  const validTypes = ['startup', 'accelerator', 'investor', 'venture_studio'];
+  if (!validTypes.includes(row.type?.trim())) {
+    errors.push(`Row ${index}: type must be one of: ${validTypes.join(', ')}`);
+  }
+
+  if (!row.country?.trim()) {
+    errors.push(`Row ${index}: country is required`);
+  }
+
+  if (row.website && !row.website.startsWith('http')) {
+    errors.push(`Row ${index}: website must start with http`);
+  }
+
+  if (row.founded_year && isNaN(parseInt(row.founded_year))) {
+    errors.push(`Row ${index}: founded_year must be a number`);
+  }
+
+  if (row.portfolio_count && isNaN(parseInt(row.portfolio_count))) {
+    errors.push(`Row ${index}: portfolio_count must be a number`);
+  }
+
+  return errors;
+};
+
+STEP 7 — Test After Fixing
+After all changes, test with this minimal CSV:
+csvname,type,description,website,country,industry,stage,employees,founded_year,aum,portfolio_count,focus,logo_url,logo_emoji,linkedin,twitter,why_us,verified
+Test Investor,investor,A test investor entity.,https://example.com,Saudi Arabia,Fintech,Seed,11-50,2020,$100M,10,Early stage fintech,https://logo.clearbit.com/example.com,💰,https://linkedin.com/company/test,,First check writer | MENA focused,true
+Verify in Neon after upload:
+sqlSELECT name, type, aum, portfolio_count, employees, 
+       founded_year, logo_emoji, verified, focus
+FROM entities 
+WHERE name = 'Test Investor';
+All columns must show the correct values — nothing null except what was intentionally left blank.
+
+HOW TO PROCEED
+
+Run Step 1 SQL first and confirm all columns exist before touching any code
+Fix Steps 2, 3, 4 together — they are all in the admin panel
+Fix Step 5 in the public site frontend
+Run Step 7 to verify everything works end to end
+Do not import real data until the test in Step 7 passes cleanly
+
+Start with Step 1 — run the SQL and share the column list.
