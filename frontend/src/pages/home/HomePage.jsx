@@ -76,14 +76,9 @@ export default function HomePage() {
   }, []);
 
   useEffect(() => {
-    const close = (e) => {
-      if (e.target && e.target.closest && e.target.closest('.country-dd-menu')) return;
-      setCountryDD(false); setIndDD(false);
-    };
     const closeResize = () => { setCountryDD(false); setIndDD(false); };
-    window.addEventListener('scroll', close, true);
     window.addEventListener('resize', closeResize);
-    return () => { window.removeEventListener('scroll', close, true); window.removeEventListener('resize', closeResize); };
+    return () => { window.removeEventListener('resize', closeResize); };
   }, []);
 
   useEffect(() => {
