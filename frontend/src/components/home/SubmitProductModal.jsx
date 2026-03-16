@@ -17,17 +17,17 @@ const COUNTRIES = [
 const INDUSTRIES = ['Fintech','Edtech','Healthtech','E-Commerce','Logistics','AI & ML','Proptech','Cleantech','SaaS','Web3','Media','HR & Work','Foodtech','Traveltech','Other'];
 
 const inp = { display:'block', width:'100%', padding:'11px 14px', borderRadius:11, border:'1.5px solid #e8e8e8', fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:'none', boxSizing:'border-box', background:'#fff' };
-const lbl = { display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:'.06em', marginBottom:7 };
+const lbl = { display:'block', fontSize:12, fontWeight:700, color:'#999', letterSpacing:'.01em', marginBottom:7 };
 
 const Prog = ({ step }) => (
-  <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:28 }}>
+  <div style={{ display:'flex', alignItems:'center', gap:4, marginBottom:28, paddingRight:40 }}>
+    <div style={{ fontSize:11, fontWeight:700, color:'#aaa', marginRight:8, whiteSpace:'nowrap' }}>Step {step} of 5</div>
     {[1,2,3,4,5].map(s => (
       <React.Fragment key={s}>
         <div style={{ width:s===step?60:28, height:6, borderRadius:99, background:s<=step?'var(--orange)':'#e8e8e8', transition:'all .25s', flexShrink:0 }}/>
         {s < 5 && <div style={{ width:8, height:6, borderRadius:99, background:s<step?'var(--orange)':'#e8e8e8', flexShrink:0 }}/>}
       </React.Fragment>
     ))}
-    <div style={{ marginLeft:'auto', fontSize:11, fontWeight:700, color:'#aaa' }}>Step {step} of 5</div>
   </div>
 );
 
@@ -219,11 +219,19 @@ export default function SubmitProductModal({ open, onClose }) {
 
   const removeCoFounder = (id) => setCoFounders(prev => prev.filter(c=>c.id!==id));
 
+  const isValidYouTubeUrl = (url) => {
+    if (!url || !url.trim()) return true;
+    return /^https?:\/\/(www\.)?(youtube\.com\/watch\?v=|youtu\.be\/)[\w-]+/.test(url.trim());
+  };
+
+  const [videoUrlError, setVideoUrlError] = useState('');
+
   const validateStep2 = () => {
     if (!form.name.trim()) { toast.error('Product name is required'); return false; }
     if (!form.tagline.trim()) { toast.error('Tagline is required'); return false; }
     if (!form.industry) { toast.error('Please select an industry'); return false; }
     if (selectedCountries.length === 0) { toast.error('Select at least one country'); return false; }
+    if (form.description.length > 500) { toast.error('Short description exceeds 500 characters'); return false; }
     return true;
   };
 
@@ -295,7 +303,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
         {/* ── Draft: restore prompt ── */}
         {draftPrompt === 'restore' && (
-          <div style={{ position:'absolute', inset:0, zIndex:10, background:'rgba(255,255,255,.97)', borderRadius:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
+          <div style={{ position:'absolute', inset:0, zIndex:9999, background:'rgba(255,255,255,.97)', borderRadius:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
             <div style={{ fontSize:44, marginBottom:16 }}>📝</div>
             <div style={{ fontSize:20, fontWeight:800, marginBottom:8 }}>You have a saved draft</div>
             <div style={{ fontSize:14, color:'#666', marginBottom:8 }}><strong>{pendingDraft?.form?.name || 'Untitled product'}</strong></div>
@@ -311,7 +319,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
         {/* ── Draft: save-on-close prompt ── */}
         {draftPrompt === 'save' && (
-          <div style={{ position:'absolute', inset:0, zIndex:10, background:'rgba(255,255,255,.97)', borderRadius:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
+          <div style={{ position:'absolute', inset:0, zIndex:9999, background:'rgba(255,255,255,.97)', borderRadius:20, display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center', padding:40, textAlign:'center' }}>
             <div style={{ fontSize:44, marginBottom:16 }}>💾</div>
             <div style={{ fontSize:20, fontWeight:800, marginBottom:8 }}>Save your progress?</div>
             <div style={{ fontSize:14, color:'#666', marginBottom:28, lineHeight:1.6 }}>
@@ -353,7 +361,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
           {/* Logo */}
           <div style={{ marginBottom:20 }}>
-            <label style={lbl}>Product Logo</label>
+            <label style={lbl}>Product logo</label>
             <div style={{ display:'flex', alignItems:'center', gap:16 }}>
               <div onClick={() => logoInputRef.current?.click()} style={{ position:'relative', width:72, height:72, borderRadius:18, overflow:'hidden', cursor:'pointer', flexShrink:0, background:'#f4f4f4' }}>
                 {logoFile
@@ -378,7 +386,7 @@ export default function SubmitProductModal({ open, onClose }) {
             </div>
           </div>
 
-          {[['name','Product Name *'],['tagline','Tagline *'],['website','Website URL']].map(([k,label]) => (
+          {[['name','Product name *'],['tagline','Tagline *'],['website','Website URL']].map(([k,label]) => (
             <div key={k} style={{ marginBottom:16 }}>
               <label style={lbl}>{label}</label>
               <input type={k==='website'?'url':'text'} value={form[k]} onChange={e => setForm(f=>({...f,[k]:e.target.value}))}
@@ -405,7 +413,7 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
 
           <div style={{ marginBottom:16 }}>
-            <label style={lbl}>Available In * <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
+            <label style={lbl}>Available in * <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
             <div style={{ display:'flex', flexWrap:'wrap', gap:7, padding:10, border:'1.5px solid #e8e8e8', borderRadius:12, background:'#fafafa', minHeight:48 }}>
               {COUNTRIES.map(([v,flag,name]) => (
                 <span key={v} onClick={() => toggleCountry(v)}
@@ -417,20 +425,24 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
 
           <div style={{ marginBottom:16 }}>
-            <label style={lbl}>Short Description * <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>3 sentences max</span></label>
-            <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value.slice(0,500)}))} rows={3}
-              maxLength={500}
+            <label style={lbl}>Short description * <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>3 sentences max</span></label>
+            <textarea value={form.description} onChange={e => setForm(f=>({...f,description:e.target.value}))} rows={3}
               placeholder="What it does, who it's for, why it's different..."
-              style={{ ...inp, resize:'vertical', lineHeight:1.6 }} onFocus={fo} onBlur={bl}/>
-            <div style={{ textAlign:'right', fontSize:11, marginTop:4, fontWeight:600,
-              color: form.description.length >= 500 ? '#dc2626' : form.description.length >= 450 ? 'var(--orange)' : '#bbb' }}>
-              {form.description.length} / 500
+              style={{ ...inp, resize:'vertical', lineHeight:1.6, borderColor: form.description.length > 500 ? '#dc2626' : undefined }} onFocus={fo} onBlur={bl}/>
+            <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginTop:4 }}>
+              {form.description.length >= 500
+                ? <span style={{ fontSize:11, fontWeight:600, color:'#dc2626' }}>Character limit reached</span>
+                : <span/>}
+              <span style={{ fontSize:11, fontWeight:600,
+                color: form.description.length > 500 ? '#dc2626' : form.description.length >= 450 ? 'var(--orange)' : '#bbb' }}>
+                {form.description.length} / 500
+              </span>
             </div>
           </div>
 
           {/* Associated Entity — shows all 17 on focus */}
           <div style={{ marginBottom:20, position:'relative' }}>
-            <label style={lbl}>Associated Entity <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Optional — link to a registered company</span></label>
+            <label style={lbl}>Associated entity <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>Optional — link to a registered company</span></label>
             {selectedEntity ? (
               <div style={{ display:'flex', alignItems:'center', gap:10, padding:'10px 14px', border:'1.5px solid var(--orange)', borderRadius:11, background:'var(--orange-light)' }}>
                 <span style={{ fontSize:20 }}>{selectedEntity.logo_emoji || '🏢'}</span>
@@ -530,17 +542,23 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
 
           <div style={{ marginBottom:20 }}>
-            <label style={lbl}>Demo Video URL <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>YouTube or Vimeo link</span></label>
+            <label style={lbl}>Demo video URL <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>YouTube link</span></label>
             <div style={{ position:'relative' }}>
               <svg style={{ position:'absolute', left:12, top:'50%', transform:'translateY(-50%)', pointerEvents:'none' }} width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="#bbb" strokeWidth="2"><path d="M22.54 6.42a2.78 2.78 0 00-1.95-1.97C18.88 4 12 4 12 4s-6.88 0-8.59.45A2.78 2.78 0 001.46 6.42 29 29 0 001 12a29 29 0 00.46 5.58 2.78 2.78 0 001.95 1.97C5.12 20 12 20 12 20s6.88 0 8.59-.45a2.78 2.78 0 001.95-1.97A29 29 0 0023 12a29 29 0 00-.46-5.58z"/><polygon points="9.75 15.02 15.5 12 9.75 8.98 9.75 15.02" fill="white"/></svg>
-              <input type="url" value={form.videoUrl} placeholder="https://youtube.com/watch?v=…" onChange={e => setForm(f=>({...f,videoUrl:e.target.value}))}
-                style={{ ...inp, paddingLeft:34 }} onFocus={fo} onBlur={bl}/>
+              <input type="url" value={form.videoUrl} placeholder="https://youtube.com/watch?v=…" onChange={e => { setForm(f=>({...f,videoUrl:e.target.value})); if (videoUrlError) setVideoUrlError(''); }}
+                style={{ ...inp, paddingLeft:34, borderColor: videoUrlError ? '#dc2626' : undefined }}
+                onFocus={fo}
+                onBlur={e => { bl(e); if (e.target.value.trim() && !isValidYouTubeUrl(e.target.value)) setVideoUrlError('Please enter a valid YouTube URL.'); else setVideoUrlError(''); }}/>
             </div>
+            {videoUrlError && <div style={{ fontSize:11, fontWeight:600, color:'#dc2626', marginTop:4 }}>{videoUrlError}</div>}
           </div>
 
           <div style={{ display:'flex', gap:10 }}>
             <button onClick={() => setStep(2)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-            <button onClick={() => setStep(4)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'var(--orange)', color:'#fff', cursor:'pointer' }}>
+            <button onClick={() => {
+              if (form.videoUrl.trim() && !isValidYouTubeUrl(form.videoUrl)) { setVideoUrlError('Please enter a valid YouTube URL.'); return; }
+              setStep(4);
+            }} disabled={!!videoUrlError} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: videoUrlError ? '#e8e8e8' : 'var(--orange)', color: videoUrlError ? '#bbb' : '#fff', cursor: videoUrlError ? 'not-allowed' : 'pointer' }}>
               {mediaOk ? 'Next →' : 'Skip for now →'}
             </button>
           </div>
@@ -564,7 +582,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
           {/* Co-founder tagging */}
           <div style={{ marginBottom:20 }}>
-            <label style={lbl}>Tag co-founders / collaborators <span style={{ fontWeight:400, textTransform:'none', fontSize:11, color:'#aaa' }}>Others working on this product</span></label>
+            <label style={lbl}>Tag co-founders / collaborators <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>Others working on this product</span></label>
 
             {/* Tagged co-founders list */}
             {coFounders.length > 0 && (
