@@ -85,12 +85,18 @@ export default function SubmitProductModal({ open, onClose }) {
   // Inline field validation
   const [fieldErrors, setFieldErrors] = useState({});
   const validateField = (field, value) => {
-    if (field === 'name' && value.trim().length > 0 && value.trim().length < 3) return 'Minimum 3 characters';
-    if (field === 'tagline' && value.trim().length > 0 && value.trim().length < 10) return 'Minimum 10 characters';
+    if (field === 'name' && value.trim().length < 3) return 'Minimum 3 characters';
+    if (field === 'tagline' && value.trim().length < 10) return 'Minimum 10 characters';
     if (field === 'website' && value.trim() && !/^https:\/\/.+\..+/.test(value.trim())) return 'Must start with https://';
     return '';
   };
+  const isStep2Valid = () => {
+    return form.name.trim().length >= 3 && form.tagline.trim().length >= 10
+      && (!form.website.trim() || /^https:\/\/.+\..+/.test(form.website.trim()))
+      && form.description.length < 500;
+  };
   const handleFieldBlur = (field, value) => {
+    if (!value.trim() && field !== 'website') return;
     const err = validateField(field, value);
     setFieldErrors(prev => ({ ...prev, [field]: err }));
   };
@@ -256,23 +262,18 @@ export default function SubmitProductModal({ open, onClose }) {
 
   const validateStep2 = () => {
     const errs = {};
-    const nameErr = validateField('name', form.name);
-    const tagErr = validateField('tagline', form.tagline);
-    const webErr = validateField('website', form.website);
-    if (!form.name.trim()) { errs.name = 'Product name is required'; }
-    else if (nameErr) { errs.name = nameErr; }
-    if (!form.tagline.trim()) { errs.tagline = 'Tagline is required'; }
-    else if (tagErr) { errs.tagline = tagErr; }
-    if (webErr) { errs.website = webErr; }
-    if (!form.industry) { toast.error('Please select an industry'); setFieldErrors(prev => ({ ...prev, ...errs })); return false; }
-    if (selectedCountries.length === 0) { toast.error('Select at least one country'); setFieldErrors(prev => ({ ...prev, ...errs })); return false; }
-    if (form.description.length >= 500) { toast.error('Short description exceeds the character limit'); setFieldErrors(prev => ({ ...prev, ...errs })); return false; }
+    errs.name = validateField('name', form.name);
+    errs.tagline = validateField('tagline', form.tagline);
+    errs.website = validateField('website', form.website);
+    Object.keys(errs).forEach(k => { if (!errs[k]) delete errs[k]; });
     if (Object.keys(errs).length > 0) {
       setFieldErrors(prev => ({ ...prev, ...errs }));
-      const first = Object.values(errs)[0];
-      toast.error(first);
+      toast.error(Object.values(errs)[0]);
       return false;
     }
+    if (!form.industry) { toast.error('Please select an industry'); return false; }
+    if (selectedCountries.length === 0) { toast.error('Select at least one country'); return false; }
+    if (form.description.length >= 500) { toast.error('Short description exceeds the character limit'); return false; }
     return true;
   };
 
@@ -578,11 +579,10 @@ export default function SubmitProductModal({ open, onClose }) {
           </div>
 
           {(() => {
-            const hasFieldErr = !!(fieldErrors.name || fieldErrors.tagline || fieldErrors.website);
-            const blocked = form.description.length >= 500 || hasFieldErr;
+            const blocked = !isStep2Valid();
             return <div style={{ display:'flex', gap:10 }}>
               <button onClick={() => setStep(1)} style={{ flex:'0 0 80px', padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background:'#f4f4f4', color:'#444', cursor:'pointer' }}>← Back</button>
-              <button disabled={blocked} onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: blocked ? '#e8e8e8' : 'var(--orange)', color: blocked ? '#bbb' : '#fff', cursor: blocked ? 'not-allowed' : 'pointer' }}>Next →</button>
+              <button onClick={() => validateStep2() && setStep(3)} style={{ flex:1, padding:14, borderRadius:12, fontSize:15, fontWeight:800, border:'none', background: blocked ? '#e8e8e8' : 'var(--orange)', color: blocked ? '#bbb' : '#fff', cursor: blocked ? 'not-allowed' : 'pointer' }}>Next →</button>
             </div>;
           })()}
         </>}
