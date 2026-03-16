@@ -96,7 +96,6 @@ export default function SubmitProductModal({ open, onClose }) {
       && form.description.length < 500;
   };
   const handleFieldBlur = (field, value) => {
-    if (!value.trim() && field !== 'website') return;
     const err = validateField(field, value);
     setFieldErrors(prev => ({ ...prev, [field]: err }));
   };
@@ -486,7 +485,7 @@ export default function SubmitProductModal({ open, onClose }) {
           <div style={{ marginBottom:16, position:'relative' }}>
             <label style={lbl}>Available in * <span style={{ fontWeight:400, fontSize:11, color:'#aaa' }}>Select all that apply</span></label>
             <div onClick={() => { setCountryDDOpen(true); setIndustryDDOpen(false); setStageDDOpen(false); }}
-              style={{ ...inp, display:'flex', flexWrap:'wrap', gap:6, padding:'8px 10px', minHeight:44, cursor:'text', borderColor: countryDDOpen ? 'var(--orange)' : undefined }}>
+              style={{ ...inp, display:'flex', flexWrap:'wrap', gap:6, padding:'8px 10px', minHeight:44, maxHeight:120, overflowY:'auto', cursor:'text', borderColor: countryDDOpen ? 'var(--orange)' : undefined }}>
               {selectedCountries.map(v => {
                 const c = COUNTRIES.find(([code]) => code === v);
                 if (!c) return null;
