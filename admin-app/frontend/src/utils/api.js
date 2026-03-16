@@ -9,15 +9,20 @@ function setToken(t) {
   else localStorage.removeItem('tlmena_admin_token');
 }
 
-async function req(method, path, body) {
-  const headers = { 'Content-Type': 'application/json' };
+async function req(method, path, body, isFormData = false, responseType = 'json') {
+  const headers = {};
+  if (!isFormData) headers['Content-Type'] = 'application/json';
   const token = getToken();
   if (token) headers['Authorization'] = `Bearer ${token}`;
   const res = await fetch(`${BASE}${path}`, {
     method,
     headers,
-    body: body !== undefined ? JSON.stringify(body) : undefined,
+    body: isFormData ? body : body !== undefined ? JSON.stringify(body) : undefined,
   });
+  if (responseType === 'blob') {
+    if (!res.ok) throw new Error(`HTTP ${res.status}`);
+    return { data: await res.blob(), status: res.status };
+  }
   const data = await res.json().catch(() => ({}));
   if (!res.ok) throw new Error(data.message || `HTTP ${res.status}`);
   return { data, status: res.status };
@@ -42,9 +47,14 @@ export const adminAPI = {
   suspendUser:  (id)        => req('POST', `/admin/users/${id}/suspend`),
   reinstateUser:(id)        => req('POST', `/admin/users/${id}/reinstate`),
   deleteTeamMember:(id)     => req('DELETE', `/admin/users/${id}`),
-  entities:     (p={})      => req('GET',  '/admin/entities?' + new URLSearchParams(p)),
-  createEntity: (body)      => req('POST', '/admin/entities', body),
-  verifyEntity: (id)        => req('POST', `/admin/entities/${id}/verify`),
+  entities:           (p={})  => req('GET',  '/admin/entities?' + new URLSearchParams(p)),
+  createEntity:       (body)  => req('POST', '/admin/entities', body),
+  verifyEntity:       (id)    => req('POST', `/admin/entities/${id}/verify`),
+  bulkImportEntities: (file)  => {
+    const fd = new FormData(); fd.append('file', file);
+    return req('POST', '/admin/entities/bulk-import', fd, true);
+  },
+  downloadEntityTemplate: () => req('GET', '/admin/entities/csv-template', null, false, 'blob'),
   applications: ()          => req('GET',  '/admin/applications'),
   updateAccelApp: (id, body)=> req('PATCH', `/admin/applications/accelerator/${id}`, body),
   updatePitch:    (id, body)=> req('PATCH', `/admin/applications/pitches/${id}`, body),

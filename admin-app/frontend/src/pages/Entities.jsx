@@ -179,7 +179,11 @@ export default function Entities() {
   const [form, setForm]             = useState(EMPTY_FORM);
   const [logoPreview, setLogoPreview] = useState(null);
   const [cropSrc, setCropSrc]       = useState(null);
-  const fileRef = useRef();
+  const fileRef    = useRef();
+  const importRef  = useRef();
+  const [showImport, setShowImport]   = useState(false);
+  const [importing, setImporting]     = useState(false);
+  const [importResult, setImportResult] = useState(null);
 
   const handleSort = (col) => {
     if (sortBy === col) setSortOrder(d => d === 'asc' ? 'desc' : 'asc');
@@ -252,6 +256,29 @@ export default function Entities() {
     try { await adminAPI.verifyEntity(e.id); toast.success(`${e.name} verified`); load(); }
     catch(err) { toast.error(err.message); }
     finally { setActing(p=>({...p,[e.id]:false})); }
+  };
+
+  const downloadTemplate = async () => {
+    try {
+      const { data: blob } = await adminAPI.downloadEntityTemplate();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a'); a.href = url; a.download = 'entities-template.csv'; a.click();
+      URL.revokeObjectURL(url);
+    } catch(e) { toast.error('Could not download template'); }
+  };
+
+  const handleImportFile = async (e) => {
+    const file = e.target.files[0]; e.target.value = '';
+    if (!file) return;
+    if (!file.name.endsWith('.csv')) return toast.error('Please upload a .csv file');
+    setImporting(true); setImportResult(null);
+    try {
+      const { data: d } = await adminAPI.bulkImportEntities(file);
+      setImportResult(d);
+      if (d.created > 0) { toast.success(`${d.created} entit${d.created===1?'y':'ies'} imported!`); load(); }
+      if (d.failed > 0)  { toast.error(`${d.failed} row${d.failed===1?' has':'s have'} errors — check the list below`); }
+    } catch(e) { toast.error(e.message || 'Import failed'); }
+    finally { setImporting(false); }
   };
 
   const isInvestor = form.type === 'investor';
@@ -417,11 +444,106 @@ export default function Entities() {
         </div>
       )}
 
+      {/* Import CSV modal */}
+      {showImport && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.45)',zIndex:1000,display:'flex',alignItems:'center',justifyContent:'center'}} onClick={()=>{ setShowImport(false); setImportResult(null); }}>
+          <div style={{background:'#fff',borderRadius:16,padding:28,width:560,maxWidth:'94vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)',maxHeight:'88vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
+            <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:20}}>
+              <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>Import Entities from CSV</div>
+              <button onClick={()=>{ setShowImport(false); setImportResult(null); }} style={{background:'none',border:'none',fontSize:18,cursor:'pointer',color:'#AAAAAA'}}>✕</button>
+            </div>
+
+            {/* Field guide */}
+            <div style={{background:'#F9F9F9',borderRadius:10,padding:14,marginBottom:18,fontSize:11,color:'#555',lineHeight:1.7}}>
+              <div style={{fontWeight:800,color:'#0A0A0A',marginBottom:8,fontSize:12}}>📋 CSV Column Guide</div>
+              <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'4px 16px'}}>
+                {[
+                  ['name','Required. Entity display name'],
+                  ['type','Required. startup / accelerator / investor / venture_studio'],
+                  ['country','Required. Full name e.g. Saudi Arabia, UAE, Egypt'],
+                  ['description','Short bio / about text'],
+                  ['website','Full URL: https://…'],
+                  ['industry','Comma-separated: Fintech, AI & ML, Edtech…'],
+                  ['stage','Comma-separated: Pre-Seed, Seed, Series A…'],
+                  ['logo_url','Public image URL (PNG/JPG, square preferred)'],
+                  ['linkedin','LinkedIn URL'],
+                  ['twitter','@handle or full URL'],
+                  ['why_us','Pipe-separated bullets: "Reason 1 | Reason 2"'],
+                ].map(([col, desc]) => (
+                  <div key={col} style={{display:'flex',gap:6}}>
+                    <code style={{background:'#EFEFEF',borderRadius:4,padding:'1px 5px',fontSize:10,fontWeight:700,color:'#E15033',whiteSpace:'nowrap',flexShrink:0}}>{col}</code>
+                    <span style={{color:'#777'}}>{desc}</span>
+                  </div>
+                ))}
+              </div>
+            </div>
+
+            {/* Logo note */}
+            <div style={{background:'#EFF6FF',border:'1px solid #BFDBFE',borderRadius:8,padding:'10px 14px',marginBottom:18,fontSize:11,color:'#1e40af'}}>
+              <strong>Logo tip:</strong> Use a public image URL in the <code style={{background:'#DBEAFE',borderRadius:3,padding:'1px 4px'}}>logo_url</code> column — e.g. from the company's own website or <code style={{background:'#DBEAFE',borderRadius:3,padding:'1px 4px'}}>https://logo.clearbit.com/domain.com</code> for a free logo lookup by domain.
+            </div>
+
+            {/* Actions */}
+            <div style={{display:'flex',gap:8,marginBottom:18}}>
+              <button onClick={downloadTemplate}
+                style={{padding:'9px 16px',borderRadius:9,border:'1px solid #E8E8E8',background:'#fff',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',color:'#444',display:'flex',alignItems:'center',gap:6}}>
+                ⬇ Download Template CSV
+              </button>
+              <button onClick={()=>importRef.current?.click()} disabled={importing}
+                style={{flex:1,padding:'9px 16px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit',opacity:importing?0.6:1,display:'flex',alignItems:'center',justifyContent:'center',gap:6}}>
+                {importing ? '⏳ Importing…' : '⬆ Upload CSV File'}
+              </button>
+              <input ref={importRef} type="file" accept=".csv" style={{display:'none'}} onChange={handleImportFile}/>
+            </div>
+
+            {/* Results */}
+            {importResult && (
+              <div>
+                <div style={{display:'flex',gap:10,marginBottom:12}}>
+                  <div style={{flex:1,background:'#F0FDF4',border:'1px solid #BBF7D0',borderRadius:8,padding:'10px 14px',textAlign:'center'}}>
+                    <div style={{fontSize:22,fontWeight:800,color:'#16a34a'}}>{importResult.created}</div>
+                    <div style={{fontSize:11,color:'#15803d',fontWeight:600}}>Created</div>
+                  </div>
+                  {importResult.failed > 0 && (
+                    <div style={{flex:1,background:'#FEF2F2',border:'1px solid #FECACA',borderRadius:8,padding:'10px 14px',textAlign:'center'}}>
+                      <div style={{fontSize:22,fontWeight:800,color:'#dc2626'}}>{importResult.failed}</div>
+                      <div style={{fontSize:11,color:'#b91c1c',fontWeight:600}}>Failed</div>
+                    </div>
+                  )}
+                </div>
+                {importResult.errors?.length > 0 && (
+                  <div style={{background:'#FEF2F2',borderRadius:8,padding:12,maxHeight:200,overflowY:'auto'}}>
+                    <div style={{fontSize:11,fontWeight:800,color:'#7f1d1d',marginBottom:8}}>Rows with errors:</div>
+                    {importResult.errors.map((err, i) => (
+                      <div key={i} style={{fontSize:11,color:'#991b1b',marginBottom:4,display:'flex',gap:8}}>
+                        <span style={{fontWeight:700,flexShrink:0}}>Row {err.row}:</span>
+                        <span style={{fontWeight:600,color:'#555',flexShrink:0}}>{err.name}</span>
+                        <span style={{color:'#B91C1C'}}>— {err.reason}</span>
+                      </div>
+                    ))}
+                  </div>
+                )}
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+
       {/* Entities table */}
       <SCard
         title="Entities"
         sub={`${total.toLocaleString()} entities — companies, accelerators, investors & venture studios`}
-        action={<button onClick={openModal} style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>+ Create Entity</button>}
+        action={
+          <div style={{display:'flex',gap:8}}>
+            <button onClick={()=>{ setShowImport(true); setImportResult(null); }}
+              style={{padding:'7px 14px',borderRadius:9,background:'#fff',color:'#555',border:'1px solid #E8E8E8',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+              ⬆ Import CSV
+            </button>
+            <button onClick={openModal} style={{padding:'7px 14px',borderRadius:9,background:'var(--orange)',color:'#fff',border:'none',fontSize:12,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+              + Create Entity
+            </button>
+          </div>
+        }
       >
         <div className="filters-bar" style={{padding:'12px 20px',borderBottom:'1px solid #F4F4F4'}}>
           {TABS.map(t=>(

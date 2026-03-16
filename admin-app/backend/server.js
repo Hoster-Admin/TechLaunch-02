@@ -11,6 +11,8 @@ const { Pool }   = require('pg');
 const path       = require('path');
 const { sendAdminCreatedAccountEmail, sendPublicInvitationEmail } = require('../../backend/src/services/emailService');
 
+const multer = require('multer');
+
 // ─── PUBLIC API ROUTES (merged — no separate server needed) ───────────────────
 const publicRoutes = require('../../backend/src/routes');
 const { errorHandler: publicErrorHandler, notFound: publicNotFound } = require('../../backend/src/middleware/error');
@@ -723,6 +725,148 @@ admin.post('/entities', async (req, res) => {
     if (e.code==='23505') return res.status(409).json({ success:false, message:'Entity with this name already exists' });
     res.status(500).json({ success:false, message:'Internal server error' });
   }
+});
+
+// ─── CSV TEMPLATE DOWNLOAD ────────────────────────────────────────────────────
+admin.get('/entities/csv-template', authenticate, (req, res) => {
+  const headers = [
+    'name','type','country','description','website',
+    'industry','stage','logo_url','linkedin','twitter','why_us'
+  ];
+  const examples = [
+    [
+      'MENA Ventures','investor','UAE',
+      'Early-stage fund focused on MENA founders',
+      'https://menaventures.com',
+      'Fintech,AI & ML','Pre-Seed,Seed',
+      'https://logo.clearbit.com/menaventures.com',
+      'https://linkedin.com/company/mena-ventures','@menaventures',
+      'Up to $500K first check | Access to 200+ portfolio | Dedicated support team'
+    ],
+    [
+      'Flat6Labs Cairo','accelerator','Egypt',
+      'Leading startup accelerator in MENA',
+      'https://flat6labs.com',
+      'Fintech,Edtech,Healthtech','',
+      'https://logo.clearbit.com/flat6labs.com',
+      'https://linkedin.com/company/flat6labs','@flat6labs',
+      '$30K equity-free grant | 4-month intensive program | Access to investor network'
+    ],
+    [
+      'Tamara','startup','Saudi Arabia',
+      'Buy now pay later platform for MENA',
+      'https://tamara.co',
+      'Fintech','Series A',
+      'https://logo.clearbit.com/tamara.co',
+      'https://linkedin.com/company/tamara','@tamara',
+      ''
+    ],
+    [
+      'Wa\'ed Ventures','venture_studio','Saudi Arabia',
+      'Saudi Aramco\'s corporate venture studio',
+      'https://waed.com',
+      'Cleantech,AI & ML','',
+      'https://logo.clearbit.com/waed.com',
+      'https://linkedin.com/company/waed','@waedventures',
+      'Co-build with Aramco | Access to NEOM & Vision 2030 | Up to $1M seed'
+    ],
+  ];
+  const escape = (v='') => {
+    const s = String(v).replace(/"/g,'""');
+    return /[,"\n\r]/.test(s) ? `"${s}"` : s;
+  };
+  const rows = [headers, ...examples].map(r => r.map(escape).join(',')).join('\r\n');
+  res.setHeader('Content-Type', 'text/csv; charset=utf-8');
+  res.setHeader('Content-Disposition', 'attachment; filename="entities-template.csv"');
+  res.send('\uFEFF' + rows); // BOM for Excel compatibility
+});
+
+// ─── CSV BULK IMPORT ──────────────────────────────────────────────────────────
+const csvUpload = multer({ storage: multer.memoryStorage(), limits: { fileSize: 2 * 1024 * 1024 } });
+
+function parseCSV(text) {
+  const lines = text.replace(/\r\n/g,'\n').replace(/\r/g,'\n').split('\n').filter(l=>l.trim());
+  const parseLine = (line) => {
+    const fields = [];
+    let cur = '', inQ = false;
+    for (let i = 0; i < line.length; i++) {
+      const ch = line[i];
+      if (ch === '"') {
+        if (inQ && line[i+1] === '"') { cur += '"'; i++; }
+        else inQ = !inQ;
+      } else if (ch === ',' && !inQ) {
+        fields.push(cur.trim()); cur = '';
+      } else { cur += ch; }
+    }
+    fields.push(cur.trim());
+    return fields;
+  };
+  const headers = parseLine(lines[0]).map(h => h.toLowerCase().trim());
+  return lines.slice(1).map(line => {
+    const vals = parseLine(line);
+    const obj = {};
+    headers.forEach((h, i) => { obj[h] = vals[i] || ''; });
+    return obj;
+  }).filter(r => r.name);
+}
+
+admin.post('/entities/bulk-import', authenticate, csvUpload.single('file'), async (req, res) => {
+  if (!req.file) return res.status(400).json({ success:false, message:'No CSV file uploaded' });
+  const validTypes = ['startup','accelerator','investor','venture_studio'];
+  const validCountries = [
+    'Saudi Arabia','UAE','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain',
+    'Tunisia','Lebanon','Iraq','Oman','Libya','Algeria','Syria','Yemen','Palestine','Sudan','Other MENA'
+  ];
+  let text;
+  try { text = req.file.buffer.toString('utf-8').replace(/^\uFEFF/,''); }
+  catch { return res.status(400).json({ success:false, message:'Cannot read file — make sure it is UTF-8 encoded' }); }
+
+  let rows;
+  try { rows = parseCSV(text); }
+  catch { return res.status(400).json({ success:false, message:'Invalid CSV format' }); }
+  if (!rows.length) return res.status(400).json({ success:false, message:'CSV is empty or has no data rows' });
+  if (rows.length > 200) return res.status(400).json({ success:false, message:'Maximum 200 rows per import' });
+
+  const created = [], failed = [];
+  for (let i = 0; i < rows.length; i++) {
+    const r = rows[i];
+    const rowNum = i + 2;
+    const name    = r.name?.trim();
+    const type    = r.type?.trim().toLowerCase().replace(/\s+/g,'_');
+    const country = r.country?.trim();
+    if (!name)    { failed.push({ row:rowNum, name:name||'—', reason:'Name is required' }); continue; }
+    if (!validTypes.includes(type)) { failed.push({ row:rowNum, name, reason:`Invalid type "${r.type}" — use: startup, accelerator, investor, venture_studio` }); continue; }
+    if (!country) { failed.push({ row:rowNum, name, reason:'Country is required' }); continue; }
+    if (!validCountries.includes(country)) { failed.push({ row:rowNum, name, reason:`Country "${country}" not recognised — use the full name e.g. "Saudi Arabia"` }); continue; }
+    const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
+    const slug  = `${base}-${Date.now().toString(36)}-${i}`;
+    const why_us   = r.why_us?.trim()   || null;
+    const logo_url = r.logo_url?.trim() || null;
+    const industry = r.industry?.trim() || null;
+    const stage    = r.stage?.trim()    || null;
+    const website  = r.website?.trim()  || null;
+    const linkedin = r.linkedin?.trim() || null;
+    const twitter  = r.twitter?.trim()  || null;
+    const description = r.description?.trim() || null;
+    try {
+      const { rows: ins } = await q(
+        `INSERT INTO entities (name,slug,type,country,description,website,stage,industry,logo_url,linkedin,twitter,why_us,verified,created_by)
+         VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,false,$13)
+         ON CONFLICT (slug) DO NOTHING
+         RETURNING id,name,type`,
+        [name,slug,type,country,description,website,stage,industry,logo_url,linkedin,twitter,why_us,req.user.id]
+      );
+      if (ins.length) {
+        await logAction(req.user.id,'entity.created','entity',ins[0].id,{name:ins[0].name,type:ins[0].type,source:'csv_import'},req.ip);
+        created.push({ name, type });
+      } else {
+        failed.push({ row:rowNum, name, reason:'Duplicate — an entity with a very similar name already exists' });
+      }
+    } catch(e) {
+      failed.push({ row:rowNum, name, reason: e.code==='23505' ? 'Duplicate name' : e.message });
+    }
+  }
+  res.json({ success:true, created: created.length, failed: failed.length, errors: failed });
 });
 
 admin.post('/entities/:id/verify', async (req, res) => {
@@ -1508,7 +1652,6 @@ admin.delete('/tags/:id/assign', async (req, res) => {
 app.use('/api/admin', admin);
 
 // ─── FILE UPLOADS ─────────────────────────────────────────────────────────────
-const multer = require('multer');
 const fs     = require('fs');
 const uploadsDir = path.join(__dirname, '../../backend/uploads');
 if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
