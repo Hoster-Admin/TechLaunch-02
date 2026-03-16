@@ -42,6 +42,12 @@ import ApplyModal         from './components/home/ApplyModal';
 import WaitlistModal      from './components/home/WaitlistModal';
 import AuthModal          from './components/home/AuthModal';
 
+function ScrollToTop() {
+  const { pathname } = useLocation();
+  useEffect(() => { window.scrollTo(0, 0); }, [pathname]);
+  return null;
+}
+
 const RequireAuth = ({ children }) => {
   const { user, loading } = useAuth();
   const location = useLocation();
@@ -171,6 +177,7 @@ function AppRoutes() {
 export default function App() {
   return (
     <BrowserRouter>
+      <ScrollToTop/>
       <AuthProvider>
         <UIProvider>
           <AppRoutes/>

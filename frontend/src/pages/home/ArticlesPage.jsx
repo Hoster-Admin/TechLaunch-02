@@ -1,4 +1,4 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
@@ -169,8 +169,6 @@ function ArticleDetail({ onSignIn }) {
     if (!user) { onSignIn?.(); return; }
     setSubmitOpen(true);
   };
-
-  useEffect(() => { window.scrollTo(0, 0); }, [slug]);
 
   if (!article) return (
     <>
