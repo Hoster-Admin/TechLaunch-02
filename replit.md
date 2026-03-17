@@ -3,6 +3,7 @@
 A full-stack product discovery platform for the MENA region, similar to Product Hunt.
 
 ## Key Features (latest)
+- **Unified Industry Dropdowns**: All 6 industry dropdown spots (HomePage filter, AllProductsPage filter, ListingPages filter, SubmitProductModal, CompanyTab settings, SubmitProductForm) now pull from a single source (`frontend/src/utils/menaIndustries.js`) with 15 canonical MENA industries, emoji icons, and search/filter functionality. No more native `<select>` elements for industry — all custom dropdowns with click-outside, overscroll containment, and hover states.
 - **18-Bug QA Fix**: Comment edit/delete (3-dot menu), comment read-more truncation (280 chars), 1000-char limit with live counter, post content `pre-wrap`, custom delete modal with trash icon, post & article 3-dot owner menu, post read-more truncation (300 chars), broken image `onError` fallback, article image upload error handling, Follow button disabled during auth loading.
 - **Launcher Routes**: Added `PATCH /api/launcher/:id` (editPost), `PATCH /api/launcher/comments/:id` (editComment), `DELETE /api/launcher/comments/:id` (deleteComment). Added `edited` column to `launcher_post_comments`.
 - **ProductCard layout**: Vote/save buttons now in a row (horizontal), broken logo falls back to emoji, comment count badge shown.
