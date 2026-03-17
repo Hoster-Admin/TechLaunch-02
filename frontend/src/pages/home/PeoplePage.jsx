@@ -248,9 +248,10 @@ export function PeopleContent() {
 
   const hasFilters = Boolean(search) || personas.length > 0 || countries.length > 0;
 
-  const handleClear = () => {
+  const handleClear = (e) => {
+    if (e) e.stopPropagation();
     setSearch(''); setPersonas([]); setCountries([]);
-    setSearchParams({});
+    setSearchParams({}, { replace: true });
     load(1, true, [], []);
   };
 
@@ -271,7 +272,7 @@ export function PeopleContent() {
             Search
           </button>
           {hasFilters && (
-            <button type="button" onClick={handleClear}
+            <button type="button" onClick={(e) => handleClear(e)}
               style={{ padding:'8px 14px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#f8f8f8', fontSize:13, color:'#888', cursor:'pointer' }}>
               Clear
             </button>
