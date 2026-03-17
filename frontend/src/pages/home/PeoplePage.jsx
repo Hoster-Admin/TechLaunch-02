@@ -47,7 +47,8 @@ function AvatarCircle({ user, size = 48 }) {
 }
 
 function PersonCard({ person, currentUser }) {
-  const [following, setFollowing] = useState(false);
+  const [following, setFollowing] = useState(!!person.is_following);
+  const [followersCount, setFollowersCount] = useState(person.followers_count || 0);
   const [loadingFollow, setLoadingFollow] = useState(false);
 
   const handleFollow = async (e) => {
@@ -57,7 +58,11 @@ function PersonCard({ person, currentUser }) {
     setLoadingFollow(true);
     try {
       const res = await usersAPI.follow(person.id);
-      setFollowing(res.data?.data?.following ?? !following);
+      const data = res.data?.data ?? {};
+      setFollowing(data.following ?? !following);
+      if (typeof data.followers_count === 'number') {
+        setFollowersCount(data.followers_count);
+      }
     } catch { toast.error('Failed to follow'); }
     finally { setLoadingFollow(false); }
   };
@@ -113,7 +118,7 @@ function PersonCard({ person, currentUser }) {
             <span style={{ fontSize:11, color:'#aaa' }}>{person.country}</span>
           )}
           <span style={{ fontSize:11, color:'#aaa', marginLeft:'auto' }}>
-            {person.followers_count || 0} {person.followers_count === 1 ? 'follower' : 'followers'}
+            {followersCount} {followersCount === 1 ? 'follower' : 'followers'}
           </span>
         </div>
       </div>

@@ -70,17 +70,18 @@ const toggleFollow = async (req, res, next) => {
       'SELECT id FROM follows WHERE follower_id=$1 AND following_id=$2', [req.user.id, id]);
     if (rows.length) {
       await query('DELETE FROM follows WHERE follower_id=$1 AND following_id=$2', [req.user.id, id]);
-      res.json({ success:true, data:{ following:false } });
+      const { rows: updated } = await query('SELECT followers_count FROM users WHERE id=$1', [id]);
+      res.json({ success:true, data:{ following:false, followers_count: updated[0]?.followers_count ?? 0 } });
     } else {
       await query('INSERT INTO follows (follower_id, following_id) VALUES ($1,$2)', [req.user.id, id]);
-      // Notify the followed user
       await query(
         `INSERT INTO notifications (user_id, type, title, body, link, data)
          VALUES ($1,'follow','New follower',$2,$3,$4)`,
         [id, `${req.user.name} started following you`, `/u/${req.user.handle}`,
          JSON.stringify({ actor_id: req.user.id, actor_handle: req.user.handle })]
       ).catch(() => {});
-      res.json({ success:true, data:{ following:true } });
+      const { rows: updated } = await query('SELECT followers_count FROM users WHERE id=$1', [id]);
+      res.json({ success:true, data:{ following:true, followers_count: updated[0]?.followers_count ?? 0 } });
     }
   } catch(err){ next(err); }
 };
@@ -238,11 +239,17 @@ const getPeople = async (req, res, next) => {
     const offset = (parseInt(page) - 1) * parseInt(limit);
     params.push(parseInt(limit), offset);
 
+    const viewerId = req.user?.id || null;
+    const isFollowingExpr = viewerId
+      ? `EXISTS(SELECT 1 FROM follows WHERE follower_id='${viewerId}' AND following_id=u.id) AS is_following`
+      : `false AS is_following`;
+
     const { rows } = await query(`
-      SELECT id, name, handle, avatar_url, avatar_color, headline, persona, verified,
-             country, followers_count, products_count, COUNT(*) OVER() AS total
-      FROM users ${where}
-      ORDER BY followers_count DESC NULLS LAST, created_at DESC
+      SELECT u.id, u.name, u.handle, u.avatar_url, u.avatar_color, u.headline, u.persona, u.verified,
+             u.country, u.followers_count, u.products_count, COUNT(*) OVER() AS total,
+             ${isFollowingExpr}
+      FROM users u ${where}
+      ORDER BY u.followers_count DESC NULLS LAST, u.created_at DESC
       LIMIT $${params.length - 1} OFFSET $${params.length}`, params
     );
     const total = rows.length > 0 ? parseInt(rows[0].total) : 0;
