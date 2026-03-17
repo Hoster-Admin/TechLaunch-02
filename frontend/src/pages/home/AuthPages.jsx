@@ -53,7 +53,7 @@ export function LoginPage() {
     try {
       const user = await login(form.email, form.password);
       toast.success(`Welcome back, ${user.name.split(' ')[0]}!`);
-      navigate(user.role === 'admin' || user.role === 'moderator' ? '/admin' : from, { replace: true });
+      navigate(from, { replace: true });
     } catch (err) {
       setErrors({ general: err.response?.data?.message || 'Invalid email or password' });
     } finally { setLoading(false); }

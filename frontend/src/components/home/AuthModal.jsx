@@ -112,7 +112,6 @@ export default function AuthModal() {
       const user = await login(lEmail.trim(), lPass);
       toast.success(`Welcome back, ${user.name.split(' ')[0]}! 👋`);
       close();
-      if (user.role === 'admin' || user.role === 'moderator') navigate('/admin');
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password');
     } finally { setLoading(false); }
