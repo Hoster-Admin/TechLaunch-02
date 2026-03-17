@@ -1,0 +1,46 @@
+TECHLAUNCH – MONETIZATION & PRICING STRATEGY				
+Core Philosophy: Sign up, post a product, and engage with the community is always FREE				
+				
+🟢 WHAT IS ALWAYS FREE				
+Feature	Why It Must Stay Free			
+Create an account / Sign up	Growth depends on low barrier to entry. Every user is a potential community member or buyer.			
+Post a product	More products = more content = more traffic. Restricting this kills the platform early.			
+Upvote / Bookmark a product	Core engagement mechanic. Restricting it kills discovery.			
+Comment on products	Community credibility depends on open discussion.			
+Browse all products and categories	Discovery must be free or you lose users before they convert.			
+Follow other users	Social graph building — essential for retention.			
+Receive messages	Blocking incoming messages frustrates free users and reduces deal flow.			
+				
+💰 REVENUE STREAMS				
+#	Revenue Stream	Description	Pricing Idea	Priority
+1	PRO Maker Badge (Subscription)	Verified badge + priority placement on product page. Makes founders look credible. Monthly or annual plan.	$9/mo or $79/yr	🔴 High
+2	Featured / Sponsored Launch Slot	Pay to be featured at the top of 'Just Launched' or homepage for 24–72 hours. High visibility for new products.	$49–$149 per slot	🔴 High
+3	Boost / Promote a Product	Self-serve ad unit. Product shown in 'Promoted' section on homepage and category pages for X days.	$29–$99 per campaign	🔴 High
+4	Analytics Dashboard (Pro)	Unlock deep analytics: who viewed your product, where traffic came from, vote trends over time, profile visits.	$19/mo	🟠 Medium
+5	Premium Company / Startup Profile	Enhanced profile page with custom branding, team members, funding stage, investor info, and contact CTA.	$29/mo	🟠 Medium
+6	Job Board Listings	Tech startups post jobs. MENA founders hire locally. Free to browse, paid to post.	$49–$99 per listing / 30 days	🟠 Medium
+7	Investor / VC Directory Listing	VCs and accelerators pay to be listed and discovered by MENA founders actively looking for funding.	$199–$499/yr	🟠 Medium
+8	Launch Package (Bundle)	Bundle: Featured slot + Pro badge + Boost + Email newsletter mention. One-time launch toolkit for serious founders.	$199–$299 one-time	🔴 High
+9	Newsletter Sponsorship	Weekly TechLaunch email to subscribers. Sponsors get a dedicated slot (logo + link + 1 sentence).	$100–$500 per send	🟠 Medium
+10	Verified Product Badge	One-time fee to get product reviewed and verified as legitimate. Builds trust with users.	$25 one-time	🟡 Low
+11	Community AMA / Event Hosting	Founders or VCs pay to host a featured Q&A session in the Community tab. Drives engagement and visibility.	$99–$299 per event	🟡 Low
+12	White-label / API Access	Companies or accelerators pay to embed TechLaunch discovery feed in their own platforms.	Custom pricing / enterprise	🟡 Low
+13	TechLaunch MENA Report (Annual)	Sell an annual State of MENA Tech report with data on top products, industries, funding trends. One-time purchase.	$29–$99 per download	🟡 Low
+				
+📦 SUGGESTED PRICING TIERS				
+Tier	Name	Price	What's Included	Target User
+Free	Explorer	$0 / forever	Sign up, post product, vote, comment, browse, follow, receive messages	All users — community members, early-stage founders
+Paid	Maker Pro	$19/mo or $149/yr	Pro badge, advanced analytics, priority support, enhanced profile, send unlimited messages	Active founders & product makers
+Paid	Launch Kit	$199 one-time	Featured homepage slot (48hrs) + Boost (7 days) + Pro badge (1 month) + Newsletter mention	Founders launching a new product
+Paid	Startup Pro	$49/mo	Everything in Maker Pro + Featured company profile + Job board (1 listing/mo) + Investor directory visibility	Growth-stage startups
+Paid	Enterprise / VC	$299–$499/yr	VC or accelerator directory listing + branded profile + data insights + featured in weekly newsletter	VCs, accelerators, incubators
+				
+💡 CLAUDE'S ADDITIONAL IDEAS				
+Idea	Description	Potential Revenue		
+MENA Startup Directory (Paid Listing)	Beyond products — list your full company with team, funding, traction. Paid for enhanced visibility. Free basic listing.	$19–$49/mo		
+TechLaunch Badges for LinkedIn	Digital badges founders can share on LinkedIn ('Featured on TechLaunch MENA'). Free for exposure, premium for animated/verified version.	$5–$15 one-time		
+Founder Speed Networking Events	Monthly virtual networking events for MENA founders. Ticket-based revenue. TechLaunch hosts, community attends.	$10–$25 per ticket		
+Product Hunt-style 'Deal of the Day'	Top upvoted product each day gets a featured banner. Founders can pay to guarantee the slot if not organically winning.	$99/day guaranteed slot		
+Affiliate / Referral Commission	Earn commission when a product listed on TechLaunch links to an external tool (e.g., hosting, SaaS). Passive revenue.	5–15% affiliate cut		
+Data Insights Reports for Corporates	Large companies pay for reports on MENA startup trends, hot categories, emerging founders. B2B revenue.	$500–$5,000 per report		
+TechLaunch Accelerator Partner Program	Partner with accelerators — they get a co-branded page, you get a revenue share per application submitted.	Rev share model		
