@@ -3,6 +3,9 @@
 A full-stack product discovery platform for the MENA region, similar to Product Hunt.
 
 ## Key Features (latest)
+- **18-Bug QA Fix**: Comment edit/delete (3-dot menu), comment read-more truncation (280 chars), 1000-char limit with live counter, post content `pre-wrap`, custom delete modal with trash icon, post & article 3-dot owner menu, post read-more truncation (300 chars), broken image `onError` fallback, article image upload error handling, Follow button disabled during auth loading.
+- **Launcher Routes**: Added `PATCH /api/launcher/:id` (editPost), `PATCH /api/launcher/comments/:id` (editComment), `DELETE /api/launcher/comments/:id` (deleteComment). Added `edited` column to `launcher_post_comments`.
+- **ProductCard layout**: Vote/save buttons now in a row (horizontal), broken logo falls back to emoji, comment count badge shown.
 - **Security Tab in Settings**: Users can change their password from Settings → Security tab. Uses `PUT /api/users/me/change-password` with toggle visibility and validation.
 - **Product image upload fix**: `SubmitProductModal` now correctly parses `uploadRes.data?.data?.url` (not `data?.url`) from `/api/upload/post-image` response.
 - **Email system**: Welcome, invite, password reset, submission confirmation, approval, and rejection emails via Resend.
