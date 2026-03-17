@@ -37,6 +37,8 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
   const [industryOpen, setIndustryOpen] = useState(false);
   const [countryOpen,  setCountryOpen]  = useState(false);
+  const [ctrySearch,   setCtrySearch]   = useState('');
+  const [indSearch,    setIndSearch]    = useState('');
 
   const indRef  = useRef(null);
   const ctryRef = useRef(null);
@@ -136,18 +138,19 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
             {/* Industry multi-select */}
             <div style={{ position:'relative' }} ref={indRef}>
-              <button onClick={() => { setIndustryOpen(o=>!o); setCountryOpen(false); }}
+              <button onClick={() => { setIndustryOpen(o=>!o); setCountryOpen(false); setCtrySearch(''); }}
                 style={{ ...btnBase, borderColor: selIndustries.length ? 'var(--orange)' : '#e8e8e8', color: selIndustries.length ? 'var(--orange)' : '#555', background: selIndustries.length ? 'var(--orange-light)' : '#fff' }}>
                 🏭 {selIndustries.length === 1 ? selIndustries[0] : selIndustries.length > 1 ? `${selIndustries.length} Industries` : 'All Industries'} <span style={{ fontSize:10 }}>▼</span>
               </button>
               {industryOpen && (
                 <div style={dropMenuStyle}>
-                  <div style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'.08em', color:'#aaa', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <span>Industry</span>
-                    {selIndustries.length > 0 && <span onClick={() => setSelIndustries([])} style={{ cursor:'pointer', color:'var(--orange)', fontWeight:700, fontSize:10 }}>Clear</span>}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                    <input value={indSearch} onChange={e=>setIndSearch(e.target.value)} placeholder="Search industry…" autoFocus
+                      style={{ flex:1, padding:'5px 8px', border:'1.5px solid #e8e8e8', borderRadius:8, fontSize:12, fontFamily:'inherit', outline:'none', background:'#fafafa' }}/>
+                    {selIndustries.length > 0 && <span onClick={() => setSelIndustries([])} style={{ cursor:'pointer', color:'var(--orange)', fontWeight:700, fontSize:11, marginLeft:8, whiteSpace:'nowrap' }}>Clear</span>}
                   </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:1, maxHeight:260, overflowY:'auto' }}>
-                    {INDUSTRIES.map(ind => (
+                  <div style={{ display:'flex', flexDirection:'column', gap:1, maxHeight:260, overflowY:'auto', overscrollBehavior:'contain' }}>
+                    {INDUSTRIES.filter(ind => ind.toLowerCase().includes(indSearch.toLowerCase())).map(ind => (
                       <label key={ind} style={{ display:'flex', alignItems:'center', gap:8, padding:'6px 8px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:500 }}
                         onMouseOver={e=>e.currentTarget.style.background='#f8f8f8'} onMouseOut={e=>e.currentTarget.style.background=''}>
                         <input type="checkbox" checked={selIndustries.includes(ind)} onChange={() => toggleIndustry(ind)} style={{ accentColor:'var(--orange)', width:14, height:14 }}/>
@@ -162,19 +165,20 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
             {/* Country multi-select */}
             <div style={{ position:'relative' }} ref={ctryRef}>
-              <button onClick={() => { setCountryOpen(o=>!o); setIndustryOpen(false); }}
+              <button onClick={() => { setCountryOpen(o=>!o); setIndustryOpen(false); setIndSearch(''); }}
                 style={{ ...btnBase, borderColor: selCountries.length ? 'var(--orange)' : '#e8e8e8', color: selCountries.length ? 'var(--orange)' : '#555', background: selCountries.length ? 'var(--orange-light)' : '#fff' }}>
                 🌍 {selCountries.length ? `${selCountries.length} Countries` : 'All Countries'} <span style={{ fontSize:10 }}>▼</span>
               </button>
               {countryOpen && (
                 <div style={{ ...dropMenuStyle, width:240 }}>
-                  <div style={{ fontSize:10, fontWeight:800, textTransform:'uppercase', letterSpacing:'.08em', color:'#aaa', marginBottom:8, display:'flex', justifyContent:'space-between', alignItems:'center' }}>
-                    <span>Country</span>
-                    {selCountries.length > 0 && <span onClick={() => setSelCountries([])} style={{ cursor:'pointer', color:'var(--orange)', fontWeight:700, fontSize:10 }}>Clear</span>}
+                  <div style={{ display:'flex', alignItems:'center', justifyContent:'space-between', marginBottom:8 }}>
+                    <input value={ctrySearch} onChange={e=>setCtrySearch(e.target.value)} placeholder="Search country…" autoFocus
+                      style={{ flex:1, padding:'5px 8px', border:'1.5px solid #e8e8e8', borderRadius:8, fontSize:12, fontFamily:'inherit', outline:'none', background:'#fafafa' }}/>
+                    {selCountries.length > 0 && <span onClick={() => setSelCountries([])} style={{ cursor:'pointer', color:'var(--orange)', fontWeight:700, fontSize:11, marginLeft:8, whiteSpace:'nowrap' }}>Clear</span>}
                   </div>
-                  <div style={{ display:'flex', flexDirection:'column', gap:1, maxHeight:260, overflowY:'auto' }}>
-                    {COUNTRIES.map(([code, label]) => (
-                      <label key={code} style={{ display:'flex', alignItems:'center', gap:6, padding:'6px 8px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:500 }}
+                  <div style={{ display:'flex', flexDirection:'column', gap:1, maxHeight:260, overflowY:'auto', overscrollBehavior:'contain' }}>
+                    {COUNTRIES.filter(([, label]) => label.toLowerCase().includes(ctrySearch.toLowerCase())).map(([code, label]) => (
+                      <label key={code} style={{ display:'flex', alignItems:'center', gap:6, padding:'7px 8px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:500 }}
                         onMouseOver={e=>e.currentTarget.style.background='#f8f8f8'} onMouseOut={e=>e.currentTarget.style.background=''}>
                         <input type="checkbox" checked={selCountries.includes(code)} onChange={() => toggleCountry(code)} style={{ accentColor:'var(--orange)', width:13, height:13 }}/>
                         {label}

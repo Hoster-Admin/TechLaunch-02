@@ -280,7 +280,7 @@ export default function ListingPage() {
     return matchC && matchI && matchS;
   });
 
-  const allCountries  = [...new Set(rawData.map(i => i.country))].sort();
+  const allCountries  = MENA_COUNTRIES.map(c => c.name);
   const allIndustries = [...new Set(rawData.flatMap(i => i.industries || (i.industry?[i.industry]:[])))].sort();
   const allStages     = [...new Set(rawData.map(i => i.stage))].filter(Boolean).sort();
   const hasFilters    = selCountries.length + selIndustries.length + selStages.length > 0;
