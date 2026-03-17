@@ -63,6 +63,11 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
   }, []);
 
   useEffect(() => {
+    const q = searchParams.get('q') || '';
+    setSearchQ(q);
+  }, [searchParams]);
+
+  useEffect(() => {
     const handler = (e) => {
       if (indRef.current  && !indRef.current.contains(e.target))  setIndustryOpen(false);
       if (ctryRef.current && !ctryRef.current.contains(e.target)) setCountryOpen(false);

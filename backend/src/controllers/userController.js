@@ -137,7 +137,7 @@ const getUserUpvoted = async (req, res, next) => {
     const { rows } = await query(`
       SELECT p.id, p.name, p.tagline, p.logo_emoji, p.industry, p.upvotes_count,
              p.status, p.countries, uv.created_at AS voted_at,
-             true AS has_voted
+             true AS has_voted, true AS user_voted
       FROM upvotes uv JOIN products p ON p.id = uv.product_id
       WHERE uv.user_id=$1 AND p.status IN ('live','soon')
       ORDER BY uv.created_at DESC LIMIT 30`, [uid]);

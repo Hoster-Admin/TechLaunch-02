@@ -50,9 +50,9 @@ export default function ProductCard({ product, rank, onVote }) {
       {rank && <div className="product-rank">#{rank}</div>}
 
       <div className="product-logo">
-        {product.logo_emoji || product.logo_url
-          ? (product.logo_emoji || '🚀')
-          : <span style={{ fontSize: 26 }}>🚀</span>
+        {product.logo_url && !product.logo_emoji
+          ? <img src={product.logo_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }}/>
+          : <span style={{ fontSize: 26 }}>{product.logo_emoji || '🚀'}</span>
         }
       </div>
 

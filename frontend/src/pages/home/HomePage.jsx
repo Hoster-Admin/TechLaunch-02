@@ -78,7 +78,7 @@ export default function HomePage() {
   }, [feedType]);
 
   const filtered = products.filter(p =>
-    (!selectedCountries.length  || selectedCountries.some(c => p.countries?.includes(COUNTRY_NAMES[c]))) &&
+    (!selectedCountries.length  || selectedCountries.some(c => p.countries?.includes(c))) &&
     (!selectedIndustries.length || selectedIndustries.includes(p.industry))
   );
 

@@ -30,7 +30,7 @@ export const UIProvider = ({ children }) => {
     if (!Array.isArray(apiNotifs)) return;
     const mapped = apiNotifs.map(n => ({
       type: n.type || 'system',
-      text: n.message || n.text || '',
+      text: n.body || n.message || n.text || '',
       icon: n.type === 'upvote' ? '▲' : n.type === 'follow' ? '👤' : n.type === 'comment' ? '💬' : '🔔',
       time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recently',
       unread: !n.read_at,

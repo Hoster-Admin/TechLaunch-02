@@ -45,6 +45,7 @@ const Toggle = ({ on, onChange, label, sub, handle }) => (
 
 const AvatarCircle = ({ user, size=32 }) => {
   const colors = ['#FF6B35','#E63946','#457B9D','#2A9D8F','#E9C46A','#7B2D8B'];
+  if (!user) return <div style={{ width:size, height:size, borderRadius:'50%', background:'#e8e8e8', flexShrink:0 }}/>;
   const bg = user.avatar_color || colors[(user.handle||'').charCodeAt(0) % colors.length] || '#FF6B35';
   const initials = (user.name||'?').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase();
   if (user.avatar_url) return <img src={user.avatar_url} style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover' }} alt={user.name}/>;
@@ -144,7 +145,7 @@ export default function SubmitProductModal({ open, onClose }) {
     }
   }, [open]);
 
-  if (!open) return null;
+  if (!open || !user) return null;
 
   const restoreDraft = () => {
     if (!pendingDraft) return;

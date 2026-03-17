@@ -111,10 +111,14 @@ function CommentsSection({ productId, onSignIn, product }) {
     setPosting(true);
     try {
       const { data } = await productsAPI.addComment(productId, body.trim());
-      const newComment = data.data || {
-        id: Date.now(), body: body.trim(),
-        user: { name: user.name, handle: user.handle, avatar_url: null },
-        created_at: new Date().toISOString(),
+      const rawComment = data.data || { id: Date.now(), created_at: new Date().toISOString() };
+      const newComment = {
+        ...rawComment,
+        body: body.trim(),
+        author_name: user.name,
+        author_handle: user.handle,
+        avatar_color: user.avatar_color || 'var(--orange)',
+        user: { name: user.name, handle: user.handle, avatar_url: user.avatar_url || null },
       };
       setComments(prev => [newComment, ...prev]);
       setBody('');
@@ -230,7 +234,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
       <div style={{ maxWidth:600, margin:'120px auto 80px', textAlign:'center', padding:'0 20px' }}>
         <div style={{ fontSize:48, marginBottom:16 }}>😕</div>
         <div style={{ fontSize:24, fontWeight:800, marginBottom:8 }}>Product not found</div>
-        <button onClick={() => navigate('/')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Back to Home</button>
+        <button onClick={() => navigate(-1)} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Go Back</button>
       </div></>
   );
 
