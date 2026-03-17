@@ -238,19 +238,40 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
       </div></>
   );
 
-  const isVoted      = votes.has(p.id);
+  const isVoted      = p.has_voted || false;
   const isBookmarked = bookmarks.has(p.id);
   const voteCount    = p.upvotes_count || p.upvotes || 0;
   const isSoon       = p.status === 'soon';
   const tags         = [...new Set([...(p.tags || []), p.industry].filter(Boolean))];
   const reasons      = REASONS_MAP[p.industry] || ['🚀 Purpose-built for the MENA market','⚡ Fast, reliable, and easy to use','🌍 Supports Arabic & English','🔒 Enterprise-grade security','💬 Responsive local support team'];
 
-  const handleVote = () => {
+  const handleVote = async () => {
     if (!user) { onSignIn?.(); return; }
-    toggleVote(p.id);
-    if (!isVoted) { addNotification('vote', `You upvoted ${p.name}`, '▲', null); toast.success(`Upvoted ${p.name}! 🎉`); }
+    const newVoted = !isVoted;
+    setProduct(prev => ({
+      ...prev,
+      has_voted: newVoted,
+      upvotes_count: (prev.upvotes_count || 0) + (newVoted ? 1 : -1),
+    }));
+    if (newVoted) { addNotification('vote', `You upvoted ${p.name}`, '▲', null); toast.success(`Upvoted ${p.name}! 🎉`); }
     else toast('Vote removed');
-    try { productsAPI.upvote(p.id); } catch {}
+    try {
+      const { data } = await productsAPI.upvote(p.id);
+      const serverData = data.data || {};
+      if (serverData.upvotes_count !== undefined || serverData.voted !== undefined) {
+        setProduct(prev => ({
+          ...prev,
+          has_voted: serverData.voted ?? newVoted,
+          upvotes_count: serverData.upvotes_count ?? prev.upvotes_count,
+        }));
+      }
+    } catch {
+      setProduct(prev => ({
+        ...prev,
+        has_voted: !newVoted,
+        upvotes_count: (prev.upvotes_count || 0) + (newVoted ? -1 : 1),
+      }));
+    }
   };
 
   const handleBookmark = () => {
@@ -339,7 +360,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
             ) : (
               <button onClick={handleVote}
                 style={{ display:'inline-flex', alignItems:'center', gap:8, padding:'10px 20px', borderRadius:12, border:`1.5px solid ${isVoted?'var(--orange)':'#e8e8e8'}`, background:isVoted?'var(--orange-light)':'#fff', color:isVoted?'var(--orange)':'#0a0a0a', fontSize:14, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
-                🎉 {isVoted ? voteCount+1 : voteCount} Upvotes
+                🎉 {voteCount} Upvotes
               </button>
             )}
             <button onClick={handleBookmark}

@@ -7,7 +7,7 @@ import toast from 'react-hot-toast';
 export default function ProductCard({ product, rank, onVote }) {
   const { user } = useAuth();
   const { setAuthModal } = useUI();
-  const [voted,     setVoted]     = useState(product.user_voted || false);
+  const [voted,     setVoted]     = useState(product.has_voted || product.user_voted || false);
   const [votes,     setVotes]     = useState(product.upvotes_count || 0);
   const [bookmarked, setBookmarked] = useState(product.user_bookmarked || false);
   const [loading,   setLoading]   = useState(false);
@@ -17,15 +17,21 @@ export default function ProductCard({ product, rank, onVote }) {
     if (!user) { setAuthModal('gate'); return; }
     if (loading) return;
     setLoading(true);
+    const newVoted = !voted;
+    setVoted(newVoted);
+    setVotes(v => v + (newVoted ? 1 : -1));
     try {
-      const newVoted = !voted;
-      setVoted(newVoted);
-      setVotes(v => v + (newVoted ? 1 : -1));
-      if (newVoted) await productsAPI.upvote(product.id);
-      else await productsAPI.removeUpvote?.(product.id);
+      const { data } = await productsAPI.upvote(product.id);
+      const serverData = data.data || {};
+      if (serverData.upvotes_count !== undefined) setVotes(serverData.upvotes_count);
+      if (serverData.voted !== undefined) setVoted(serverData.voted);
       onVote?.();
-    } catch { setVoted(!voted); setVotes(v => v + (voted ? 1 : -1)); }
-    finally { setLoading(false); }
+    } catch {
+      setVoted(!newVoted);
+      setVotes(v => v + (newVoted ? -1 : 1));
+    } finally {
+      setLoading(false);
+    }
   };
 
   const handleBookmark = async (e) => {
