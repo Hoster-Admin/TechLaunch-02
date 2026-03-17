@@ -5,9 +5,9 @@ import api from '../../utils/api';
 import { SectionHead, AvatarCircleS } from './SettingsShared';
 import { DRAFT_KEY } from './settingsConstants';
 import { COUNTRIES_TUPLE } from '../../utils/menaCountries';
+import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
 
 const SF_COUNTRIES = COUNTRIES_TUPLE;
-const SF_INDUSTRIES = ['Fintech','Edtech','Healthtech','E-Commerce','Logistics','AI & ML','Proptech','Cleantech','SaaS','Web3','Media','HR & Work','Foodtech','Traveltech','Other'];
 
 const SI = { display:'block', width:'100%', padding:'11px 14px', borderRadius:11, border:'1.5px solid #e8e8e8', fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:'none', boxSizing:'border-box', background:'#fff', color:'#0a0a0a' };
 const SL = { display:'block', fontSize:11, fontWeight:700, color:'#999', textTransform:'uppercase', letterSpacing:'.07em', marginBottom:8 };
@@ -26,6 +26,14 @@ export default function SubmitProductForm({ user, onSuccess, onCancel, initialDr
   const [entityResults,  setEntityResults]  = useState([]);
   const [entityOpen,     setEntityOpen]     = useState(false);
   const [selectedEntity, setSelectedEntity] = useState(initialDraft?.selectedEntity || null);
+  const [sfIndOpen,      setSfIndOpen]      = useState(false);
+  const [sfIndSearch,    setSfIndSearch]    = useState('');
+  const sfIndRef = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (sfIndRef.current && !sfIndRef.current.contains(e.target)) setSfIndOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
 
   const [founderQ,       setFounderQ]       = useState('');
   const [founderResults, setFounderResults] = useState([]);
@@ -172,12 +180,34 @@ export default function SubmitProductForm({ user, onSuccess, onCancel, initialDr
             <label style={SL}>Website URL</label>
             <input type="url" value={form.website} onChange={e=>setForm(f=>({...f,website:e.target.value}))} style={SI} onFocus={fo} onBlur={bl}/>
           </div>
-          <div>
+          <div style={{ position:'relative' }} ref={sfIndRef}>
             <label style={SL}>Industry *</label>
-            <select value={form.industry} onChange={e=>setForm(f=>({...f,industry:e.target.value}))} style={{ ...SI, cursor:'pointer' }} onFocus={fo} onBlur={bl}>
-              <option value="">Select…</option>
-              {SF_INDUSTRIES.map(i => <option key={i}>{i}</option>)}
-            </select>
+            <div onClick={() => { setSfIndOpen(o=>!o); setSfIndSearch(''); }}
+              style={{ ...SI, display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', borderColor: sfIndOpen ? 'var(--orange)' : '#e8e8e8', userSelect:'none' }}>
+              <span style={{ color: form.industry ? '#0a0a0a' : '#aaa', display:'flex', alignItems:'center', gap:7 }}>
+                {form.industry ? <><span style={{ fontSize:15 }}>{INDUSTRY_ICONS[form.industry]||'🏭'}</span>{form.industry}</> : 'Select…'}
+              </span>
+              <span style={{ fontSize:10, color:'#aaa', flexShrink:0 }}>▼</span>
+            </div>
+            {sfIndOpen && (
+              <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:100, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 28px rgba(0,0,0,.1)' }}>
+                <div style={{ padding:'7px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                  <input value={sfIndSearch} onChange={e=>setSfIndSearch(e.target.value)} placeholder="Search industry…" autoFocus
+                    style={{ width:'100%', padding:'5px 9px', border:'1.5px solid #e8e8e8', borderRadius:8, fontSize:13, fontFamily:'inherit', outline:'none', background:'#fafafa', boxSizing:'border-box' }}/>
+                </div>
+                <div style={{ maxHeight:200, overflowY:'auto', overscrollBehavior:'contain' }}>
+                  {INDUSTRIES.filter(i => i.toLowerCase().includes(sfIndSearch.toLowerCase())).map(i => (
+                    <div key={i} onClick={() => { setForm(f=>({...f,industry:i})); setSfIndOpen(false); setSfIndSearch(''); }}
+                      style={{ padding:'9px 14px', cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:8, fontWeight: form.industry===i?700:500, color: form.industry===i?'var(--orange)':'#333', background: form.industry===i?'var(--orange-light)':'#fff', borderBottom:'1px solid #f4f4f4' }}
+                      onMouseEnter={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fafafa'; }}
+                      onMouseLeave={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fff'; }}>
+                      <span style={{ fontSize:15 }}>{INDUSTRY_ICONS[i]||'🏭'}</span>
+                      {i}
+                    </div>
+                  ))}
+                </div>
+              </div>
+            )}
           </div>
         </div>
         <div style={{ marginBottom:32 }}>

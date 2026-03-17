@@ -4,6 +4,7 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useUI } from '../../context/UIContext';
 import { MENA_COUNTRIES } from '../../utils/menaCountries';
+import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
 
 const STAGE_COLORS = {
   'Ideation Stage':{ bg:'#f0fdf4', color:'#15803d' },
@@ -26,13 +27,6 @@ const STAGE_COLORS = {
 const COUNTRY_FLAGS = {
   ...Object.fromEntries(MENA_COUNTRIES.map(c => [c.name, c.flag])),
   'Turkey':'🇹🇷','Pakistan':'🇵🇰','Pan-Arab':'🌍','MENA':'🌍',
-};
-
-const INDUSTRY_ICONS = {
-  'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥',
-  'E-Commerce':'🛒','Logistics':'🚚','Foodtech':'🍔','Proptech':'🏠',
-  'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
-  'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
 };
 
 const STAGE_OPTIONS = ['Ideation Stage', 'Pre-Seed', 'Seed'];
@@ -281,7 +275,7 @@ export default function ListingPage() {
   });
 
   const allCountries  = MENA_COUNTRIES.map(c => c.name);
-  const allIndustries = [...new Set(rawData.flatMap(i => i.industries || (i.industry?[i.industry]:[])))].sort();
+  const allIndustries = INDUSTRIES;
   const allStages     = [...new Set(rawData.map(i => i.stage))].filter(Boolean).sort();
   const hasFilters    = selCountries.length + selIndustries.length + selStages.length > 0;
 

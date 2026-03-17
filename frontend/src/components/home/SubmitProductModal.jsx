@@ -6,9 +6,9 @@ import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import { COUNTRIES_TUPLE } from '../../utils/menaCountries';
 
+import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
 const DRAFT_KEY = 'tlmena_draft_product';
 const COUNTRIES = COUNTRIES_TUPLE;
-const INDUSTRIES = ['Fintech','Edtech','Healthtech','E-Commerce','Logistics','AI & ML','Proptech','Cleantech','SaaS','Web3','Media','HR & Work','Foodtech','Traveltech','Other'];
 
 const inp = { display:'block', width:'100%', padding:'11px 14px', borderRadius:11, border:'1.5px solid #e8e8e8', fontSize:14, fontFamily:"'DM Sans',sans-serif", outline:'none', boxSizing:'border-box', background:'#fff' };
 const lbl = { display:'block', fontSize:12, fontWeight:700, color:'#999', letterSpacing:'.01em', marginBottom:7 };
@@ -75,7 +75,8 @@ export default function SubmitProductModal({ open, onClose }) {
 
   // Custom dropdowns
   const [industryDDOpen, setIndustryDDOpen] = useState(false);
-  const [stageDDOpen, setStageDDOpen] = useState(false);
+  const [stageDDOpen,    setStageDDOpen]    = useState(false);
+  const [indSearch,      setIndSearch]      = useState('');
   const industryDDRef = useRef(null);
   const stageDDRef    = useRef(null);
 
@@ -455,15 +456,22 @@ export default function SubmitProductModal({ open, onClose }) {
               <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="#999" strokeWidth="2.5"><polyline points="6 9 12 15 18 9"/></svg>
             </div>
             {industryDDOpen && (
-              <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', marginTop:4, maxHeight:220, overflowY:'auto' }}>
-                {INDUSTRIES.map(i => (
-                  <div key={i} onClick={() => { setForm(f=>({...f,industry:i})); setIndustryDDOpen(false); }}
-                    style={{ padding:'10px 14px', cursor:'pointer', fontSize:13, fontWeight: form.industry===i?700:500, color: form.industry===i?'var(--orange)':'#333', background: form.industry===i?'var(--orange-light)':'#fff', borderBottom:'1px solid #f4f4f4', transition:'background .1s' }}
-                    onMouseEnter={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fafafa'; }}
-                    onMouseLeave={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fff'; }}>
-                    {i}
-                  </div>
-                ))}
+              <div style={{ position:'absolute', top:'100%', left:0, right:0, zIndex:200, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 32px rgba(0,0,0,.12)', marginTop:4 }}>
+                <div style={{ padding:'8px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                  <input value={indSearch} onChange={e=>setIndSearch(e.target.value)} placeholder="Search industry…" autoFocus
+                    style={{ width:'100%', padding:'6px 10px', border:'1.5px solid #e8e8e8', borderRadius:8, fontSize:13, fontFamily:'inherit', outline:'none', background:'#fafafa', boxSizing:'border-box' }}/>
+                </div>
+                <div style={{ maxHeight:200, overflowY:'auto', overscrollBehavior:'contain' }}>
+                  {INDUSTRIES.filter(i => i.toLowerCase().includes(indSearch.toLowerCase())).map(i => (
+                    <div key={i} onClick={() => { setForm(f=>({...f,industry:i})); setIndustryDDOpen(false); setIndSearch(''); }}
+                      style={{ padding:'9px 14px', cursor:'pointer', fontSize:13, fontWeight: form.industry===i?700:500, color: form.industry===i?'var(--orange)':'#333', background: form.industry===i?'var(--orange-light)':'#fff', borderBottom:'1px solid #f4f4f4', display:'flex', alignItems:'center', gap:8 }}
+                      onMouseEnter={ev => { if(form.industry!==i) ev.currentTarget.style.background='#fafafa'; }}
+                      onMouseLeave={ev => { if(form.industry!==i) ev.currentTarget.style.background = form.industry===i?'var(--orange-light)':'#fff'; }}>
+                      <span style={{ fontSize:15 }}>{INDUSTRY_ICONS[i] || '🏭'}</span>
+                      {i}
+                    </div>
+                  ))}
+                </div>
               </div>
             )}
           </div>

@@ -58,7 +58,7 @@ export const NAV_ITEMS = [
   { key:'security',  icon:'🔒', label:'Security'            },
 ];
 
-export const MENA_INDUSTRIES = ['AI & ML','Cleantech','Cybersecurity','Dev Tools','E-Commerce','Edtech','Fintech','Foodtech','Healthtech','HR & Work','Logistics','Media','Proptech','Traveltech','Web3'];
+export { INDUSTRIES as MENA_INDUSTRIES } from '../../utils/menaIndustries';
 
 export { COUNTRIES_VL as MENA_COUNTRIES_LIST } from '../../utils/menaCountries';
 

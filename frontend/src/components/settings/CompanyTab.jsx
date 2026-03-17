@@ -1,5 +1,6 @@
-import React from 'react';
-import { MENA_INDUSTRIES, MENA_COUNTRIES_LIST, FUNDING_STAGES, labelStyle } from './settingsConstants';
+import React, { useState, useRef, useEffect } from 'react';
+import { MENA_COUNTRIES_LIST, FUNDING_STAGES, labelStyle } from './settingsConstants';
+import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
 
 export default function CompanyTab({
   assocQ, assocResults, assocSelected, assocCurrent, assocSaving,
@@ -18,9 +19,17 @@ export default function CompanyTab({
   coSaving, handleCoLogoUpload, toggleCoStage, toggleCoCountry, handleCoSubmit,
 }) {
   const inpStyle = { width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' };
-  const selStyle = { ...inpStyle, background:'#fff', cursor:'pointer' };
   const fo = e => { e.target.style.borderColor='var(--orange)'; };
   const bl = e => { e.target.style.borderColor='#e8e8e8'; };
+
+  const [indOpen,   setIndOpen]   = useState(false);
+  const [indSearch, setIndSearch] = useState('');
+  const indRef = useRef(null);
+  useEffect(() => {
+    const h = (e) => { if (indRef.current && !indRef.current.contains(e.target)) setIndOpen(false); };
+    document.addEventListener('mousedown', h);
+    return () => document.removeEventListener('mousedown', h);
+  }, []);
 
   const yearOpts = Array.from({length:2026-1990+1},(_,i)=>2026-i);
   const ENTITY_TYPES = ['Company','Accelerator/Incubator','Venture Studio','Investment Firm'];
@@ -201,12 +210,34 @@ export default function CompanyTab({
             </div>
 
             <div className="settings-form-grid" style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
-              <div>
+              <div style={{ position:'relative' }} ref={indRef}>
                 <label style={labelStyle}>INDUSTRY</label>
-                <select value={coIndustry} onChange={e=>setCoIndustry(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
-                  <option value="">Select industry</option>
-                  {MENA_INDUSTRIES.map(i => <option key={i} value={i}>{i}</option>)}
-                </select>
+                <div onClick={() => { setIndOpen(o=>!o); setIndSearch(''); }}
+                  style={{ ...inpStyle, display:'flex', alignItems:'center', justifyContent:'space-between', cursor:'pointer', borderColor: indOpen ? 'var(--orange)' : '#e8e8e8', userSelect:'none' }}>
+                  <span style={{ color: coIndustry ? '#0a0a0a' : '#aaa', display:'flex', alignItems:'center', gap:7 }}>
+                    {coIndustry ? <><span style={{ fontSize:15 }}>{INDUSTRY_ICONS[coIndustry]||'🏭'}</span>{coIndustry}</> : 'Select industry'}
+                  </span>
+                  <span style={{ fontSize:10, color:'#aaa', flexShrink:0 }}>▼</span>
+                </div>
+                {indOpen && (
+                  <div style={{ position:'absolute', top:'calc(100% + 4px)', left:0, right:0, zIndex:100, background:'#fff', border:'1.5px solid #e8e8e8', borderRadius:12, boxShadow:'0 8px 28px rgba(0,0,0,.1)' }}>
+                    <div style={{ padding:'7px 10px', borderBottom:'1px solid #f0f0f0' }}>
+                      <input value={indSearch} onChange={e=>setIndSearch(e.target.value)} placeholder="Search industry…" autoFocus
+                        style={{ width:'100%', padding:'5px 9px', border:'1.5px solid #e8e8e8', borderRadius:8, fontSize:13, fontFamily:'Inter,sans-serif', outline:'none', background:'#fafafa', boxSizing:'border-box' }}/>
+                    </div>
+                    <div style={{ maxHeight:200, overflowY:'auto', overscrollBehavior:'contain' }}>
+                      {INDUSTRIES.filter(i => i.toLowerCase().includes(indSearch.toLowerCase())).map(i => (
+                        <div key={i} onClick={() => { setCoIndustry(i); setIndOpen(false); setIndSearch(''); }}
+                          style={{ padding:'9px 14px', cursor:'pointer', fontSize:13, display:'flex', alignItems:'center', gap:8, fontWeight: coIndustry===i?700:500, color: coIndustry===i?'var(--orange)':'#333', background: coIndustry===i?'var(--orange-light)':'#fff', borderBottom:'1px solid #f4f4f4' }}
+                          onMouseEnter={ev => { if(coIndustry!==i) ev.currentTarget.style.background='#fafafa'; }}
+                          onMouseLeave={ev => { if(coIndustry!==i) ev.currentTarget.style.background='#fff'; }}>
+                          <span style={{ fontSize:15 }}>{INDUSTRY_ICONS[i]||'🏭'}</span>
+                          {i}
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                )}
               </div>
               <div style={{ position:'relative' }}>
                 <label style={labelStyle}>COUNTRY (select all that apply)</label>

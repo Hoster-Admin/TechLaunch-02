@@ -8,15 +8,7 @@ import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
 import toast from 'react-hot-toast';
 import { COUNTRIES_PAIR, COUNTRY_MATCH } from '../../utils/menaCountries';
-
-
-const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
-const INDUSTRY_ICONS = {
-  'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥',
-  'E-Commerce':'🛒','Logistics':'🚚','Foodtech':'🍔','Proptech':'🏠',
-  'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
-  'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
-};
+import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
 const STAGES = ['Idea Stage','Pre-Seed','Seed','Series A','Series B+','Bootstrapped'];
 
 const COUNTRIES = COUNTRIES_PAIR;
