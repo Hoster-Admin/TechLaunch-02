@@ -7,7 +7,10 @@ import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
+import { COUNTRIES_PAIR } from '../../utils/menaCountries';
 
+const COUNTRIES = COUNTRIES_PAIR;
+const COUNTRY_NAMES = Object.fromEntries(COUNTRIES.map(([code, label]) => [code, label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim()]));
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
 const INDUSTRY_ICONS = {
@@ -16,14 +19,6 @@ const INDUSTRY_ICONS = {
   'Traveltech':'✈️','Cleantech':'♻️','Cybersecurity':'🔒','HR & Work':'👔',
   'Media':'📱','Dev Tools':'⚙️','Web3':'⛓️',
 };
-const COUNTRIES  = [
-  ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],['eg','🇪🇬 Egypt'],['jo','🇯🇴 Jordan'],
-  ['ma','🇲🇦 Morocco'],['kw','🇰🇼 Kuwait'],['qa','🇶🇦 Qatar'],['bh','🇧🇭 Bahrain'],
-  ['tn','🇹🇳 Tunisia'],['lb','🇱🇧 Lebanon'],['iq','🇮🇶 Iraq'],['om','🇴🇲 Oman'],
-  ['ly','🇱🇾 Libya'],['dz','🇩🇿 Algeria'],['sy','🇸🇾 Syria'],['ye','🇾🇪 Yemen'],
-  ['ps','🇵🇸 Palestine'],['sd','🇸🇩 Sudan'],
-];
-const COUNTRY_NAMES = Object.fromEntries(COUNTRIES.map(([code, label]) => [code, label.replace(/[\u{1F1E0}-\u{1F1FF}]{2}/gu,'').trim()]));
 
 const ARTICLES = [
   { tag:'Guide',        title:'How to Get the Best Out of Tech Launch as a Founder',            author:'Rania Al-Masri', initials:'RA', readTime:'4 min read', date:'Mar 6', slug:'how-to-get-best-out-of-tech-launch'  },

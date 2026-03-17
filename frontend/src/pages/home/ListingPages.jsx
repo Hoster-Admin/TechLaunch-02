@@ -3,6 +3,7 @@ import { useParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useUI } from '../../context/UIContext';
+import { MENA_COUNTRIES } from '../../utils/menaCountries';
 
 const STAGE_COLORS = {
   'Ideation Stage':{ bg:'#f0fdf4', color:'#15803d' },
@@ -23,12 +24,8 @@ const STAGE_COLORS = {
 };
 
 const COUNTRY_FLAGS = {
-  'Saudi Arabia':'🇸🇦','UAE':'🇦🇪','Egypt':'🇪🇬','Jordan':'🇯🇴',
-  'Kuwait':'🇰🇼','Qatar':'🇶🇦','Bahrain':'🇧🇭','Oman':'🇴🇲',
-  'Morocco':'🇲🇦','Tunisia':'🇹🇳','Lebanon':'🇱🇧','Iraq':'🇮🇶',
-  'Palestine':'🇵🇸','Libya':'🇱🇾','Algeria':'🇩🇿','Sudan':'🇸🇩',
-  'Yemen':'🇾🇪','Syria':'🇸🇾','Turkey':'🇹🇷','Pakistan':'🇵🇰',
-  'Pan-Arab':'🌍', 'MENA':'🌍',
+  ...Object.fromEntries(MENA_COUNTRIES.map(c => [c.name, c.flag])),
+  'Turkey':'🇹🇷','Pakistan':'🇵🇰','Pan-Arab':'🌍','MENA':'🌍',
 };
 
 const INDUSTRY_ICONS = {

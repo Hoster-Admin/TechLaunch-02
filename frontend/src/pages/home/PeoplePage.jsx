@@ -5,27 +5,9 @@ import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
 import { usersAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { COUNTRIES_VALUE_LABEL } from '../../utils/menaCountries';
 
-const MENA_COUNTRIES = [
-  { value:'Saudi Arabia', label:'🇸🇦 Saudi Arabia' },
-  { value:'UAE',          label:'🇦🇪 UAE'           },
-  { value:'Egypt',        label:'🇪🇬 Egypt'         },
-  { value:'Jordan',       label:'🇯🇴 Jordan'        },
-  { value:'Kuwait',       label:'🇰🇼 Kuwait'        },
-  { value:'Qatar',        label:'🇶🇦 Qatar'         },
-  { value:'Bahrain',      label:'🇧🇭 Bahrain'       },
-  { value:'Oman',         label:'🇴🇲 Oman'          },
-  { value:'Morocco',      label:'🇲🇦 Morocco'       },
-  { value:'Tunisia',      label:'🇹🇳 Tunisia'       },
-  { value:'Lebanon',      label:'🇱🇧 Lebanon'       },
-  { value:'Iraq',         label:'🇮🇶 Iraq'          },
-  { value:'Palestine',    label:'🇵🇸 Palestine'     },
-  { value:'Libya',        label:'🇱🇾 Libya'         },
-  { value:'Algeria',      label:'🇩🇿 Algeria'       },
-  { value:'Sudan',        label:'🇸🇩 Sudan'         },
-  { value:'Yemen',        label:'🇾🇪 Yemen'         },
-  { value:'Syria',        label:'🇸🇾 Syria'         },
-];
+const MENA_COUNTRIES = COUNTRIES_VALUE_LABEL;
 
 
 function AvatarCircle({ user, size = 48 }) {

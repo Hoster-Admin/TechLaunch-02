@@ -8,10 +8,11 @@ import { useUI } from '../../context/UIContext';
 import { usersAPI, productsAPI } from '../../utils/api';
 import ProductCard from '../../components/home/ProductCard';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
+import { MENA_COUNTRIES } from '../../utils/menaCountries';
 
 const PERSONA_ICONS = { Founder:'🚀', Investor:'💰', Builder:'⚡', 'Product Manager':'🧠', Accelerator:'🏢', Enthusiast:'⭐', 'Venture Studio':'🏗️' };
 const PERSONA_MAP   = { founder:'Founder', investor:'Investor', builder:'Builder', pm:'Product Manager', accelerator:'Accelerator', enthusiast:'Enthusiast', venture:'Venture Studio', 'product manager':'Product Manager', 'venture studio':'Venture Studio' };
-const COUNTRY_NAMES = { sa:'Saudi Arabia',ae:'UAE',eg:'Egypt',jo:'Jordan',ma:'Morocco',kw:'Kuwait',qa:'Qatar',bh:'Bahrain',om:'Oman',lb:'Lebanon',iq:'Iraq',tn:'Tunisia',dz:'Algeria',ly:'Libya' };
+const COUNTRY_NAMES = Object.fromEntries(MENA_COUNTRIES.map(c => [c.code, c.name]));
 
 function timeAgo(dateStr) {
   if (!dateStr) return '';

@@ -4,6 +4,7 @@ import { Helmet } from 'react-helmet-async';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { statsAPI } from '../../utils/api';
+import { COUNTRY_META } from '../../utils/menaCountries';
 
 const INDUSTRY_META = {
   'Fintech':         { icon:'💳', desc:'Payments, banking, and financial services' },
@@ -28,26 +29,6 @@ const INDUSTRY_META = {
   'Other':           { icon:'📦', desc:'Other innovative technology products' },
 };
 
-const COUNTRY_META = {
-  sa: { flag:'🇸🇦', name:'Saudi Arabia', desc:"Kingdom's leading tech hub — Riyadh & Jeddah" },
-  ae: { flag:'🇦🇪', name:'UAE',          desc:"MENA's most connected startup ecosystem" },
-  eg: { flag:'🇪🇬', name:'Egypt',        desc:"Africa's largest tech talent pool" },
-  jo: { flag:'🇯🇴', name:'Jordan',       desc:'The Silicon Valley of the Middle East' },
-  ma: { flag:'🇲🇦', name:'Morocco',      desc:'Rising Francophone tech scene' },
-  kw: { flag:'🇰🇼', name:'Kuwait',       desc:'GCC innovation with strong VC support' },
-  qa: { flag:'🇶🇦', name:'Qatar',        desc:"Backed by Qatar's Vision 2030" },
-  bh: { flag:'🇧🇭', name:'Bahrain',      desc:'RegTech hub with fintech-friendly laws' },
-  tn: { flag:'🇹🇳', name:'Tunisia',      desc:"Africa's first unicorn birthplace" },
-  lb: { flag:'🇱🇧', name:'Lebanon',      desc:'Resilient founder community' },
-  iq: { flag:'🇮🇶', name:'Iraq',         desc:'Emerging startup ecosystem' },
-  ps: { flag:'🇵🇸', name:'Palestine',    desc:'Innovative tech community' },
-  ly: { flag:'🇱🇾', name:'Libya',        desc:'Developing tech landscape' },
-  dz: { flag:'🇩🇿', name:'Algeria',      desc:'Growing North African ecosystem' },
-  sd: { flag:'🇸🇩', name:'Sudan',        desc:'Emerging fintech hub' },
-  ye: { flag:'🇾🇪', name:'Yemen',        desc:'Resilient startup community' },
-  sy: { flag:'🇸🇾', name:'Syria',        desc:'Talented diaspora founder network' },
-  om: { flag:'🇴🇲', name:'Oman',         desc:'Vision 2040 driving diversification' },
-};
 
 export default function DirectoryPage({ onSignIn, onSignUp }) {
   const navigate = useNavigate();

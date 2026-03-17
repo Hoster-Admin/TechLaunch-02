@@ -2,6 +2,7 @@ import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { MENA_COUNTRIES } from '../../utils/menaCountries';
 
 // ─── SHARED HELPERS ───────────────────────────────────
 function SectionCard({ title, sub, children, action }) {
@@ -77,7 +78,7 @@ function EmptyState({ icon='📭', title, sub }) {
 }
 
 // ─── USERS ────────────────────────────────────────────
-const MENA_COUNTRIES_U = ['UAE','Saudi Arabia','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain','Oman','Iraq','Lebanon','Tunisia','Libya','Algeria','Yemen','Sudan','Syria','Palestine'];
+const MENA_COUNTRIES_U = MENA_COUNTRIES.map(c => c.name);
 const PERSONAS_U = ['Founder','Investor','Product Manager','Enthusiast'];
 
 function AddUserModal({ onClose, onSuccess }) {
@@ -677,12 +678,7 @@ export function AdminReports() {
   const maxPersona  = Math.max(1, ...personas.map(p => Number(p.count)));
   const maxTrend    = Math.max(1, ...trend.map(t => Number(t.signups)));
 
-  const COUNTRY_FLAGS = {
-    'Saudi Arabia':'🇸🇦','UAE':'🇦🇪','Egypt':'🇪🇬','Jordan':'🇯🇴','Morocco':'🇲🇦',
-    'Kuwait':'🇰🇼','Qatar':'🇶🇦','Bahrain':'🇧🇭','Oman':'🇴🇲','Iraq':'🇮🇶',
-    'Lebanon':'🇱🇧','Tunisia':'🇹🇳','Libya':'🇱🇾','Algeria':'🇩🇿','Yemen':'🇾🇪',
-    'Sudan':'🇸🇩','Syria':'🇸🇾','Palestine':'🇵🇸',
-  };
+  const COUNTRY_FLAGS = Object.fromEntries(MENA_COUNTRIES.map(c => [c.name, c.flag]));
 
   function BarRow({ label, pct, extra, barColor='var(--orange)' }) {
     return (

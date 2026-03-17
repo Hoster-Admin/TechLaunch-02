@@ -1,8 +1,9 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI, productsAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import { MENA_COUNTRIES as _MENA } from '../../utils/menaCountries';
 
-const MENA_COUNTRIES = ['UAE','Saudi Arabia','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain','Oman','Iraq','Lebanon','Tunisia','Libya','Algeria','Yemen','Sudan','Syria','Palestine'];
+const MENA_COUNTRIES = _MENA.map(c => c.name);
 const CATEGORIES = ['Fintech','Edtech','Healthtech','AI & ML','Logistics','E-Commerce','Foodtech','Dev Tools','SaaS','Proptech','HR Tech','Legal Tech','Other'];
 
 function AddProductModal({ onClose, onSuccess }) {

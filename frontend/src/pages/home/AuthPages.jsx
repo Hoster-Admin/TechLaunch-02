@@ -3,9 +3,10 @@ import { Link, useNavigate, useLocation, useSearchParams } from 'react-router-do
 import api from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import { MENA_COUNTRIES } from '../../utils/menaCountries';
 
 const PERSONAS  = ['Founder','Investor','Product Manager','Accelerator','Enthusiast'];
-const COUNTRIES = ['Saudi Arabia','UAE','Egypt','Jordan','Morocco','Kuwait','Qatar','Bahrain','Tunisia','Other'];
+const COUNTRIES = MENA_COUNTRIES.map(c => c.name);
 
 const pageStyle = {
   minHeight: '100vh', background: '#fafafa',

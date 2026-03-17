@@ -60,14 +60,7 @@ export const NAV_ITEMS = [
 
 export const MENA_INDUSTRIES = ['AI & ML','Cleantech','Cybersecurity','Dev Tools','E-Commerce','Edtech','Fintech','Foodtech','Healthtech','HR & Work','Logistics','Media','Proptech','Traveltech','Web3'];
 
-export const MENA_COUNTRIES_LIST = [
-  { v:'sa', l:'🇸🇦 Saudi Arabia' },{ v:'ae', l:'🇦🇪 UAE' },        { v:'eg', l:'🇪🇬 Egypt'   },
-  { v:'jo', l:'🇯🇴 Jordan'       },{ v:'ma', l:'🇲🇦 Morocco' },     { v:'kw', l:'🇰🇼 Kuwait'  },
-  { v:'qa', l:'🇶🇦 Qatar'        },{ v:'bh', l:'🇧🇭 Bahrain' },     { v:'tn', l:'🇹🇳 Tunisia' },
-  { v:'lb', l:'🇱🇧 Lebanon'      },{ v:'iq', l:'🇮🇶 Iraq'    },     { v:'om', l:'🇴🇲 Oman'    },
-  { v:'ly', l:'🇱🇾 Libya'        },{ v:'dz', l:'🇩🇿 Algeria' },     { v:'sy', l:'🇸🇾 Syria'   },
-  { v:'ye', l:'🇾🇪 Yemen'        },{ v:'ps', l:'🇵🇸 Palestine'},     { v:'sd', l:'🇸🇩 Sudan'   },
-];
+export { COUNTRIES_VL as MENA_COUNTRIES_LIST } from '../../utils/menaCountries';
 
 export const FUNDING_STAGES = ['Ideation Stage','Pre-Seed','Seed','MVP','Early Stage','Series A','Series B','Series C','Pre-IPO','Growth'];
 

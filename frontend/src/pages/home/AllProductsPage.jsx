@@ -7,6 +7,7 @@ import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
 import toast from 'react-hot-toast';
+import { COUNTRIES_PAIR, COUNTRY_MATCH } from '../../utils/menaCountries';
 
 
 const INDUSTRIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
@@ -18,21 +19,7 @@ const INDUSTRY_ICONS = {
 };
 const STAGES = ['Idea Stage','Pre-Seed','Seed','Series A','Series B+','Bootstrapped'];
 
-const COUNTRIES = [
-  ['sa','🇸🇦 Saudi Arabia'],['ae','🇦🇪 UAE'],       ['eg','🇪🇬 Egypt'],
-  ['jo','🇯🇴 Jordan'],     ['ma','🇲🇦 Morocco'],   ['kw','🇰🇼 Kuwait'],
-  ['qa','🇶🇦 Qatar'],      ['bh','🇧🇭 Bahrain'],   ['tn','🇹🇳 Tunisia'],
-  ['lb','🇱🇧 Lebanon'],    ['iq','🇮🇶 Iraq'],       ['om','🇴🇲 Oman'],
-  ['ly','🇱🇾 Libya'],      ['dz','🇩🇿 Algeria'],    ['sy','🇸🇾 Syria'],
-  ['ye','🇾🇪 Yemen'],      ['ps','🇵🇸 Palestine'],  ['sd','🇸🇩 Sudan'],
-];
-
-const COUNTRY_MATCH = {
-  sa:'saudi arabia', ae:'uae', eg:'egypt', jo:'jordan', ma:'morocco',
-  kw:'kuwait', qa:'qatar', bh:'bahrain', tn:'tunisia', lb:'lebanon',
-  iq:'iraq', om:'oman', ly:'libya', dz:'algeria', sy:'syria',
-  ye:'yemen', ps:'palestine', sd:'sudan',
-};
+const COUNTRIES = COUNTRIES_PAIR;
 
 export default function AllProductsPage({ onSignIn, onSignUp }) {
   const navigate = useNavigate();
