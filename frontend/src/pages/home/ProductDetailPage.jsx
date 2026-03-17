@@ -419,8 +419,8 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
             </div>
           )}
 
-          {/* Message owner */}
-          {user && (
+          {/* Message owner — hide if viewer is the product owner */}
+          {user && user.id !== p.user_id && (
             <div style={{ marginBottom:36 }}>
               <button onClick={() => openDM(ownerHandle.startsWith('@') ? ownerHandle : '@'+ownerHandle, ownerName, p.logo_emoji||'🚀')}
                 style={{ width:'100%', padding:14, borderRadius:14, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:800, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'center', gap:8, transition:'opacity .15s' }}
