@@ -408,12 +408,15 @@ launcherRouter.post('/',                       authenticate, writeLimiter,
   validate, launcherCtrl.createPost);
 launcherRouter.get ('/:id',                    optionalAuth, launcherCtrl.getPost);
 launcherRouter.post('/:id/like',               authenticate, upvoteLimiter, launcherCtrl.toggleLike);
+launcherRouter.patch('/:id',                   authenticate, launcherCtrl.editPost);
 launcherRouter.delete('/:id',                  authenticate, launcherCtrl.deletePost);
 launcherRouter.get ('/:id/comments',           optionalAuth, launcherCtrl.getComments);
 launcherRouter.post('/:id/comments',           authenticate, commentLimiter,
-  [body('body').trim().notEmpty().isLength({ max:2000 })],
+  [body('body').trim().notEmpty().isLength({ max:1000 })],
   validate, launcherCtrl.addComment);
 launcherRouter.post('/comments/:id/like',      authenticate, launcherCtrl.toggleCommentLike);
+launcherRouter.patch('/comments/:id',          authenticate, launcherCtrl.editComment);
+launcherRouter.delete('/comments/:id',         authenticate, launcherCtrl.deleteComment);
 
 // ══════════════════════════════════════════════════
 // UPLOAD  /api/upload

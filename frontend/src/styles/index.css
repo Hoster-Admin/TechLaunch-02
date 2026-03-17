@@ -285,10 +285,10 @@ nav {
 .product-tagline { font-size: 13px; color: var(--gray-600); line-height: 1.5; margin-bottom: 6px; font-weight: 400; }
 .product-meta { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; }
 .meta-tag { font-size: 11px; font-weight: 600; color: var(--gray-600); background: var(--gray-100); padding: 3px 10px; border-radius: 5px; }
-.product-actions { display: flex; flex-direction: column; align-items: center; gap: 8px; flex-shrink: 0; }
+.product-actions { display: flex; flex-direction: row; align-items: center; gap: 8px; flex-shrink: 0; }
 .upvote-btn {
-  display: flex; flex-direction: column; align-items: center; gap: 2px;
-  min-width: 54px; padding: 8px; border-radius: 10px;
+  display: flex; flex-direction: row; align-items: center; gap: 6px;
+  padding: 7px 12px; border-radius: 10px;
   border: 1.5px solid var(--gray-200); background: var(--white);
   cursor: pointer; transition: all .15s;
 }
@@ -299,12 +299,12 @@ nav {
 .upvote-btn.voted .upvote-count, .upvote-btn.voted .upvote-arrow { color: var(--white); }
 .bookmark-btn {
   width: 36px; height: 36px; border-radius: 8px;
-  border: none; background: transparent;
+  border: 1.5px solid var(--gray-200); background: transparent;
   display: grid; place-items: center; cursor: pointer;
   font-size: 14px; transition: all .15s; color: #bbb;
 }
-.bookmark-btn:hover { color: var(--orange); }
-.bookmark-btn.saved { color: var(--orange); }
+.bookmark-btn:hover { border-color: var(--orange); color: var(--orange); }
+.bookmark-btn.saved { border-color: var(--orange); color: var(--orange); }
 
 /* ── SIDEBAR ── */
 .sidebar-card { background: var(--white); border: 1px solid var(--gray-200); border-radius: var(--radius); padding: 24px; margin-bottom: 16px; }

@@ -53,6 +53,7 @@ function PersonCard({ person, currentUser, authLoading }) {
 
   const handleFollow = async (e) => {
     e.preventDefault();
+    e.stopPropagation();
     if (authLoading) return;
     if (!currentUser) { toast.error('Sign in to follow people'); return; }
     if (person.id === currentUser.id) return;
@@ -90,11 +91,12 @@ function PersonCard({ person, currentUser, authLoading }) {
           </div>
           {!isMe && (
             <div style={{ display:'flex', gap:6, flexShrink:0 }}>
-              <button onClick={handleFollow} disabled={loadingFollow}
+              <button onClick={handleFollow} disabled={loadingFollow || authLoading}
                 style={{ padding:'5px 14px', borderRadius:20, fontSize:12, fontWeight:700,
                   border:`1.5px solid ${following?'#e8e8e8':'var(--orange)'}`,
                   background:following?'#f8f8f8':'var(--orange)',
-                  color:following?'#666':'#fff', cursor:'pointer', transition:'all .15s' }}>
+                  color:following?'#666':'#fff', cursor: (loadingFollow || authLoading) ? 'default' : 'pointer',
+                  transition:'all .15s', opacity: authLoading ? 0.7 : 1 }}>
                 {loadingFollow ? '…' : following ? 'Following' : 'Follow'}
               </button>
             </div>
@@ -261,7 +263,7 @@ export function PeopleContent() {
   const handleClear = (e) => {
     if (e) e.stopPropagation();
     setSearch(''); setPersonas([]); setCountries([]);
-    navigate('/people', { replace: true });
+    setSearchParams({}, { replace: true });
     load(1, true, [], []);
   };
 

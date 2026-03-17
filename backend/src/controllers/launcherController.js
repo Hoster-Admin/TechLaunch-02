@@ -100,6 +100,8 @@ const toggleLike = async (req, res, next) => {
 const addComment = async (req, res, next) => {
   try {
     const { body, parent_id = null } = req.body;
+    if (!body || !body.trim()) return res.status(400).json({ success: false, message: 'Comment cannot be empty' });
+    if (body.trim().length > 1000) return res.status(400).json({ success: false, message: 'Comment is too long (Max 1000 characters)' });
     const { rows } = await query(`
       INSERT INTO launcher_post_comments (post_id, user_id, body, parent_id)
       VALUES ($1, $2, $3, $4)
@@ -212,4 +214,58 @@ const toggleCommentLike = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getPosts, getPost, createPost, toggleLike, getComments: getCommentsWithLikes, addComment, deletePost, toggleCommentLike };
+// ── PATCH /api/launcher/:id  — edit own post
+const editPost = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { content, title } = req.body;
+    const { rows } = await query('SELECT user_id FROM launcher_posts WHERE id=$1', [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Post not found' });
+    if (rows[0].user_id !== req.user.id && !['admin','moderator'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    const { rows: updated } = await query(
+      `UPDATE launcher_posts SET content=COALESCE($1,content), title=COALESCE($2,title) WHERE id=$3
+       RETURNING id, post_type, title, content, tag, image_url, likes_count, comments_count, created_at`,
+      [content?.trim() || null, title?.trim() || null, id]
+    );
+    res.json({ success: true, data: updated[0] });
+  } catch (err) { next(err); }
+};
+
+// ── DELETE /api/launcher/comments/:id  — delete own comment
+const deleteComment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query('SELECT user_id, post_id FROM launcher_post_comments WHERE id=$1', [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Comment not found' });
+    if (rows[0].user_id !== req.user.id && !['admin','moderator'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    await query('DELETE FROM launcher_post_comments WHERE id=$1', [id]);
+    await query('UPDATE launcher_posts SET comments_count=GREATEST(0,comments_count-1) WHERE id=$1', [rows[0].post_id]);
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+// ── PATCH /api/launcher/comments/:id  — edit own comment
+const editComment = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { body } = req.body;
+    if (!body || !body.trim()) return res.status(400).json({ success: false, message: 'Comment cannot be empty' });
+    if (body.trim().length > 1000) return res.status(400).json({ success: false, message: 'Comment is too long (Max 1000 characters)' });
+    const { rows } = await query('SELECT user_id FROM launcher_post_comments WHERE id=$1', [id]);
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Comment not found' });
+    if (rows[0].user_id !== req.user.id && !['admin','moderator'].includes(req.user.role)) {
+      return res.status(403).json({ success: false, message: 'Forbidden' });
+    }
+    const { rows: updated } = await query(
+      'UPDATE launcher_post_comments SET body=$1, edited=true WHERE id=$2 RETURNING id, body, created_at, edited',
+      [body.trim(), id]
+    );
+    res.json({ success: true, data: updated[0] });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getPosts, getPost, createPost, editPost, toggleLike, getComments: getCommentsWithLikes, addComment, deletePost, deleteComment, editComment, toggleCommentLike };

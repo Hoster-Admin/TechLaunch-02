@@ -51,6 +51,24 @@ function PostAvatar({ author, avatarColor, avatarUrl, size = 36 }) {
   );
 }
 
+/* ─── Delete Confirmation Modal ─────────────────────────────────── */
+function DeleteConfirmModal({ title, message, onConfirm, onCancel }) {
+  return (
+    <div style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,.45)', zIndex: 9000, display: 'flex', alignItems: 'center', justifyContent: 'center', padding: 24 }}
+      onClick={onCancel}>
+      <div onClick={e => e.stopPropagation()} style={{ background: '#fff', borderRadius: 18, padding: '32px 28px', maxWidth: 380, width: '100%', textAlign: 'center', boxShadow: '0 20px 60px rgba(0,0,0,.18)' }}>
+        <div style={{ fontSize: 42, marginBottom: 12 }}>🗑️</div>
+        <div style={{ fontSize: 17, fontWeight: 800, color: '#0a0a0a', marginBottom: 8 }}>{title || 'Delete?'}</div>
+        <div style={{ fontSize: 13, color: '#64748b', marginBottom: 24, lineHeight: 1.6 }}>{message || 'This action cannot be undone.'}</div>
+        <div style={{ display: 'flex', gap: 10, justifyContent: 'center' }}>
+          <button onClick={onCancel} style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: '1.5px solid #e2e8f0', background: '#fff', fontSize: 14, fontWeight: 700, cursor: 'pointer', color: '#64748b', fontFamily: 'Inter,sans-serif' }}>Cancel</button>
+          <button onClick={onConfirm} style={{ flex: 1, padding: '11px 0', borderRadius: 10, border: 'none', background: '#e15033', fontSize: 14, fontWeight: 700, cursor: 'pointer', color: '#fff', fontFamily: 'Inter,sans-serif' }}>Delete</button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function PostCard({ post, onDeleted, currentUser }) {
   const navigate = useNavigate();
   const [liked, setLiked]             = useState(post.liked);
@@ -62,8 +80,20 @@ function PostCard({ post, onDeleted, currentUser }) {
   const [loadingComments, setLoadingComments] = useState(false);
   const [reply, setReply]             = useState('');
   const [submittingReply, setSubmittingReply] = useState(false);
+  const [showMenu, setShowMenu]       = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [expanded, setExpanded]       = useState(false);
+  const menuRef = useRef(null);
   const tagStyle = TAG_COLORS[post.tag] || { bg: '#f4f4f4', color: '#555' };
   const isOwner = currentUser && currentUser.id === post.user_id;
+  const TRUNCATE_LIMIT = 300;
+  const needsTruncation = (post.content || '').length > TRUNCATE_LIMIT;
+
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   const goToProfile = (e) => { e.stopPropagation(); navigate(`/u/${post.author_handle}`); };
 
@@ -112,7 +142,7 @@ function PostCard({ post, onDeleted, currentUser }) {
   };
 
   const handleDelete = async () => {
-    if (!window.confirm('Delete this post?')) return;
+    setShowDeleteModal(false);
     try {
       await launcherAPI.deletePost(post.id);
       toast.success('Post deleted');
@@ -121,6 +151,15 @@ function PostCard({ post, onDeleted, currentUser }) {
   };
 
   return (
+    <>
+    {showDeleteModal && (
+      <DeleteConfirmModal
+        title="Delete post?"
+        message="This will permanently remove your post and all its replies."
+        onConfirm={handleDelete}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+    )}
     <div style={{
       background: '#fff', border: '1.5px solid #f0f0f0', borderRadius: 16, padding: '22px 24px',
     }}>
@@ -140,17 +179,35 @@ function PostCard({ post, onDeleted, currentUser }) {
           padding: '3px 9px', borderRadius: 20, background: tagStyle.bg, color: tagStyle.color,
         }}>{post.tag}</span>
         {isOwner && (
-          <button onClick={handleDelete}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#ccc', fontSize: 16, padding: '0 2px', lineHeight: 1 }}
-            title="Delete post">✕</button>
+          <div ref={menuRef} style={{ position: 'relative' }}>
+            <button onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', fontSize: 20, padding: '2px 6px', lineHeight: 1, borderRadius: 6 }}
+              title="Post options">⋯</button>
+            {showMenu && (
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,.1)', zIndex: 200, minWidth: 130, overflow: 'hidden' }}>
+                <button onClick={e => { e.stopPropagation(); setShowMenu(false); navigate(`/launcher/posts/${post.id}`); }}
+                  style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>✏️ Edit post</button>
+                <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowDeleteModal(true); }}
+                  style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#e15033', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>🗑️ Delete post</button>
+              </div>
+            )}
+          </div>
         )}
       </div>
 
-      <p
-        style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: `0 0 ${post.image_url ? '12px' : '16px'}`, cursor: 'pointer' }}
-        onClick={() => navigate(`/launcher/posts/${post.id}`)}
-        title="Open post"
-      >{post.content}</p>
+      <div style={{ marginBottom: post.image_url ? 12 : 16 }}>
+        <p
+          style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: 0, cursor: 'pointer', whiteSpace: 'pre-wrap' }}
+          onClick={() => navigate(`/launcher/posts/${post.id}`)}
+          title="Open post"
+        >{needsTruncation && !expanded ? (post.content || '').slice(0, TRUNCATE_LIMIT) + '…' : post.content}</p>
+        {needsTruncation && (
+          <button onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
+            style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e15033', fontSize: 12, fontWeight: 700, padding: '4px 0 0', fontFamily: 'Inter,sans-serif' }}>
+            {expanded ? 'Show less' : 'Read more'}
+          </button>
+        )}
+      </div>
 
       {post.image_url && (
         <div
@@ -161,6 +218,7 @@ function PostCard({ post, onDeleted, currentUser }) {
             src={post.image_url}
             alt="Post image"
             style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }}
+            onError={e => { e.currentTarget.style.display = 'none'; }}
           />
         </div>
       )}
@@ -236,20 +294,49 @@ function PostCard({ post, onDeleted, currentUser }) {
         </div>
       )}
     </div>
+    </>
   );
 }
 
-function ArticleCard({ article, onClick }) {
+function ArticleCard({ article, onClick, currentUser, onDeleted }) {
   const navigate = useNavigate();
+  const [showMenu, setShowMenu] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const menuRef = useRef(null);
   const tagStyle = TAG_COLORS[article.tag] || { bg: '#f4f4f4', color: '#555' };
   const excerpt = article.content ? article.content.slice(0, 160) + (article.content.length > 160 ? '…' : '') : '';
   const initials = article.author ? article.author.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const dateStr = article.created_at ? new Date(article.created_at).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
+  const isOwner = currentUser && currentUser.id === article.user_id;
+
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleDeleteArticle = async () => {
+    setShowDeleteModal(false);
+    try {
+      await launcherAPI.deletePost(article.id);
+      toast.success('Article deleted');
+      onDeleted?.(article.id);
+    } catch { toast.error('Failed to delete article'); }
+  };
 
   return (
+    <>
+    {showDeleteModal && (
+      <DeleteConfirmModal
+        title="Delete article?"
+        message="This will permanently remove your article."
+        onConfirm={handleDeleteArticle}
+        onCancel={() => setShowDeleteModal(false)}
+      />
+    )}
     <div onClick={onClick} style={{
       background: '#fff', border: '1.5px solid #f0f0f0', borderRadius: 16, padding: '22px 24px',
-      cursor: 'pointer', transition: 'box-shadow .15s, border-color .15s',
+      cursor: 'pointer', transition: 'box-shadow .15s, border-color .15s', position: 'relative',
     }}
     onMouseEnter={e => { e.currentTarget.style.boxShadow='0 4px 24px rgba(0,0,0,.06)'; e.currentTarget.style.borderColor='#e0e0e0'; }}
     onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.borderColor='#f0f0f0'; }}>
@@ -259,6 +346,20 @@ function ArticleCard({ article, onClick }) {
           {article.tag}
         </span>
         <span style={{ fontSize: 11, color: '#bbb', fontWeight: 600 }}>📄 Article</span>
+        {isOwner && (
+          <div ref={menuRef} style={{ marginLeft: 'auto', position: 'relative' }}>
+            <button onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', fontSize: 20, padding: '2px 6px', lineHeight: 1, borderRadius: 6 }}>⋯</button>
+            {showMenu && (
+              <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,.1)', zIndex: 200, minWidth: 140, overflow: 'hidden' }}>
+                <button onClick={e => { e.stopPropagation(); setShowMenu(false); navigate(`/launcher/posts/${article.id}`); }}
+                  style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>✏️ Edit article</button>
+                <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowDeleteModal(true); }}
+                  style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#e15033', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>🗑️ Delete article</button>
+              </div>
+            )}
+          </div>
+        )}
       </div>
       <h3 style={{ fontSize: 16, fontWeight: 800, color: '#0a0a0a', margin: '0 0 8px', lineHeight: 1.4 }}>
         {article.title}
@@ -268,12 +369,14 @@ function ArticleCard({ article, onClick }) {
       )}
       {article.image_url && (
         <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
-          <img src={article.image_url} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}/>
+          <img src={article.image_url} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}
+            onError={e => { e.currentTarget.parentElement.style.display = 'none'; }}/>
         </div>
       )}
       <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
         {article.avatar_url
-          ? <img src={article.avatar_url} alt="" style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }}/>
+          ? <img src={article.avatar_url} alt="" style={{ width: 24, height: 24, borderRadius: 6, objectFit: 'cover' }}
+              onError={e => { e.currentTarget.style.display = 'none'; }}/>
           : <div style={{ width: 24, height: 24, borderRadius: 6, background: article.avatar_color || '#0a0a0a',
               color: '#fff', display: 'grid', placeItems: 'center', fontSize: 9, fontWeight: 800 }}>{initials}</div>
         }
@@ -284,6 +387,7 @@ function ArticleCard({ article, onClick }) {
         <span style={{ fontSize: 11, color: '#bbb' }}>· {dateStr}</span>
       </div>
     </div>
+    </>
   );
 }
 
@@ -362,29 +466,38 @@ function CreatePostModal({ onClose, onCreated }) {
     setLoading(true);
     try {
       if (activeType === 'post') {
-        if (!postContent.trim()) { toast.error('Write something first'); return; }
+        if (!postContent.trim()) { toast.error('Write something first'); setLoading(false); return; }
         let image_url = null;
         if (postImg) {
-          const up = await uploadAPI.postImage(postImg);
-          image_url = up.data.data.url;
+          if (postImg.size > 5 * 1024 * 1024) { toast.error('Image size exceeds 5MB'); setLoading(false); return; }
+          try {
+            const up = await uploadAPI.postImage(postImg);
+            image_url = up.data.data.url;
+          } catch { toast.error('Image upload failed — try a smaller or different file'); setLoading(false); return; }
         }
         const res = await launcherAPI.createPost({ post_type: 'post', content: postContent.trim(), tag: postTag, image_url });
         onCreated(res.data.data);
         toast.success('Post shared!');
       } else {
-        if (!artTitle.trim()) { toast.error('Add a title for your article'); return; }
-        if (!artBody.trim())  { toast.error('Write your article content'); return; }
+        if (!artTitle.trim()) { toast.error('Add a title for your article'); setLoading(false); return; }
+        if (!artBody.trim())  { toast.error('Write your article content'); setLoading(false); return; }
         let image_url = null;
         if (artImg) {
-          const up = await uploadAPI.postImage(artImg);
-          image_url = up.data.data.url;
+          if (artImg.size > 5 * 1024 * 1024) { toast.error('Image size exceeds 5MB'); setLoading(false); return; }
+          try {
+            const up = await uploadAPI.postImage(artImg);
+            image_url = up.data.data.url;
+          } catch { toast.error('Image upload failed — try a smaller or different file'); setLoading(false); return; }
         }
         const res = await launcherAPI.createPost({ post_type: 'article', title: artTitle.trim(), content: artBody.trim(), tag: artTag, image_url });
         onCreated(res.data.data);
         toast.success('Article published!');
       }
       onClose();
-    } catch { toast.error('Failed to submit'); }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to submit — please try again';
+      toast.error(msg);
+    }
     finally { setLoading(false); }
   };
 
@@ -601,7 +714,7 @@ export default function LauncherPage() {
                 </div>
               ) : filtered.map(item =>
                 item.post_type === 'article'
-                  ? <ArticleCard key={item.id} article={item} onClick={() => navigate(`/launcher/posts/${item.id}`)}/>
+                  ? <ArticleCard key={item.id} article={item} currentUser={user} onDeleted={handlePostDeleted} onClick={() => navigate(`/launcher/posts/${item.id}`)}/>
                   : <PostCard key={item.id} post={item} currentUser={user}
                       onDeleted={handlePostDeleted}/>
               )}

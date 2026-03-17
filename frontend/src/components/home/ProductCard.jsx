@@ -11,6 +11,7 @@ export default function ProductCard({ product, rank, onVote }) {
   const [votes,     setVotes]     = useState(product.upvotes_count || 0);
   const [bookmarked, setBookmarked] = useState(product.user_bookmarked || false);
   const [loading,   setLoading]   = useState(false);
+  const [imgError,  setImgError]  = useState(false);
 
   const handleUpvote = async (e) => {
     e.stopPropagation();
@@ -56,8 +57,9 @@ export default function ProductCard({ product, rank, onVote }) {
       {rank && <div className="product-rank">#{rank}</div>}
 
       <div className="product-logo">
-        {product.logo_url
-          ? <img src={product.logo_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }}/>
+        {product.logo_url && !imgError
+          ? <img src={product.logo_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }}
+              onError={() => setImgError(true)}/>
           : <span style={{ fontSize: 26 }}>{product.logo_emoji || '🚀'}</span>
         }
       </div>
@@ -73,6 +75,11 @@ export default function ProductCard({ product, rank, onVote }) {
           {product.stage    && <span className="meta-tag">📊 {product.stage}</span>}
           {product.country  && <span className="meta-tag">{product.country}</span>}
           {(product.tags || []).map(t => <span key={t} className="meta-tag">{t}</span>)}
+          {!!product.comments_count && (
+            <span className="meta-tag" style={{ color: '#64748b' }}>
+              💬 {product.comments_count}
+            </span>
+          )}
         </div>
         {product.status === 'soon' && (
           <div className="product-waitlist-inline" onClick={e => e.stopPropagation()}
@@ -89,8 +96,8 @@ export default function ProductCard({ product, rank, onVote }) {
           <span className="upvote-count">{votes}</span>
         </button>
 
-        <button className={`bookmark-btn ${bookmarked ? 'saved' : ''}`} onClick={handleBookmark} title="Bookmark">
-          <svg width="18" height="18" viewBox="0 0 24 24"
+        <button className={`bookmark-btn ${bookmarked ? 'saved' : ''}`} onClick={handleBookmark} title="Save">
+          <svg width="16" height="16" viewBox="0 0 24 24"
             fill={bookmarked ? 'var(--orange)' : 'none'}
             stroke={bookmarked ? 'var(--orange)' : '#bbb'}
             strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">

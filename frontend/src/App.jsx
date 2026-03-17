@@ -186,7 +186,7 @@ export default function App() {
             toastOptions={{
               duration: 3000,
               style: { borderRadius:'12px', fontSize:'14px', fontWeight:500 },
-              success: { iconTheme: { primary:'#E15033', secondary:'#fff' } },
+              success: { iconTheme: { primary:'#16a34a', secondary:'#fff' } },
             }}
           />
         </UIProvider>

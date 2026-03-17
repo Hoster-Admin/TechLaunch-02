@@ -175,11 +175,14 @@ export const launcherAPI = {
   posts:           ()        => api.get('/launcher'),
   getPost:         (id)      => api.get(`/launcher/${id}`),
   createPost:      (data)    => api.post('/launcher', data),
+  editPost:        (id, data) => api.patch(`/launcher/${id}`, data),
   like:            (id)      => api.post(`/launcher/${id}/like`),
   deletePost:      (id)      => api.delete(`/launcher/${id}`),
   comments:        (id)      => api.get(`/launcher/${id}/comments`),
   addComment:      (id, b, parentId = null) => api.post(`/launcher/${id}/comments`, { body: b, parent_id: parentId || undefined }),
   likeComment:     (cid)     => api.post(`/launcher/comments/${cid}/like`),
+  deleteComment:   (cid)     => api.delete(`/launcher/comments/${cid}`),
+  editComment:     (cid, b)  => api.patch(`/launcher/comments/${cid}`, { body: b }),
 };
 
 export const statsAPI = {

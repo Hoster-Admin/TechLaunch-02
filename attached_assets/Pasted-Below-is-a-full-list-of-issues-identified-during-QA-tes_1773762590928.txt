@@ -1,0 +1,42 @@
+Below is a full list of issues identified during QA testing. Fix all of them in priority order.
+
+🔴 CRITICAL BUGS
+[Bug-3] Article publishing fails when an image is attached. The process hangs or returns a generic "Failed to submit" error. Fix the image upload pipeline so attachments are correctly linked to the post entity before final submission. Add descriptive error messages: e.g. "Image size exceeds 5MB" or "Unsupported file format."
+[Bug-7] Silent failure on long comments. When a comment exceeds the character limit, the system returns a generic "Failed to post comment" error. Fix the frontend/backend character limit mismatch. The toast must say: "Comment is too long (Max 1000 characters)" and show a live character counter in the input field.
+[Bug-14-Follow] Follow action reverts after a few seconds instead of persisting. The button shows a loading state then returns to "Follow" without saving. Fix the follow API call and ensure the new state is saved to the database and reflected immediately on the UI without requiring a page reload.
+[Bug-13] After a page refresh, clicking Follow shows "Please Login" despite an active session. The authentication token is not being correctly validated on the frontend after reload. Fix session persistence so the auth state survives page refreshes.
+
+🟠 FUNCTIONAL BUGS
+[Bug-15] Inconsistent follow behavior: For some users the button state changes but the follower count does not increase. For others the action does nothing. Root cause is likely a race condition or missing database write. Ensure every follow/unfollow action: (1) writes to DB, (2) increments/decrements follower count atomically, (3) updates UI immediately.
+[Bug-11] Follower count does not update in real-time after follow/unfollow. Sync the displayed count immediately on action, no page reload required.
+[Bug-12] The "Clear Filter" button on the People page does not reset filters. Instead it redirects the user away from the People section entirely. Fix it to reset all active filters and reload the default data in place.
+[Bug-1] Filter label does not update to show the selected value. After selecting a category (e.g., Fintech), the button still shows "1 Industries" instead of "Fintech." Make the filter label dynamic — it must reflect the active selection at all times.
+[Bug-2] Post images in the community feed appear broken (missing/unloaded). If the image cannot load, show a styled skeleton/placeholder with a loading indicator, not a broken image icon.
+
+🟡 UX / UI ISSUES
+[Bug-4] Text formatting (line breaks, spacing) is stripped when a post is published. The output renders as a single block of text. Fix:
+
+Frontend: apply white-space: pre-wrap to post content containers.
+Backend: store and return \n newline characters correctly.
+If using a rich text editor, ensure <br> or <p> tags are preserved on render.
+
+[Bug-5] Delete confirmation uses a native browser window.confirm() popup. Replace with a custom in-app modal that matches the design system. The modal must include: a clear warning message ("Are you sure you want to delete this post? This action cannot be undone."), a "Cancel" button, and a red "Delete" button. Also change the delete trigger icon from ✕ to a trash icon 🗑️ to avoid confusion with a close/dismiss action.
+[Bug-6] Success messages (e.g., "Article published") display a red checkmark icon. Red universally signals error. Change all success state icons and colors to green.
+[Bug-8] Long comments occupy excessive vertical space. Implement "Read More / See More" truncation: show only the first 4 lines by default. If the text exceeds this, append a "Read More" link that expands inline when clicked.
+[Bug-9] Users cannot edit or delete their own comments. Add:
+
+Edit: allows the user to modify comment text. Optionally add an "(edited)" label next to the timestamp.
+Delete: prompts a confirmation before permanently removing the comment.
+Restrict both actions to the comment author and system admins only.
+
+[Bug-10] The word "Post" appears above the back button on the full article page. It serves no function and is confusing. Remove it entirely.
+[Bug-16] Article cards in the community feed have no edit or delete controls for the article owner. Add a three-dot (⋯) overflow menu visible only to the post owner. It must contain: "Edit Article" and "Delete Article."
+[Bug-17] Community posts have no management menu. Add a three-dot (⋯) overflow menu to every post, visible only to the post owner. It must contain: "Edit Post" and "Delete Post."
+[Bug-18] Long posts in the feed show full content with no truncation. Show only the first 3 lines, followed by an ellipsis (…) and a "Read More" link that expands the full content or navigates to the post detail page.
+
+Additional context:
+
+Stack: React frontend, Node.js/Express backend, PostgreSQL database.
+Design tokens: primary orange #E8471C, Inter font, DM Mono for code/mono elements.
+All modals and toasts must follow the existing design system (rounded corners, consistent button styles).
+All follow/unfollow and like actions must be authenticated — unauthenticated users must be redirected to login, not shown a broken state.

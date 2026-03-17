@@ -60,7 +60,46 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
   const [showReplies, setShowReplies]   = useState(false);
   const [replyText, setReplyText]       = useState('');
   const [submitting, setSubmitting]     = useState(false);
+  const [expanded, setExpanded]         = useState(false);
+  const [editing, setEditing]           = useState(false);
+  const [editText, setEditText]         = useState(comment.body);
+  const [editSubmitting, setEditSubmitting] = useState(false);
+  const [commentBody, setCommentBody]   = useState(comment.body);
+  const [showMenu, setShowMenu]         = useState(false);
+  const [isEdited, setIsEdited]         = useState(comment.edited || false);
   const replyRef = useRef(null);
+  const menuRef  = useRef(null);
+  const isOwner = user && user.id === comment.user_id;
+  const TRUNCATE_LIMIT = 280;
+  const needsTruncation = commentBody.length > TRUNCATE_LIMIT;
+
+  useEffect(() => {
+    const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
+
+  const handleDeleteComment = async () => {
+    if (!window.confirm('Delete this comment? This cannot be undone.')) return;
+    try {
+      await launcherAPI.deleteComment(comment.id);
+      toast.success('Comment deleted');
+      onUpdate();
+    } catch { toast.error('Failed to delete comment'); }
+  };
+
+  const handleEditSubmit = async () => {
+    if (!editText.trim()) return;
+    if (editText.trim().length > 1000) { toast.error('Comment is too long (Max 1000 characters)'); return; }
+    setEditSubmitting(true);
+    try {
+      const res = await launcherAPI.editComment(comment.id, editText.trim());
+      setCommentBody(res.data.data.body);
+      setIsEdited(true);
+      setEditing(false);
+    } catch { toast.error('Failed to edit comment'); }
+    finally { setEditSubmitting(false); }
+  };
 
   const handleLike = async () => {
     if (!user) { setAuthModal('login'); return; }
@@ -126,8 +165,43 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
           padding: isReply ? '10px 14px' : '12px 16px',
           fontSize: isReply ? 13 : 14,
           color: '#1e293b', lineHeight: 1.65,
+          position: 'relative',
         }}>
-          <CommentBody body={comment.body} />
+          {isOwner && !editing && (
+            <div ref={menuRef} style={{ position: 'absolute', top: 8, right: 8 }}>
+              <button onClick={() => setShowMenu(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#94a3b8', fontSize: 16, padding: '2px 6px', borderRadius: 6, lineHeight: 1 }}>⋯</button>
+              {showMenu && (
+                <div style={{ position: 'absolute', right: 0, top: '100%', background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,.1)', zIndex: 100, minWidth: 120, overflow: 'hidden' }}>
+                  <button onClick={() => { setEditing(true); setEditText(commentBody); setShowMenu(false); }} style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 500 }}>✏️ Edit</button>
+                  <button onClick={() => { setShowMenu(false); handleDeleteComment(); }} style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#e15033', fontWeight: 500 }}>🗑️ Delete</button>
+                </div>
+              )}
+            </div>
+          )}
+          {editing ? (
+            <div>
+              <textarea value={editText} onChange={e => setEditText(e.target.value)} rows={3}
+                style={{ width: '100%', border: 'none', outline: 'none', resize: 'none', fontSize: isReply ? 13 : 14, fontFamily: 'Inter,sans-serif', color: '#1e293b', lineHeight: 1.65, background: 'transparent', boxSizing: 'border-box' }}
+                maxLength={1000} autoFocus/>
+              <div style={{ fontSize: 11, color: editText.length > 900 ? '#e15033' : '#94a3b8', textAlign: 'right', marginBottom: 8 }}>{editText.length}/1000</div>
+              <div style={{ display: 'flex', gap: 8, justifyContent: 'flex-end' }}>
+                <button onClick={() => setEditing(false)} style={{ padding: '5px 12px', borderRadius: 7, border: '1px solid #e2e8f0', background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer', fontFamily: 'Inter,sans-serif' }}>Cancel</button>
+                <button onClick={handleEditSubmit} disabled={editSubmitting || !editText.trim()} style={{ padding: '5px 14px', borderRadius: 7, border: 'none', background: '#e15033', color: '#fff', fontSize: 12, fontWeight: 700, cursor: 'pointer', fontFamily: 'Inter,sans-serif' }}>{editSubmitting ? 'Saving…' : 'Save'}</button>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div style={{ whiteSpace: 'pre-wrap' }}>
+                <CommentBody body={needsTruncation && !expanded ? commentBody.slice(0, TRUNCATE_LIMIT) + '…' : commentBody} />
+              </div>
+              {needsTruncation && (
+                <button onClick={() => setExpanded(v => !v)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e15033', fontSize: 12, fontWeight: 600, padding: '4px 0 0', fontFamily: 'Inter,sans-serif' }}>
+                  {expanded ? 'Show less' : 'Read more'}
+                </button>
+              )}
+              {isEdited && <span style={{ fontSize: 10, color: '#94a3b8', marginLeft: 6 }}>(edited)</span>}
+            </>
+          )}
         </div>
 
         {/* action row */}
@@ -317,14 +391,19 @@ export default function PostDetailPage() {
 
   const handleComment = async () => {
     if (!commentText.trim() || submitting) return;
+    if (commentText.trim().length > 1000) {
+      toast.error('Comment is too long (Max 1000 characters)');
+      return;
+    }
     setSubmitting(true);
     try {
       await launcherAPI.addComment(id, commentText.trim());
       setCommentText('');
       setCommentFocused(false);
       await load();
-    } catch {
-      toast.error('Failed to post comment');
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to post comment';
+      toast.error(msg);
     } finally {
       setSubmitting(false);
     }
@@ -367,7 +446,6 @@ export default function PostDetailPage() {
               cursor: 'pointer', fontSize: 14, color: '#334155', fontWeight: 700,
               fontFamily: 'Inter,sans-serif', padding: '6px 10px 6px 6px', borderRadius: 8,
             }}>← Back</button>
-            <span style={{ fontSize: 13, color: '#94a3b8', fontWeight: 500 }}>Post</span>
           </div>
         </div>
 
@@ -519,6 +597,7 @@ export default function PostDetailPage() {
                     onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); handleComment(); } }}
                     placeholder={`What do you think about this${post?.tag === 'Question' ? ' question' : ''}?`}
                     rows={commentFocused ? 3 : 1}
+                    maxLength={1100}
                     style={{
                       width: '100%', border: 'none', outline: 'none', resize: 'none',
                       fontSize: 14, fontFamily: 'Inter,sans-serif', color: '#1e293b',
@@ -526,6 +605,11 @@ export default function PostDetailPage() {
                       transition: 'height .2s',
                     }}
                   />
+                  {(commentFocused || commentText) && (
+                    <div style={{ fontSize: 11, color: commentText.length > 900 ? '#e15033' : '#94a3b8', textAlign: 'right', marginTop: 2 }}>
+                      {commentText.length}/1000
+                    </div>
+                  )}
                   {(commentFocused || commentText) && (
                     <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 10, paddingTop: 10, borderTop: '1px solid #f1f5f9' }}>
                       <button onClick={() => { setCommentText(''); setCommentFocused(false); }} style={{

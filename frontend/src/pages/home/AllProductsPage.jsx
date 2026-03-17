@@ -151,7 +151,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
             <div style={{ position:'relative' }} ref={indRef}>
               <button onClick={() => { setIndustryOpen(o=>!o); setCountryOpen(false); }}
                 style={{ ...btnBase, borderColor: selIndustries.length ? 'var(--orange)' : '#e8e8e8', color: selIndustries.length ? 'var(--orange)' : '#555', background: selIndustries.length ? 'var(--orange-light)' : '#fff' }}>
-                🏭 {selIndustries.length ? `${selIndustries.length} Industries` : 'All Industries'} <span style={{ fontSize:10 }}>▼</span>
+                🏭 {selIndustries.length === 1 ? selIndustries[0] : selIndustries.length > 1 ? `${selIndustries.length} Industries` : 'All Industries'} <span style={{ fontSize:10 }}>▼</span>
               </button>
               {industryOpen && (
                 <div style={dropMenuStyle}>
