@@ -238,11 +238,17 @@ const getPeople = async (req, res, next) => {
     const where = 'WHERE ' + conditions.join(' AND ');
     const offset = (parseInt(page) - 1) * parseInt(limit);
     params.push(parseInt(limit), offset);
+    const limitIdx  = params.length - 1;
+    const offsetIdx = params.length;
 
     const viewerId = req.user?.id || null;
-    const isFollowingExpr = viewerId
-      ? `EXISTS(SELECT 1 FROM follows WHERE follower_id='${viewerId}' AND following_id=u.id) AS is_following`
-      : `false AS is_following`;
+    let isFollowingExpr;
+    if (viewerId) {
+      params.push(viewerId);
+      isFollowingExpr = `EXISTS(SELECT 1 FROM follows WHERE follower_id=$${params.length} AND following_id=u.id) AS is_following`;
+    } else {
+      isFollowingExpr = `false AS is_following`;
+    }
 
     const { rows } = await query(`
       SELECT u.id, u.name, u.handle, u.avatar_url, u.avatar_color, u.headline, u.persona, u.verified,
@@ -250,7 +256,7 @@ const getPeople = async (req, res, next) => {
              ${isFollowingExpr}
       FROM users u ${where}
       ORDER BY u.followers_count DESC NULLS LAST, u.created_at DESC
-      LIMIT $${params.length - 1} OFFSET $${params.length}`, params
+      LIMIT $${limitIdx} OFFSET $${offsetIdx}`, params
     );
     const total = rows.length > 0 ? parseInt(rows[0].total) : 0;
     res.json({ success:true, data:rows.map(({total,...r})=>r), pagination:{total, page:parseInt(page)} });

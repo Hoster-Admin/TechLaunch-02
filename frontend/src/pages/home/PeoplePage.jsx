@@ -46,13 +46,14 @@ function AvatarCircle({ user, size = 48 }) {
   );
 }
 
-function PersonCard({ person, currentUser }) {
+function PersonCard({ person, currentUser, authLoading }) {
   const [following, setFollowing] = useState(!!person.is_following);
   const [followersCount, setFollowersCount] = useState(person.followers_count || 0);
   const [loadingFollow, setLoadingFollow] = useState(false);
 
   const handleFollow = async (e) => {
     e.preventDefault();
+    if (authLoading) return;
     if (!currentUser) { toast.error('Sign in to follow people'); return; }
     if (person.id === currentUser.id) return;
     setLoadingFollow(true);
@@ -194,7 +195,7 @@ function CountryDropdown({ selected, onChange }) {
 }
 
 export function PeopleContent() {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
@@ -226,7 +227,10 @@ export function PeopleContent() {
     finally { setLoading(false); }
   }, [search, personas, countries]);
 
-  useEffect(() => { load(1, true); }, [load]);
+  useEffect(() => {
+    if (authLoading) return;
+    load(1, true);
+  }, [load, authLoading]);
 
   const togglePersona = (val) => {
     const next = personas.includes(val) ? personas.filter(v => v !== val) : [...personas, val];
@@ -318,7 +322,7 @@ export function PeopleContent() {
       ) : (
         <>
           <div style={{ display:'grid', gridTemplateColumns:'repeat(auto-fill, minmax(280px, 1fr))', gap:16, marginBottom:24 }}>
-            {people.map(p => <PersonCard key={p.id} person={p} currentUser={user}/>)}
+            {people.map(p => <PersonCard key={p.id} person={p} currentUser={user} authLoading={authLoading}/>)}
           </div>
           {people.length < total && (
             <div style={{ textAlign:'center' }}>
