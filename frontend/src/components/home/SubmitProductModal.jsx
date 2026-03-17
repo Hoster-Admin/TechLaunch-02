@@ -76,6 +76,8 @@ export default function SubmitProductModal({ open, onClose }) {
   // Custom dropdowns
   const [industryDDOpen, setIndustryDDOpen] = useState(false);
   const [stageDDOpen, setStageDDOpen] = useState(false);
+  const industryDDRef = useRef(null);
+  const stageDDRef    = useRef(null);
 
   // Inline field validation
   const [fieldErrors, setFieldErrors] = useState({});
@@ -121,6 +123,16 @@ export default function SubmitProductModal({ open, onClose }) {
 
   const logoInputRef = useRef(null);
   const screenshotRefs = [useRef(null), useRef(null), useRef(null), useRef(null)];
+
+  // Close industry/stage dropdowns when clicking outside
+  useEffect(() => {
+    const handler = (e) => {
+      if (industryDDRef.current && !industryDDRef.current.contains(e.target)) setIndustryDDOpen(false);
+      if (stageDDRef.current    && !stageDDRef.current.contains(e.target))    setStageDDOpen(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
+  }, []);
 
   // Load all entities on mount
   useEffect(() => {
@@ -435,7 +447,7 @@ export default function SubmitProductModal({ open, onClose }) {
             </div>
           ))}
 
-          <div style={{ marginBottom:16, position:'relative' }}>
+          <div style={{ marginBottom:16, position:'relative' }} ref={industryDDRef}>
             <label style={lbl}>Industry *</label>
             <div onClick={() => { setIndustryDDOpen(!industryDDOpen); setStageDDOpen(false); }}
               style={{ ...inp, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', borderColor: industryDDOpen ? 'var(--orange)' : undefined }}>
@@ -456,7 +468,7 @@ export default function SubmitProductModal({ open, onClose }) {
             )}
           </div>
 
-          <div style={{ marginBottom:16, position:'relative' }}>
+          <div style={{ marginBottom:16, position:'relative' }} ref={stageDDRef}>
             <label style={lbl}>Stage</label>
             <div onClick={() => { setStageDDOpen(!stageDDOpen); setIndustryDDOpen(false); }}
               style={{ ...inp, cursor:'pointer', display:'flex', alignItems:'center', justifyContent:'space-between', borderColor: stageDDOpen ? 'var(--orange)' : undefined }}>

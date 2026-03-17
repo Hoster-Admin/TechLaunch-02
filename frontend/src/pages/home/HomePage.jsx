@@ -1,4 +1,4 @@
-import React, { useState, useEffect, useCallback } from 'react';
+import React, { useState, useEffect, useCallback, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/home/ProductCard';
@@ -42,16 +42,26 @@ export default function HomePage() {
   const [industrySearch, setIndustrySearch] = useState('');
   const [mobileFiltersOpen, setMobileFiltersOpen] = useState(false);
 
-  const openCountryDD = useCallback((e) => {
-    e.stopPropagation();
+  const countryWrapRef  = useRef(null);
+  const industryWrapRef = useRef(null);
+
+  const openCountryDD = useCallback(() => {
     setIndDD(false);
     setCountryDD(prev => !prev);
   }, []);
 
-  const openIndustryDD = useCallback((e) => {
-    e.stopPropagation();
+  const openIndustryDD = useCallback(() => {
     setCountryDD(false);
     setIndDD(prev => !prev);
+  }, []);
+
+  useEffect(() => {
+    const handler = (e) => {
+      if (countryWrapRef.current  && !countryWrapRef.current.contains(e.target))  setCountryDD(false);
+      if (industryWrapRef.current && !industryWrapRef.current.contains(e.target)) setIndDD(false);
+    };
+    document.addEventListener('mousedown', handler);
+    return () => document.removeEventListener('mousedown', handler);
   }, []);
 
   useEffect(() => {
@@ -124,7 +134,7 @@ export default function HomePage() {
           <div className={`filter-sidebar ${mobileFiltersOpen ? 'mobile-open' : ''}`}>
             <div className="filter-sidebar-section">
               <div className="filter-sidebar-label">🌍 Country</div>
-              <div className="country-dropdown-wrap">
+              <div className="country-dropdown-wrap" ref={countryWrapRef}>
                 <button className={`filter-sidebar-btn ${selectedCountries.length ? 'active' : ''}`} onClick={openCountryDD}>
                   {selectedCountries.length ? `${selectedCountries.length} selected` : 'All Countries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
                 </button>
@@ -152,7 +162,7 @@ export default function HomePage() {
 
             <div className="filter-sidebar-section">
               <div className="filter-sidebar-label">🏭 Industry</div>
-              <div className="country-dropdown-wrap">
+              <div className="country-dropdown-wrap" ref={industryWrapRef}>
                 <button className={`filter-sidebar-btn ${selectedIndustries.length ? 'active' : ''}`} onClick={openIndustryDD}>
                   {selectedIndustries.length ? `${selectedIndustries.length} selected` : 'All Industries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
                 </button>
