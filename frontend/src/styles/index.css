@@ -233,9 +233,9 @@ nav {
 .filter-sidebar-btn:hover { border-color: var(--gray-400); }
 .filter-sidebar-btn.active { border-color: var(--orange); color: var(--orange); }
 .filter-sidebar-dd {
-  position: absolute; top: 100%; left: 0; right: 0; margin-top: 4px;
+  margin-top: 6px;
   background: #fff; border: 1.5px solid var(--gray-200); border-radius: 12px;
-  box-shadow: 0 8px 24px rgba(0,0,0,.10); z-index: 9100;
+  box-shadow: 0 4px 12px rgba(0,0,0,.07);
 }
 .filter-sidebar-divider {
   height: 1px; background: var(--gray-200); margin: 16px 0;
@@ -338,7 +338,7 @@ nav {
 .country-dd-search { flex: 1; padding: 6px 10px; border-radius: 8px; border: 1.5px solid #e8e8e8; font-size: 12px; font-family: 'DM Sans', sans-serif; outline: none; background: #f8f8f8; }
 .country-dd-search:focus { border-color: var(--orange); background: #fff; }
 .country-dd-clear { font-size: 11px; font-weight: 700; color: var(--orange); background: none; border: none; cursor: pointer; }
-.country-dd-list { display: flex; flex-direction: column; gap: 0; max-height: 240px; overflow-y: auto; padding: 6px 0; }
+.country-dd-list { display: flex; flex-direction: column; gap: 0; max-height: 220px; overflow-y: auto; padding: 6px 0; overscroll-behavior: contain; }
 .country-dd-item { display: flex; align-items: center; gap: 9px; padding: 8px 14px; cursor: pointer; font-size: 13px; font-weight: 500; color: var(--gray-800); transition: background .1s; user-select: none; }
 .country-dd-item:hover { background: #fff5f3; }
 .country-dd-item input { accent-color: var(--orange); width: 15px; height: 15px; cursor: pointer; flex-shrink: 0; }

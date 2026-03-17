@@ -124,7 +124,7 @@ export default function HomePage() {
           <div className={`filter-sidebar ${mobileFiltersOpen ? 'mobile-open' : ''}`}>
             <div className="filter-sidebar-section">
               <div className="filter-sidebar-label">🌍 Country</div>
-              <div className="country-dropdown-wrap" style={{ position: 'relative' }}>
+              <div className="country-dropdown-wrap">
                 <button className={`filter-sidebar-btn ${selectedCountries.length ? 'active' : ''}`} onClick={openCountryDD}>
                   {selectedCountries.length ? `${selectedCountries.length} selected` : 'All Countries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
                 </button>
@@ -152,7 +152,7 @@ export default function HomePage() {
 
             <div className="filter-sidebar-section">
               <div className="filter-sidebar-label">🏭 Industry</div>
-              <div className="country-dropdown-wrap" style={{ position: 'relative' }}>
+              <div className="country-dropdown-wrap">
                 <button className={`filter-sidebar-btn ${selectedIndustries.length ? 'active' : ''}`} onClick={openIndustryDD}>
                   {selectedIndustries.length ? `${selectedIndustries.length} selected` : 'All Industries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
                 </button>
@@ -251,10 +251,6 @@ export default function HomePage() {
         </div>
       </div>
 
-      {/* Close dropdowns when clicking outside */}
-      {(countryDDOpen || industryDDOpen) && (
-        <div style={{ position: 'fixed', inset: 0, zIndex: 8999 }} onClick={() => { setCountryDD(false); setIndDD(false); }}/>
-      )}
 
       <Footer/>
     </>
