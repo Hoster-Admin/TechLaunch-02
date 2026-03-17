@@ -21,7 +21,7 @@ const PERSONA_MAP = {
 
 export default function Navbar() {
   const { user, logout } = useAuth();
-  const { unreadCount, setSubmitOpen, setInboxOpen, setAuthModal, searchQuery, setSearchQuery } = useUI();
+  const { unreadCount, unreadMsgCount, setUnreadMsgCount, setSubmitOpen, setInboxOpen, setAuthModal, searchQuery, setSearchQuery } = useUI();
   const navigate = useNavigate();
   const [listOpen,    setListOpen]    = useState(false);
   const [userOpen,    setUserOpen]    = useState(false);
@@ -82,6 +82,13 @@ export default function Navbar() {
   const handleBellClick = () => {
     if (!user) { setAuthModal('login'); return; }
     setNotifOpen(o => !o);
+    setUserOpen(false);
+  };
+
+  const handleMsgClick = () => {
+    if (!user) { setAuthModal('login'); return; }
+    setInboxOpen(true);
+    setNotifOpen(false);
     setUserOpen(false);
   };
 
@@ -183,6 +190,15 @@ export default function Navbar() {
                 )}
               </div>
 
+              <div className="nav-bell-wrap" onClick={handleMsgClick} title="Messages">
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+                {unreadMsgCount > 0 && (
+                  <span className="notif-dot">{unreadMsgCount > 9 ? '9+' : unreadMsgCount}</span>
+                )}
+              </div>
+
               <div ref={avatarRef} className="user-avatar"
                 style={{ background:user.avatar_color||'var(--orange)', cursor:'pointer' }}
                 onClick={() => setUserOpen(v => !v)}>
@@ -257,6 +273,12 @@ export default function Navbar() {
                   <path d="M13.73 21a2 2 0 01-3.46 0"/>
                 </svg>
                 {unreadCount > 0 && <span className="notif-dot">{unreadCount > 9 ? '9+' : unreadCount}</span>}
+              </div>
+              <div className="nav-bell-wrap" onClick={handleMsgClick}>
+                <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="#555" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+                  <path d="M21 15a2 2 0 01-2 2H7l-4 4V5a2 2 0 012-2h14a2 2 0 012 2z"/>
+                </svg>
+                {unreadMsgCount > 0 && <span className="notif-dot">{unreadMsgCount > 9 ? '9+' : unreadMsgCount}</span>}
               </div>
               <div
                 onClick={() => navigate(`/u/${handle}`)}

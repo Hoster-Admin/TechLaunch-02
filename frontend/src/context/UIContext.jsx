@@ -14,6 +14,7 @@ export const UIProvider = ({ children }) => {
   const [votes,          setVotes]          = useState(new Set());
   const [notifications,  setNotifications]  = useState([]);
   const [unreadCount,    setUnreadCount]    = useState(0);
+  const [unreadMsgCount, setUnreadMsgCount] = useState(0);
   const [following,      setFollowing]      = useState(new Set());
   const [followingIds,   setFollowingIds]   = useState(new Set());
   const [profiles]                          = useState(DEMO_PROFILES);
@@ -115,6 +116,7 @@ export const UIProvider = ({ children }) => {
       bookmarks, toggleBookmark, loadBookmarks,
       votes, toggleVote,
       notifications, unreadCount, addNotification, markAllRead, markOneRead, loadNotifications,
+      unreadMsgCount, setUnreadMsgCount,
       openDM, inboxOpen, setInboxOpen, inboxTarget, setInboxTarget,
       following, toggleFollow,
       followingIds, toggleFollowId,

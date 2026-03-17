@@ -11,7 +11,7 @@ function Avatar({ name, avatarUrl, avatarColor, size = 36 }) {
 }
 
 export default function InboxModal() {
-  const { inboxOpen, setInboxOpen, inboxTarget, setInboxTarget } = useUI();
+  const { inboxOpen, setInboxOpen, inboxTarget, setInboxTarget, setUnreadMsgCount } = useUI();
   const { user } = useAuth();
   const [threads,       setThreads]       = useState([]);
   const [activeHandle,  setActiveHandle]  = useState(null);
@@ -25,9 +25,13 @@ export default function InboxModal() {
   const loadThreads = useCallback(async () => {
     try {
       const { data } = await api.get('/messages/threads');
-      if (data.success) setThreads(data.data);
+      if (data.success) {
+        setThreads(data.data);
+        const total = data.data.reduce((s, t) => s + (t.unread_count || 0), 0);
+        setUnreadMsgCount(total);
+      }
     } catch {}
-  }, []);
+  }, [setUnreadMsgCount]);
 
   const loadMessages = useCallback(async (handle) => {
     if (!handle) return;

@@ -4,6 +4,7 @@ import { Toaster } from 'react-hot-toast';
 import { AuthProvider, useAuth } from './context/AuthContext';
 import { UIProvider, useUI } from './context/UIContext';
 import { usersAPI } from './utils/api';
+import api from './utils/api';
 import { LoadingPage } from './components/ui';
 
 import AdminLayout  from './components/admin/AdminLayout';
@@ -58,7 +59,15 @@ const RequireAuth = ({ children }) => {
 
 function DataSync() {
   const { user } = useAuth();
-  const { loadNotifications, loadBookmarks } = useUI();
+  const { loadNotifications, loadBookmarks, setUnreadMsgCount } = useUI();
+
+  const fetchMsgCount = React.useCallback(() => {
+    if (!user) return;
+    api.get('/messages/unread-count').then(({ data }) => {
+      if (data?.success) setUnreadMsgCount(data.data?.count ?? 0);
+    }).catch(() => {});
+  }, [user?.id]);
+
   useEffect(() => {
     if (!user) return;
     usersAPI.notifications().then(({ data }) => {
@@ -67,6 +76,9 @@ function DataSync() {
     usersAPI.bookmarks().then(({ data }) => {
       if (data?.data) loadBookmarks(data.data);
     }).catch(() => {});
+    fetchMsgCount();
+    const poll = setInterval(fetchMsgCount, 30000);
+    return () => clearInterval(poll);
   }, [user?.id]);
   return null;
 }
