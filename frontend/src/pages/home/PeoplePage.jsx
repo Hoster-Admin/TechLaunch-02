@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useSearchParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
@@ -190,6 +190,7 @@ function CountryDropdown({ selected, onChange }) {
 
 export function PeopleContent() {
   const { user } = useAuth();
+  const navigate = useNavigate();
   const [searchParams, setSearchParams] = useSearchParams();
 
   const [people, setPeople]   = useState([]);
@@ -251,7 +252,7 @@ export function PeopleContent() {
   const handleClear = (e) => {
     if (e) e.stopPropagation();
     setSearch(''); setPersonas([]); setCountries([]);
-    setSearchParams({}, { replace: true });
+    navigate('/people', { replace: true });
     load(1, true, [], []);
   };
 
