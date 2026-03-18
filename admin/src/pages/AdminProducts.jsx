@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { MENA_COUNTRIES as _MENA } from '../utils/menaCountries';
 
 const MENA_COUNTRIES = _MENA.map(c => c.name);
-const CATEGORIES = ['Fintech','Edtech','Healthtech','AI & ML','Logistics','E-Commerce','Foodtech','Dev Tools','SaaS','Proptech','HR Tech','Legal Tech','Other'];
+const CATEGORIES = ['Fintech','Edtech','AI & ML','Healthtech','E-Commerce','Logistics','Foodtech','Proptech','Traveltech','Cleantech','Cybersecurity','HR & Work','Media','Dev Tools','Web3'];
 
 function AddProductModal({ onClose, onSuccess }) {
   const [form, setForm] = useState({ name:'', tagline:'', category:'Fintech', country:'UAE', status:'pending', website:'' });
