@@ -25,7 +25,11 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 
 ## Architecture
 
-- **Frontend**: React (CRA) — served by Express in production on port 5000
+- **Public Frontend**: React (CRA) in `frontend/` — zero admin code, served at `/` by Express on port 5000
+- **Admin Frontend**: React (Vite) in `admin/` — fully separate app, served at `/admin/*` by same Express server
+  - Login at `/admin/login` (own auth, blocks non-admin roles at login time)
+  - `basename="/admin"` in BrowserRouter, own `adminAccessToken` localStorage keys
+  - Build: `cd admin && npm run build` → `admin/dist/`
 - **Backend**: Express.js REST API — runs on port 5000 (production)
 - **Database**: PostgreSQL on Neon (via NEON_DATABASE_URL)
 - **Auth**: JWT (access token 7d) + UUID refresh tokens stored in `refresh_tokens` table
