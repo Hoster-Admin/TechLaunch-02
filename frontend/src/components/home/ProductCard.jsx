@@ -9,7 +9,7 @@ export default function ProductCard({ product, rank, onVote }) {
   const { setAuthModal } = useUI();
   const [voted,     setVoted]     = useState(product.has_voted || product.user_voted || false);
   const [votes,     setVotes]     = useState(product.upvotes_count || 0);
-  const [bookmarked, setBookmarked] = useState(product.user_bookmarked || false);
+  const [bookmarked, setBookmarked] = useState(product.has_bookmarked || product.user_bookmarked || false);
   const [loading,   setLoading]   = useState(false);
   const [imgError,  setImgError]  = useState(false);
 
@@ -41,8 +41,7 @@ export default function ProductCard({ product, rank, onVote }) {
     const next = !bookmarked;
     setBookmarked(next);
     try {
-      if (next) await productsAPI.bookmark?.(product.id);
-      else await productsAPI.removeBookmark?.(product.id);
+      await productsAPI.bookmark(product.id);
     } catch { setBookmarked(!next); }
   };
 

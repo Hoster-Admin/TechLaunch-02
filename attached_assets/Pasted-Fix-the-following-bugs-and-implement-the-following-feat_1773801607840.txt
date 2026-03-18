@@ -1,0 +1,37 @@
+Fix the following bugs and implement the following features on the Tech Launch platform. Work through them in priority order.
+
+🔴 CRITICAL — Fix First
+[Bug-8] Save not persisting:
+The Save/bookmark icon on products reverts to unsaved after page refresh. Fix: make the save API call write to the database, fetch saved state per user on page load, and persist across sessions until manually unsaved. No duplicate entries.
+[Bug-10] Follow state inconsistency:
+Following a user from the People List works, but their Profile page still shows "Follow" instead of "Following." Fix: sync follow state globally. Profile page must fetch current follow status from the API on load. All components must reflect the same state.
+[Bug-11] Follower counter mismatch:
+Profile shows "2 Followers" but the list shows 1. Fix: audit follow/unfollow and account deletion logic. Sync the counter dynamically to the actual database records. Run a one-time re-sync script to fix all existing users.
+[Bug-12] Product Not Found from profile:
+Clicking a product thumbnail on a user's profile opens the correct page but shows "Product Not Found." Fix: investigate why the Product ID or Slug passed from the Profile is not being recognized. Correct the query. Ensure the fix doesn't break product fetching elsewhere (Home, Search).
+
+🟠 FUNCTIONAL BUGS
+[Bug-6] Edit opens view mode instead of editor:
+Clicking "Edit Post" or "Edit Article" redirects to read-only view. Fix: clicking Edit must open a modal overlay (not redirect). The modal must be identical to the Create Post interface but pre-filled with existing content. Primary button must say "Save Changes" not "Post."
+[Bug-7] Back button non-functional on error page:
+The "Go Back" button on the "Product Not Found" error page does nothing. Fix: attach window.history.back() to the button's click event.
+
+🟡 FEATURES & UX FIXES
+[Feature-1] Dynamic hyperlink styling:
+URLs typed in post/article content must render as clickable links in brand color. Hover state must show underline. Links must work in both editor and published view. All links must open in a new tab (target="_blank").
+[Feature-2] Character limit validation:
+Add a real-time character counter to all post and article editors. When limit is exceeded: counter turns red, Publish button is disabled, excess text is highlighted with light red background, error message shows: "Character limit exceeded. Please shorten your post to proceed."
+[Feature-3] Rich text toolbar — posts and articles:
+Add a formatting toolbar to both the Post composer and Article editor. Primary tools (always visible): Bold, Italic, Hyperlink, Numbered List. Secondary tools (under "More" if needed): Code Block, Blockquote. Interactive tools: Mentions (@), Image Attachment. Keep toolbar minimal — do not add tools beyond this list.
+[Feature-4] Rich text toolbar — comments and replies:
+Extend the simplified toolbar (Bold, Italic, Mention @, Hyperlink, Image) to all comment and reply input boxes. Must work correctly inside nested reply levels without breaking layout.
+[Feature-5] Comment/reply actions menu:
+Add a three-dot (⋯) overflow menu to every comment and reply at all nesting levels, positioned top-right. For the comment author: show Edit and Delete. For other users: show Report/Flag. Edit must open an inline editor. Delete must show a confirmation before removing.
+[Issue-9] Filter/chip consistency:
+
+Standardize all reset button labels to "Clear Filters" across the entire platform — remove all variations
+Standardize border-radius for all filter chips and tags to one consistent style (pill-shaped) platform-wide
+All Clear Filters buttons must reset state and refresh data via AJAX without a page reload or redirect
+
+[Feature-13] Follow/Unfollow buttons in Followers and Following lists:
+Add a Follow/Unfollow button next to each user in both lists. Use existing button CSS — do not create new styles. "Following" state: clicking changes to "Follow" instantly but does NOT remove the user from the list (soft removal, undo-friendly). Entry only disappears on next page load. Use AJAX for all state updates. Profile counters must update instantly.

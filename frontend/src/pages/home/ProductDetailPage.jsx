@@ -234,7 +234,7 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
       <div style={{ maxWidth:600, margin:'120px auto 80px', textAlign:'center', padding:'0 20px' }}>
         <div style={{ fontSize:48, marginBottom:16 }}>😕</div>
         <div style={{ fontSize:24, fontWeight:800, marginBottom:8 }}>Product not found</div>
-        <button onClick={() => navigate(-1)} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Go Back</button>
+        <button onClick={() => window.history.length > 1 ? navigate(-1) : navigate('/')} style={{ padding:'12px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>← Go Back</button>
       </div></>
   );
 

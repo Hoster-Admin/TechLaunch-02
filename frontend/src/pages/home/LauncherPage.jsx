@@ -6,6 +6,8 @@ import { PeopleContent } from './PeoplePage';
 import { useAuth } from '../../context/AuthContext';
 import { launcherAPI, uploadAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import SubmitPostModal from '../../components/home/SubmitPostModal';
+import RichText from '../../components/home/RichText';
 
 const TABS = ['All', 'Articles', 'Posts', 'People'];
 
@@ -82,12 +84,14 @@ function PostCard({ post, onDeleted, currentUser }) {
   const [submittingReply, setSubmittingReply] = useState(false);
   const [showMenu, setShowMenu]       = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [postData, setPostData]       = useState(post);
   const [expanded, setExpanded]       = useState(false);
   const menuRef = useRef(null);
-  const tagStyle = TAG_COLORS[post.tag] || { bg: '#f4f4f4', color: '#555' };
+  const tagStyle = TAG_COLORS[postData.tag] || { bg: '#f4f4f4', color: '#555' };
   const isOwner = currentUser && currentUser.id === post.user_id;
   const TRUNCATE_LIMIT = 300;
-  const needsTruncation = (post.content || '').length > TRUNCATE_LIMIT;
+  const needsTruncation = (postData.content || '').length > TRUNCATE_LIMIT;
 
   useEffect(() => {
     const handler = (e) => { if (menuRef.current && !menuRef.current.contains(e.target)) setShowMenu(false); };
@@ -160,6 +164,16 @@ function PostCard({ post, onDeleted, currentUser }) {
         onCancel={() => setShowDeleteModal(false)}
       />
     )}
+    {showEditModal && (
+      <SubmitPostModal
+        editDraft={{ ...postData, body: postData.body || postData.content, type: postData.type || 'post' }}
+        onClose={() => setShowEditModal(false)}
+        onPublished={(updated) => {
+          if (updated) setPostData(prev => ({ ...prev, ...updated, content: updated.body || updated.content || prev.content }));
+          setShowEditModal(false);
+        }}
+      />
+    )}
     <div style={{
       background: '#fff', border: '1.5px solid #f0f0f0', borderRadius: 16, padding: '22px 24px',
     }}>
@@ -177,7 +191,7 @@ function PostCard({ post, onDeleted, currentUser }) {
         <span style={{
           fontSize: 11, fontWeight: 800, letterSpacing: '.06em', textTransform: 'uppercase',
           padding: '3px 9px', borderRadius: 20, background: tagStyle.bg, color: tagStyle.color,
-        }}>{post.tag}</span>
+        }}>{postData.tag}</span>
         {isOwner && (
           <div ref={menuRef} style={{ position: 'relative' }}>
             <button onClick={e => { e.stopPropagation(); setShowMenu(v => !v); }}
@@ -185,7 +199,7 @@ function PostCard({ post, onDeleted, currentUser }) {
               title="Post options">⋯</button>
             {showMenu && (
               <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,.1)', zIndex: 200, minWidth: 130, overflow: 'hidden' }}>
-                <button onClick={e => { e.stopPropagation(); setShowMenu(false); navigate(`/launcher/posts/${post.id}`); }}
+                <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowEditModal(true); }}
                   style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>✏️ Edit post</button>
                 <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowDeleteModal(true); }}
                   style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#e15033', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>🗑️ Delete post</button>
@@ -195,12 +209,14 @@ function PostCard({ post, onDeleted, currentUser }) {
         )}
       </div>
 
-      <div style={{ marginBottom: post.image_url ? 12 : 16 }}>
-        <p
-          style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: 0, cursor: 'pointer', whiteSpace: 'pre-wrap' }}
+      <div style={{ marginBottom: postData.image_url ? 12 : 16 }}>
+        <div
+          style={{ fontSize: 14, color: '#333', lineHeight: 1.7, margin: 0, cursor: 'pointer' }}
           onClick={() => navigate(`/launcher/posts/${post.id}`)}
           title="Open post"
-        >{needsTruncation && !expanded ? (post.content || '').slice(0, TRUNCATE_LIMIT) + '…' : post.content}</p>
+        >
+          <RichText text={needsTruncation && !expanded ? (postData.content || '').slice(0, TRUNCATE_LIMIT) + '…' : postData.content} />
+        </div>
         {needsTruncation && (
           <button onClick={e => { e.stopPropagation(); setExpanded(v => !v); }}
             style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#e15033', fontSize: 12, fontWeight: 700, padding: '4px 0 0', fontFamily: 'Inter,sans-serif' }}>
@@ -209,13 +225,13 @@ function PostCard({ post, onDeleted, currentUser }) {
         )}
       </div>
 
-      {post.image_url && (
+      {postData.image_url && (
         <div
           style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', border: '1px solid #f0f0f0', cursor: 'pointer' }}
           onClick={() => navigate(`/launcher/posts/${post.id}`)}
         >
           <img
-            src={post.image_url}
+            src={postData.image_url}
             alt="Post image"
             style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }}
             onError={e => { e.currentTarget.style.display = 'none'; }}
@@ -265,7 +281,7 @@ function PostCard({ post, onDeleted, currentUser }) {
                     <div style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', marginBottom: 2 }}>
                       {c.author} <span style={{ fontWeight: 400, color: '#bbb' }}>· {timeAgo(c.created_at)}</span>
                     </div>
-                    <div style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }}>{c.body}</div>
+                    <RichText text={c.body} style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }} />
                   </div>
                 </div>
               ))}

@@ -1,6 +1,7 @@
 import React, { useState, useEffect, useRef } from 'react';
 import { communityAPI, uploadAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
+import FormattingToolbar from './FormattingToolbar';
 
 const TYPE_OPTIONS = [
   {
@@ -120,6 +121,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
 
   const handlePublish = async () => {
     if (!body.trim()) { toast.error('Please write something first'); return; }
+    if (charOver) { toast.error(`Too long — keep it under ${charMax} characters`); return; }
     if (type === 'article' && !title.trim()) { toast.error('Articles need a title'); return; }
     setSaving(true);
     try {
@@ -139,6 +141,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
     finally { setSaving(false); }
   };
 
+  // bodyRef is already declared above — passed to FormattingToolbar
   const charCount = body.length;
   const charMax   = typeCfg?.bodyMax || 1000;
   const charOver  = charCount > charMax;
@@ -214,12 +217,13 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:6 }}>
                   {typeCfg?.bodyLabel || 'Content'} *
                 </label>
+                <FormattingToolbar textareaRef={bodyRef} value={body} setValue={setBody} />
                 <textarea ref={bodyRef} value={body} onChange={e => setBody(e.target.value)}
                   placeholder={typeCfg?.bodyPlaceholder}
                   rows={type === 'article' ? 10 : 5}
-                  style={{ ...inp, resize:'vertical', lineHeight:1.7, minHeight: type === 'article' ? 220 : 120 }}
-                  onFocus={e => e.target.style.borderColor='var(--orange)'}
-                  onBlur={e => e.target.style.borderColor='#e8e8e8'}/>
+                  style={{ ...inp, resize:'vertical', lineHeight:1.7, minHeight: type === 'article' ? 220 : 120, borderColor: charOver ? '#e11d48' : undefined }}
+                  onFocus={e => { if (!charOver) e.target.style.borderColor='var(--orange)'; }}
+                  onBlur={e => { e.target.style.borderColor = charOver ? '#e11d48' : '#e8e8e8'; }}/>
                 <div style={{ fontSize:11, color: charOver ? '#e11d48' : '#bbb', textAlign:'right', marginTop:4 }}>
                   {charCount}/{charMax} characters
                 </div>

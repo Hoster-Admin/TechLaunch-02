@@ -37,7 +37,7 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
   useEffect(() => {
     setLoading(true);
-    productsAPI.list({ sort:'top', limit:100, status:'live,soon' })
+    productsAPI.list({ sort:'top', limit:100, status:'all' })
       .then(({ data }) => { setProducts(data.data || []); })
       .catch(() => { setProducts([]); })
       .finally(() => setLoading(false));

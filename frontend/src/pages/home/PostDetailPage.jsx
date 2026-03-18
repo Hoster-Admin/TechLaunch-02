@@ -4,6 +4,8 @@ import { launcherAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
+import RichText from '../../components/home/RichText';
+import FormattingToolbar from '../../components/home/FormattingToolbar';
 
 const TAG_COLORS = {
   Milestone: { bg: '#f3e8ff', color: '#7c3aed' },
@@ -35,7 +37,7 @@ function Avatar({ name, avatarUrl, color, size = 36 }) {
 }
 
 function CommentBody({ body }) {
-  if (!body.startsWith('@')) return <>{body}</>;
+  if (!body.startsWith('@')) return <RichText text={body} />;
   const spaceIdx = body.indexOf(' ');
   const mention = spaceIdx > 0 ? body.slice(0, spaceIdx) : body;
   const rest = spaceIdx > 0 ? body.slice(spaceIdx + 1) : '';
@@ -45,7 +47,7 @@ function CommentBody({ body }) {
         display: 'inline-block', background: '#dbeafe', color: '#2563eb',
         borderRadius: 6, padding: '1px 7px', fontSize: 12, fontWeight: 600, marginRight: 6,
       }}>{mention}</span>
-      {rest}
+      <RichText text={rest} />
     </>
   );
 }
@@ -272,6 +274,7 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
                   lineHeight: 1.6, background: 'transparent', boxSizing: 'border-box',
                 }}
               />
+              <FormattingToolbar textareaRef={replyRef} value={replyText} setValue={setReplyText} />
               <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
                 <button onClick={() => { setShowReplyBox(false); setReplyText(''); }} style={{
                   padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
@@ -484,10 +487,12 @@ export default function PostDetailPage() {
                 {post.title}
               </h2>
             )}
-            <p style={{
-              margin: `0 0 ${post.image_url ? '14px' : '18px'}`, fontSize: post.post_type === 'article' ? 16 : 16, color: '#1e293b',
-              lineHeight: 1.75, whiteSpace: 'pre-wrap', fontWeight: 400,
-            }}>{post.content}</p>
+            <div style={{
+              margin: `0 0 ${post.image_url ? '14px' : '18px'}`, fontSize: 16, color: '#1e293b',
+              lineHeight: 1.75, fontWeight: 400,
+            }}>
+              <RichText text={post.content} />
+            </div>
 
             {post.image_url && (
               <div style={{ marginBottom: 18, borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
@@ -605,6 +610,11 @@ export default function PostDetailPage() {
                       transition: 'height .2s',
                     }}
                   />
+                  {(commentFocused || commentText) && (
+                    <div style={{ marginTop: 6 }}>
+                      <FormattingToolbar textareaRef={commentBoxRef} value={commentText} setValue={setCommentText} />
+                    </div>
+                  )}
                   {(commentFocused || commentText) && (
                     <div style={{ fontSize: 11, color: commentText.length > 900 ? '#e15033' : '#94a3b8', textAlign: 'right', marginTop: 2 }}>
                       {commentText.length}/1000

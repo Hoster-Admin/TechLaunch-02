@@ -37,6 +37,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [profile, setProfile]       = useState(null);
   const [loadingProfile, setLoadingProfile] = useState(true);
   const [followLoading, setFollowLoading]   = useState(false);
+  const [apiIsFollowing, setApiIsFollowing] = useState(false);
   const [aboutOpen, setAboutOpen]           = useState(true);
   const [followModal, setFollowModal]       = useState(null);
   const [followList, setFollowList]         = useState([]);
@@ -103,15 +104,22 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             verified: u.verified || u.role === 'admin',
             joinDate: u.created_at ? new Date(u.created_at).getFullYear() : null,
           };
+          setApiIsFollowing(!!u.isFollowing);
         }
         setProfile(p);
         setLoadingProfile(false);
 
         // Load products submitted by this user
+        // For other users' profiles, only show live/soon products (pending/rejected would 404 when clicked)
         if (p.id) {
           const userId = p.id;
+          const localIsOwn = user && ((user.handle || '').replace('@','') === handle);
           productsAPI.list({ submitter: userId, status: 'all', limit: 30 })
-            .then(({ data: pd }) => setProfileProducts(pd.data || []))
+            .then(({ data: pd }) => {
+              const all = pd.data || [];
+              const visible = localIsOwn ? all : all.filter(pr => pr.status === 'live' || pr.status === 'soon');
+              setProfileProducts(visible);
+            })
             .catch(() => {});
         }
       } catch {
@@ -195,8 +203,8 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const initials     = (profile.name||'?').split(' ').map(w=>w[0]).join('').toUpperCase().slice(0,2);
   const isFollowingHandle = following.has(profile.handle);
   const isFollowingId     = profile.id && followingIds.has(profile.id);
-  const isFollowing       = isFollowingHandle || isFollowingId;
-  const displayFollowers  = (profile.followers_count ?? 0) + (isFollowing ? 1 : 0);
+  const isFollowing       = isFollowingHandle || isFollowingId || apiIsFollowing;
+  const displayFollowers  = profile.followers_count ?? 0;
   const followingCount    = isOwn ? following.size : (profile.following_count ?? 0);
 
   const hasAbout = profile.bio || profile.country || profile.website || profile.twitter || profile.linkedin || profile.github || profile.joinDate;
@@ -205,7 +213,14 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
     if (!user) { onSignIn?.(); return; }
     setFollowLoading(true);
     try {
-      if (profile.id) { await usersAPI.follow(profile.id); toggleFollowId(profile.id); }
+      if (profile.id) {
+        const res = await usersAPI.follow(profile.id);
+        toggleFollowId(profile.id);
+        const newFollowing = res.data?.data?.following;
+        if (newFollowing !== undefined) setApiIsFollowing(newFollowing);
+        const newCount = res.data?.data?.followers_count;
+        if (newCount !== undefined) setProfile(prev => prev ? { ...prev, followers_count: newCount } : prev);
+      }
       toggleFollow(profile.handle, profile.name);
     } catch { toggleFollow(profile.handle, profile.name); }
     finally { setFollowLoading(false); }
@@ -536,10 +551,14 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   <div style={{ fontSize:32, marginBottom:10 }}>👥</div>
                   <div style={{ fontSize:14, fontWeight:600 }}>No {followModal} yet</div>
                 </div>
-              ) : followList.map(u => (
-                <div key={u.id} onClick={() => { setFollowModal(null); navigate(`/u/${u.handle}`); }}
+              ) : followList.map(u => {
+                const isMe = user && (user.id === u.id || (user.handle||'').replace('@','') === u.handle);
+                const isFol = followingIds.has(u.id);
+                return (
+                <div key={u.id}
                   style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 24px', cursor:'pointer', transition:'background .1s' }}
-                  onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background='transparent'}>
+                  onMouseEnter={e => e.currentTarget.style.background='#fafafa'} onMouseLeave={e => e.currentTarget.style.background='transparent'}
+                  onClick={() => { setFollowModal(null); navigate(`/u/${u.handle}`); }}>
                   {u.avatar_url
                     ? <img src={u.avatar_url} alt={u.name} style={{ width:42, height:42, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
                     : <div style={{ width:42, height:42, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:14, fontWeight:800, flexShrink:0 }}>
@@ -551,8 +570,22 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                     <div style={{ fontSize:12, color:'#aaa' }}>@{u.handle}{u.headline ? ` · ${u.headline.slice(0,40)}` : ''}</div>
                   </div>
                   {u.verified && <span title="Verified by Tech Launch — identity and product ownership confirmed" style={{ fontSize:14, cursor:'help' }}>✅</span>}
+                  {!isMe && user && (
+                    <button onClick={async e => {
+                      e.stopPropagation();
+                      try {
+                        await usersAPI.follow(u.id);
+                        toggleFollowId(u.id);
+                        toggleFollow(('@'+u.handle), u.name);
+                      } catch {}
+                    }}
+                      style={{ flexShrink:0, padding:'5px 12px', borderRadius:20, fontSize:12, fontWeight:700, cursor:'pointer', border:`1.5px solid ${isFol ? '#e8e8e8' : 'var(--orange)'}`, background: isFol ? '#f0f0f0' : 'var(--orange)', color: isFol ? '#444' : '#fff', transition:'all .15s' }}>
+                      {isFol ? 'Following' : '+ Follow'}
+                    </button>
+                  )}
                 </div>
-              ))}
+                );
+              })}
             </div>
           </div>
         </div>
