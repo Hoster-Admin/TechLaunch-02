@@ -60,3 +60,7 @@ build = ["bash", "-c", "cd frontend && npm run build 2>/dev/null || true"]
 NEON_DATABASE_URL = "postgresql://neondb_owner:npg_aCzH4gsNbZP0@ep-divine-art-al1b8jbq-pooler.c-3.eu-central-1.aws.neon.tech/neondb?sslmode=require"
 JWT_SECRET = "tlmena_jwt_super_secret_key_2026_mena_platform_secure"
 CLIENT_URL = "https://tlmena.com"
+
+[postMerge]
+path = "scripts/post-merge.sh"
+timeoutMs = 180000
