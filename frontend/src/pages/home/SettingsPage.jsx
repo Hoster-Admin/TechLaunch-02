@@ -240,6 +240,7 @@ export default function SettingsPage() {
 
   const handleTabNav = (key) => {
     setActiveTab(key);
+    navigate(`/settings?tab=${key}`, { replace: false });
   };
 
   useEffect(() => {
