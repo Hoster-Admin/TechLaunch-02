@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { adminAPI, productsAPI } from '../../utils/api';
+import { adminAPI, productsAPI } from '../utils/api';
 import toast from 'react-hot-toast';
-import { MENA_COUNTRIES as _MENA } from '../../utils/menaCountries';
+import { MENA_COUNTRIES as _MENA } from '../utils/menaCountries';
 
 const MENA_COUNTRIES = _MENA.map(c => c.name);
 const CATEGORIES = ['Fintech','Edtech','Healthtech','AI & ML','Logistics','E-Commerce','Foodtech','Dev Tools','SaaS','Proptech','HR Tech','Legal Tech','Other'];

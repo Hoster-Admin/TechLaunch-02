@@ -7,8 +7,6 @@ import { usersAPI } from './utils/api';
 import api from './utils/api';
 import { LoadingPage } from './components/ui';
 
-import AdminLayout  from './components/admin/AdminLayout';
-
 import HomePage         from './pages/home/HomePage';
 import ProductDetailPage from './pages/home/ProductDetailPage';
 import AllProductsPage  from './pages/home/AllProductsPage';
@@ -27,14 +25,6 @@ import TermsPage   from './pages/home/TermsPage';
 import ContactPage, { WriteForUsPage } from './pages/home/ContactPage';
 import LauncherPage from './pages/home/LauncherPage';
 import PostDetailPage from './pages/home/PostDetailPage';
-
-import AdminDashboard    from './pages/admin/AdminDashboard';
-import AdminProducts    from './pages/admin/AdminProducts';
-import AdminSuggestions from './pages/admin/AdminSuggestions';
-import {
-  AdminUsers, AdminEntities, AdminApplications,
-  AdminFeatured, AdminReports, AdminSettings, AdminProfile, AdminEmailSignups
-} from './pages/admin/AdminPages';
 
 import SubmitProductModal from './components/home/SubmitProductModal';
 import InboxModal         from './components/home/InboxModal';
@@ -82,15 +72,6 @@ function DataSync() {
   }, [user?.id]);
   return null;
 }
-
-const RequireAdmin = ({ children }) => {
-  const { user, loading } = useAuth();
-  if (loading) return <LoadingPage/>;
-  if (!user)   return <Navigate to="/login" replace/>;
-  if (!['admin','moderator','editor','analyst'].includes(user.role))
-    return <Navigate to="/" replace/>;
-  return children;
-};
 
 const GuestOnly = ({ children }) => {
   const { user, loading } = useAuth();
@@ -142,21 +123,6 @@ function AppRoutes() {
         <Route path="/register"      element={<GuestOnly><RegisterPage/></GuestOnly>}/>
         <Route path="/set-password"    element={<SetPasswordPage/>}/>
         <Route path="/reset-password"  element={<ResetPasswordPage/>}/>
-
-        {/* Admin panel */}
-        <Route path="/admin" element={<RequireAdmin><AdminLayout/></RequireAdmin>}>
-          <Route index                 element={<AdminDashboard/>}/>
-          <Route path="products"       element={<AdminProducts/>}/>
-          <Route path="users"          element={<AdminUsers/>}/>
-          <Route path="entities"       element={<AdminEntities/>}/>
-          <Route path="applications"   element={<AdminApplications/>}/>
-          <Route path="featured"       element={<AdminFeatured/>}/>
-          <Route path="suggestions"    element={<AdminSuggestions/>}/>
-          <Route path="reports"        element={<AdminReports/>}/>
-          <Route path="email-signups"  element={<AdminEmailSignups/>}/>
-          <Route path="settings"       element={<AdminSettings/>}/>
-          <Route path="profile"        element={<AdminProfile/>}/>
-        </Route>
 
         {/* Public site — all wrapped with auth callbacks */}
         <Route path="/"             element={<WithAuthCallbacks Component={HomePage}/>}/>

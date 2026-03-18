@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { useAuth } from '../../context/AuthContext';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
 
 const ICONS = {
@@ -42,7 +42,7 @@ export default function AdminSidebar({ pendingCount = 0, appsCount = 0, usersCou
   const handleLogout = async () => {
     await logout();
     toast.success('Logged out');
-    navigate('/');
+    navigate('/login');
   };
 
   const initials  = user?.name?.split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2) || 'SA';
@@ -59,56 +59,56 @@ export default function AdminSidebar({ pendingCount = 0, appsCount = 0, usersCou
       </div>
 
       <div className="nav-section">Overview</div>
-      <Link to="/admin" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
+      <Link to="/" className={`nav-item ${isActive('/admin') ? 'active' : ''}`}>
         <NavIcon name="dashboard"/>
         <span>Dashboard</span>
       </Link>
 
       <div className="nav-section">Content</div>
-      <Link to="/admin/products" className={`nav-item ${isActive('/admin/products') ? 'active' : ''}`}>
+      <Link to="/products" className={`nav-item ${isActive('/admin/products') ? 'active' : ''}`}>
         <NavIcon name="products"/>
         <span>Products</span>
         {pendingCount > 0 && <span className="nav-badge">{pendingCount}</span>}
       </Link>
-      <Link to="/admin/users" className={`nav-item ${isActive('/admin/users') ? 'active' : ''}`}>
+      <Link to="/users" className={`nav-item ${isActive('/admin/users') ? 'active' : ''}`}>
         <NavIcon name="users"/>
         <span>Users</span>
         {usersCount > 0 && <span className="nav-badge gray">{usersCount}</span>}
       </Link>
-      <Link to="/admin/entities" className={`nav-item ${isActive('/admin/entities') ? 'active' : ''}`}>
+      <Link to="/entities" className={`nav-item ${isActive('/admin/entities') ? 'active' : ''}`}>
         <NavIcon name="entities"/>
         <span>Entities</span>
       </Link>
-      <Link to="/admin/applications" className={`nav-item ${isActive('/admin/applications') ? 'active' : ''}`}>
+      <Link to="/applications" className={`nav-item ${isActive('/admin/applications') ? 'active' : ''}`}>
         <NavIcon name="applications"/>
         <span>Applications</span>
         {appsCount > 0 && <span className="nav-badge">{appsCount}</span>}
       </Link>
 
       <div className="nav-section">Platform</div>
-      <Link to="/admin/featured" className={`nav-item ${isActive('/admin/featured') ? 'active' : ''}`}>
+      <Link to="/featured" className={`nav-item ${isActive('/admin/featured') ? 'active' : ''}`}>
         <NavIcon name="featured"/>
         <span>Featured</span>
       </Link>
-      <Link to="/admin/suggestions" className={`nav-item ${isActive('/admin/suggestions') ? 'active' : ''}`}>
+      <Link to="/suggestions" className={`nav-item ${isActive('/admin/suggestions') ? 'active' : ''}`}>
         <NavIcon name="suggestions"/>
         <span>Suggestions</span>
       </Link>
-      <Link to="/admin/reports" className={`nav-item ${isActive('/admin/reports') ? 'active' : ''}`}>
+      <Link to="/reports" className={`nav-item ${isActive('/admin/reports') ? 'active' : ''}`}>
         <NavIcon name="reports"/>
         <span>Reports</span>
       </Link>
-      <Link to="/admin/email-signups" className={`nav-item ${isActive('/admin/email-signups') ? 'active' : ''}`}>
+      <Link to="/email-signups" className={`nav-item ${isActive('/admin/email-signups') ? 'active' : ''}`}>
         <NavIcon name="emailsignups"/>
         <span>Email Signups</span>
       </Link>
-      <Link to="/admin/settings" className={`nav-item ${isActive('/admin/settings') ? 'active' : ''}`}>
+      <Link to="/settings" className={`nav-item ${isActive('/admin/settings') ? 'active' : ''}`}>
         <NavIcon name="settings"/>
         <span>Settings</span>
       </Link>
 
       <div className="nav-section">Account</div>
-      <Link to="/admin/profile" className={`nav-item ${isActive('/admin/profile') ? 'active' : ''}`}>
+      <Link to="/profile" className={`nav-item ${isActive('/admin/profile') ? 'active' : ''}`}>
         <NavIcon name="profile"/>
         <span>My Profile</span>
       </Link>
@@ -117,13 +117,13 @@ export default function AdminSidebar({ pendingCount = 0, appsCount = 0, usersCou
         <div style={{ position:'relative' }}>
           {popupOpen && (
             <div style={{ position:'absolute', bottom:'calc(100% + 8px)', left:0, right:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:12, padding:'6px', boxShadow:'0 8px 32px rgba(0,0,0,.15)', zIndex:100 }}>
-              <div onClick={() => { navigate('/admin/profile'); setPopupOpen(false); }}
+              <div onClick={() => { navigate('/profile'); setPopupOpen(false); }}
                 style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 10px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600, color:'#333' }}
                 onMouseOver={e => e.currentTarget.style.background='#f8f8f8'} onMouseOut={e => e.currentTarget.style.background=''}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M20 21v-2a4 4 0 00-4-4H8a4 4 0 00-4 4v2"/><circle cx="12" cy="7" r="4"/></svg>
                 View My Profile
               </div>
-              <div onClick={() => { navigate('/admin/settings'); setPopupOpen(false); }}
+              <div onClick={() => { navigate('/settings'); setPopupOpen(false); }}
                 style={{ display:'flex', alignItems:'center', gap:8, padding:'9px 10px', borderRadius:8, cursor:'pointer', fontSize:13, fontWeight:600, color:'#333' }}
                 onMouseOver={e => e.currentTarget.style.background='#f8f8f8'} onMouseOut={e => e.currentTarget.style.background=''}>
                 <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="3"/><path d="M19.4 15a1.65 1.65 0 00.33 1.82l.06.06a2 2 0 010 2.83 2 2 0 01-2.83 0l-.06-.06a1.65 1.65 0 00-1.82-.33 1.65 1.65 0 00-1 1.51V21a2 2 0 01-4 0v-.09A1.65 1.65 0 009 19.4a1.65 1.65 0 00-1.82.33l-.06.06a2 2 0 01-2.83-2.83l.06-.06A1.65 1.65 0 004.68 15a1.65 1.65 0 00-1.51-1H3a2 2 0 010-4h.09A1.65 1.65 0 004.6 9a1.65 1.65 0 00-.33-1.82l-.06-.06a2 2 0 012.83-2.83l.06.06A1.65 1.65 0 009 4.68a1.65 1.65 0 001-1.51V3a2 2 0 014 0v.09a1.65 1.65 0 001 1.51 1.65 1.65 0 001.82-.33l.06-.06a2 2 0 012.83 2.83l-.06.06A1.65 1.65 0 0019.4 9a1.65 1.65 0 001.51 1H21a2 2 0 010 4h-.09a1.65 1.65 0 00-1.51 1z"/></svg>

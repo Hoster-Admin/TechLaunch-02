@@ -1,8 +1,8 @@
 import React, { useEffect, useState, useCallback } from 'react';
-import { adminAPI } from '../../utils/api';
-import { useAuth } from '../../context/AuthContext';
+import { adminAPI } from '../utils/api';
+import { useAuth } from '../context/AuthContext';
 import toast from 'react-hot-toast';
-import { MENA_COUNTRIES } from '../../utils/menaCountries';
+import { MENA_COUNTRIES } from '../utils/menaCountries';
 
 // ─── SHARED HELPERS ───────────────────────────────────
 function SectionCard({ title, sub, children, action }) {
@@ -91,7 +91,7 @@ function AddUserModal({ onClose, onSuccess }) {
     if (!form.name.trim() || !form.email.trim()) { toast.error('Name and email are required'); return; }
     setSaving(true);
     try {
-      const { authAPI } = await import('../../utils/api');
+      const { authAPI } = await import('../utils/api');
       await authAPI.register({ ...form, username: form.handle.replace('@','') || form.name.toLowerCase().replace(/\s+/g,'_') });
       toast.success(`✅ ${form.name} account created!`);
       onSuccess?.();

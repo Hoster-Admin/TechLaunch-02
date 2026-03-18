@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { adminAPI } from '../../utils/api';
+import { adminAPI } from '../utils/api';
 import toast from 'react-hot-toast';
 
 function timeAgo(dateStr) {

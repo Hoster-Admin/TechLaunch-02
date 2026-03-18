@@ -1,20 +1,20 @@
 import React, { useState, useEffect } from 'react';
 import { Outlet, useLocation, useNavigate } from 'react-router-dom';
 import AdminSidebar from './AdminSidebar';
-import { adminAPI } from '../../utils/api';
+import { adminAPI } from '../utils/api';
 
 const TITLES = {
-  '/admin':              { title: 'Dashboard',               sub: 'Overview of platform activity' },
-  '/admin/products':     { title: 'Products',                sub: 'Manage, approve and feature listings' },
-  '/admin/users':        { title: 'User Management',         sub: 'View, verify and manage platform members' },
-  '/admin/entities':     { title: 'Entities',                sub: 'Startups, accelerators, investors and studios' },
-  '/admin/applications': { title: 'Applications & Waitlists',sub: 'Track applications and waitlist signups' },
-  '/admin/featured':     { title: 'Featured & Spotlight',    sub: 'Control what appears on the homepage' },
-  '/admin/suggestions':  { title: 'Suggestions',             sub: 'Member suggestions and recommendations' },
-  '/admin/reports':      { title: 'Reports & Analytics',     sub: 'Platform-wide metrics and growth data' },
-  '/admin/settings':     { title: 'Platform Settings',       sub: 'Configure platform behaviour and integrations' },
-  '/admin/email-signups':{ title: 'Email Signups',            sub: 'Waitlist and discount signup emails collected' },
-  '/admin/profile':      { title: 'My Profile',              sub: 'Your account and preferences' },
+  '/':              { title: 'Dashboard',               sub: 'Overview of platform activity' },
+  '/products':      { title: 'Products',                sub: 'Manage, approve and feature listings' },
+  '/users':         { title: 'User Management',         sub: 'View, verify and manage platform members' },
+  '/entities':      { title: 'Entities',                sub: 'Startups, accelerators, investors and studios' },
+  '/applications':  { title: 'Applications & Waitlists',sub: 'Track applications and waitlist signups' },
+  '/featured':      { title: 'Featured & Spotlight',    sub: 'Control what appears on the homepage' },
+  '/suggestions':   { title: 'Suggestions',             sub: 'Member suggestions and recommendations' },
+  '/reports':       { title: 'Reports & Analytics',     sub: 'Platform-wide metrics and growth data' },
+  '/settings':      { title: 'Platform Settings',       sub: 'Configure platform behaviour and integrations' },
+  '/email-signups': { title: 'Email Signups',            sub: 'Waitlist and discount signup emails collected' },
+  '/profile':       { title: 'My Profile',              sub: 'Your account and preferences' },
 };
 
 export default function AdminLayout() {
@@ -91,8 +91,8 @@ export default function AdminLayout() {
             </button>
 
             {/* Add Product — exact HTML */}
-            <button className="btn-topbar btn-tprimary" onClick={() => navigate('/submit')}>
-              + Add Product
+            <button className="btn-topbar btn-tprimary" onClick={() => window.open('/', '_blank')}>
+              View Public Site
             </button>
           </div>
         </div>

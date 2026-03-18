@@ -144,9 +144,30 @@ ${productUrls}
   }
 });
 
-// ── Serve React build in production
+// ── Serve React builds in production
 if (process.env.NODE_ENV === 'production') {
   const clientBuild = path.join(__dirname, '../../frontend/build');
+  const adminBuild  = path.join(__dirname, '../../admin/dist');
+
+  // Admin app — served at /admin/*
+  app.use('/admin', express.static(adminBuild, {
+    maxAge: '1y',
+    setHeaders(res, filePath) {
+      if (filePath.endsWith('.html')) {
+        res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+      }
+    }
+  }));
+  app.get('/admin', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(adminBuild, 'index.html'));
+  });
+  app.get('/admin/*', (req, res) => {
+    res.setHeader('Cache-Control', 'no-cache, no-store, must-revalidate');
+    res.sendFile(path.join(adminBuild, 'index.html'));
+  });
+
+  // Public site — served at everything else
   app.use(express.static(clientBuild, {
     maxAge: '1y',
     setHeaders(res, filePath) {
