@@ -1,5 +1,5 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
@@ -20,8 +20,14 @@ import CompanyTab  from '../../components/settings/CompanyTab';
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
   const navigate = useNavigate();
+  const location = useLocation();
 
-  const [activeTab,         setActiveTab]         = useState('profile');
+  const [activeTab, setActiveTab] = useState(() => {
+    const params = new URLSearchParams(location.search);
+    const tab = params.get('tab');
+    const validTabs = ['profile','products','drafts','applied','bookmarks','company','security'];
+    return validTabs.includes(tab) ? tab : 'profile';
+  });
   const [copied,            setCopied]            = useState(false);
   const [saving,            setSaving]            = useState(false);
   const [showSubmitForm,    setShowSubmitForm]    = useState(false);

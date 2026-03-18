@@ -1,8 +1,9 @@
 import React, { useState, useRef, useEffect } from 'react';
-import { useParams } from 'react-router-dom';
+import { useParams, useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useUI } from '../../context/UIContext';
+import { useAuth } from '../../context/AuthContext';
 import { MENA_COUNTRIES } from '../../utils/menaCountries';
 import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
 
@@ -227,7 +228,9 @@ function EntityCard({ item, type, teamMembers, onClick }) {
 
 export default function ListingPage() {
   const { type } = useParams();
-  const { setEntityModal, setAuthModal } = useUI();
+  const { setEntityModal, setAuthModal, setAuthRedirect } = useUI();
+  const { user } = useAuth();
+  const navigate = useNavigate();
   const config = PAGE_CONFIG[type] || PAGE_CONFIG.startup;
 
   const [rawData,       setRawData]       = useState([]);
@@ -297,7 +300,16 @@ export default function ListingPage() {
               <h1>{config.emoji} {config.title}</h1>
               <p>{config.desc}</p>
             </div>
-            <button onClick={() => setAuthModal('signup')} className="page-header-cta">
+            <button
+              onClick={() => {
+                if (user) {
+                  navigate('/settings?tab=company');
+                } else {
+                  setAuthRedirect('/settings?tab=company');
+                  setAuthModal('signup');
+                }
+              }}
+              className="page-header-cta">
               + {config.cta}
             </button>
           </div>

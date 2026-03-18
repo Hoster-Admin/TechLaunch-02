@@ -19,6 +19,7 @@ export const UIProvider = ({ children }) => {
   const [followingIds,   setFollowingIds]   = useState(new Set());
   const [profiles]                          = useState(DEMO_PROFILES);
   const [submitOpen,     setSubmitOpen]     = useState(false);
+  const [authRedirect,   setAuthRedirect]   = useState(null);
   const [inboxOpen,      setInboxOpen]      = useState(false);
   const [inboxTarget,    setInboxTarget]    = useState(null);
   const [entityModal,    setEntityModal]    = useState(null);
@@ -122,6 +123,7 @@ export const UIProvider = ({ children }) => {
       followingIds, toggleFollowId,
       profiles,
       submitOpen, setSubmitOpen,
+      authRedirect, setAuthRedirect,
       entityModal, setEntityModal,
       applyModal, setApplyModal,
       waitlistModal, setWaitlistModal,

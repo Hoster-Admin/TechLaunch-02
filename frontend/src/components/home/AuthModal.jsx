@@ -24,7 +24,7 @@ function Spinner() {
 
 export default function AuthModal() {
   const { login, register } = useAuth();
-  const { authModal, setAuthModal, setSubmitOpen } = useUI();
+  const { authModal, setAuthModal, setSubmitOpen, authRedirect, setAuthRedirect } = useUI();
   const navigate = useNavigate();
 
   const [step, setStep] = useState('persona');
@@ -91,7 +91,13 @@ export default function AuthModal() {
       const user = await register({ name:sName.trim(), email:sEmail.trim(), password:sPass, handle, persona:dbPersona });
       toast.success(`Welcome to Tech Launch, ${user.name.split(' ')[0]}! 🚀`);
       close();
-      if (selectedPersona === 'startup') setSubmitOpen(true);
+      if (authRedirect) {
+        const dest = authRedirect;
+        setAuthRedirect(null);
+        navigate(dest);
+      } else if (selectedPersona === 'startup') {
+        setSubmitOpen(true);
+      }
     } catch (err) {
       const data = err.response?.data;
       if (data?.field === 'handle') {
@@ -112,6 +118,11 @@ export default function AuthModal() {
       const user = await login(lEmail.trim(), lPass);
       toast.success(`Welcome back, ${user.name.split(' ')[0]}! 👋`);
       close();
+      if (authRedirect) {
+        const dest = authRedirect;
+        setAuthRedirect(null);
+        navigate(dest);
+      }
     } catch (err) {
       setError(err.response?.data?.message || 'Invalid email or password');
     } finally { setLoading(false); }
