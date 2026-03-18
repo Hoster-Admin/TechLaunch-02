@@ -3,7 +3,7 @@ import { useNavigate, useLocation } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
-import { productsAPI, entitiesAPI, communityAPI, usersAPI } from '../../utils/api';
+import { productsAPI, entitiesAPI, communityAPI } from '../../utils/api';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
@@ -25,7 +25,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    const validTabs = ['profile','products','drafts','applied','bookmarks','company','security'];
+    const validTabs = ['profile','products','drafts','applied','company','security'];
     return validTabs.includes(tab) ? tab : 'profile';
   });
   const [copied,            setCopied]            = useState(false);
@@ -56,9 +56,6 @@ export default function SettingsPage() {
   const [draftsLoading,   setDraftsLoading]   = useState(false);
   const [editDraft,       setEditDraft]       = useState(null);
 
-  const [bmSaved,        setBmSaved]        = useState(null);
-  const [bmLoading,      setBmLoading]      = useState(false);
-  const [activeBmTab,    setActiveBmTab]    = useState('saved');
   const [assocQ,        setAssocQ]        = useState('');
   const [assocResults,  setAssocResults]  = useState([]);
   const [assocSelected, setAssocSelected] = useState(null);
@@ -245,7 +242,7 @@ export default function SettingsPage() {
   };
 
   useEffect(() => {
-    if ((activeTab === 'products' || activeTab === 'bookmarks') && user?.id && myProducts === null) {
+    if (activeTab === 'products' && user?.id && myProducts === null) {
       setMyProductsLoading(true);
       productsAPI.list({ submitter: user.id, status: 'all', limit: 50 })
         .then(({ data: d }) => setMyProducts(Array.isArray(d.data) ? d.data : []))
@@ -263,16 +260,6 @@ export default function SettingsPage() {
         .finally(() => setDraftsLoading(false));
     }
   }, [activeTab, myDrafts]);
-
-  useEffect(() => {
-    if (activeTab === 'bookmarks' && bmSaved === null) {
-      setBmLoading(true);
-      usersAPI.bookmarks()
-        .then(r => setBmSaved(r.data?.data || r.data || []))
-        .catch(() => setBmSaved([]))
-        .finally(() => setBmLoading(false));
-    }
-  }, [activeTab, bmSaved]);
 
   return (
     <>
@@ -342,75 +329,6 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'applied' && <AppliedTab/>}
-
-            {activeTab === 'bookmarks' && (
-              <div>
-                <h2 style={{ fontSize:18, fontWeight:700, marginBottom:16, color:'#111' }}>Bookmarks</h2>
-                <div style={{ display:'flex', gap:0, borderBottom:'2px solid #f0f0f0', marginBottom:20, overflowX:'auto' }}>
-                  {[{key:'saved',label:'Products Saved'},{key:'applied',label:'Applied'},{key:'myproducts',label:'My Products'}].map(t=>(
-                    <button key={t.key} onClick={()=>setActiveBmTab(t.key)}
-                      style={{ padding:'10px 18px', background:'none', border:'none', borderBottom: activeBmTab===t.key ? '2px solid var(--orange)' : '2px solid transparent', color: activeBmTab===t.key ? 'var(--orange)' : '#555', fontWeight:600, fontSize:13, cursor:'pointer', whiteSpace:'nowrap', marginBottom:'-2px', fontFamily:'DM Sans,sans-serif' }}>
-                      {t.label}
-                    </button>
-                  ))}
-                </div>
-                {activeBmTab === 'saved' && (
-                  bmLoading ? <div style={{textAlign:'center',padding:40,color:'#999'}}>Loading…</div> :
-                  !bmSaved || bmSaved.length === 0 ? (
-                    <div style={{ textAlign:'center', padding:'40px 20px' }}>
-                      <div style={{ fontSize:40, marginBottom:12 }}>🔖</div>
-                      <div style={{ fontWeight:600, color:'#333', marginBottom:6 }}>No saved products yet</div>
-                      <div style={{ color:'#888', fontSize:13 }}>Browse products and click the bookmark icon to save them here.</div>
-                    </div>
-                  ) : (
-                    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                      {bmSaved.map(p => (
-                        <div key={p.id} onClick={()=>navigate(`/products/${p.slug||p.id}`)}
-                          style={{ display:'flex', gap:14, alignItems:'center', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:'12px 16px', cursor:'pointer', transition:'box-shadow .15s' }}
-                          onMouseEnter={e=>e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,.08)'}
-                          onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
-                          <img src={p.logo_url||p.icon_url||'/placeholder.png'} alt={p.name}
-                            style={{ width:44, height:44, borderRadius:10, objectFit:'cover', border:'1px solid #eee' }}
-                            onError={e=>{e.target.src='/placeholder.png';}}/>
-                          <div style={{ minWidth:0 }}>
-                            <div style={{ fontWeight:700, fontSize:14, color:'#111', marginBottom:2 }}>{p.name}</div>
-                            <div style={{ fontSize:12, color:'#666', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.tagline||p.description}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
-                {activeBmTab === 'applied' && <AppliedTab/>}
-                {activeBmTab === 'myproducts' && (
-                  myProductsLoading ? <div style={{textAlign:'center',padding:40,color:'#999'}}>Loading…</div> :
-                  !myProducts || myProducts.length === 0 ? (
-                    <div style={{ textAlign:'center', padding:'40px 20px' }}>
-                      <div style={{ fontSize:40, marginBottom:12 }}>🚀</div>
-                      <div style={{ fontWeight:600, color:'#333', marginBottom:6 }}>No products yet</div>
-                      <div style={{ color:'#888', fontSize:13 }}>Products you submit will appear here.</div>
-                    </div>
-                  ) : (
-                    <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
-                      {myProducts.map(p => (
-                        <div key={p.id} onClick={()=>navigate(`/products/${p.slug||p.id}`)}
-                          style={{ display:'flex', gap:14, alignItems:'center', background:'#fff', border:'1px solid #eee', borderRadius:12, padding:'12px 16px', cursor:'pointer', transition:'box-shadow .15s' }}
-                          onMouseEnter={e=>e.currentTarget.style.boxShadow='0 2px 12px rgba(0,0,0,.08)'}
-                          onMouseLeave={e=>e.currentTarget.style.boxShadow='none'}>
-                          <img src={p.logo_url||p.icon_url||'/placeholder.png'} alt={p.name}
-                            style={{ width:44, height:44, borderRadius:10, objectFit:'cover', border:'1px solid #eee' }}
-                            onError={e=>{e.target.src='/placeholder.png';}}/>
-                          <div style={{ minWidth:0 }}>
-                            <div style={{ fontWeight:700, fontSize:14, color:'#111', marginBottom:2 }}>{p.name}</div>
-                            <div style={{ fontSize:12, color:'#666', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>{p.tagline||p.description}</div>
-                          </div>
-                        </div>
-                      ))}
-                    </div>
-                  )
-                )}
-              </div>
-            )}
 
             {activeTab === 'security' && <SecurityTab/>}
 
