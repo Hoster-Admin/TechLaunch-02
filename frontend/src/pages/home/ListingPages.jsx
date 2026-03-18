@@ -302,7 +302,9 @@ export default function ListingPage() {
             </div>
             <button
               onClick={() => {
-                if (user) {
+                if (user && user.entity_id) {
+                  navigate('/settings?tab=company');
+                } else if (user) {
                   navigate('/settings?tab=company');
                 } else {
                   setAuthRedirect('/settings?tab=company');
@@ -310,7 +312,7 @@ export default function ListingPage() {
                 }
               }}
               className="page-header-cta">
-              + {config.cta}
+              {user && user.entity_id ? `Manage Your Listing` : `+ ${config.cta}`}
             </button>
           </div>
         </div>

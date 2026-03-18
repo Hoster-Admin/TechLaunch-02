@@ -1,7 +1,7 @@
 const jwt  = require('jsonwebtoken');
 const { query } = require('../config/database');
 
-const USER_FIELDS = 'id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at';
+const USER_FIELDS = 'id, name, handle, email, role, status, verified, avatar_url, avatar_color, persona, country, headline, github, bio, website, twitter, linkedin, followers_count, following_count, created_at, entity_id';
 
 // ── Extract token from cookie or Authorization header
 const extractToken = (req) => {
