@@ -23,11 +23,17 @@ export const AuthProvider = ({ children }) => {
 
   useEffect(() => { loadUser(); }, [loadUser]);
 
+  const STAFF_ROLES = ['admin', 'moderator', 'editor', 'analyst'];
+
   const login = async (email, password) => {
     const { data } = await authAPI.login({ email, password });
     const { user, accessToken, refreshToken } = data.data;
     localStorage.setItem('accessToken',  accessToken);
     localStorage.setItem('refreshToken', refreshToken);
+    if (STAFF_ROLES.includes(user?.role)) {
+      localStorage.setItem('adminAccessToken',  accessToken);
+      localStorage.setItem('adminRefreshToken', refreshToken);
+    }
     setUser(user);
     return user;
   };
@@ -46,6 +52,8 @@ export const AuthProvider = ({ children }) => {
     try { await authAPI.logout({ refreshToken }); } catch {}
     localStorage.removeItem('accessToken');
     localStorage.removeItem('refreshToken');
+    localStorage.removeItem('adminAccessToken');
+    localStorage.removeItem('adminRefreshToken');
     setUser(null);
   };
 
