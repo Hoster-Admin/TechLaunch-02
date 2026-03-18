@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useCallback, useRef } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import ProductCard from '../../components/home/ProductCard';
 import Footer from '../../components/home/Footer';
@@ -22,11 +22,12 @@ const ARTICLES = [
 
 export default function HomePage() {
   const navigate = useNavigate();
+  const [searchParams, setSearchParams] = useSearchParams();
   const { user } = useAuth();
   const { setSubmitOpen, setAuthModal } = useUI();
   const [products, setProducts]       = useState([]);
   const [loading,  setLoading]        = useState(true);
-  const [feedType, setFeedType]       = useState('all');
+  const [feedType, setFeedType]       = useState(searchParams.get('feed') || 'all');
   const [countryDDOpen, setCountryDD] = useState(false);
   const [industryDDOpen, setIndDD]    = useState(false);
   const [selectedCountries, setCountries] = useState([]);
@@ -62,6 +63,11 @@ export default function HomePage() {
     window.addEventListener('resize', closeResize);
     return () => { window.removeEventListener('resize', closeResize); };
   }, []);
+
+  useEffect(() => {
+    const urlFeed = searchParams.get('feed') || 'all';
+    setFeedType(urlFeed);
+  }, [searchParams]);
 
   useEffect(() => {
     setLoading(true);

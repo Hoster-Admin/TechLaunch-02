@@ -1,11 +1,12 @@
 import React, { useState, useEffect } from 'react';
+import toast from 'react-hot-toast';
 import { useParams, useNavigate, useSearchParams } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { usersAPI, productsAPI } from '../../utils/api';
+import { usersAPI, productsAPI, launcherAPI } from '../../utils/api';
 import ProductCard from '../../components/home/ProductCard';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
 import { MENA_COUNTRIES } from '../../utils/menaCountries';
@@ -50,6 +51,8 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [profileProducts, setProfileProducts] = useState([]);
   const [upvotedProducts, setUpvotedProducts] = useState([]);
   const [activityItems, setActivityItems]     = useState([]);
+  const [launcherPosts, setLauncherPosts]     = useState(null);
+  const [deletingPostId, setDeletingPostId]   = useState(null);
   const [loadingTab, setLoadingTab]           = useState(false);
 
   const isOwn = user && ((user.handle || '').replace('@','') === handle);
@@ -147,7 +150,14 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         .catch(() => setActivityItems([]))
         .finally(() => setLoadingTab(false));
     }
-  }, [activeTab, profile?.handle]);
+    if ((activeTab === 'posts' || activeTab === 'articles') && launcherPosts === null) {
+      setLoadingTab(true);
+      launcherAPI.userPosts(profile.id)
+        .then(({ data }) => setLauncherPosts(data.data || []))
+        .catch(() => setLauncherPosts([]))
+        .finally(() => setLoadingTab(false));
+    }
+  }, [activeTab, profile?.handle, profile?.id]);
 
   const BackButton = () => (
     <button
@@ -409,10 +419,10 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
           </div>
 
           {/* ── Tabs ── */}
-          <div style={{ display:'flex', marginBottom:16, background:'#fff', borderRadius:12, border:'1px solid #e8e8e8', overflow:'hidden' }}>
-            {[['activity','📝 Activity'],['products','🚀 Products'],['interests','✨ Interests']].map(([t,label]) => (
+          <div style={{ display:'flex', marginBottom:16, background:'#fff', borderRadius:12, border:'1px solid #e8e8e8', overflow:'hidden', flexWrap:'wrap' }}>
+            {[['activity','📝 Activity'],['products','🚀 Products'],['posts','💬 Posts'],['articles','📖 Articles'],['interests','✨ Interests']].map(([t,label]) => (
               <button key={t} onClick={() => setActiveTab(t)}
-                style={{ flex:1, padding:'13px 16px', border:'none', background:activeTab===t?'var(--orange-light)':'transparent', fontSize:13, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
+                style={{ flex:1, minWidth:'max-content', padding:'13px 12px', border:'none', background:activeTab===t?'var(--orange-light)':'transparent', fontSize:12, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
                 {label}
               </button>
             ))}
@@ -449,6 +459,123 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                   ))}
                 </div>
               )
+            )}
+
+            {/* POSTS — launcher posts by this user */}
+            {activeTab === 'posts' && (
+              loadingTab || launcherPosts === null ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
+                  <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                </div>
+              ) : (() => {
+                const userPosts = (launcherPosts || []).filter(p => !p.post_type || p.post_type === 'post');
+                return userPosts.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                    <div style={{ fontSize:40, marginBottom:10 }}>💬</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No posts yet</div>
+                    <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Your Launcher posts will appear here.' : 'This user hasn\'t posted anything yet.'}</div>
+                    {isOwn && <button onClick={() => setShowPostModal(true)} style={{ marginTop:16, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>Write a Post 💬</button>}
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                    {userPosts.map(post => (
+                      <div key={post.id} style={{ position:'relative', background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'18px 20px', cursor:'pointer', transition:'all .15s' }}
+                        onClick={() => navigate(`/launcher/posts/${post.id}`)}
+                        onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(232,98,26,.08)'; }}
+                        onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
+                        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            {post.tag && <span style={{ display:'inline-block', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#fff3ee', color:'var(--orange)', marginBottom:8, textTransform:'uppercase', letterSpacing:'.04em' }}>{post.tag}</span>}
+                            <div style={{ fontSize:14, color:'#1e293b', lineHeight:1.65, wordBreak:'break-word', WebkitLineClamp:3, display:'-webkit-box', WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                              {post.content}
+                            </div>
+                            <div style={{ fontSize:11, color:'#bbb', marginTop:8, display:'flex', gap:12 }}>
+                              <span>{timeAgo(post.created_at)}</span>
+                              {parseInt(post.likes_count) > 0 && <span>❤️ {post.likes_count}</span>}
+                              {parseInt(post.comments_count) > 0 && <span>💬 {post.comments_count}</span>}
+                            </div>
+                          </div>
+                          {isOwn && (
+                            <button onClick={async e => {
+                              e.stopPropagation();
+                              if (!window.confirm('Delete this post?')) return;
+                              setDeletingPostId(post.id);
+                              try {
+                                await launcherAPI.deletePost(post.id);
+                                setLauncherPosts(prev => (prev || []).filter(p => p.id !== post.id));
+                                toast.success('Post deleted');
+                              } catch { toast.error('Failed to delete'); }
+                              finally { setDeletingPostId(null); }
+                            }} disabled={deletingPostId === post.id}
+                              style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+                              {deletingPostId === post.id ? '…' : '🗑 Delete'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()
+            )}
+
+            {/* ARTICLES — launcher articles by this user */}
+            {activeTab === 'articles' && (
+              loadingTab || launcherPosts === null ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
+                  <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                </div>
+              ) : (() => {
+                const userArticles = (launcherPosts || []).filter(p => p.post_type === 'article');
+                return userArticles.length === 0 ? (
+                  <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                    <div style={{ fontSize:40, marginBottom:10 }}>📖</div>
+                    <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No articles yet</div>
+                    <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Your Launcher articles will appear here.' : 'This user hasn\'t published any articles yet.'}</div>
+                    {isOwn && <button onClick={() => setShowPostModal(true)} style={{ marginTop:16, padding:'10px 20px', borderRadius:10, background:'var(--orange)', color:'#fff', border:'none', fontSize:13, fontWeight:700, cursor:'pointer' }}>Write an Article 📖</button>}
+                  </div>
+                ) : (
+                  <div style={{ display:'flex', flexDirection:'column', gap:12 }}>
+                    {userArticles.map(article => (
+                      <div key={article.id} style={{ position:'relative', background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'18px 20px', cursor:'pointer', transition:'all .15s' }}
+                        onClick={() => navigate(`/launcher/posts/${article.id}`)}
+                        onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(232,98,26,.08)'; }}
+                        onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
+                        <div style={{ display:'flex', alignItems:'flex-start', justifyContent:'space-between', gap:12 }}>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            {article.title && <div style={{ fontSize:15, fontWeight:800, color:'#0a0a0a', marginBottom:6, letterSpacing:'-.02em', WebkitLineClamp:2, display:'-webkit-box', WebkitBoxOrient:'vertical', overflow:'hidden' }}>{article.title}</div>}
+                            {article.tag && <span style={{ display:'inline-block', fontSize:10, fontWeight:700, padding:'2px 8px', borderRadius:20, background:'#fff3ee', color:'var(--orange)', marginBottom:8, textTransform:'uppercase', letterSpacing:'.04em' }}>{article.tag}</span>}
+                            <div style={{ fontSize:13, color:'#666', lineHeight:1.65, wordBreak:'break-word', WebkitLineClamp:2, display:'-webkit-box', WebkitBoxOrient:'vertical', overflow:'hidden' }}>
+                              {article.content}
+                            </div>
+                            <div style={{ fontSize:11, color:'#bbb', marginTop:8, display:'flex', gap:12 }}>
+                              <span>{timeAgo(article.created_at)}</span>
+                              {parseInt(article.likes_count) > 0 && <span>❤️ {article.likes_count}</span>}
+                              {parseInt(article.comments_count) > 0 && <span>💬 {article.comments_count}</span>}
+                            </div>
+                          </div>
+                          {isOwn && (
+                            <button onClick={async e => {
+                              e.stopPropagation();
+                              if (!window.confirm('Delete this article?')) return;
+                              setDeletingPostId(article.id);
+                              try {
+                                await launcherAPI.deletePost(article.id);
+                                setLauncherPosts(prev => (prev || []).filter(p => p.id !== article.id));
+                                toast.success('Article deleted');
+                              } catch { toast.error('Failed to delete'); }
+                              finally { setDeletingPostId(null); }
+                            }} disabled={deletingPostId === article.id}
+                              style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
+                              {deletingPostId === article.id ? '…' : '🗑 Delete'}
+                            </button>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                );
+              })()
             )}
 
             {/* INTERESTS — products this user has upvoted */}

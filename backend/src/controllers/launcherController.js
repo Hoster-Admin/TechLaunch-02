@@ -1,9 +1,13 @@
 const { query, getClient } = require('../config/database');
 
-// ── GET /api/launcher  — fetch all posts newest-first
+// ── GET /api/launcher  — fetch all posts newest-first (optional ?user_id=xxx filter)
 const getPosts = async (req, res, next) => {
   try {
     const userId = req.user?.id || null;
+    const filterUserId = req.query.user_id || null;
+    const params = [userId];
+    const whereClause = filterUserId ? `WHERE lp.user_id = $2` : '';
+    if (filterUserId) params.push(filterUserId);
     const { rows } = await query(`
       SELECT
         lp.id, lp.post_type, lp.title, lp.content, lp.tag, lp.image_url,
@@ -20,9 +24,10 @@ const getPosts = async (req, res, next) => {
         END AS liked
       FROM launcher_posts lp
       JOIN users u ON u.id = lp.user_id
+      ${whereClause}
       ORDER BY lp.created_at DESC
       LIMIT 100
-    `, [userId]);
+    `, params);
     res.json({ success: true, data: rows });
   } catch (err) { next(err); }
 };

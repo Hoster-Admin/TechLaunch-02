@@ -13,6 +13,8 @@ const inputStyle = {
   background:'#fff', color:'#0a0a0a', boxSizing:'border-box',
 };
 
+const SUGGESTION_LIMIT = 5000;
+
 function SuggestionBox() {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -62,6 +64,10 @@ function SuggestionBox() {
     e.preventDefault();
     if (!text.trim()) { toast.error('Please write your suggestion'); return; }
     if (text.trim().length < 10) { toast.error('Please write at least a few words'); return; }
+    if (text.trim().length > SUGGESTION_LIMIT) {
+      toast.error(`Your suggestion is too long (maximum ${SUGGESTION_LIMIT.toLocaleString()} characters)`);
+      return;
+    }
     setLoading(true);
     try {
       await suggestionsAPI.submit(text.trim());
@@ -93,15 +99,18 @@ function SuggestionBox() {
             onChange={e => setText(e.target.value)}
             rows={7}
             placeholder="Share an idea, feature request, or recommendation with our team…"
-            style={{ ...inputStyle, resize:'vertical', lineHeight:1.7 }}
-            onFocus={e => e.target.style.borderColor='var(--orange)'}
-            onBlur={e => e.target.style.borderColor='#e8e8e8'}
+            style={{ ...inputStyle, resize:'vertical', lineHeight:1.7, borderColor: text.length > SUGGESTION_LIMIT ? '#ef4444' : undefined }}
+            onFocus={e => e.target.style.borderColor = text.length > SUGGESTION_LIMIT ? '#ef4444' : 'var(--orange)'}
+            onBlur={e => e.target.style.borderColor = text.length > SUGGESTION_LIMIT ? '#ef4444' : '#e8e8e8'}
           />
-          <div style={{ textAlign:'right', fontSize:11, color:'#bbb', marginTop:4 }}>{text.length} characters</div>
+          <div style={{ textAlign:'right', fontSize:11, marginTop:4, color: text.length > SUGGESTION_LIMIT ? '#ef4444' : text.length > SUGGESTION_LIMIT * 0.9 ? '#f59e0b' : '#bbb', fontWeight: text.length > SUGGESTION_LIMIT ? 700 : 400 }}>
+            {text.length.toLocaleString()} / {SUGGESTION_LIMIT.toLocaleString()} characters
+            {text.length > SUGGESTION_LIMIT && <span> — too long</span>}
+          </div>
         </div>
 
-        <button type="submit" disabled={loading}
-          style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:loading?'not-allowed':'pointer', opacity:loading?0.75:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>
+        <button type="submit" disabled={loading || text.length > SUGGESTION_LIMIT}
+          style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:(loading || text.length > SUGGESTION_LIMIT)?'not-allowed':'pointer', opacity:(loading || text.length > SUGGESTION_LIMIT)?0.5:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>
           {loading ? 'Sending…' : 'Send Suggestion'}
         </button>
       </form>
@@ -203,45 +212,94 @@ export default function ContactPage() {
   );
 }
 
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/;
+
 function ContactForm() {
   const [form, setForm] = useState({ name:'', email:'', subject:'', message:'' });
   const [sent, setSent] = useState(false);
   const [loading, setLoading] = useState(false);
-  const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
+  const [errors, setErrors] = useState({});
+  const [cooldown, setCooldown] = useState(0);
+  const cooldownRef = React.useRef(null);
+  const set = k => e => { setForm(p => ({ ...p, [k]: e.target.value })); setErrors(p => ({ ...p, [k]: '' })); };
+
+  React.useEffect(() => () => { if (cooldownRef.current) clearInterval(cooldownRef.current); }, []);
+
+  const handleSendAnother = () => {
+    setSent(false);
+    setForm({ name:'', email:'', subject:'', message:'' });
+    setErrors({});
+    setCooldown(60);
+    cooldownRef.current = setInterval(() => {
+      setCooldown(prev => { if (prev <= 1) { clearInterval(cooldownRef.current); return 0; } return prev - 1; });
+    }, 1000);
+  };
+
+  const validate = () => {
+    const errs = {};
+    const nameWords = form.name.trim().split(/\s+/).filter(w => w.length > 0);
+    if (!form.name.trim()) {
+      errs.name = 'Full name is required';
+    } else if (/\d/.test(form.name)) {
+      errs.name = 'Name should not contain numbers';
+    } else if (nameWords.length < 2 || nameWords.some(w => w.length < 2)) {
+      errs.name = 'Please enter your full name (first and last name)';
+    }
+    if (!form.email.trim()) {
+      errs.email = 'Email address is required';
+    } else if (!EMAIL_RE.test(form.email.trim())) {
+      errs.email = 'Please enter a valid email address';
+    }
+    if (!form.message.trim()) {
+      errs.message = 'Message is required';
+    }
+    setErrors(errs);
+    return Object.keys(errs).length === 0;
+  };
 
   const handleSubmit = async e => {
     e.preventDefault();
-    if (!form.name || !form.email || !form.message) { toast.error('Please fill in all required fields'); return; }
+    if (!validate()) return;
+    if (cooldown > 0) { toast.error(`Please wait ${cooldown}s before sending another message`); return; }
     setLoading(true);
     await new Promise(r => setTimeout(r, 800));
     setSent(true);
     setLoading(false);
   };
 
+  const errStyle = { fontSize:11, color:'#ef4444', marginTop:4, fontWeight:600 };
+
   if (sent) return (
     <div style={{ textAlign:'center', padding:'40px 0' }}>
       <div style={{ fontSize:56, marginBottom:20 }}>🎉</div>
       <h2 style={{ fontSize:22, fontWeight:800, marginBottom:10 }}>Message sent!</h2>
       <p style={{ color:'#888', lineHeight:1.7, marginBottom:24 }}>We've received your message and will get back to you within 1–2 business days.</p>
-      <button onClick={() => setSent(false)} style={{ padding:'10px 24px', borderRadius:12, background:'var(--orange)', color:'#fff', border:'none', fontSize:14, fontWeight:700, cursor:'pointer' }}>
-        Send another
+      <button onClick={handleSendAnother} disabled={cooldown > 0}
+        style={{ padding:'10px 24px', borderRadius:12, background: cooldown > 0 ? '#e8e8e8' : 'var(--orange)', color: cooldown > 0 ? '#aaa' : '#fff', border:'none', fontSize:14, fontWeight:700, cursor: cooldown > 0 ? 'not-allowed' : 'pointer' }}>
+        {cooldown > 0 ? `Wait ${cooldown}s…` : 'Send another'}
       </button>
     </div>
   );
 
   return (
-    <form onSubmit={handleSubmit}>
+    <form onSubmit={handleSubmit} noValidate>
       <h3 style={{ fontSize:18, fontWeight:800, marginBottom:24, letterSpacing:'-.02em' }}>Send us a message</h3>
       <div style={{ display:'grid', gridTemplateColumns:'1fr 1fr', gap:16, marginBottom:16 }}>
         <div>
           <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#555', marginBottom:5 }}>Full Name *</label>
-          <input value={form.name} onChange={set('name')} placeholder="Sara Al-Mahmoud" style={inputStyle}
-            onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+          <input value={form.name} onChange={set('name')} placeholder="Sara Al-Mahmoud"
+            style={{ ...inputStyle, borderColor: errors.name ? '#ef4444' : undefined }}
+            onFocus={e=>e.target.style.borderColor= errors.name ? '#ef4444' : 'var(--orange)'}
+            onBlur={e=>e.target.style.borderColor= errors.name ? '#ef4444' : '#e8e8e8'}/>
+          {errors.name && <div style={errStyle}>{errors.name}</div>}
         </div>
         <div>
           <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#555', marginBottom:5 }}>Email *</label>
-          <input type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" style={inputStyle}
-            onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+          <input type="text" value={form.email} onChange={set('email')} placeholder="you@example.com"
+            style={{ ...inputStyle, borderColor: errors.email ? '#ef4444' : undefined }}
+            onFocus={e=>e.target.style.borderColor= errors.email ? '#ef4444' : 'var(--orange)'}
+            onBlur={e=>e.target.style.borderColor= errors.email ? '#ef4444' : '#e8e8e8'}/>
+          {errors.email && <div style={errStyle}>{errors.email}</div>}
         </div>
       </div>
       <div style={{ marginBottom:16 }}>
@@ -252,8 +310,10 @@ function ContactForm() {
       <div style={{ marginBottom:24 }}>
         <label style={{ display:'block', fontSize:12, fontWeight:700, color:'#555', marginBottom:5 }}>Message *</label>
         <textarea value={form.message} onChange={set('message')} rows={6} placeholder="Tell us what's on your mind…"
-          style={{ ...inputStyle, resize:'vertical', lineHeight:1.6 }}
-          onFocus={e=>e.target.style.borderColor='var(--orange)'} onBlur={e=>e.target.style.borderColor='#e8e8e8'}/>
+          style={{ ...inputStyle, resize:'vertical', lineHeight:1.6, borderColor: errors.message ? '#ef4444' : undefined }}
+          onFocus={e=>e.target.style.borderColor= errors.message ? '#ef4444' : 'var(--orange)'}
+          onBlur={e=>e.target.style.borderColor= errors.message ? '#ef4444' : '#e8e8e8'}/>
+        {errors.message && <div style={errStyle}>{errors.message}</div>}
       </div>
       <button type="submit" disabled={loading}
         style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', opacity:loading?0.75:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>

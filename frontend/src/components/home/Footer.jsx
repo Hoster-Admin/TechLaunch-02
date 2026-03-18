@@ -1,10 +1,7 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUI } from '../../context/UIContext';
-
 export default function Footer() {
   const navigate = useNavigate();
-  const { setSubmitOpen } = useUI();
 
   return (
     <footer style={{ background:'#0a0a0a', color:'#fff', padding:'60px 32px 32px', marginTop:0 }}>
@@ -46,7 +43,6 @@ export default function Footer() {
               { label:'Articles',      action:() => navigate('/articles') },
               { label:'Accelerators',  action:() => navigate('/accelerators') },
               { label:'Launcher',      action:() => navigate('/launcher') },
-              { label:'Directory',     action:() => navigate('/directory') },
             ]},
             { title:'Company', links:[
               { label:'About',          action:() => navigate('/about') },
@@ -78,7 +74,7 @@ export default function Footer() {
         <div style={{ display:'flex', alignItems:'center', gap:10, fontSize:12, color:'rgba(255,255,255,.3)' }}>
           <span>Made with ❤️ in MENA</span>
           <span style={{ opacity:.4 }}>·</span>
-          <a onClick={() => setSubmitOpen(true)} style={{ color:'var(--orange)', fontWeight:600, cursor:'pointer', textDecoration:'none', fontSize:12 }}>Join the community</a>
+          <a onClick={() => navigate('/launcher')} style={{ color:'var(--orange)', fontWeight:600, cursor:'pointer', textDecoration:'none', fontSize:12 }}>Join the community</a>
         </div>
       </div>
 

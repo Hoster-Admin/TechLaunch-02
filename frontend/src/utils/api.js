@@ -173,6 +173,7 @@ export const uploadAPI = {
 
 export const launcherAPI = {
   posts:           ()        => api.get('/launcher'),
+  userPosts:       (userId)  => api.get(`/launcher?user_id=${userId}`),
   getPost:         (id)      => api.get(`/launcher/${id}`),
   createPost:      (data)    => api.post('/launcher', data),
   editPost:        (id, data) => api.patch(`/launcher/${id}`, data),

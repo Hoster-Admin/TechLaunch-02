@@ -52,6 +52,8 @@ function CommentBody({ body }) {
   );
 }
 
+const REPLY_LIMIT = 1000;
+
 /* ─── single comment ───────────────────────────────────────────── */
 function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply = false }) {
   const navigate = useNavigate();
@@ -119,6 +121,7 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
 
   const handleReply = async () => {
     if (!replyText.trim() || submitting) return;
+    if (replyText.trim().length > REPLY_LIMIT) { toast.error(`Reply is too long (max ${REPLY_LIMIT} characters)`); return; }
     setSubmitting(true);
     try {
       await launcherAPI.addComment(postId, `@${comment.author_handle} ${replyText.trim()}`, comment.id);
@@ -275,21 +278,27 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
                 }}
               />
               <FormattingToolbar textareaRef={replyRef} value={replyText} setValue={setReplyText} />
-              <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, marginTop: 8, paddingTop: 8, borderTop: '1px solid #f1f5f9' }}>
-                <button onClick={() => { setShowReplyBox(false); setReplyText(''); }} style={{
-                  padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
-                  background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer',
-                  fontFamily: 'Inter,sans-serif', fontWeight: 600,
-                }}>Cancel</button>
-                <button onClick={handleReply} disabled={submitting || !replyText.trim()} style={{
-                  padding: '6px 16px', borderRadius: 8, border: 'none',
-                  background: replyText.trim() ? '#e15033' : '#f1f5f9',
-                  color: replyText.trim() ? '#fff' : '#94a3b8',
-                  fontSize: 12, fontWeight: 700, cursor: replyText.trim() ? 'pointer' : 'default',
-                  fontFamily: 'Inter,sans-serif', transition: 'all .15s',
-                }}>
-                  {submitting ? 'Posting…' : 'Post Reply'}
-                </button>
+              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: 6, paddingTop: 8, borderTop: '1px solid #f1f5f9', gap: 8 }}>
+                <div style={{ fontSize: 10, fontWeight: replyText.length > REPLY_LIMIT ? 700 : 400, color: replyText.length > REPLY_LIMIT ? '#ef4444' : replyText.length > REPLY_LIMIT * 0.9 ? '#f59e0b' : '#94a3b8', flexShrink: 0 }}>
+                  {replyText.length} / {REPLY_LIMIT}
+                  {replyText.length > REPLY_LIMIT && ' — too long'}
+                </div>
+                <div style={{ display: 'flex', gap: 8 }}>
+                  <button onClick={() => { setShowReplyBox(false); setReplyText(''); }} style={{
+                    padding: '6px 14px', borderRadius: 8, border: '1px solid #e2e8f0',
+                    background: '#fff', fontSize: 12, color: '#64748b', cursor: 'pointer',
+                    fontFamily: 'Inter,sans-serif', fontWeight: 600,
+                  }}>Cancel</button>
+                  <button onClick={handleReply} disabled={submitting || !replyText.trim() || replyText.length > REPLY_LIMIT} style={{
+                    padding: '6px 16px', borderRadius: 8, border: 'none',
+                    background: (replyText.trim() && replyText.length <= REPLY_LIMIT) ? '#e15033' : '#f1f5f9',
+                    color: (replyText.trim() && replyText.length <= REPLY_LIMIT) ? '#fff' : '#94a3b8',
+                    fontSize: 12, fontWeight: 700, cursor: (replyText.trim() && replyText.length <= REPLY_LIMIT) ? 'pointer' : 'default',
+                    fontFamily: 'Inter,sans-serif', transition: 'all .15s',
+                  }}>
+                    {submitting ? 'Posting…' : 'Post Reply'}
+                  </button>
+                </div>
               </div>
             </div>
           </div>
@@ -496,7 +505,8 @@ export default function PostDetailPage() {
 
             {post.image_url && (
               <div style={{ marginBottom: 18, borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                <img src={post.image_url} alt="Post image" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }} />
+                <img src={post.image_url} alt="Post image" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }}
+                  onError={e => { e.currentTarget.parentElement.style.display = 'none'; }} />
               </div>
             )}
 

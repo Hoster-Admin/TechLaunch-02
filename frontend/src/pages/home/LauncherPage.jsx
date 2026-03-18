@@ -9,7 +9,7 @@ import toast from 'react-hot-toast';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
 import RichText from '../../components/home/RichText';
 
-const TABS = ['All', 'Articles', 'Posts', 'People'];
+const TABS = ['Posts', 'Articles', 'People'];
 
 const POST_TAGS = ['Discussion', 'Milestone', 'Tip', 'Question', 'Announcement', 'Ask'];
 
@@ -234,7 +234,7 @@ function PostCard({ post, onDeleted, currentUser }) {
             src={postData.image_url}
             alt="Post image"
             style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }}
-            onError={e => { e.currentTarget.style.display = 'none'; }}
+            onError={e => { e.currentTarget.parentElement.style.display = 'none'; }}
           />
         </div>
       )}
@@ -623,8 +623,8 @@ export default function LauncherPage() {
   const navigate  = useNavigate();
   const { user }  = useAuth();
   const [searchParams, setSearchParams] = useSearchParams();
-  const activeTab = searchParams.get('tab') || 'All';
-  const setActiveTab = (tab) => setSearchParams(tab === 'All' ? {} : { tab });
+  const activeTab = searchParams.get('tab') || 'Posts';
+  const setActiveTab = (tab) => setSearchParams(tab === 'Posts' ? {} : { tab });
 
   const [posts, setPosts]           = useState([]);
   const [postsLoading, setPostsLoading] = useState(true);
@@ -654,13 +654,11 @@ export default function LauncherPage() {
 
   const allItems = [...posts].sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
 
-  const filtered = activeTab === 'All'
-    ? allItems
-    : activeTab === 'Articles'
-      ? allItems.filter(i => i.post_type === 'article')
-      : activeTab === 'Posts'
-        ? allItems.filter(i => !i.post_type || i.post_type === 'post')
-        : [];
+  const filtered = activeTab === 'Articles'
+    ? allItems.filter(i => i.post_type === 'article')
+    : activeTab === 'Posts'
+      ? allItems.filter(i => !i.post_type || i.post_type === 'post')
+      : [];
 
   return (
     <>
