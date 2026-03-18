@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect, useCallback } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
@@ -15,7 +15,6 @@ import ProfileTab  from '../../components/settings/ProfileTab';
 import ProductsTab from '../../components/settings/ProductsTab';
 import DraftsTab   from '../../components/settings/DraftsTab';
 import AppliedTab  from '../../components/settings/AppliedTab';
-import MessagesTab from '../../components/settings/MessagesTab';
 import CompanyTab  from '../../components/settings/CompanyTab';
 
 export default function SettingsPage() {
@@ -47,11 +46,6 @@ export default function SettingsPage() {
   const [linkedin,   setLinkedin]   = useState(user?.linkedin || '');
   const [github,     setGithub]     = useState(user?.github   || '');
 
-  const [activeThread,    setActiveThread]    = useState(null);
-  const [msgInput,        setMsgInput]        = useState('');
-  const [threads,         setThreads]         = useState([]);
-  const [settingsMsgs,    setSettingsMsgs]    = useState([]);
-  const [settingsSending, setSettingsSending] = useState(false);
   const [myDrafts,        setMyDrafts]        = useState(null);
   const [draftsLoading,   setDraftsLoading]   = useState(false);
   const [editDraft,       setEditDraft]       = useState(null);
@@ -59,8 +53,6 @@ export default function SettingsPage() {
   const [bmSaved,        setBmSaved]        = useState(null);
   const [bmLoading,      setBmLoading]      = useState(false);
   const [activeBmTab,    setActiveBmTab]    = useState('saved');
-  const settingsMsgScrollRef = useRef(null);
-
   const [assocQ,        setAssocQ]        = useState('');
   const [assocResults,  setAssocResults]  = useState([]);
   const [assocSelected, setAssocSelected] = useState(null);
@@ -246,25 +238,6 @@ export default function SettingsPage() {
     setActiveTab(key);
   };
 
-  const loadSettingsThreads = useCallback(async () => {
-    try {
-      const res = await api.get('/messages/threads');
-      if (res.data?.success) setThreads(res.data.data);
-    } catch {}
-  }, []);
-
-  const loadSettingsMessages = useCallback(async (handle) => {
-    if (!handle) return;
-    try {
-      const res = await api.get(`/messages/${handle}`);
-      if (res.data?.success) setSettingsMsgs(res.data.data);
-    } catch {}
-  }, []);
-
-  useEffect(() => {
-    if (activeTab === 'messages') loadSettingsThreads();
-  }, [activeTab, loadSettingsThreads]);
-
   useEffect(() => {
     if ((activeTab === 'products' || activeTab === 'bookmarks') && user?.id && myProducts === null) {
       setMyProductsLoading(true);
@@ -294,27 +267,6 @@ export default function SettingsPage() {
         .finally(() => setBmLoading(false));
     }
   }, [activeTab, bmSaved]);
-
-  useEffect(() => {
-    if (activeThread) loadSettingsMessages(activeThread);
-  }, [activeThread, loadSettingsMessages]);
-
-  useEffect(() => {
-    if (settingsMsgScrollRef.current) settingsMsgScrollRef.current.scrollTop = settingsMsgScrollRef.current.scrollHeight;
-  }, [settingsMsgs]);
-
-  const sendMsg = async () => {
-    if (!msgInput.trim() || !activeThread || settingsSending) return;
-    const text = msgInput.trim(); setMsgInput('');
-    setSettingsSending(true);
-    try {
-      await api.post(`/messages/${activeThread}`, { body: text });
-      await loadSettingsMessages(activeThread);
-      await loadSettingsThreads();
-    } catch { setMsgInput(text); } finally { setSettingsSending(false); }
-  };
-
-  const currentThread = threads.find(t => t.handle === activeThread);
 
   return (
     <>
@@ -384,16 +336,6 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'applied' && <AppliedTab/>}
-
-            {activeTab === 'messages' && (
-              <MessagesTab
-                threads={threads} activeThread={activeThread} setActiveThread={setActiveThread}
-                user={user} settingsMsgs={settingsMsgs}
-                msgInput={msgInput} setMsgInput={setMsgInput}
-                sendMsg={sendMsg} settingsSending={settingsSending}
-                settingsMsgScrollRef={settingsMsgScrollRef} currentThread={currentThread}
-              />
-            )}
 
             {activeTab === 'bookmarks' && (
               <div>
