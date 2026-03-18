@@ -234,7 +234,6 @@ export default function Navbar() {
                   <div style={{ padding:'6px 6px 4px' }}>
                     {[
                       { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>, label:'Public Profile', action:() => { navigate(`/u/${handle}`); setUserOpen(false); } },
-                      { icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M19 21l-7-5-7 5V5a2 2 0 012-2h10a2 2 0 012 2z"/></svg>, label:'Bookmarks', action:() => { navigate('/bookmarks'); setUserOpen(false); } },
                       ...(user?.role === 'admin' || user?.role === 'moderator' || user?.role === 'editor' || user?.role === 'analyst'
                         ? [{ icon:<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="7" height="7"/><rect x="14" y="3" width="7" height="7"/><rect x="3" y="14" width="7" height="7"/><rect x="14" y="14" width="7" height="7"/></svg>, label:'Admin Panel', action:() => { navigate('/admin'); setUserOpen(false); } }]
                         : []),
@@ -356,7 +355,6 @@ export default function Navbar() {
               </div>
               <button className="btn-full" style={{ marginBottom:8 }} onClick={() => { setSubmitOpen(true); setMobileOpen(false); }}>+ Submit Product</button>
               <div className="mobile-menu-item" onClick={() => navGo(`/u/${handle}`)}>👁 Public Profile</div>
-              <div className="mobile-menu-item" onClick={() => navGo('/bookmarks')}>🔖 Bookmarks</div>
               <div className="mobile-menu-item" onClick={() => navGo('/settings')}>⚙️ Settings</div>
               {(user?.role === 'admin' || user?.role === 'moderator') && (
                 <div className="mobile-menu-item" onClick={() => navGo('/admin')}>🛠 Admin Panel</div>
