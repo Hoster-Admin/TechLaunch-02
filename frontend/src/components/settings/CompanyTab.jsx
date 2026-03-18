@@ -19,6 +19,7 @@ export default function CompanyTab({
   coSaving, handleCoLogoUpload, toggleCoStage, toggleCoCountry, handleCoSubmit,
 }) {
   const inpStyle = { width:'100%', padding:'10px 14px', border:'1.5px solid #e8e8e8', borderRadius:10, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' };
+  const selStyle = { ...inpStyle, background:'#fff', cursor:'pointer' };
   const fo = e => { e.target.style.borderColor='var(--orange)'; };
   const bl = e => { e.target.style.borderColor='#e8e8e8'; };
 
