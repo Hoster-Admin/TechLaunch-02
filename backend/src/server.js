@@ -60,7 +60,7 @@ const allowedOrigins = process.env.NODE_ENV === 'production'
       /\.replit\.app(:\d+)?$/,
     ];
 
-app.use(cors({
+const corsOptions = {
   origin: (origin, cb) => {
     if (!origin) return cb(null, true);
     const allowed = allowedOrigins.some(o =>
@@ -72,7 +72,10 @@ app.use(cors({
   credentials: true,
   methods: ['GET','POST','PUT','PATCH','DELETE','OPTIONS'],
   allowedHeaders: ['Content-Type','Authorization'],
-}));
+};
+
+app.use('/api', cors(corsOptions));
+app.options('/api/*', cors(corsOptions));
 
 // ── Body parsing
 app.use(express.json({ limit: '100kb' }));
