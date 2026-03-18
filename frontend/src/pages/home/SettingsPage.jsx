@@ -14,8 +14,9 @@ import SecurityTab from '../../components/settings/SecurityTab';
 import ProfileTab  from '../../components/settings/ProfileTab';
 import ProductsTab from '../../components/settings/ProductsTab';
 import DraftsTab   from '../../components/settings/DraftsTab';
-import AppliedTab  from '../../components/settings/AppliedTab';
-import CompanyTab  from '../../components/settings/CompanyTab';
+import AppliedTab    from '../../components/settings/AppliedTab';
+import BookmarksTab from '../../components/settings/BookmarksTab';
+import CompanyTab   from '../../components/settings/CompanyTab';
 
 export default function SettingsPage() {
   const { user, updateUser } = useAuth();
@@ -25,7 +26,7 @@ export default function SettingsPage() {
   const [activeTab, setActiveTab] = useState(() => {
     const params = new URLSearchParams(location.search);
     const tab = params.get('tab');
-    const validTabs = ['profile','products','drafts','applied','company','security'];
+    const validTabs = ['profile','products','drafts','applied','bookmarks','company','security'];
     return validTabs.includes(tab) ? tab : 'profile';
   });
   const [copied,            setCopied]            = useState(false);
@@ -329,6 +330,8 @@ export default function SettingsPage() {
             )}
 
             {activeTab === 'applied' && <AppliedTab/>}
+
+            {activeTab === 'bookmarks' && <BookmarksTab/>}
 
             {activeTab === 'security' && <SecurityTab/>}
 

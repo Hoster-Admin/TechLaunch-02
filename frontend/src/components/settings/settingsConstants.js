@@ -52,6 +52,7 @@ export const NAV_ITEMS = [
   { key:'products',  icon:'🚀', label:'My Products'         },
   { key:'drafts',    icon:'📝', label:'My Drafts'           },
   { key:'applied',   icon:'📋', label:'Applied'             },
+  { key:'bookmarks', icon:'🔖', label:'Bookmarks'           },
   { key:'company',   icon:'🏢', label:'Create Entity Page'  },
   { key:'security',  icon:'🔒', label:'Security'            },
 ];
