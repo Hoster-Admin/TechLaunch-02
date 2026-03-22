@@ -729,7 +729,16 @@ admin.post('/entities', async (req, res) => {
 });
 
 // ─── CSV TEMPLATE DOWNLOAD ────────────────────────────────────────────────────
-admin.get('/entities/csv-template', authenticate, (req, res) => {
+// Accepts Authorization header OR ?token= query param (for direct browser download links)
+app.get('/api/admin/entities/csv-template', async (req, res) => {
+  try {
+    const authHeader = req.headers.authorization || (req.query.token ? `Bearer ${req.query.token}` : '');
+    if (!authHeader.startsWith('Bearer ')) return res.status(401).json({ success:false, message:'No token' });
+    const { userId } = jwt.verify(authHeader.split(' ')[1], JWT_SECRET);
+    const { rows } = await q('SELECT id,role,status FROM users WHERE id=$1', [userId]);
+    if (!rows.length || rows[0].status !== 'active') return res.status(401).json({ success:false, message:'Unauthorized' });
+    if (!['admin','moderator','editor'].includes(rows[0].role)) return res.status(403).json({ success:false, message:'Admin access required' });
+  } catch { return res.status(401).json({ success:false, message:'Invalid token' }); }
   const CSV_TEMPLATE = `name,type,description,website,country,industry,stage,employees,founded_year,aum,portfolio_count,focus,logo_url,logo_emoji,linkedin,twitter,why_us,verified
 STC Ventures,investor,Corporate venture arm of STC Group investing in tech startups across MENA.,https://stcventures.com,Saudi Arabia,Fintech,,11-50,2018,$500M,45,Deep tech and digital infrastructure,https://logo.clearbit.com/stcventures.com,💰,https://linkedin.com/company/stc-ventures,@stcventures,Backed by one of MENA's largest telcos | $500M+ fund size | Access to STC network,true
 Flat6Labs,accelerator,Pan-regional startup accelerator running programs across MENA.,https://flat6labs.com,Egypt,Fintech,,51-200,2011,,500,Early-stage startups across all sectors,https://logo.clearbit.com/flat6labs.com,🏢,https://linkedin.com/company/flat6labs,@flat6labs,Over 500 startups accelerated across 8 cities | Equity-free grant | Regional network,true

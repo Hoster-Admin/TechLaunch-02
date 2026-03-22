@@ -272,13 +272,15 @@ export default function Entities() {
     finally { setActing(p=>({...p,[e.id]:false})); }
   };
 
-  const downloadTemplate = async () => {
-    try {
-      const { data: blob } = await adminAPI.downloadEntityTemplate();
-      const url = URL.createObjectURL(blob);
-      const a = document.createElement('a'); a.href = url; a.download = 'entities-template.csv'; a.click();
-      URL.revokeObjectURL(url);
-    } catch(e) { toast.error('Could not download template'); }
+  const downloadTemplate = () => {
+    const token = localStorage.getItem('tlmena_admin_token') || '';
+    const url = `/api/admin/entities/csv-template?token=${encodeURIComponent(token)}`;
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'entities-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
   };
 
   const handleImportFile = async (e) => {
