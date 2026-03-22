@@ -143,14 +143,14 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
           onMouseEnter={e=>{ if(onEditProfile) e.currentTarget.querySelector('.edit-profile-hint')?.style && (e.currentTarget.querySelector('.edit-profile-hint').style.opacity='1'); }}
           onMouseLeave={e=>{ if(onEditProfile) e.currentTarget.querySelector('.edit-profile-hint')?.style && (e.currentTarget.querySelector('.edit-profile-hint').style.opacity='0'); }}>
           <div className="admin-avatar" style={{background:user?.avatar_color||'var(--orange)',position:'relative',overflow:'hidden',flexShrink:0}}>
-            {user?.avatar_url
-              ? <img src={user.avatar_url} alt={user.name} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>
-              : (user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+            {(user?.admin_avatar_url || user?.avatar_url)
+              ? <img src={user.admin_avatar_url || user.avatar_url} alt={user.admin_display_name || user.name} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>
+              : ((user?.admin_display_name || user?.name||'A')).split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
             }
           </div>
           <div className="sidebar-user-info" style={{flex:1,minWidth:0}}>
             <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
-              <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
+              <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.admin_display_name || user?.name||'Admin'}</div>
               <span style={{fontSize:10,fontWeight:700,borderRadius:5,padding:'2px 7px',background:pill.bg,color:pill.color,whiteSpace:'nowrap',textTransform:'capitalize',flexShrink:0}}>{role}</span>
             </div>
             {onEditProfile && (

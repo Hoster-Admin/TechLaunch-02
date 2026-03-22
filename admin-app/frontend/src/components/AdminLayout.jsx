@@ -70,8 +70,8 @@ export default function AdminLayout() {
   const avatarInputRef = useRef(null);
 
   const openEditProfile = () => {
-    setEditName(user?.name || '');
-    setEditAvatar(user?.avatar_url || '');
+    setEditName(user?.admin_display_name || user?.name || '');
+    setEditAvatar(user?.admin_avatar_url || '');
     setEditProfileOpen(true);
   };
 

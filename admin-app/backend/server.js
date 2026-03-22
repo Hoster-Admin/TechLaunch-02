@@ -118,7 +118,7 @@ const authenticate = async (req, res, next) => {
   if (!header?.startsWith('Bearer ')) return res.status(401).json({ success:false, message:'No token' });
   try {
     const { userId } = jwt.verify(header.split(' ')[1], JWT_SECRET);
-    const { rows } = await q('SELECT id,name,handle,email,role,status,avatar_color,avatar_url,force_password_change FROM users WHERE id=$1', [userId]);
+    const { rows } = await q('SELECT id,name,handle,email,role,status,avatar_color,avatar_url,admin_display_name,admin_avatar_url,force_password_change FROM users WHERE id=$1', [userId]);
     if (!rows.length) return res.status(401).json({ success:false, message:'User not found' });
     if (rows[0].status !== 'active') return res.status(403).json({ success:false, message:'Account suspended' });
     req.user = rows[0];
@@ -165,11 +165,12 @@ app.put('/api/admin/me', authenticate, requireAdmin, express.json({ limit:'5mb' 
     const { name, avatar_url } = req.body;
     if (!name?.trim()) return res.status(400).json({ success:false, message:'Name is required' });
     const { rows } = await q(
-      `UPDATE users SET name=$1, avatar_url=$2 WHERE id=$3
-       RETURNING id, name, handle, email, role, status, avatar_color, avatar_url, force_password_change`,
+      `UPDATE users SET admin_display_name=$1, admin_avatar_url=$2 WHERE id=$3
+       RETURNING id, name, handle, email, role, status, avatar_color, avatar_url,
+                 admin_display_name, admin_avatar_url, force_password_change`,
       [name.trim(), avatar_url || null, req.user.id]
     );
-    await logAction(req.user.id, 'user.self_update', 'user', req.user.id, { name: name.trim() }, req.ip);
+    await logAction(req.user.id, 'user.self_update', 'user', req.user.id, { admin_display_name: name.trim() }, req.ip);
     res.json({ success:true, data:{ user: rows[0] } });
   } catch(e) {
     console.error(e);
