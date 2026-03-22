@@ -647,11 +647,12 @@ admin.delete('/users/:id', async (req, res) => {
     if (req.params.id === req.user.id) return res.status(400).json({ success:false, message:'You cannot delete your own account' });
     const { rows: target } = await q(`SELECT id,name,role FROM users WHERE id=$1`, [req.params.id]);
     if (!target.length) return res.status(404).json({ success:false, message:'User not found' });
-    if (target[0].role === 'admin') return res.status(403).json({ success:false, message:'Cannot delete another admin account' });
-    // FIX 8: Last-admin guard — prevent deleting the only remaining admin
-    const { rows: adminCount } = await q(`SELECT COUNT(*) AS cnt FROM users WHERE role='admin' AND status='active'`);
-    if (target[0].role === 'admin' || parseInt(adminCount[0].cnt) <= 1)
-      return res.status(403).json({ success:false, message:'Cannot delete the last admin account' });
+    // Last-admin guard — prevent deleting the only remaining admin
+    if (target[0].role === 'admin') {
+      const { rows: adminCount } = await q(`SELECT COUNT(*) AS cnt FROM users WHERE role='admin' AND status='active'`);
+      if (parseInt(adminCount[0].cnt) <= 1)
+        return res.status(403).json({ success:false, message:'Cannot delete the last admin account' });
+    }
     await q(`DELETE FROM users WHERE id=$1`, [req.params.id]);
     await logAction(req.user.id, 'user.deleted', 'user', req.params.id, { name:target[0].name, role:target[0].role }, req.ip);
     res.json({ success:true, message:`${target[0].name} has been removed from the team` });

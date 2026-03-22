@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
-import { SCard, Badge, Tbl, EmptyState } from './shared.jsx';
+import { SCard, Badge, Tbl, EmptyState, ConfirmModal } from './shared.jsx';
 import { useAuth } from '../App.jsx';
 
 function maskEmail(email) {
@@ -469,6 +469,7 @@ export default function Settings() {
   const [editMember, setEditMember] = useState(null);
   const [editForm, setEditForm]     = useState({ name:'', email:'', role:'' });
   const [editSaving, setEditSaving] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
 
   const loadTeam = useCallback(() => {
     adminAPI.team().then(r => setTeam(r.data?.data || [])).catch(() => {});
@@ -513,8 +514,12 @@ export default function Settings() {
     finally { setEditSaving(false); }
   };
 
-  const deleteMember = async (m) => {
-    if (!window.confirm(`Remove ${m.name} from the team? This cannot be undone.`)) return;
+  const confirmDelete = (m) => setDeleteTarget(m);
+
+  const deleteMember = async () => {
+    const m = deleteTarget;
+    if (!m) return;
+    setDeleteTarget(null);
     setDeleting(p => ({...p, [m.id]: true}));
     try {
       const { data: d } = await adminAPI.deleteTeamMember(m.id);
@@ -550,6 +555,17 @@ export default function Settings() {
 
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
+
+      {deleteTarget && (
+        <ConfirmModal
+          title={`Delete ${deleteTarget.name}?`}
+          message={`This will permanently delete ${deleteTarget.role === 'admin' ? 'admin' : 'team member'} account @${deleteTarget.handle || deleteTarget.email}. All their data will be removed. This cannot be undone.`}
+          confirmLabel="Delete Account"
+          danger={true}
+          onConfirm={deleteMember}
+          onCancel={()=>setDeleteTarget(null)}
+        />
+      )}
 
       {!isAdmin && (
         <div style={{background:'#FFF7ED',border:'1px solid #FED7AA',borderRadius:10,padding:'10px 16px',fontSize:12,color:'#92400E',display:'flex',gap:8,alignItems:'center'}}>
@@ -645,7 +661,7 @@ export default function Settings() {
               {team.map(m => {
                 const isSelf    = m.id === user?.id;
                 const canEdit   = isAdmin && !isSelf;
-                const canDelete = isAdmin && !isSelf && m.role !== 'admin';
+                const canDelete = isAdmin && !isSelf;
                 return (
                   <tr key={m.id} style={{borderBottom:'1px solid #F4F4F4'}}
                     onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
@@ -684,10 +700,10 @@ export default function Settings() {
                           )}
                           {canDelete && (
                             <button
-                              onClick={()=>deleteMember(m)}
+                              onClick={()=>confirmDelete(m)}
                               disabled={deleting[m.id]}
-                              title="Remove from team"
-                              style={{background:'none',border:'1px solid #FECACA',borderRadius:7,padding:'4px 9px',cursor:'pointer',color:'#DC2626',fontSize:12,fontWeight:600,opacity:deleting[m.id]?0.5:1,lineHeight:1,display:'flex',alignItems:'center',gap:4}}>
+                              title="Delete account"
+                              style={{background:'none',border:'1px solid #FECACA',borderRadius:7,padding:'4px 9px',cursor:deleting[m.id]?'not-allowed':'pointer',color:'#DC2626',fontSize:12,fontWeight:600,opacity:deleting[m.id]?0.5:1,lineHeight:1,display:'flex',alignItems:'center',gap:4}}>
                               {deleting[m.id] ? '…' : '🗑 Delete'}
                             </button>
                           )}
