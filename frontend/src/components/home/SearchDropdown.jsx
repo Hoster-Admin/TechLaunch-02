@@ -121,7 +121,10 @@ export default function SearchDropdown({ query, onClose }) {
                 style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
                 onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
                 onMouseOut={e => e.currentTarget.style.background=''}>
-                <div style={{ width:36, height:36, borderRadius:'50%', background:bg, color:'#fff', display:'grid', placeItems:'center', fontSize:13, fontWeight:900, flexShrink:0 }}>{initials}</div>
+                {p.avatar_url
+                  ? <img src={p.avatar_url} alt={p.name} style={{ width:36, height:36, borderRadius:'50%', objectFit:'cover', flexShrink:0, border:'1px solid #f0f0f0' }} onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='grid'; }} />
+                  : null}
+                <div style={{ width:36, height:36, borderRadius:'50%', background:bg, color:'#fff', display: p.avatar_url ? 'none' : 'grid', placeItems:'center', fontSize:13, fontWeight:900, flexShrink:0 }}>{initials}</div>
                 <div style={{ minWidth:0, flex:1 }}>
                   <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}{p.verified ? ' ✓' : ''}</div>
                   <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>@{p.handle} · {p.persona || 'Member'}</div>
