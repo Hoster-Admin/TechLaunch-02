@@ -157,14 +157,38 @@ const getUserActivity = async (req, res, next) => {
       `SELECT id FROM users WHERE handle=$1 AND status='active' LIMIT 1`, [handle]);
     if (!users.length) return res.json({ success:true, data:[] });
     const uid = users[0].id;
-    const { rows } = await query(`
-      SELECT c.id, c.body, c.created_at,
+
+    const results = [];
+
+    const { rows: posts } = await query(`
+      SELECT pp.id, pp.body, pp.type AS post_type, pp.likes, pp.created_at,
+             NULL::uuid AS product_id, NULL AS product_name, NULL AS product_emoji,
+             'post' AS type
+      FROM platform_posts pp
+      WHERE pp.author_id=$1
+      ORDER BY pp.created_at DESC LIMIT 40`, [uid]);
+    results.push(...posts);
+
+    const { rows: comments } = await query(`
+      SELECT c.id, c.body, NULL AS post_type, c.likes, c.created_at,
              p.id AS product_id, p.name AS product_name, p.logo_emoji AS product_emoji,
              'comment' AS type
       FROM comments c JOIN products p ON p.id = c.product_id
       WHERE c.user_id=$1
       ORDER BY c.created_at DESC LIMIT 40`, [uid]);
-    res.json({ success:true, data:rows });
+    results.push(...comments);
+
+    const { rows: upvotes } = await query(`
+      SELECT u.id, NULL AS body, NULL AS post_type, NULL AS likes, u.created_at,
+             p.id AS product_id, p.name AS product_name, p.logo_emoji AS product_emoji,
+             'upvote' AS type
+      FROM upvotes u JOIN products p ON p.id = u.product_id
+      WHERE u.user_id=$1
+      ORDER BY u.created_at DESC LIMIT 40`, [uid]);
+    results.push(...upvotes);
+
+    results.sort((a, b) => new Date(b.created_at) - new Date(a.created_at));
+    res.json({ success:true, data: results.slice(0, 60) });
   } catch(err){ next(err); }
 };
 

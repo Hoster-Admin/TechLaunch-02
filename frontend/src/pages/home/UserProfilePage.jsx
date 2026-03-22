@@ -416,7 +416,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               )
             )}
 
-            {/* ACTIVITY — comments + interactions */}
+            {/* ACTIVITY — posts, comments, upvotes */}
             {activeTab === 'activity' && (
               loadingTab ? (
                 <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
@@ -426,34 +426,67 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                 <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
                   <div style={{ fontSize:40, marginBottom:10 }}>📝</div>
                   <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No activity yet</div>
-                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Your comments on products will show here.' : 'No public activity yet.'}</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Use the compose box above to publish your first post.' : 'No public activity yet.'}</div>
                 </div>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                  {activityItems.map(item => (
-                    <div key={item.id}
-                      onClick={() => navigate(`/products/${item.product_id}`)}
-                      style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px 20px', cursor:'pointer', transition:'all .15s' }}
-                      onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(232,98,26,.08)'; }}
-                      onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
-                      {/* Header row */}
-                      <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
-                        <div style={{ width:36, height:36, borderRadius:9, border:'1px solid #f0f0f0', display:'grid', placeItems:'center', fontSize:18, flexShrink:0 }}>
-                          {item.product_emoji || '📦'}
-                        </div>
-                        <div style={{ flex:1, minWidth:0 }}>
-                          <div style={{ fontSize:13, fontWeight:700, color:'#222', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
-                            💬 Commented on <span style={{ color:'var(--orange)' }}>{item.product_name}</span>
+                  {activityItems.map(item => {
+                    if (item.type === 'post') {
+                      const postTypeLabel = { update:'📢 Update', milestone:'🏆 Milestone', feature:'✨ Feature', news:'📰 News', article:'📖 Article', post:'💬 Post' }[item.post_type] || '💬 Post';
+                      return (
+                        <div key={item.id}
+                          style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px 20px' }}>
+                          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                            <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:'#f5f5f5', color:'#555' }}>{postTypeLabel}</span>
+                            <span style={{ fontSize:11, color:'#bbb' }}>{timeAgo(item.created_at)}</span>
+                            {item.likes > 0 && <span style={{ fontSize:11, color:'#bbb', marginLeft:'auto' }}>❤️ {item.likes}</span>}
                           </div>
-                          <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{timeAgo(item.created_at)}</div>
+                          <div style={{ fontSize:13, color:'#333', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{item.body}</div>
+                        </div>
+                      );
+                    }
+                    if (item.type === 'upvote') {
+                      return (
+                        <div key={item.id}
+                          onClick={() => navigate(`/products/${item.product_id}`)}
+                          style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'14px 20px', cursor:'pointer', display:'flex', alignItems:'center', gap:12, transition:'all .15s' }}
+                          onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(232,98,26,.08)'; }}
+                          onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
+                          <div style={{ width:36, height:36, borderRadius:9, border:'1px solid #f0f0f0', display:'grid', placeItems:'center', fontSize:18, flexShrink:0 }}>
+                            {item.product_emoji || '📦'}
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#222', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              🔺 Upvoted <span style={{ color:'var(--orange)' }}>{item.product_name}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{timeAgo(item.created_at)}</div>
+                          </div>
+                        </div>
+                      );
+                    }
+                    return (
+                      <div key={item.id}
+                        onClick={() => navigate(`/products/${item.product_id}`)}
+                        style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px 20px', cursor:'pointer', transition:'all .15s' }}
+                        onMouseOver={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.boxShadow='0 2px 12px rgba(232,98,26,.08)'; }}
+                        onMouseOut={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.boxShadow='none'; }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:10, marginBottom:10 }}>
+                          <div style={{ width:36, height:36, borderRadius:9, border:'1px solid #f0f0f0', display:'grid', placeItems:'center', fontSize:18, flexShrink:0 }}>
+                            {item.product_emoji || '📦'}
+                          </div>
+                          <div style={{ flex:1, minWidth:0 }}>
+                            <div style={{ fontSize:13, fontWeight:700, color:'#222', overflow:'hidden', textOverflow:'ellipsis', whiteSpace:'nowrap' }}>
+                              💬 Commented on <span style={{ color:'var(--orange)' }}>{item.product_name}</span>
+                            </div>
+                            <div style={{ fontSize:11, color:'#bbb', marginTop:1 }}>{timeAgo(item.created_at)}</div>
+                          </div>
+                        </div>
+                        <div style={{ fontSize:13, color:'#444', lineHeight:1.65, padding:'10px 14px', background:'#fafafa', borderRadius:10, borderLeft:'3px solid var(--orange)', fontStyle:'italic' }}>
+                          "{item.body}"
                         </div>
                       </div>
-                      {/* Comment body */}
-                      <div style={{ fontSize:13, color:'#444', lineHeight:1.65, padding:'10px 14px', background:'#fafafa', borderRadius:10, borderLeft:'3px solid var(--orange)', fontStyle:'italic' }}>
-                        "{item.body}"
-                      </div>
-                    </div>
-                  ))}
+                    );
+                  })}
                 </div>
               )
             )}
