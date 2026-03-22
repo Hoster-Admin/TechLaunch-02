@@ -478,6 +478,7 @@ export default function Users() {
   const [sortDir,  setSortDir]  = useState('desc');
   const [showAdd,  setShowAdd]  = useState(false);
   const [suspendTarget, setSuspendTarget] = useState(null);
+  const [deleteTarget,  setDeleteTarget]  = useState(null);
   const [drawerUser, setDrawerUser] = useState(null);
 
   const handleSort = (col) => {
@@ -539,6 +540,13 @@ export default function Users() {
     await act(id, ()=>adminAPI.suspendUser(id), `${name} suspended`);
   };
 
+  const doDeleteConfirmed = async () => {
+    if (!deleteTarget) return;
+    const { id, name } = deleteTarget;
+    setDeleteTarget(null);
+    await act(id, ()=>adminAPI.deleteUser(id), `${name} deleted`);
+  };
+
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
       <PlatformProfileCard/>
@@ -553,6 +561,17 @@ export default function Users() {
           danger={true}
           onConfirm={doSuspendConfirmed}
           onCancel={()=>setSuspendTarget(null)}
+        />
+      )}
+
+      {deleteTarget && (
+        <ConfirmModal
+          title={`Delete ${deleteTarget.name}?`}
+          message={`This will permanently delete @${deleteTarget.handle}'s account and all their data. This cannot be undone.`}
+          confirmLabel="Delete Account"
+          danger={true}
+          onConfirm={doDeleteConfirmed}
+          onCancel={()=>setDeleteTarget(null)}
         />
       )}
 
@@ -650,6 +669,7 @@ export default function Users() {
                           ? <ActionBtn variant="suspend" onClick={()=>setSuspendTarget(u)}>Suspend</ActionBtn>
                           : <ActionBtn variant="reinstate" loading={acting[u.id]} onClick={()=>act(u.id,()=>adminAPI.reinstateUser(u.id),`${u.name} reinstated`)}>Reinstate</ActionBtn>
                         }
+                        <ActionBtn variant="delete" loading={acting[u.id]} onClick={()=>setDeleteTarget(u)}>🗑</ActionBtn>
                       </div>
                     </td>
                   </tr>
