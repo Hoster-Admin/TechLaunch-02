@@ -418,7 +418,7 @@ export default function InboxModal() {
                 value={msgText}
                 onChange={handleTextChange}
                 onKeyDown={handleKeyDown}
-                placeholder={`Message ${activeThread?.name || activeHandle}… (Shift+Enter for new line)`}
+                placeholder={`Message ${activeThread?.name || activeHandle}…`}
                 rows={1}
                 disabled={sending}
                 style={{
