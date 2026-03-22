@@ -77,8 +77,9 @@ export const authAPI = {
 };
 
 export const productsAPI = {
-  list:       (params) => api.get('/products', { params }),
-  get:        (id)     => api.get(`/products/${id}`),
+  list:            (params) => api.get('/products', { params }),
+  industryCounts:  ()       => api.get('/products/industry-counts'),
+  get:             (id)     => api.get(`/products/${id}`),
   create:     (data)   => api.post('/products', data),
   update:     (id, d)  => api.put(`/products/${id}`, d),
   delete:     (id)     => api.delete(`/products/${id}`),

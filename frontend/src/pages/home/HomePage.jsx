@@ -28,6 +28,7 @@ export default function HomePage() {
   const [products, setProducts]       = useState([]);
   const [loading,  setLoading]        = useState(true);
   const [feedType, setFeedType]       = useState(searchParams.get('feed') || 'all');
+  const [industryCounts, setIndustryCounts] = useState({});
   const [countryDDOpen, setCountryDD] = useState(false);
   const [industryDDOpen, setIndDD]    = useState(false);
   const [selectedCountries, setCountries] = useState([]);
@@ -80,6 +81,19 @@ export default function HomePage() {
       .catch(() => { setProducts([]); })
       .finally(() => setLoading(false));
   }, [feedType]);
+
+  useEffect(() => {
+    productsAPI.industryCounts()
+      .then(({ data }) => setIndustryCounts(data.data || {}))
+      .catch(() => {});
+  }, []);
+
+  const toggleSidebarIndustry = (ind) => {
+    setIndustries(prev =>
+      prev.includes(ind) ? prev.filter(i => i !== ind) : [...prev, ind]
+    );
+    document.getElementById('products-section')?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+  };
 
   const filtered = products.filter(p =>
     (!selectedCountries.length  || selectedCountries.some(c => p.countries?.includes(c))) &&
@@ -226,19 +240,34 @@ export default function HomePage() {
             {/* Top Industries */}
             <div className="sidebar-card">
               <div className="sidebar-title">🏭 Top Industries</div>
-              {['Fintech','Edtech','AI & ML','Healthtech','E-Commerce'].map((ind) => {
-                const count = products.filter(p => p.industry === ind).length;
-                const icons = { 'Fintech':'💳','Edtech':'📚','AI & ML':'🤖','Healthtech':'🏥','E-Commerce':'🛒' };
-                return (
-                  <div key={ind} className="sidebar-item" onClick={() => navigate(`/products?industry=${encodeURIComponent(ind)}`)}>
-                    <div className="sidebar-item-icon" style={{ background: 'var(--gray-100)' }}>{icons[ind]}</div>
-                    <div>
-                      <div className="sidebar-item-name">{ind}</div>
-                      <div className="sidebar-item-meta">{count} products</div>
+              {(() => {
+                const allInds = Object.keys(industryCounts).length
+                  ? Object.entries(industryCounts).sort((a,b) => b[1]-a[1]).slice(0,5)
+                  : INDUSTRIES.slice(0,5).map(n => [n, 0]);
+                return allInds.map(([ind, count]) => {
+                  const isActive = selectedIndustries.includes(ind);
+                  return (
+                    <div key={ind} className="sidebar-item"
+                      onClick={() => toggleSidebarIndustry(ind)}
+                      style={{ cursor:'pointer', background: isActive ? 'var(--orange-light)' : 'transparent', borderRadius: isActive ? 10 : 0, transition:'background .15s' }}>
+                      <div className="sidebar-item-icon" style={{ background: isActive ? 'var(--orange)' : 'var(--gray-100)', color: isActive ? '#fff' : undefined, transition:'all .15s' }}>
+                        {INDUSTRY_ICONS[ind] || '🏭'}
+                      </div>
+                      <div>
+                        <div className="sidebar-item-name" style={{ color: isActive ? 'var(--orange)' : undefined, fontWeight: isActive ? 700 : undefined }}>{ind}</div>
+                        <div className="sidebar-item-meta">{count} {count === 1 ? 'product' : 'products'}</div>
+                      </div>
+                      {isActive && <div className="sidebar-item-right" style={{ color:'var(--orange)', fontSize:12, fontWeight:700, marginLeft:'auto' }}>✓</div>}
                     </div>
-                  </div>
-                );
-              })}
+                  );
+                });
+              })()}
+              {selectedIndustries.length > 0 && (
+                <button onClick={() => setIndustries([])}
+                  style={{ width:'100%', marginTop:6, fontSize:12, fontWeight:700, color:'var(--orange)', background:'none', border:'none', cursor:'pointer', padding:'4px 0', textAlign:'center' }}>
+                  Clear filter
+                </button>
+              )}
             </div>
 
             {/* Community CTAs */}

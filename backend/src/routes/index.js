@@ -139,8 +139,9 @@ authRouter.post('/reset-password',
 // ══════════════════════════════════════════════════
 const productsRouter = express.Router();
 
-productsRouter.get ('/',          optionalAuth, productCtrl.getProducts);
-productsRouter.get ('/:id',       optionalAuth, productCtrl.getProduct);
+productsRouter.get ('/',                 optionalAuth, productCtrl.getProducts);
+productsRouter.get ('/industry-counts', productCtrl.getIndustryCounts);
+productsRouter.get ('/:id',             optionalAuth, productCtrl.getProduct);
 productsRouter.post('/',          authenticate, writeLimiter,
   [
     body('name').trim().notEmpty().isLength({ max:120 }),

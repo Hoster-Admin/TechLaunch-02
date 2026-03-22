@@ -372,7 +372,24 @@ const addComment = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ── GET /api/products/industry-counts  (public)
+const getIndustryCounts = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `SELECT industry, COUNT(*)::int AS count
+       FROM products
+       WHERE status = 'live' AND industry IS NOT NULL AND industry <> ''
+       GROUP BY industry
+       ORDER BY count DESC`
+    );
+    const counts = {};
+    rows.forEach(r => { counts[r.industry] = r.count; });
+    res.json({ success: true, data: counts });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getProducts, getProduct, createProduct, updateProduct, deleteProduct,
   toggleUpvote, toggleBookmark, joinWaitlist, addDiscountSignup, getComments, addComment,
+  getIndustryCounts,
 };
