@@ -1,22 +1,21 @@
 import React, { useEffect, useState, useCallback } from 'react';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
-import { SCard, Badge, Tbl, ActionBtn, EmptyState } from './shared.jsx';
+import { SCard, Badge, Tbl, ActionBtn, EmptyState, fmtDate } from './shared.jsx';
 
-const APP_STATUSES   = ['pending','reviewing','accepted','rejected'];
 const PITCH_STATUSES = ['sent','reviewing','interested','follow-up','rejected','funded'];
 
-const APP_STATUS_MAP = {
-  pending:   { v:'yellow', l:'Pending'   },
-  reviewing: { v:'blue',   l:'Reviewing' },
-  accepted:  { v:'green',  l:'Accepted'  },
-  rejected:  { v:'red',    l:'Rejected'  },
+const APP_STATUS_BADGE = {
+  pending:   { v:'amber', l:'Pending'   },
+  reviewing: { v:'blue',  l:'Reviewing' },
+  accepted:  { v:'green', l:'Accepted'  },
+  rejected:  { v:'red',   l:'Rejected'  },
 };
 const PITCH_STATUS_MAP = {
-  sent:        { v:'yellow', l:'Sent'       },
+  sent:        { v:'amber',  l:'Sent'       },
   reviewing:   { v:'blue',   l:'Reviewing'  },
   interested:  { v:'green',  l:'Interested' },
-  'follow-up': { v:'violet', l:'Follow-up'  },
+  'follow-up': { v:'purple', l:'Follow-up'  },
   rejected:    { v:'red',    l:'Rejected'   },
   funded:      { v:'green',  l:'Funded 🎉'  },
 };
@@ -98,17 +97,18 @@ export default function Applications() {
   return (
     <div style={{display:'flex',flexDirection:'column',gap:20}}>
 
-      {/* Accelerator Applications */}
+      {/* Accelerator Applications — read-only, entity-managed */}
       <SCard
         title="Accelerator Applications"
-        sub={`${accelApps.length} total · ${accelApps.filter(a=>a.status==='pending').length} pending review`}
+        sub={`${accelApps.length} total · ${accelApps.filter(a=>a.status==='pending').length} pending · managed by each entity`}
+        action={<span style={{fontSize:11,fontWeight:600,padding:'4px 10px',borderRadius:20,background:'#F4F4F4',color:'#888',display:'flex',alignItems:'center',gap:5}}>🔒 View only</span>}
       >
         {accelApps.length === 0
           ? <EmptyState icon="📋" title="No applications yet"/>
           : <div style={{overflowX:'auto'}}>
-              <Tbl heads={['Applicant','Startup','Accelerator','Stage','Status','Notes','Actions']}>
+              <Tbl heads={['Applicant','Startup','Accelerator','Stage','Status','Notes','Submitted','Pitch']}>
                 {accelApps.map(a => {
-                  const key = `accel-${a.id}`;
+                  const badge = APP_STATUS_BADGE[a.status] || APP_STATUS_BADGE.pending;
                   return (
                     <tr key={a.id} style={{borderBottom:'1px solid #F4F4F4'}}
                       onMouseEnter={e=>e.currentTarget.style.background='#FAFAFA'}
@@ -117,32 +117,29 @@ export default function Applications() {
                         <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A'}}>{a.applicant_name}</div>
                         <div style={{fontSize:10,color:'#AAAAAA'}}>@{a.applicant_handle}</div>
                       </td>
-                      <td style={{padding:'10px 14px',fontSize:11,color:'#0A0A0A'}}>
+                      <td style={{padding:'10px 14px',fontSize:11,fontWeight:600,color:'#0A0A0A'}}>
                         {a.startup_name || a.product_name || '—'}
                       </td>
                       <td style={{padding:'10px 14px',fontSize:11,color:'#0A0A0A'}}>{a.entity_name}</td>
                       <td style={{padding:'10px 14px',fontSize:11,color:'#AAAAAA'}}>{a.stage || '—'}</td>
                       <td style={{padding:'10px 14px'}}>
-                        <StatusSelect
-                          value={a.status}
-                          options={APP_STATUSES}
-                          statusMap={APP_STATUS_MAP}
-                          onChange={status => updateAccel(a.id, { status })}
-                          busy={!!busy[key]}
-                        />
+                        <Badge variant={badge.v}>{badge.l}</Badge>
+                      </td>
+                      <td style={{padding:'10px 14px',fontSize:11,color:'#666',maxWidth:160,overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>
+                        {a.notes || <span style={{color:'#ccc'}}>—</span>}
+                      </td>
+                      <td style={{padding:'10px 14px',fontSize:11,color:'#AAAAAA',whiteSpace:'nowrap'}}>
+                        {fmtDate(a.created_at)}
                       </td>
                       <td style={{padding:'10px 14px'}}>
-                        <NotesCell value={a.notes} onSave={notes=>updateAccel(a.id,{notes})} busy={!!busy[key]}/>
-                      </td>
-                      <td style={{padding:'10px 14px'}}>
-                        {a.pitch && (
+                        {a.pitch ? (
                           <ActionBtn variant="edit" onClick={() => {
                             const w = window.open('','_blank');
                             w.document.write(`<pre style="white-space:pre-wrap;font-family:sans-serif;padding:24px;max-width:700px;line-height:1.6">${a.pitch}</pre>`);
                           }}>
                             View Pitch
                           </ActionBtn>
-                        )}
+                        ) : <span style={{fontSize:11,color:'#ddd'}}>—</span>}
                       </td>
                     </tr>
                   );
