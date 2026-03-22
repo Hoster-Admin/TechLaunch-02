@@ -4,7 +4,7 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { PeopleContent } from './PeoplePage';
 import { useAuth } from '../../context/AuthContext';
-import { launcherAPI, uploadAPI } from '../../utils/api';
+import { launcherAPI, uploadAPI, mediaUrl } from '../../utils/api';
 import toast from 'react-hot-toast';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
 import RichText from '../../components/home/RichText';
@@ -225,19 +225,32 @@ function PostCard({ post, onDeleted, currentUser }) {
         )}
       </div>
 
-      {postData.image_url && (
-        <div
-          style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', border: '1px solid #f0f0f0', cursor: 'pointer' }}
-          onClick={() => navigate(`/launcher/posts/${post.id}`)}
-        >
-          <img
-            src={postData.image_url}
-            alt="Post image"
-            style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }}
-            onError={e => { e.currentTarget.parentElement.style.display = 'none'; }}
-          />
-        </div>
-      )}
+      {postData.image_url && (() => {
+        const url = postData.image_url;
+        const isVideo = postData.media_type === 'video' || /\.(mp4|webm|mov|ogg)(\?|$)/i.test(url);
+        const resolvedUrl = mediaUrl(url);
+        return (
+          <div style={{ marginBottom: 16, borderRadius: 12, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
+            {isVideo ? (
+              <video
+                src={resolvedUrl}
+                controls
+                style={{ width: '100%', maxHeight: 320, display: 'block', background: '#000' }}
+                onError={e => { e.currentTarget.parentElement.style.display = 'none'; }}
+              />
+            ) : (
+              <div style={{ cursor: 'pointer' }} onClick={() => navigate(`/launcher/posts/${post.id}`)}>
+                <img
+                  src={resolvedUrl}
+                  alt="Post image"
+                  style={{ width: '100%', maxHeight: 320, objectFit: 'cover', display: 'block' }}
+                  onError={e => { e.currentTarget.parentElement.style.display = 'none'; }}
+                />
+              </div>
+            )}
+          </div>
+        );
+      })()}
 
       <div style={{ display: 'flex', gap: 20 }}>
         <button onClick={handleLike}
@@ -412,7 +425,7 @@ function ArticleCard({ article, onClick, currentUser, onDeleted, onUpdated }) {
       )}
       {article.image_url && (
         <div style={{ marginBottom: 14, borderRadius: 10, overflow: 'hidden', border: '1px solid #f0f0f0' }}>
-          <img src={article.image_url} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}
+          <img src={mediaUrl(article.image_url)} alt="" style={{ width: '100%', maxHeight: 180, objectFit: 'cover', display: 'block' }}
             onError={e => { e.currentTarget.parentElement.style.display = 'none'; }}/>
         </div>
       )}

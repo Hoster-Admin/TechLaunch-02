@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { launcherAPI, communityAPI, uploadAPI } from '../../utils/api';
+import { launcherAPI, communityAPI, uploadAPI, mediaUrl } from '../../utils/api';
 import toast from 'react-hot-toast';
 import FormattingToolbar from './FormattingToolbar';
 
@@ -43,10 +43,18 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
   const [publishing, setPublishing] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
+  const inferMediaType = (url) => {
+    if (!url) return null;
+    if (/\.(mp4|webm|mov|ogg)(\?|$)/i.test(url)) return 'video';
+    return 'image';
+  };
+
   const [mediaFile, setMediaFile]       = useState(null);
-  const [mediaPreview, setMediaPreview] = useState(draft?.image_url || null);
-  const [mediaType, setMediaType]       = useState(null);
+  const [mediaPreview, setMediaPreview] = useState(draft?.image_url ? mediaUrl(draft.image_url) : null);
+  const [mediaStoredUrl, setMediaStoredUrl] = useState(draft?.image_url || null);
+  const [mediaType, setMediaType]       = useState(inferMediaType(draft?.image_url));
   const [uploading, setUploading]       = useState(false);
+  const [imageWidth, setImageWidth]     = useState(100);
   const mediaInputRef = useRef(null);
   const bodyRef = useRef(null);
 
@@ -71,6 +79,11 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
     onClose();
   };
 
+  const formatFileSize = (bytes) => {
+    if (bytes >= 1024 * 1024) return `${(bytes / (1024 * 1024)).toFixed(1)} MB`;
+    return `${Math.round(bytes / 1024)} KB`;
+  };
+
   const handleMediaSelect = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
@@ -78,17 +91,21 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
     setMediaFile(file);
     setMediaType(file.type.startsWith('video/') ? 'video' : 'image');
     setMediaPreview(URL.createObjectURL(file));
+    setMediaStoredUrl(null);
+    setImageWidth(100);
   };
 
   const removeMedia = () => {
     setMediaFile(null);
     setMediaPreview(null);
+    setMediaStoredUrl(null);
     setMediaType(null);
+    setImageWidth(100);
     if (mediaInputRef.current) mediaInputRef.current.value = '';
   };
 
   const uploadMediaIfNeeded = async () => {
-    if (!mediaFile) return mediaPreview;
+    if (!mediaFile) return mediaStoredUrl;
     setUploading(true);
     try {
       const res = await uploadAPI.postMedia(mediaFile);
@@ -223,16 +240,36 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 </label>
 
                 {mediaPreview ? (
-                  <div style={{ position:'relative', borderRadius:12, overflow:'hidden', border:'1.5px solid #e8e8e8' }}>
-                    {mediaType === 'video' ? (
-                      <video src={mediaPreview} controls style={{ width:'100%', maxHeight:240, objectFit:'cover', display:'block', background:'#000' }}/>
-                    ) : (
-                      <img src={mediaPreview} alt="preview" style={{ width:'100%', maxHeight:240, objectFit:'cover', display:'block' }}/>
+                  <div>
+                    <div style={{ position:'relative', borderRadius:12, overflow:'hidden', border:'1.5px solid #e8e8e8', display:'flex', justifyContent:'center', background:'#f9f9f9' }}>
+                      {mediaType === 'video' ? (
+                        <video src={mediaPreview} controls style={{ width:'100%', maxHeight:240, objectFit:'cover', display:'block', background:'#000' }}/>
+                      ) : (
+                        <img src={mediaPreview} alt="preview" style={{ width:`${imageWidth}%`, maxHeight:300, objectFit:'contain', display:'block' }}/>
+                      )}
+                      <button onClick={removeMedia}
+                        style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(0,0,0,.6)', color:'#fff', fontSize:14, cursor:'pointer', display:'grid', placeItems:'center' }}>
+                        ✕
+                      </button>
+                    </div>
+                    {mediaType === 'image' && (
+                      <div style={{ marginTop:10, display:'flex', flexDirection:'column', gap:6 }}>
+                        <div style={{ display:'flex', alignItems:'center', gap:12 }}>
+                          <label style={{ fontSize:11, fontWeight:700, color:'#888', whiteSpace:'nowrap' }}>Size: {imageWidth}%</label>
+                          <input
+                            type="range"
+                            min={30}
+                            max={100}
+                            value={imageWidth}
+                            onChange={e => setImageWidth(Number(e.target.value))}
+                            style={{ flex:1, accentColor:'var(--orange)', cursor:'pointer' }}
+                          />
+                        </div>
+                        {mediaFile && (
+                          <div style={{ fontSize:11, color:'#aaa', textAlign:'right' }}>{formatFileSize(mediaFile.size)}</div>
+                        )}
+                      </div>
                     )}
-                    <button onClick={removeMedia}
-                      style={{ position:'absolute', top:8, right:8, width:28, height:28, borderRadius:'50%', border:'none', background:'rgba(0,0,0,.6)', color:'#fff', fontSize:14, cursor:'pointer', display:'grid', placeItems:'center' }}>
-                      ✕
-                    </button>
                   </div>
                 ) : (
                   <button onClick={() => mediaInputRef.current?.click()}

@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { useParams, useNavigate } from 'react-router-dom';
-import { launcherAPI } from '../../utils/api';
+import { launcherAPI, mediaUrl } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
@@ -528,12 +528,21 @@ export default function PostDetailPage() {
               <RichText text={post.content} />
             </div>
 
-            {post.image_url && (
-              <div style={{ marginBottom: 18, borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
-                <img src={post.image_url} alt="Post image" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }}
-                  onError={e => { e.currentTarget.parentElement.style.display = 'none'; }} />
-              </div>
-            )}
+            {post.image_url && (() => {
+              const isVideo = post.media_type === 'video' || /\.(mp4|webm|mov|ogg)(\?|$)/i.test(post.image_url);
+              const resolvedUrl = mediaUrl(post.image_url);
+              return (
+                <div style={{ marginBottom: 18, borderRadius: 14, overflow: 'hidden', border: '1px solid #e2e8f0' }}>
+                  {isVideo ? (
+                    <video src={resolvedUrl} controls style={{ width: '100%', maxHeight: 460, display: 'block', background: '#000' }}
+                      onError={e => { e.currentTarget.parentElement.style.display = 'none'; }} />
+                  ) : (
+                    <img src={resolvedUrl} alt="Post image" style={{ width: '100%', maxHeight: 460, objectFit: 'cover', display: 'block' }}
+                      onError={e => { e.currentTarget.parentElement.style.display = 'none'; }} />
+                  )}
+                </div>
+              );
+            })()}
 
             {/* post actions */}
             <div style={{ display: 'flex', alignItems: 'center', gap: 10, paddingTop: 14, borderTop: '1px solid #f1f5f9' }}>

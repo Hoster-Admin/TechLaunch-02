@@ -187,6 +187,13 @@ export const launcherAPI = {
   editComment:     (cid, b)  => api.patch(`/launcher/comments/${cid}`, { body: b }),
 };
 
+export const mediaUrl = (url) => {
+  if (!url) return url;
+  if (url.startsWith('http://') || url.startsWith('https://') || url.startsWith('blob:')) return url;
+  const base = (process.env.REACT_APP_API_URL || '').replace(/\/api\/?$/, '');
+  return base ? `${base}${url}` : url;
+};
+
 export const statsAPI = {
   summary:   () => api.get('/stats/summary'),
   directory: () => api.get('/stats/directory'),
