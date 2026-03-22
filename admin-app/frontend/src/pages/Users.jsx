@@ -332,14 +332,28 @@ function UserDrawer({ userId, onClose, onAction }) {
 }
 
 // ── Platform Profile Card + Edit Modal ───────────────────────────────────────
-const EMPTY_PP = { name:'', handle:'', headline:'', bio:'', website:'', twitter:'', linkedin:'' };
+const EMPTY_PP = { name:'', handle:'', headline:'', bio:'', website:'', twitter:'', linkedin:'', avatar_url:'' };
+
+async function uploadImageFile(file) {
+  if (!file) throw new Error('No file');
+  if (file.size > 2 * 1024 * 1024) throw new Error('Image must be under 2 MB');
+  const fd = new FormData();
+  fd.append('file', file);
+  const token = localStorage.getItem('tlmena_admin_token');
+  const res = await fetch('/api/upload', { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd });
+  const data = await res.json();
+  if (!res.ok) throw new Error(data.message || 'Upload failed');
+  return data.url;
+}
 
 function PlatformProfileCard() {
-  const [profile,  setProfile]  = useState(null);
-  const [loading,  setLoading]  = useState(true);
-  const [editing,  setEditing]  = useState(false);
-  const [saving,   setSaving]   = useState(false);
-  const [form,     setForm]     = useState(EMPTY_PP);
+  const [profile,      setProfile]      = useState(null);
+  const [loading,      setLoading]      = useState(true);
+  const [editing,      setEditing]      = useState(false);
+  const [saving,       setSaving]       = useState(false);
+  const [imgUploading, setImgUploading] = useState(false);
+  const [form,         setForm]         = useState(EMPTY_PP);
+  const avatarFileRef = React.useRef();
 
   const load = useCallback(async () => {
     try {
@@ -354,28 +368,42 @@ function PlatformProfileCard() {
   const openEdit = () => {
     if (!profile) return;
     setForm({
-      name:     profile.name     || '',
-      handle:   (profile.handle||'techlaunchmena').replace('@',''),
-      headline: profile.headline || '',
-      bio:      profile.bio      || '',
-      website:  profile.website  || '',
-      twitter:  profile.twitter  || '',
-      linkedin: profile.linkedin || '',
+      name:       profile.name       || '',
+      handle:     (profile.handle||'techlaunchmena').replace('@',''),
+      headline:   profile.headline   || '',
+      bio:        profile.bio        || '',
+      website:    profile.website    || '',
+      twitter:    profile.twitter    || '',
+      linkedin:   profile.linkedin   || '',
+      avatar_url: profile.avatar_url || '',
     });
     setEditing(true);
+  };
+
+  const handleAvatarChange = async (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    setImgUploading(true);
+    try {
+      const url = await uploadImageFile(file);
+      setForm(f => ({ ...f, avatar_url: url }));
+      toast.success('Image ready — click Save Profile to apply');
+    } catch(err) { toast.error(err.message || 'Upload failed'); }
+    finally { setImgUploading(false); e.target.value = ''; }
   };
 
   const save = async () => {
     setSaving(true);
     try {
       await adminAPI.savePublicProfile({
-        name:     form.name     || null,
-        handle:   form.handle   || null,
-        headline: form.headline || null,
-        bio:      form.bio      || null,
-        website:  form.website  || null,
-        twitter:  form.twitter  || null,
-        linkedin: form.linkedin || null,
+        name:       form.name       || null,
+        handle:     form.handle     || null,
+        headline:   form.headline   || null,
+        bio:        form.bio        || null,
+        website:    form.website    || null,
+        twitter:    form.twitter    || null,
+        linkedin:   form.linkedin   || null,
+        avatar_url: form.avatar_url || null,
       });
       toast.success('Public profile updated!');
       setEditing(false);
@@ -399,6 +427,29 @@ function PlatformProfileCard() {
               <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>Edit Public Profile</div>
               <button onClick={()=>setEditing(false)} style={{background:'none',border:'none',fontSize:18,cursor:'pointer',color:'#AAAAAA'}}>✕</button>
             </div>
+
+            {/* Avatar */}
+            <div style={{marginBottom:18}}>
+              <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',marginBottom:8,textTransform:'uppercase',letterSpacing:'.04em'}}>Profile Image</label>
+              <div style={{display:'flex',alignItems:'center',gap:14}}>
+                <div style={{width:60,height:60,borderRadius:'50%',overflow:'hidden',background:'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:20,fontWeight:800,color:'#fff',flexShrink:0,border:'2px solid #F0F0F0'}}>
+                  {form.avatar_url
+                    ? <img src={form.avatar_url} alt="avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    : <span>{(form.name||'TL').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}</span>
+                  }
+                </div>
+                <div>
+                  <input ref={avatarFileRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleAvatarChange}/>
+                  <button type="button" onClick={()=>avatarFileRef.current?.click()} disabled={imgUploading}
+                    style={{padding:'7px 14px',borderRadius:8,border:'1.5px solid #E8E8E8',background:'#FAFAFA',fontSize:12,fontWeight:600,color:'#444',cursor:imgUploading?'not-allowed':'pointer',fontFamily:'inherit',opacity:imgUploading?0.6:1}}>
+                    {imgUploading ? 'Uploading…' : '📁 Choose Image'}
+                  </button>
+                  {form.avatar_url && !imgUploading && <span style={{marginLeft:8,fontSize:11,color:'#16a34a',fontWeight:600}}>✓ Image set</span>}
+                  <div style={{marginTop:4,fontSize:11,color:'#AAAAAA'}}>JPG, PNG, WebP — max 2 MB</div>
+                </div>
+              </div>
+            </div>
+
             {[
               { key:'name',     label:'Display Name *',    ph:'TechLaunch MENA' },
               { key:'handle',   label:'Handle (no @)',      ph:'techlaunchmena' },

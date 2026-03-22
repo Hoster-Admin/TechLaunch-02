@@ -1013,7 +1013,7 @@ admin.get('/public-profile', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
-admin.put('/public-profile', async (req, res) => {
+admin.put('/public-profile', express.json({ limit: '5mb' }), async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
   try {
     const { name, handle, headline, bio, website, twitter, linkedin, avatar_url } = req.body;
