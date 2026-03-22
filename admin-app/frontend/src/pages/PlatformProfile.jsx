@@ -124,22 +124,35 @@ export default function PlatformProfile() {
       .finally(() => setActLoading(false));
   }, []);
 
+  const loadTags = useCallback(() => {
+    adminAPI.tags()
+      .then(td => {
+        const all = td.data?.data || [];
+        setArticleTags(all.filter(t => t.category === 'article' && t.is_active !== false));
+        setPostTags(all.filter(t => t.category === 'post'    && t.is_active !== false));
+      })
+      .catch(() => {});
+  }, []);
+
   useEffect(() => {
     Promise.all([
       adminAPI.platformProfile(),
       adminAPI.publicProfile(),
       adminAPI.platformActivity('all'),
-      adminAPI.tags(),
-    ]).then(([pd, pub, ad, td]) => {
+    ]).then(([pd, pub, ad]) => {
       const panelData  = pd.data.data  || {};
       const publicData = pub.data.data || {};
       setProfile({ ...publicData, ...panelData });
       setActivity(ad.data.data.activity || []);
-      const all = td.data.data || [];
-      setArticleTags(all.filter(t => t.category === 'article'));
-      setPostTags(all.filter(t => t.category === 'post'));
     }).catch(() => {}).finally(() => setLoading(false));
-  }, []);
+    loadTags();
+  }, [loadTags]);
+
+  useEffect(() => {
+    const onFocus = () => loadTags();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadTags]);
 
   const handlePost = async () => {
     if (!composeText.trim()) return;
@@ -492,23 +505,28 @@ export default function PlatformProfile() {
         {/* Tag selector — shows post tags for Post type, article tags for Article type */}
         {(() => {
           const activeTags = postType === 'article' ? articleTags : postTags;
-          if (!activeTags.length) return null;
           return (
             <div style={{ marginBottom: 12 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gray-400)', marginBottom: 6, textTransform: 'uppercase', letterSpacing: .6 }}>
-                {postType === 'article' ? 'Article Tags' : 'Post Tags'}
+                Tag <span style={{ fontWeight: 400, textTransform: 'none', fontSize: 10 }}>(optional)</span>
               </div>
-              <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
-                {activeTags.map(tag => {
-                  const sel = selectedTagIds.includes(tag.id);
-                  return (
-                    <button key={tag.id} onClick={() => toggleTag(tag.id)}
-                      style={{ padding: '4px 11px', borderRadius: 20, border: `1.5px solid ${sel ? 'var(--orange)' : 'var(--gray-200)'}`, background: sel ? (tag.color || 'rgba(225,80,51,.1)') : 'transparent', color: sel ? (tag.text_color || 'var(--orange)') : 'var(--gray-500)', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}>
-                      {tag.name}
-                    </button>
-                  );
-                })}
-              </div>
+              {activeTags.length === 0 ? (
+                <div style={{ fontSize: 11, color: 'var(--gray-400)', fontStyle: 'italic' }}>
+                  No {postType === 'article' ? 'article' : 'post'} tags yet — add some in Tag Management → {postType === 'article' ? 'Article Tags' : 'Post Tags'}.
+                </div>
+              ) : (
+                <div style={{ display: 'flex', flexWrap: 'wrap', gap: 6 }}>
+                  {activeTags.map(tag => {
+                    const sel = selectedTagIds.includes(tag.id);
+                    return (
+                      <button key={tag.id} onClick={() => toggleTag(tag.id)}
+                        style={{ padding: '4px 11px', borderRadius: 20, border: `1.5px solid ${sel ? 'var(--orange)' : 'var(--gray-200)'}`, background: sel ? (tag.color || 'rgba(225,80,51,.1)') : 'transparent', color: sel ? (tag.text_color || 'var(--orange)') : 'var(--gray-500)', fontSize: 12, fontWeight: 600, cursor: 'pointer', transition: 'all .15s' }}>
+                        {tag.name}
+                      </button>
+                    );
+                  })}
+                </div>
+              )}
             </div>
           );
         })()}
