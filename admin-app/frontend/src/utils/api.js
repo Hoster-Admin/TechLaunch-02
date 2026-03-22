@@ -48,8 +48,13 @@ export const adminAPI = {
   reinstateUser:(id)        => req('POST', `/admin/users/${id}/reinstate`),
   deleteTeamMember:(id)     => req('DELETE', `/admin/users/${id}`),
   entities:           (p={})  => req('GET',  '/admin/entities?' + new URLSearchParams(p)),
+  getEntity:          (id)    => req('GET',  `/admin/entities/${id}`),
   createEntity:       (body)  => req('POST', '/admin/entities', body),
+  updateEntity:       (id, body) => req('PATCH', `/admin/entities/${id}`, body),
   verifyEntity:       (id)    => req('POST', `/admin/entities/${id}/verify`),
+  suspendEntity:      (id)    => req('POST', `/admin/entities/${id}/suspend`),
+  unsuspendEntity:    (id)    => req('POST', `/admin/entities/${id}/unsuspend`),
+  deleteEntity:       (id)    => req('DELETE', `/admin/entities/${id}`),
   bulkImportEntities: (file)  => {
     const fd = new FormData(); fd.append('file', file);
     return req('POST', '/admin/entities/bulk-import', fd, true);

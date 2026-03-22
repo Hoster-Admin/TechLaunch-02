@@ -257,21 +257,120 @@ const reinstateUser = async (req, res, next) => {
 // ═══════════════════════════════════════════════
 const adminGetEntities = async (req, res, next) => {
   try {
-    const { type, search, page=1, limit=50 } = req.query;
+    const { type, search, page=1, limit=50, sortBy='created_at', sortOrder='desc' } = req.query;
     const params = [];
     const conditions = [];
     if (type)   { params.push(type);   conditions.push(`e.type=$${params.length}`); }
     if (search) { params.push(`%${search}%`); conditions.push(`e.name ILIKE $${params.length}`); }
     const where = conditions.length ? 'WHERE '+conditions.join(' AND ') : '';
     const offset = (parseInt(page)-1)*parseInt(limit);
+    const allowedSort = ['name','type','country','verified','created_at','status'];
+    const col = allowedSort.includes(sortBy) ? sortBy : 'created_at';
+    const dir = sortOrder === 'asc' ? 'ASC' : 'DESC';
     params.push(parseInt(limit), offset);
 
     const { rows } = await query(`
-      SELECT *, COUNT(*) OVER() AS total_count FROM entities ${where}
-      ORDER BY created_at DESC
+      SELECT *, COUNT(*) OVER() AS total_count FROM entities e ${where}
+      ORDER BY e.${col} ${dir}
       LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     const total = rows[0]?.total_count || 0;
     res.json({ success:true, data: rows.map(({total_count,...r})=>r), pagination:{total:parseInt(total)} });
+  } catch (err) { next(err); }
+};
+
+const adminGetEntity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(`SELECT * FROM entities WHERE id=$1`, [id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, data: rows[0] });
+  } catch (err) { next(err); }
+};
+
+const adminUpdateEntity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const {
+      name, type, country, description, website, stage, industry,
+      employees, founded_year, aum, portfolio_count, focus,
+      logo_url, logo_emoji, linkedin, twitter, why_us, verified,
+    } = req.body;
+
+    const setClauses = [];
+    const params = [];
+    const maybeSet = (col, val, transform) => {
+      if (val === undefined) return;
+      params.push(transform ? transform(val) : val);
+      setClauses.push(`${col} = $${params.length}`);
+    };
+    const maybeSetCoalesce = (col, val, transform) => {
+      if (val === undefined || val === null) return;
+      params.push(transform ? transform(val) : val);
+      setClauses.push(`${col} = COALESCE($${params.length}, ${col})`);
+    };
+
+    maybeSetCoalesce('name', name);
+    maybeSetCoalesce('type', type);
+    maybeSet('country', country);
+    maybeSet('description', description);
+    maybeSet('website', website);
+    maybeSet('stage', stage);
+    maybeSet('industry', industry);
+    maybeSet('employees', employees);
+    maybeSet('founded_year', founded_year, v => v ? parseInt(v) : null);
+    maybeSet('aum', aum);
+    maybeSet('portfolio_count', portfolio_count, v => v ? parseInt(v) : null);
+    maybeSet('focus', focus);
+    maybeSet('logo_url', logo_url);
+    maybeSetCoalesce('logo_emoji', logo_emoji);
+    maybeSet('linkedin', linkedin);
+    maybeSet('twitter', twitter);
+    maybeSet('why_us', why_us);
+    if (verified !== undefined && verified !== null) {
+      params.push(verified);
+      setClauses.push(`verified = $${params.length}`);
+    }
+
+    if (!setClauses.length) {
+      return res.status(400).json({ success: false, message: 'No fields to update' });
+    }
+
+    params.push(id);
+    const { rows } = await query(`
+      UPDATE entities SET ${setClauses.join(', ')}, updated_at = NOW()
+      WHERE id = $${params.length}
+      RETURNING *`, params);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, data: rows[0], message:`${rows[0].name} updated` });
+  } catch (err) { next(err); }
+};
+
+const suspendEntity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(
+      `UPDATE entities SET status='suspended', updated_at=NOW() WHERE id=$1 RETURNING name`, [id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, message:`${rows[0].name} suspended` });
+  } catch (err) { next(err); }
+};
+
+const unsuspendEntity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(
+      `UPDATE entities SET status='active', updated_at=NOW() WHERE id=$1 RETURNING name`, [id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, message:`${rows[0].name} reactivated` });
+  } catch (err) { next(err); }
+};
+
+const deleteEntity = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const { rows } = await query(`DELETE FROM entities WHERE id=$1 RETURNING name`, [id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, message:`${rows[0].name} deleted` });
   } catch (err) { next(err); }
 };
 
@@ -494,7 +593,7 @@ module.exports = {
   getDashboard,
   adminGetProducts, approveProduct, rejectProduct, toggleFeatured,
   adminGetUsers, adminGetUser, verifyUser, suspendUser, reinstateUser,
-  adminGetEntities, verifyEntity,
+  adminGetEntities, adminGetEntity, adminUpdateEntity, suspendEntity, unsuspendEntity, deleteEntity, verifyEntity,
   adminGetApplications,
   getSettings, updateSettings,
   getTeam, addTeamMember, removeTeamMember,

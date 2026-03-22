@@ -157,8 +157,13 @@ adminRouter.post('/users/:id/suspend',  requireMod, adminCtrl.suspendUser);
 adminRouter.post('/users/:id/reinstate',requireMod, adminCtrl.reinstateUser);
 
 // Entities
-adminRouter.get ('/entities',        requireMod,    adminCtrl.adminGetEntities);
-adminRouter.post('/entities/:id/verify', requireMod, adminCtrl.verifyEntity);
+adminRouter.get   ('/entities',               requireMod,    adminCtrl.adminGetEntities);
+adminRouter.get   ('/entities/:id',           requireMod,    adminCtrl.adminGetEntity);
+adminRouter.patch ('/entities/:id',           requireMod,    adminCtrl.adminUpdateEntity);
+adminRouter.post  ('/entities/:id/verify',    requireMod,    adminCtrl.verifyEntity);
+adminRouter.post  ('/entities/:id/suspend',   requireMod,    adminCtrl.suspendEntity);
+adminRouter.post  ('/entities/:id/unsuspend', requireMod,    adminCtrl.unsuspendEntity);
+adminRouter.delete('/entities/:id',           requireMod,    adminCtrl.deleteEntity);
 
 // Applications (read-only)
 adminRouter.get('/applications', requireMod, adminCtrl.adminGetApplications);

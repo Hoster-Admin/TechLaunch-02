@@ -1,7 +1,7 @@
 import React, { useEffect, useState, useCallback, useRef } from 'react';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
-import { SCard, Badge, Tbl, ActionBtn, EmptyState, SkeletonRows, Pagination } from './shared.jsx';
+import { SCard, Badge, Tbl, ActionBtn, EmptyState, SkeletonRows, Pagination, Drawer, DrawerField, ConfirmModal } from './shared.jsx';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -176,6 +176,7 @@ export default function Entities() {
   const [sortBy, setSortBy]         = useState('created_at');
   const [sortOrder, setSortOrder]   = useState('desc');
   const [showModal, setShowModal]   = useState(false);
+  const [editingEntity, setEditingEntity] = useState(null);
   const [saving, setSaving]         = useState(false);
   const [form, setForm]             = useState(EMPTY_FORM);
   const [logoPreview, setLogoPreview] = useState(null);
@@ -185,6 +186,10 @@ export default function Entities() {
   const [showImport, setShowImport]   = useState(false);
   const [importing, setImporting]     = useState(false);
   const [importResult, setImportResult] = useState(null);
+  const [viewEntity, setViewEntity]   = useState(null);
+  const [viewLoading, setViewLoading] = useState(false);
+  const [deleteTarget, setDeleteTarget] = useState(null);
+  const [deleting, setDeleting]       = useState(false);
 
   const handleSort = (col) => {
     if (sortBy === col) setSortOrder(d => d === 'asc' ? 'desc' : 'asc');
@@ -228,41 +233,124 @@ export default function Entities() {
   const addWhyItem = () => { if(form.why_us_items.length<8) setForm(f=>({...f,why_us_items:[...f.why_us_items,'']})); };
   const removeWhyItem = (idx) => setForm(f=>{ const items=f.why_us_items.filter((_,i)=>i!==idx); return {...f,why_us_items:items.length?items:['']}; });
 
-  const openModal = () => { setForm(EMPTY_FORM); setLogoPreview(null); setShowModal(true); };
+  const openModal = () => { setForm(EMPTY_FORM); setLogoPreview(null); setEditingEntity(null); setShowModal(true); };
+
+  const openEdit = (entity) => {
+    const why_us_items = entity.why_us
+      ? entity.why_us.split(' | ').map(s => s.trim()).filter(Boolean)
+      : [''];
+    const stages = entity.stage
+      ? entity.stage.split(', ').map(s => s.trim()).filter(Boolean)
+      : [];
+    const industries = entity.industry
+      ? entity.industry.split(', ').map(s => s.trim()).filter(Boolean)
+      : [];
+    setForm({
+      name: entity.name || '',
+      type: entity.type || 'accelerator',
+      country: entity.country || '',
+      description: entity.description || '',
+      website: entity.website || '',
+      stages,
+      industries,
+      logo_url: entity.logo_url || '',
+      logo_emoji: entity.logo_emoji || '',
+      employees: entity.employees || '',
+      founded_year: entity.founded_year ? String(entity.founded_year) : '',
+      aum: entity.aum || '',
+      portfolio_count: entity.portfolio_count ? String(entity.portfolio_count) : '',
+      focus: entity.focus || '',
+      linkedin: entity.linkedin || '',
+      twitter: entity.twitter || '',
+      why_us_items: why_us_items.length ? why_us_items : [''],
+      verified: entity.verified || false,
+    });
+    setLogoPreview(entity.logo_url || null);
+    setEditingEntity(entity);
+    setShowModal(true);
+  };
+
+  const buildEntityPayload = () => ({
+    name: form.name,
+    type: form.type,
+    country: form.country,
+    description: form.description || null,
+    website: form.website || null,
+    stage: form.stages.join(', ') || null,
+    industry: form.industries.join(', ') || null,
+    employees: form.employees || null,
+    founded_year: form.founded_year ? parseInt(form.founded_year) : null,
+    aum: form.aum || null,
+    portfolio_count: form.portfolio_count ? parseInt(form.portfolio_count) : null,
+    focus: form.focus || null,
+    logo_url: form.logo_url || null,
+    logo_emoji: form.logo_emoji || null,
+    linkedin: form.linkedin || null,
+    twitter: form.twitter || null,
+    why_us: form.why_us_items.filter(s=>s.trim()).join(' | ') || null,
+    verified: form.verified,
+  });
 
   const create = async () => {
     if (!form.name.trim()) return toast.error('Entity name is required');
     if (!form.country)     return toast.error('Country is required');
     setSaving(true);
     try {
-      const why_us        = form.why_us_items.filter(s=>s.trim()).join(' | ') || null;
-      const stage         = form.stages.join(', ')    || null;
-      const industry      = form.industries.join(', ') || null;
-      const founded_year  = form.founded_year ? parseInt(form.founded_year) : null;
-      const portfolio_count = form.portfolio_count ? parseInt(form.portfolio_count) : null;
-      const { data: d } = await adminAPI.createEntity({
-        name: form.name, type: form.type, country: form.country,
-        description: form.description || null,
-        website: form.website || null,
-        stage, industry,
-        employees: form.employees || null,
-        founded_year,
-        aum: form.aum || null,
-        portfolio_count,
-        focus: form.focus || null,
-        logo_url: form.logo_url || null,
-        logo_emoji: form.logo_emoji || null,
-        linkedin: form.linkedin || null,
-        twitter: form.twitter || null,
-        why_us,
-        verified: form.verified,
-      });
-      toast.success(d.message || 'Entity created!');
+      const payload = buildEntityPayload();
+      if (editingEntity) {
+        const { data: d } = await adminAPI.updateEntity(editingEntity.id, payload);
+        toast.success(d.message || 'Entity updated!');
+      } else {
+        const { data: d } = await adminAPI.createEntity(payload);
+        toast.success(d.message || 'Entity created!');
+      }
       setShowModal(false);
       setLogoPreview(null);
+      setEditingEntity(null);
       load();
-    } catch(e) { toast.error(e.message || 'Failed to create entity'); }
+    } catch(e) { toast.error(e.message || (editingEntity ? 'Failed to update entity' : 'Failed to create entity')); }
     finally { setSaving(false); }
+  };
+
+  const openView = async (entity) => {
+    setViewEntity(entity);
+    setViewLoading(true);
+    try {
+      const { data: d } = await adminAPI.getEntity(entity.id);
+      setViewEntity(d.data);
+    } catch(err) {
+      toast.error('Failed to load entity details');
+    } finally {
+      setViewLoading(false);
+    }
+  };
+
+  const suspendToggle = async (entity) => {
+    const isSuspended = entity.status === 'suspended';
+    setActing(p=>({...p,[entity.id+'_suspend']:true}));
+    try {
+      if (isSuspended) {
+        await adminAPI.unsuspendEntity(entity.id);
+        toast.success(`${entity.name} reactivated`);
+      } else {
+        await adminAPI.suspendEntity(entity.id);
+        toast.success(`${entity.name} suspended`);
+      }
+      load();
+    } catch(err) { toast.error(err.message); }
+    finally { setActing(p=>({...p,[entity.id+'_suspend']:false})); }
+  };
+
+  const confirmDelete = async () => {
+    if (!deleteTarget) return;
+    setDeleting(true);
+    try {
+      await adminAPI.deleteEntity(deleteTarget.id);
+      toast.success(`${deleteTarget.name} deleted`);
+      setDeleteTarget(null);
+      load();
+    } catch(err) { toast.error(err.message); }
+    finally { setDeleting(false); }
   };
 
   const verifyEntity = async (e) => {
@@ -316,7 +404,7 @@ export default function Entities() {
           <div style={{background:'#fff',borderRadius:16,padding:28,width:540,maxWidth:'94vw',boxShadow:'0 20px 60px rgba(0,0,0,.18)',maxHeight:'90vh',overflowY:'auto'}} onClick={e=>e.stopPropagation()}>
 
             <div style={{display:'flex',alignItems:'center',justifyContent:'space-between',marginBottom:22}}>
-              <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>Create Entity</div>
+              <div style={{fontSize:15,fontWeight:800,color:'#0A0A0A'}}>{editingEntity ? 'Edit Entity' : 'Create Entity'}</div>
               <button onClick={()=>setShowModal(false)} style={{background:'none',border:'none',fontSize:18,cursor:'pointer',color:'#AAAAAA'}}>✕</button>
             </div>
 
@@ -498,7 +586,7 @@ export default function Entities() {
 
             <div style={{display:'flex',gap:8,marginTop:8}}>
               <button onClick={create} disabled={saving} style={{flex:1,background:'var(--orange)',color:'#fff',border:'none',borderRadius:10,padding:'11px',fontWeight:700,fontSize:13,cursor:'pointer',fontFamily:'inherit',opacity:saving?0.7:1}}>
-                {saving ? 'Creating…' : 'Create Entity'}
+                {saving ? (editingEntity ? 'Saving…' : 'Creating…') : (editingEntity ? 'Save Changes' : 'Create Entity')}
               </button>
               <button onClick={()=>setShowModal(false)} style={{padding:'11px 18px',borderRadius:10,border:'1px solid #E8E8E8',background:'#fff',fontWeight:600,fontSize:13,cursor:'pointer',fontFamily:'inherit',color:'#666'}}>
                 Cancel
@@ -506,6 +594,93 @@ export default function Entities() {
             </div>
           </div>
         </div>
+      )}
+
+      {/* Entity View Drawer */}
+      {viewEntity && (
+        <Drawer
+          title={viewEntity.name}
+          subtitle={ENTITY_TYPES.find(t=>t.value===viewEntity.type)?.label || viewEntity.type}
+          onClose={()=>setViewEntity(null)}
+          width={500}
+        >
+          {viewLoading && (
+            <div style={{textAlign:'center',padding:'32px 0',color:'#AAAAAA',fontSize:13}}>Loading details…</div>
+          )}
+          <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:24,paddingBottom:20,borderBottom:'1px solid #F0F0F0',opacity:viewLoading?0.4:1}}>
+            <div style={{width:72,height:72,borderRadius:16,background:`${typeColor[viewEntity.type]||'#E15033'}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden',border:'1px solid #E8E8E8'}}>
+              {viewEntity.logo_url
+                ? <img src={viewEntity.logo_url} alt={viewEntity.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                : <span style={{fontSize:32}}>{viewEntity.logo_emoji||'🏢'}</span>
+              }
+            </div>
+            <div>
+              <div style={{display:'flex',gap:6,flexWrap:'wrap',marginBottom:6}}>
+                <Badge variant={TYPE_BADGE[viewEntity.type]||'gray'}>{ENTITY_TYPES.find(t=>t.value===viewEntity.type)?.label||viewEntity.type}</Badge>
+                {viewEntity.verified && <Badge variant="green">✓ Verified</Badge>}
+                {viewEntity.status === 'suspended' && <Badge variant="red">Suspended</Badge>}
+              </div>
+              {viewEntity.website && (
+                <a href={viewEntity.website} target="_blank" rel="noopener noreferrer" style={{fontSize:12,color:'var(--orange)',textDecoration:'none'}}>
+                  {viewEntity.website.replace(/^https?:\/\//,'')}
+                </a>
+              )}
+            </div>
+          </div>
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 20px'}}>
+            <DrawerField label="Country">{viewEntity.country || '—'}</DrawerField>
+            <DrawerField label="Founded">{viewEntity.founded_year || '—'}</DrawerField>
+            <DrawerField label="Industry">{viewEntity.industry || '—'}</DrawerField>
+            <DrawerField label="Team Size">{viewEntity.employees || '—'}</DrawerField>
+            {viewEntity.stage && <DrawerField label="Stage">{viewEntity.stage}</DrawerField>}
+            {viewEntity.aum && <DrawerField label="AUM / Fund Size">{viewEntity.aum}</DrawerField>}
+            {viewEntity.portfolio_count != null && viewEntity.portfolio_count > 0 && (
+              <DrawerField label="Portfolio / Alumni">{viewEntity.portfolio_count}</DrawerField>
+            )}
+          </div>
+
+          {viewEntity.focus && <DrawerField label="Focus">{viewEntity.focus}</DrawerField>}
+
+          {viewEntity.description && (
+            <DrawerField label="About">
+              <div style={{fontSize:13,color:'#333',lineHeight:1.6,whiteSpace:'pre-wrap'}}>{viewEntity.description}</div>
+            </DrawerField>
+          )}
+
+          {viewEntity.why_us && (
+            <DrawerField label="Why Us">
+              <ul style={{margin:0,padding:'0 0 0 16px',fontSize:12,color:'#444',lineHeight:1.8}}>
+                {viewEntity.why_us.split(' | ').map((item,i)=><li key={i}>{item}</li>)}
+              </ul>
+            </DrawerField>
+          )}
+
+          <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:'0 20px'}}>
+            {viewEntity.linkedin && <DrawerField label="LinkedIn"><a href={viewEntity.linkedin} target="_blank" rel="noopener noreferrer" style={{color:'var(--orange)',fontSize:12}}>View Profile</a></DrawerField>}
+            {viewEntity.twitter && <DrawerField label="Twitter"><span style={{fontSize:12}}>{viewEntity.twitter}</span></DrawerField>}
+          </div>
+
+          <div style={{marginTop:24,display:'flex',gap:8}}>
+            <button onClick={()=>{ setViewEntity(null); openEdit(viewEntity); }}
+              style={{flex:1,padding:'10px',borderRadius:9,background:'#F4F4F4',color:'#0A0A0A',border:'none',fontSize:13,fontWeight:700,cursor:'pointer',fontFamily:'inherit'}}>
+              Edit Entity
+            </button>
+          </div>
+        </Drawer>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {deleteTarget && (
+        <ConfirmModal
+          title="Delete Entity"
+          message={`Are you sure you want to permanently delete "${deleteTarget.name}"? This cannot be undone.`}
+          confirmLabel="Delete"
+          danger={true}
+          loading={deleting}
+          onConfirm={confirmDelete}
+          onCancel={()=>setDeleteTarget(null)}
+        />
       )}
 
       {/* Import CSV modal */}
@@ -639,7 +814,7 @@ export default function Entities() {
           <span key="t" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('type')}>Type<SortArrow col="type"/></span>,
           <span key="c" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('country')}>Country<SortArrow col="country"/></span>,
           'Industry',
-          <span key="v" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('verified')}>Verified<SortArrow col="verified"/></span>,
+          <span key="v" style={{cursor:'pointer',userSelect:'none'}} onClick={()=>handleSort('verified')}>Status<SortArrow col="verified"/></span>,
           'Actions',
         ]}>
           {loading
@@ -647,7 +822,7 @@ export default function Entities() {
             : filtered.length===0
               ? <tr><td colSpan={6}><EmptyState icon="🏢" title="No entities found" sub="Try creating your first entity with the button above."/></td></tr>
               : filtered.map(e=>(
-                <tr key={e.id} style={{borderBottom:'1px solid #F4F4F4'}}
+                <tr key={e.id} style={{borderBottom:'1px solid #F4F4F4',opacity:e.status==='suspended'?0.75:1}}
                   onMouseEnter={el=>el.currentTarget.style.background='#FAFAFA'}
                   onMouseLeave={el=>el.currentTarget.style.background='transparent'}>
                   <td style={{padding:'11px 16px'}}>
@@ -669,9 +844,26 @@ export default function Entities() {
                   </td>
                   <td style={{padding:'11px 16px',fontSize:12,color:'#666'}}>{e.country||'—'}</td>
                   <td style={{padding:'11px 16px',fontSize:12,color:'#666'}}>{e.industry||e.focus||'—'}</td>
-                  <td style={{padding:'11px 16px'}}>{e.verified?<Badge variant="green">✓ Verified</Badge>:<Badge variant="gray">Unverified</Badge>}</td>
                   <td style={{padding:'11px 16px'}}>
-                    {!e.verified && <ActionBtn variant="verify" loading={acting[e.id]} onClick={()=>verifyEntity(e)}>✓ Verify</ActionBtn>}
+                    <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                      {e.verified ? <Badge variant="green">✓ Verified</Badge> : <Badge variant="gray">Unverified</Badge>}
+                      {e.status === 'suspended' && <Badge variant="red">Suspended</Badge>}
+                    </div>
+                  </td>
+                  <td style={{padding:'11px 16px'}}>
+                    <div style={{display:'flex',gap:4,flexWrap:'wrap'}}>
+                      <ActionBtn variant="warn" onClick={()=>openView(e)}>View</ActionBtn>
+                      <ActionBtn variant="edit" onClick={()=>openEdit(e)}>Edit</ActionBtn>
+                      {!e.verified && <ActionBtn variant="verify" loading={acting[e.id]} onClick={()=>verifyEntity(e)}>✓ Verify</ActionBtn>}
+                      <ActionBtn
+                        variant={e.status==='suspended'?'reinstate':'suspend'}
+                        loading={acting[e.id+'_suspend']}
+                        onClick={()=>suspendToggle(e)}
+                      >
+                        {e.status==='suspended'?'Unsuspend':'Suspend'}
+                      </ActionBtn>
+                      <ActionBtn variant="delete" onClick={()=>setDeleteTarget(e)}>Delete</ActionBtn>
+                    </div>
                   </td>
                 </tr>
               ))
