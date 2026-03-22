@@ -207,7 +207,11 @@ export default function Dashboard({ onNavigate }) {
             : topProducts.map((p,i) => (
               <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'10px 16px',borderBottom:'1px solid var(--gray-100)'}}>
                 <div style={{fontSize:14,fontWeight:800,color:['#F59E0B','#94A3B8','#CD7C2F'][i]||'var(--gray-400)',width:18,flexShrink:0}}>{i+1}</div>
-                <div style={{width:32,height:32,borderRadius:9,background:'var(--gray-100)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0}}>{p.logo_emoji||'📦'}</div>
+                <div style={{width:32,height:32,borderRadius:9,background:'var(--gray-100)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:16,flexShrink:0,overflow:'hidden'}}>
+                  {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                    ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                    :(p.logo_emoji||'📦')}
+                </div>
                 <div style={{flex:1,minWidth:0}}>
                   <div style={{fontSize:12,fontWeight:700,color:'var(--ink)',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
                   <div style={{fontSize:10,color:'var(--gray-400)'}}>{p.industry}</div>

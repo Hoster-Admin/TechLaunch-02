@@ -242,7 +242,11 @@ function UserDrawer({ userId, onClose, onAction }) {
                 <div style={{display:'flex',flexDirection:'column',gap:6}}>
                   {detail.recent_products.map(p => (
                     <div key={p.id} style={{display:'flex',alignItems:'center',gap:10,padding:'8px 12px',background:'#FAFAFA',borderRadius:10,border:'1px solid #F0F0F0'}}>
-                      <span style={{fontSize:18}}>{p.logo_emoji||'📦'}</span>
+                      <div style={{width:26,height:26,borderRadius:6,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:14,flexShrink:0,overflow:'hidden'}}>
+                        {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                          ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                          :(p.logo_emoji||'📦')}
+                      </div>
                       <div style={{flex:1,minWidth:0}}>
                         <div style={{fontSize:12,fontWeight:700,color:'#0A0A0A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
                       </div>

@@ -1,6 +1,20 @@
 import React from 'react';
 import { useUI } from '../../context/UIContext';
 
+function EntityLogo({ entity, size = 64 }) {
+  const src = entity?.logo_url;
+  const emoji = entity?.logo_emoji;
+  const initials = (entity?.name || '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  const colors = ['#E15033','#2563eb','#7c3aed','#16a34a','#d97706'];
+  const color = colors[(entity?.name?.charCodeAt(0) || 0) % colors.length];
+  if (src && (src.startsWith('http') || src.startsWith('data:'))) {
+    return <img src={src} alt={entity?.name} style={{ width:'100%', height:'100%', objectFit:'contain' }}
+      onError={ev => { ev.target.style.display='none'; ev.target.nextSibling.style.display='flex'; }} />;
+  }
+  if (emoji && emoji !== '🏢') return <span style={{ fontSize: size * 0.44 }}>{emoji}</span>;
+  return <span style={{ fontSize: size * 0.32, fontWeight:800, color, letterSpacing:'-0.5px' }}>{initials}</span>;
+}
+
 export default function EntityProfileModal() {
   const { entityModal, setEntityModal, openDM } = useUI();
   if (!entityModal) return null;
@@ -59,16 +73,8 @@ export default function EntityProfileModal() {
         <div style={{ background:'linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 100%)', padding:'32px 32px 24px', position:'relative' }}>
           <button onClick={() => setEntityModal(null)} style={{ position:'absolute', top:14, right:14, width:30, height:30, borderRadius:8, border:'1px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.1)', cursor:'pointer', fontSize:15, color:'rgba(255,255,255,.7)', display:'grid', placeItems:'center' }}>✕</button>
           <div style={{ display:'flex', alignItems:'flex-start', gap:16 }}>
-            <div style={{ width:64, height:64, borderRadius:16, background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', display:'grid', placeItems:'center', fontSize:28, flexShrink:0, overflow:'hidden' }}>
-              {logoDisplay && (logoDisplay.startsWith('http') || logoDisplay.startsWith('/')) ? (
-                <>
-                  <img src={logoDisplay} alt={e.name} style={{ width:'100%', height:'100%', objectFit:'contain' }}
-                    onError={ev => { ev.target.style.display='none'; ev.target.nextSibling.style.display='grid'; }} />
-                  <span style={{ display:'none', placeItems:'center', fontSize:28 }}>{e.logo_emoji || '🏢'}</span>
-                </>
-              ) : (
-                <span>{logoDisplay || e.logo_emoji || '🏢'}</span>
-              )}
+            <div style={{ width:64, height:64, borderRadius:16, background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', display:'grid', placeItems:'center', flexShrink:0, overflow:'hidden' }}>
+              <EntityLogo entity={e} size={64} />
             </div>
             <div style={{ flex:1 }}>
               <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:6 }}>

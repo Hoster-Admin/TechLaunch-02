@@ -53,7 +53,12 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
     return (
       <div key={p.id} className="product-card" onClick={() => navigate(`/products/${p.id}`)}>
         <div className="product-rank">#{i+1}</div>
-        <div className="product-logo">{p.logo_emoji || '🚀'}</div>
+        <div className="product-logo">
+          {p.logo_url && (p.logo_url.startsWith('http') || p.logo_url.startsWith('data:'))
+            ? <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'contain', borderRadius:8 }}/>
+            : <span style={{ fontSize:26 }}>{p.logo_emoji || '🚀'}</span>
+          }
+        </div>
         <div className="product-body">
           <div className="product-top">
             <span className="product-name">{p.name}</span>

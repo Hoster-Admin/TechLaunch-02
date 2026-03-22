@@ -384,7 +384,11 @@ export function AdminEntities() {
               onMouseLeave={ev=>ev.currentTarget.style.background='transparent'}>
               <td style={{padding:'11px 16px'}}>
                 <div style={{display:'flex',alignItems:'center',gap:10}}>
-                  <div style={{fontSize:22}}>{e.logo_emoji||'🏢'}</div>
+                  <div style={{width:32,height:32,borderRadius:8,background:'#F4F4F4',display:'grid',placeItems:'center',fontSize:16,flexShrink:0,overflow:'hidden'}}>
+                    {e.logo_url&&(e.logo_url.startsWith('http')||e.logo_url.startsWith('data:'))
+                      ?<img src={e.logo_url} alt={e.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                      :(e.logo_emoji||e.name?.charAt(0)||'🏢')}
+                  </div>
                   <div>
                     <div style={{fontWeight:700,fontSize:13,color:'#0A0A0A'}}>{e.name}</div>
                     {e.website && <div style={{fontSize:10,color:'#AAAAAA'}}>{e.website.replace(/^https?:\/\//,'').split('/')[0]}</div>}
@@ -518,7 +522,11 @@ export function AdminApplications() {
                 onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                 <td style={{padding:'11px 16px'}}>
                   <div style={{display:'flex',alignItems:'center',gap:8}}>
-                    <span style={{fontSize:20}}>{w.logo_emoji||'📦'}</span>
+                    <div style={{width:28,height:28,borderRadius:6,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:14,flexShrink:0,overflow:'hidden'}}>
+                      {w.logo_url&&(w.logo_url.startsWith('http')||w.logo_url.startsWith('data:'))
+                        ?<img src={w.logo_url} alt={w.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                        :(w.logo_emoji||'📦')}
+                    </div>
                     <span style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{w.name}</span>
                   </div>
                 </td>
@@ -585,7 +593,11 @@ export function AdminFeatured() {
             <EmptyState icon="⭐" title="No featured products" sub="Use the buttons below to feature live products"/>
           ) : featuredProducts.map((p, i) => (
             <div key={p.id} style={{display:'flex',alignItems:'center',gap:14,background:'#FAFAFA',border:'1px solid #E8E8E8',borderRadius:14,padding:'14px 16px',marginBottom:10}}>
-              <div style={{fontSize:26}}>{p.logo||p.logo_emoji||'📦'}</div>
+              <div style={{width:40,height:40,borderRadius:10,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:20,flexShrink:0,overflow:'hidden'}}>
+                {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                  ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                  :(p.logo||p.logo_emoji||'📦')}
+              </div>
               <div style={{flex:1}}>
                 <div style={{fontSize:14,fontWeight:800,color:'#0A0A0A'}}>{p.name}</div>
                 <div style={{fontSize:11,color:'#AAAAAA'}}>{p.tagline}</div>
@@ -602,7 +614,11 @@ export function AdminFeatured() {
               <div style={{display:'flex',flexDirection:'column',gap:8,maxHeight:280,overflowY:'auto'}}>
                 {nonFeatured.map(p => (
                   <div key={p.id} style={{display:'flex',alignItems:'center',gap:12,border:'1px solid #E8E8E8',borderRadius:12,padding:'10px 14px'}}>
-                    <div style={{fontSize:20}}>{p.logo||p.logo_emoji||'📦'}</div>
+                    <div style={{width:32,height:32,borderRadius:8,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:16,flexShrink:0,overflow:'hidden'}}>
+                      {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                        ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                        :(p.logo||p.logo_emoji||'📦')}
+                    </div>
                     <div style={{flex:1}}>
                       <div style={{fontSize:13,fontWeight:700}}>{p.name}</div>
                       <div style={{fontSize:11,color:'#AAAAAA'}}>{p.category} · {p.country}</div>

@@ -74,7 +74,12 @@ export default function SearchDropdown({ query, onClose }) {
             style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
             onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
             onMouseOut={e => e.currentTarget.style.background=''}>
-            <div style={{ width:36, height:36, borderRadius:10, background:'#f4f4f4', display:'grid', placeItems:'center', fontSize:18, flexShrink:0, border:'1px solid #eee' }}>{p.logo_emoji}</div>
+            <div style={{ width:36, height:36, borderRadius:10, background:'#f4f4f4', display:'grid', placeItems:'center', fontSize:18, flexShrink:0, border:'1px solid #eee', overflow:'hidden' }}>
+              {p.logo_url && (p.logo_url.startsWith('http') || p.logo_url.startsWith('data:'))
+                ? <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'contain' }}/>
+                : (p.logo_emoji || '🚀')
+              }
+            </div>
             <div style={{ minWidth:0, flex:1 }}>
               <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}</div>
               <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{p.industry} · {p.country}</div>

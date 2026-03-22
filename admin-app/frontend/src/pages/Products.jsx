@@ -147,8 +147,10 @@ function ProductDrawer({ productId, onClose, onAction }) {
           <>
             {/* Header identity */}
             <div style={{display:'flex',gap:14,alignItems:'flex-start',marginBottom:24,paddingBottom:20,borderBottom:'1px solid #F0F0F0'}}>
-              <div style={{width:56,height:56,borderRadius:14,background:'#F4F4F4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0}}>
-                {detail.logo_emoji||'📦'}
+              <div style={{width:56,height:56,borderRadius:14,background:'#F4F4F4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:28,flexShrink:0,overflow:'hidden'}}>
+                {detail.logo_url&&(detail.logo_url.startsWith('http')||detail.logo_url.startsWith('data:'))
+                  ?<img src={detail.logo_url} alt={detail.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                  :(detail.logo_emoji||'📦')}
               </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{display:'flex',alignItems:'center',gap:8,flexWrap:'wrap',marginBottom:4}}>
@@ -491,8 +493,10 @@ export default function Products() {
 
                       <td style={{padding:'11px 16px'}}>
                         <div style={{display:'flex',alignItems:'center',gap:10}}>
-                          <div style={{width:36,height:36,borderRadius:10,background:'#F4F4F4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0}}>
-                            {p.logo||p.logo_emoji||'📦'}
+                          <div style={{width:36,height:36,borderRadius:10,background:'#F4F4F4',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,flexShrink:0,overflow:'hidden'}}>
+                            {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                              ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                              :(p.logo||p.logo_emoji||'📦')}
                           </div>
                           <div>
                             <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{p.name}</div>

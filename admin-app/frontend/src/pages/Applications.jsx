@@ -212,7 +212,11 @@ export default function Applications() {
                   onMouseLeave={e=>e.currentTarget.style.background='transparent'}>
                   <td style={{padding:'11px 16px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:8}}>
-                      <span style={{fontSize:20}}>{w.logo_emoji||'📦'}</span>
+                      <div style={{width:28,height:28,borderRadius:6,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:14,flexShrink:0,overflow:'hidden'}}>
+                        {w.logo_url&&(w.logo_url.startsWith('http')||w.logo_url.startsWith('data:'))
+                          ?<img src={w.logo_url} alt={w.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                          :(w.logo_emoji||'📦')}
+                      </div>
                       <span style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{w.name}</span>
                     </div>
                   </td>

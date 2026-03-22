@@ -74,7 +74,11 @@ function FeatureModal({ onClose, onDone }) {
             </div>
           ) : products.map(p => (
             <div key={p.id} style={{display:'flex',alignItems:'center',gap:12,border:'1px solid #F0F0F0',borderRadius:12,padding:'10px 14px',background:'#FAFAFA'}}>
-              <span style={{fontSize:22,flexShrink:0}}>{p.logo_emoji||'📦'}</span>
+              <div style={{width:34,height:34,borderRadius:8,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:18,flexShrink:0,overflow:'hidden'}}>
+                {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                  ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                  :(p.logo_emoji||'📦')}
+              </div>
               <div style={{flex:1,minWidth:0}}>
                 <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.name}</div>
                 <div style={{fontSize:11,color:'#888',overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{p.tagline}</div>
@@ -195,7 +199,11 @@ export default function Featured() {
               <EmptyState icon="⭐" title="No featured products" sub="Use the button above to feature a live product on the homepage"/>
             ) : featuredProducts.map((p, i) => (
               <div key={p.id} style={{display:'flex',alignItems:'center',gap:14,background:'#FAFAFA',border:'1px solid #E8E8E8',borderRadius:14,padding:'14px 16px',marginBottom:10}}>
-                <div style={{fontSize:26}}>{p.logo||p.logo_emoji||'📦'}</div>
+                <div style={{width:40,height:40,borderRadius:10,background:'#F0F0F0',display:'grid',placeItems:'center',fontSize:20,flexShrink:0,overflow:'hidden'}}>
+                  {p.logo_url&&(p.logo_url.startsWith('http')||p.logo_url.startsWith('data:'))
+                    ?<img src={p.logo_url} alt={p.name} style={{width:'100%',height:'100%',objectFit:'contain'}}/>
+                    :(p.logo||p.logo_emoji||'📦')}
+                </div>
                 <div style={{flex:1}}>
                   <div style={{fontSize:14,fontWeight:800,color:'#0A0A0A'}}>{p.name}</div>
                   <div style={{fontSize:11,color:'#AAAAAA'}}>{p.tagline}</div>

@@ -50,10 +50,14 @@ export default function ProductCard({ product, rank, onVote }) {
       {rank && <div className="product-rank">#{rank}</div>}
 
       <div className="product-logo">
-        {product.logo_emoji || product.logo_url
-          ? (product.logo_emoji || '🚀')
-          : <span style={{ fontSize: 26 }}>🚀</span>
+        {product.logo_url && (product.logo_url.startsWith('http') || product.logo_url.startsWith('data:'))
+          ? <img src={product.logo_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'contain', borderRadius:8 }}
+              onError={e => { e.target.style.display='none'; e.target.nextSibling.style.display='flex'; }}/>
+          : null
         }
+        <span style={{ fontSize:26, display: (product.logo_url && (product.logo_url.startsWith('http') || product.logo_url.startsWith('data:'))) ? 'none' : 'flex', alignItems:'center', justifyContent:'center', width:'100%', height:'100%' }}>
+          {product.logo_emoji || '🚀'}
+        </span>
       </div>
 
       <div className="product-body">

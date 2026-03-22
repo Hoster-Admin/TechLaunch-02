@@ -408,7 +408,12 @@ function SubmitProductForm({ user, onSuccess, onCancel, initialDraft }) {
           <SectionHead icon="🏢" title="Associated Entity"/>
           {selectedEntity ? (
             <div style={{ display:'flex', alignItems:'center', gap:10, padding:'12px 14px', border:'1.5px solid var(--orange)', borderRadius:11, background:'var(--orange-light)' }}>
-              <span style={{ fontSize:22 }}>{selectedEntity.logo_emoji||'🏢'}</span>
+              <span style={{ fontSize:22, lineHeight:1 }}>
+                {selectedEntity.logo_url && (selectedEntity.logo_url.startsWith('http') || selectedEntity.logo_url.startsWith('data:'))
+                  ? <img src={selectedEntity.logo_url} alt={selectedEntity.name} style={{ width:22, height:22, objectFit:'contain', borderRadius:4, verticalAlign:'middle' }}/>
+                  : selectedEntity.logo_emoji || selectedEntity.name?.charAt(0) || '🏢'
+                }
+              </span>
               <div style={{ flex:1 }}>
                 <div style={{ fontSize:14, fontWeight:700 }}>{selectedEntity.name}</div>
                 <div style={{ fontSize:12, color:'#888', textTransform:'capitalize' }}>{(selectedEntity.type||selectedEntity.entity_type||'Company').replace('_',' ')}</div>
@@ -429,7 +434,12 @@ function SubmitProductForm({ user, onSuccess, onCancel, initialDraft }) {
                     <div key={e.id} onClick={()=>{setSelectedEntity(e);setEntityQ(e.name);setEntityOpen(false);}}
                       style={{ display:'flex',alignItems:'center',gap:10,padding:'10px 14px',cursor:'pointer',borderBottom:'1px solid #f4f4f4',transition:'background .1s' }}
                       onMouseEnter={ev=>ev.currentTarget.style.background='#fafafa'} onMouseLeave={ev=>ev.currentTarget.style.background='#fff'}>
-                      <span style={{ fontSize:20 }}>{e.logo_emoji||'🏢'}</span>
+                      <div style={{ width:24, height:24, borderRadius:6, overflow:'hidden', display:'grid', placeItems:'center', fontSize:16, flexShrink:0, background:'#f4f4f4' }}>
+                        {e.logo_url && (e.logo_url.startsWith('http') || e.logo_url.startsWith('data:'))
+                          ? <img src={e.logo_url} alt={e.name} style={{ width:'100%', height:'100%', objectFit:'contain' }}/>
+                          : (e.logo_emoji || e.name?.charAt(0) || '🏢')
+                        }
+                      </div>
                       <div>
                         <div style={{ fontSize:13,fontWeight:700 }}>{e.name}</div>
                         <div style={{ fontSize:11,color:'#aaa',textTransform:'capitalize' }}>{(e.type||e.entity_type||'Company').replace('_',' ')}</div>

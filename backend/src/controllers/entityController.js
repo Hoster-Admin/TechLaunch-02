@@ -90,7 +90,7 @@ const createEntity = async (req, res, next) => {
       RETURNING *`,
       [name, slug, type, description||null, website||null, country||null, industry||null,
        stage||null, employees||null, founded_year||null, aum||null, focus||null,
-       logo_emoji||'🏢', req.user.id]
+       logo_emoji||null, req.user.id]
     );
 
     await query(
