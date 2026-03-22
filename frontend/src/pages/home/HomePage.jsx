@@ -241,9 +241,11 @@ export default function HomePage() {
             <div className="sidebar-card">
               <div className="sidebar-title">🏭 Top Industries</div>
               {(() => {
-                const allInds = Object.keys(industryCounts).length
-                  ? Object.entries(industryCounts).sort((a,b) => b[1]-a[1]).slice(0,5)
-                  : INDUSTRIES.slice(0,5).map(n => [n, 0]);
+                const DEFAULT_5 = ['Fintech','Edtech','AI & ML','Healthtech','SaaS'];
+                const withCounts = Object.entries(industryCounts).sort((a,b) => b[1]-a[1]);
+                const shown = new Set(withCounts.slice(0,5).map(([n]) => n));
+                DEFAULT_5.forEach(n => { if (shown.size < 5 && !shown.has(n)) shown.add(n); });
+                const allInds = [...shown].map(n => [n, industryCounts[n] || 0]).sort((a,b) => b[1]-a[1]);
                 return allInds.map(([ind, count]) => {
                   const isActive = selectedIndustries.includes(ind);
                   return (
