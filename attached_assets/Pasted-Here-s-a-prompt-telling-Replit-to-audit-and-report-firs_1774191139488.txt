@@ -1,0 +1,103 @@
+Here's a prompt telling Replit to audit and report first, before touching any code:
+
+Replit Audit Prompt — Tech Launch Platform (Report Only, Do Not Fix)
+IMPORTANT: Do NOT make any code changes. Do NOT fix anything. Your only job right now is to audit the codebase and produce a detailed report.
+
+Task: Full Codebase Audit & Bug Report
+Go through the entire Tech Launch codebase and produce a written report covering every issue listed below. For each issue, find the exact file, function, and line number where the problem exists. Explain what the current code is doing wrong and what needs to change — but do not change it yet.
+
+What to audit and report on:
+1. Authentication & Session
+
+How is the auth token stored after login? Is it persisting correctly across page refreshes?
+Is the auth state being checked on protected actions (follow, save, like, comment)?
+Is there any place where the session check is missing or bypassed?
+
+2. Follow System
+
+Where is the follow API call made? Is it writing to the database or only updating local state?
+Where is the follower count updated? Is it atomic or can it get out of sync?
+Is the follow state being fetched from the API on the profile page load, or is it read from local/cached state?
+Is the follow state shared globally between the People List component and the Profile component?
+
+3. Save/Bookmark
+
+Where is the save action handled? Is it making an API call or only updating UI state?
+On page load, is the saved state being fetched per user from the database?
+
+4. Post Editor
+
+What rich text library is being used (if any)?
+Is Bold applying real formatting or inserting raw markdown syntax like **text**?
+Is Italic applying real formatting or inserting _text_?
+Is the Numbered List maintaining active state across new lines or resetting after each Enter?
+Is the toolbar available in all input contexts: new post, edit post, new comment, edit comment, reply, edit reply?
+Does clicking a toolbar button cause the editor to scroll to the top?
+
+5. Content Persistence
+
+After publishing a post, is the new post being prepended to the profile feed immediately or requiring a page refresh?
+After publishing an article, same question for the articles tab?
+Is the "My Posts" and "My Articles" tab in the profile fetching the correct user's content?
+
+6. Edit Actions
+
+When Edit Post is clicked, where does the router navigate to? Is it opening a modal or redirecting to a read-only view?
+When Edit Article is clicked, same question?
+In the edit modal, is the primary button labeled "Update" or still "Publish/Post"?
+
+7. Comments & Replies
+
+Are replies being stored with a parent_comment_id reference?
+Are replies being rendered nested under their parent or as standalone comments?
+Does each comment/reply have a three-dot menu with Edit/Delete for the author and Report for others?
+
+8. Notifications
+
+Does each notification type have a correct link/route attached to it?
+Is the "Mark All as Read" state being written to the database or only local state?
+Do notification icons match the reaction emoji used on the post?
+
+9. Search
+
+What ordering logic is used for search suggestions?
+Are product images being passed correctly to the suggestion dropdown?
+
+10. Footer
+
+Does "Join the Community" link point to the correct route?
+Do "Just Launched", "Coming Soon", "Top Voted" footer links update the product filter correctly?
+Is "Directory" appearing in two sections of the footer?
+
+11. Contact & Suggestion Forms
+
+Is there a rate limit or cooldown on the contact form after submission?
+Is the suggestion form validating character length before submission?
+Is email validation using browser-native HTML or a custom system-level validator?
+Is the Full Name field validating for real names (rejecting numbers, single letters)?
+
+12. Images
+
+Are product images loading correctly in the search suggestions dropdown?
+Are post images loading correctly in the community feed, home feed, and profile?
+What is the source of the broken image paths — wrong URL, missing upload, or incorrect database reference?
+
+13. Mobile Layout
+
+Are there any known overflow issues on small screen sizes?
+Are tap targets meeting minimum size requirements?
+
+
+Output Format:
+Produce a report structured like this for every issue found:
+Issue #[N]
+Category: [Auth / Follow / Editor / etc.]
+File: [filename and path]
+Function/Component: [name]
+Line: [line number if applicable]
+Current behavior: [what the code does now]
+Root cause: [why it's wrong]
+Required fix: [what needs to change — description only, no code changes]
+Severity: [Critical / High / Medium / Low]
+
+Deliver the full report before doing anything else. Wait for approval before starting any fixes.
