@@ -127,12 +127,14 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         .catch(() => setUpvotedProducts([]))
         .finally(() => setLoadingTab(false));
     }
-    if (activeTab === 'activity') {
-      setLoadingTab(true);
-      usersAPI.activity(profile.handle.replace('@',''))
-        .then(({ data }) => setActivityItems(data.data || []))
-        .catch(() => setActivityItems([]))
-        .finally(() => setLoadingTab(false));
+    if (activeTab === 'activity' || activeTab === 'posts' || activeTab === 'articles') {
+      if (!activityItems.length) {
+        setLoadingTab(true);
+        usersAPI.activity(profile.handle.replace('@',''))
+          .then(({ data }) => setActivityItems(data.data || []))
+          .catch(() => setActivityItems([]))
+          .finally(() => setLoadingTab(false));
+      }
     }
   }, [activeTab, profile?.handle]);
 
@@ -352,9 +354,9 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
 
           {/* ── Tabs ── */}
           <div style={{ display:'flex', marginBottom:16, background:'#fff', borderRadius:12, border:'1px solid #e8e8e8', overflow:'hidden' }}>
-            {[['activity','📝 Activity'],['products','🚀 Products'],['interests','✨ Interests']].map(([t,label]) => (
+            {[['activity','📝 Activity'],['products','🚀 Products'],['posts','💬 Posts'],['articles','📖 Articles'],['interests','✨ Interests']].map(([t,label]) => (
               <button key={t} onClick={() => setActiveTab(t)}
-                style={{ flex:1, padding:'13px 16px', border:'none', background:activeTab===t?'var(--orange-light)':'transparent', fontSize:13, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif' }}>
+                style={{ flex:1, padding:'13px 8px', border:'none', background:activeTab===t?'var(--orange-light)':'transparent', fontSize:12, fontWeight:700, cursor:'pointer', color:activeTab===t?'var(--orange)':'#666', borderBottom:`2px solid ${activeTab===t?'var(--orange)':'transparent'}`, transition:'all .15s', fontFamily:'Inter,sans-serif', whiteSpace:'nowrap' }}>
                 {label}
               </button>
             ))}
@@ -416,35 +418,22 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
               )
             )}
 
-            {/* ACTIVITY — posts, comments, upvotes */}
-            {activeTab === 'activity' && (
-              loadingTab ? (
+            {/* ACTIVITY — comments + upvotes (no posts, those have their own tabs) */}
+            {activeTab === 'activity' && (() => {
+              const filtered = activityItems.filter(i => i.type !== 'post');
+              return loadingTab ? (
                 <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
                   <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
                 </div>
-              ) : !activityItems.length ? (
+              ) : !filtered.length ? (
                 <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
                   <div style={{ fontSize:40, marginBottom:10 }}>📝</div>
                   <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No activity yet</div>
-                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Use the compose box above to publish your first post.' : 'No public activity yet.'}</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Upvotes and comments you make will appear here.' : 'No public activity yet.'}</div>
                 </div>
               ) : (
                 <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
-                  {activityItems.map(item => {
-                    if (item.type === 'post') {
-                      const postTypeLabel = { update:'📢 Update', milestone:'🏆 Milestone', feature:'✨ Feature', news:'📰 News', article:'📖 Article', post:'💬 Post' }[item.post_type] || '💬 Post';
-                      return (
-                        <div key={item.id}
-                          style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px 20px' }}>
-                          <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
-                            <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:'#f5f5f5', color:'#555' }}>{postTypeLabel}</span>
-                            <span style={{ fontSize:11, color:'#bbb' }}>{timeAgo(item.created_at)}</span>
-                            {item.likes > 0 && <span style={{ fontSize:11, color:'#bbb', marginLeft:'auto' }}>❤️ {item.likes}</span>}
-                          </div>
-                          <div style={{ fontSize:13, color:'#333', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{item.body}</div>
-                        </div>
-                      );
-                    }
+                  {filtered.map(item => {
                     if (item.type === 'upvote') {
                       return (
                         <div key={item.id}
@@ -488,8 +477,69 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                     );
                   })}
                 </div>
-              )
-            )}
+              );
+            })()}
+
+            {/* POSTS — non-article platform posts */}
+            {activeTab === 'posts' && (() => {
+              const filtered = activityItems.filter(i => i.type === 'post' && i.post_type !== 'article');
+              const POST_LABEL = { update:'📢 Update', milestone:'🏆 Milestone', feature:'✨ Feature', news:'📰 News', post:'💬 Post' };
+              return loadingTab ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
+                  <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                </div>
+              ) : !filtered.length ? (
+                <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                  <div style={{ fontSize:40, marginBottom:10 }}>💬</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No posts yet</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Share an update, milestone, or thought.' : 'No posts yet.'}</div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {filtered.map(item => (
+                    <div key={item.id} style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'16px 20px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:10 }}>
+                        <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:'#f5f5f5', color:'#555' }}>
+                          {POST_LABEL[item.post_type] || '💬 Post'}
+                        </span>
+                        <span style={{ fontSize:11, color:'#bbb' }}>{timeAgo(item.created_at)}</span>
+                        {item.likes > 0 && <span style={{ fontSize:11, color:'#bbb', marginLeft:'auto' }}>❤️ {item.likes}</span>}
+                      </div>
+                      <div style={{ fontSize:13, color:'#333', lineHeight:1.7, whiteSpace:'pre-wrap' }}>{item.body}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
+
+            {/* ARTICLES */}
+            {activeTab === 'articles' && (() => {
+              const filtered = activityItems.filter(i => i.type === 'post' && i.post_type === 'article');
+              return loadingTab ? (
+                <div style={{ display:'flex', justifyContent:'center', padding:'60px 20px' }}>
+                  <div style={{ width:28, height:28, border:'3px solid #f0f0f0', borderTopColor:'var(--orange)', borderRadius:'50%', animation:'spin 0.7s linear infinite' }}/>
+                </div>
+              ) : !filtered.length ? (
+                <div style={{ textAlign:'center', padding:'60px 20px', background:'#fff', borderRadius:16, border:'1px solid #e8e8e8' }}>
+                  <div style={{ fontSize:40, marginBottom:10 }}>📖</div>
+                  <div style={{ fontSize:14, fontWeight:700, color:'#bbb', marginBottom:6 }}>No articles yet</div>
+                  <div style={{ fontSize:12, color:'#ccc' }}>{isOwn ? 'Write your first article to share your expertise.' : 'No articles published yet.'}</div>
+                </div>
+              ) : (
+                <div style={{ display:'flex', flexDirection:'column', gap:10 }}>
+                  {filtered.map(item => (
+                    <div key={item.id} style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:14, padding:'20px 24px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:12 }}>
+                        <span style={{ fontSize:11, fontWeight:700, padding:'3px 9px', borderRadius:20, background:'#f0f4ff', color:'#4f46e5' }}>📖 Article</span>
+                        <span style={{ fontSize:11, color:'#bbb' }}>{timeAgo(item.created_at)}</span>
+                        {item.likes > 0 && <span style={{ fontSize:11, color:'#bbb', marginLeft:'auto' }}>❤️ {item.likes}</span>}
+                      </div>
+                      <div style={{ fontSize:14, color:'#222', lineHeight:1.8, whiteSpace:'pre-wrap' }}>{item.body}</div>
+                    </div>
+                  ))}
+                </div>
+              );
+            })()}
 
           </div>
         </div>

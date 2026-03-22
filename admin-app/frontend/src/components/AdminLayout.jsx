@@ -78,13 +78,34 @@ export default function AdminLayout() {
   const handleAvatarFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const fd = new FormData();
-    fd.append('file', file);
-    const token = localStorage.getItem('tlmena_admin_token');
-    fetch('/api/upload', { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd })
-      .then(r => r.json())
-      .then(d => { if (d.url) setEditAvatar(d.url); })
-      .catch(() => toast.error('Image upload failed'));
+    const MAX = 500;
+    const reader = new FileReader();
+    reader.onload = (ev) => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+        const w = Math.round(img.width * scale);
+        const h = Math.round(img.height * scale);
+        const canvas = document.createElement('canvas');
+        canvas.width = w; canvas.height = h;
+        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
+        canvas.toBlob((blob) => {
+          const fd = new FormData();
+          fd.append('file', blob, 'avatar.jpg');
+          const token = localStorage.getItem('tlmena_admin_token');
+          fetch('/api/upload', { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd })
+            .then(r => r.json())
+            .then(d => {
+              if (d.url) setEditAvatar(d.url);
+              else toast.error('Upload failed: ' + (d.message || 'unknown error'));
+            })
+            .catch(() => toast.error('Image upload failed'));
+        }, 'image/jpeg', 0.90);
+      };
+      img.src = ev.target.result;
+    };
+    reader.readAsDataURL(file);
+    e.target.value = '';
   };
 
   const submitEditProfile = async () => {
