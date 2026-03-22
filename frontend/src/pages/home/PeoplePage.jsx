@@ -6,15 +6,17 @@ import { useAuth } from '../../context/AuthContext';
 import { usersAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 import { COUNTRIES_VALUE_LABEL } from '../../utils/menaCountries';
+import PhotoViewer from '../../components/home/PhotoViewer';
 
 const MENA_COUNTRIES = COUNTRIES_VALUE_LABEL;
 
 
-function AvatarCircle({ user, size = 48 }) {
+function AvatarCircle({ user, size = 48, onAvatarClick }) {
   if (user?.avatar_url) {
     return (
       <img src={user.avatar_url} alt={user.name}
-        style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0 }}/>
+        onClick={onAvatarClick}
+        style={{ width:size, height:size, borderRadius:'50%', objectFit:'cover', flexShrink:0, cursor: onAvatarClick ? 'zoom-in' : 'default' }}/>
     );
   }
   const color = user?.avatar_color || '#E15033';
@@ -32,6 +34,7 @@ function PersonCard({ person, currentUser, authLoading }) {
   const [following, setFollowing] = useState(!!person.is_following);
   const [followersCount, setFollowersCount] = useState(person.followers_count || 0);
   const [loadingFollow, setLoadingFollow] = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
 
   const handleFollow = async (e) => {
     e.preventDefault();
@@ -54,6 +57,8 @@ function PersonCard({ person, currentUser, authLoading }) {
   const isMe = currentUser?.id === person.id;
 
   return (
+    <>
+    {lightboxSrc && <PhotoViewer src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     <Link to={`/u/${person.handle}`} style={{ textDecoration:'none', color:'inherit' }}>
       <div style={{ background:'#fff', border:'1.5px solid #ebebeb', borderRadius:16, padding:'20px 20px 16px',
         transition:'box-shadow .15s, border-color .15s', cursor:'pointer' }}
@@ -61,7 +66,9 @@ function PersonCard({ person, currentUser, authLoading }) {
         onMouseLeave={e => { e.currentTarget.style.boxShadow='none'; e.currentTarget.style.borderColor='#ebebeb'; }}>
 
         <div style={{ display:'flex', alignItems:'flex-start', gap:8, marginBottom:12 }}>
-          <AvatarCircle user={person} size={48}/>
+          <AvatarCircle user={person} size={48}
+            onAvatarClick={person.avatar_url ? e => { e.preventDefault(); e.stopPropagation(); setLightboxSrc(person.avatar_url); } : undefined}
+          />
           <div style={{ flex:1, minWidth:0 }}>
             <div style={{ display:'flex', alignItems:'center', gap:6 }}>
               <span style={{ fontSize:15, fontWeight:800, color:'#0a0a0a', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>
@@ -108,6 +115,7 @@ function PersonCard({ person, currentUser, authLoading }) {
         </div>
       </div>
     </Link>
+    </>
   );
 }
 

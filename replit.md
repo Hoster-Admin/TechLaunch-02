@@ -23,6 +23,8 @@ A full-stack product discovery platform for the MENA region, similar to Product 
 - **Settings My Drafts Tab**: Users can view, edit, publish, and delete their drafts from the Settings page.
 - **Signup Welcome Flow**: New users redirected to `/u/:handle?welcome=1` showing a welcome modal.
 
+- **Messaging & Profile UX**: Multi-line textarea input (Shift+Enter for newlines), file/photo attachments in DMs (10MB limit, images/PDF/TXT), clickable user names in Inbox that navigate to profiles, profile photo lightbox viewer (PhotoViewer component) across all pages, read receipts (✓ sent / ✓✓ delivered / blue ✓✓ seen), typing indicators (ephemeral in-memory store with 4s TTL).
+
 ## Architecture
 
 - **Public Frontend**: React (CRA) in `frontend/` — zero admin code, served at `/` by Express on port 5000

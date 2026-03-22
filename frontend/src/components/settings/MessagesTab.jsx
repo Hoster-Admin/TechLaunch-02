@@ -101,8 +101,14 @@ export default function MessagesTab({
                   }
                 </div>
                 <div className="adm-composer">
-                  <input className="adm-compose-input" value={msgInput} onChange={e=>setMsgInput(e.target.value)}
-                    placeholder="Type a message…" onKeyDown={e=>e.key==='Enter'&&sendMsg()} disabled={settingsSending}/>
+                  <textarea className="adm-compose-input" value={msgInput} onChange={e=>setMsgInput(e.target.value)}
+                    placeholder="Type a message… (Shift+Enter for new line)"
+                    rows={1}
+                    onKeyDown={e=>{if(e.key==='Enter'&&!e.shiftKey){e.preventDefault();sendMsg();}}}
+                    disabled={settingsSending}
+                    style={{ resize:'none', overflowY:'hidden', maxHeight:120, lineHeight:1.5 }}
+                    onInput={e=>{e.target.style.height='auto';e.target.style.height=Math.min(e.target.scrollHeight,120)+'px';}}
+                  />
                   <button className="adm-compose-send" onClick={sendMsg} disabled={settingsSending}>↑</button>
                 </div>
               </>

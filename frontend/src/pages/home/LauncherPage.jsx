@@ -8,6 +8,7 @@ import { launcherAPI, uploadAPI, mediaUrl } from '../../utils/api';
 import toast from 'react-hot-toast';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
 import RichText from '../../components/home/RichText';
+import PhotoViewer from '../../components/home/PhotoViewer';
 
 const TABS = ['Posts', 'Articles', 'People'];
 
@@ -38,12 +39,13 @@ function timeAgo(dateStr) {
   return new Date(dateStr).toLocaleDateString('en', { month: 'short', day: 'numeric' });
 }
 
-function PostAvatar({ author, avatarColor, avatarUrl, size = 36 }) {
+function PostAvatar({ author, avatarColor, avatarUrl, size = 36, onAvatarClick }) {
+  const initials = (author || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   if (avatarUrl) {
     return <img src={avatarUrl} alt={author}
-      style={{ width: size, height: size, borderRadius: 10, objectFit: 'cover', flexShrink: 0 }}/>;
+      onClick={onAvatarClick}
+      style={{ width: size, height: size, borderRadius: 10, objectFit: 'cover', flexShrink: 0, cursor: onAvatarClick ? 'zoom-in' : 'default' }}/>;
   }
-  const initials = (author || '?').split(' ').map(w => w[0]).join('').toUpperCase().slice(0, 2);
   return (
     <div style={{
       width: size, height: size, borderRadius: 10, background: avatarColor || '#0a0a0a',
@@ -87,6 +89,7 @@ function PostCard({ post, onDeleted, currentUser }) {
   const [showEditModal, setShowEditModal] = useState(false);
   const [postData, setPostData]       = useState(post);
   const [expanded, setExpanded]       = useState(false);
+  const [lightboxSrc, setLightboxSrc] = useState(null);
   const menuRef = useRef(null);
   const tagStyle = TAG_COLORS[postData.tag] || { bg: '#f4f4f4', color: '#555' };
   const isOwner = currentUser && currentUser.id === post.user_id;
@@ -156,6 +159,7 @@ function PostCard({ post, onDeleted, currentUser }) {
 
   return (
     <>
+    {lightboxSrc && <PhotoViewer src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
     {showDeleteModal && (
       <DeleteConfirmModal
         title="Delete post?"
@@ -179,7 +183,9 @@ function PostCard({ post, onDeleted, currentUser }) {
     }}>
       <div style={{ display: 'flex', alignItems: 'center', gap: 10, marginBottom: 14 }}>
         <div onClick={goToProfile} style={{ cursor: 'pointer', flexShrink: 0 }}>
-          <PostAvatar author={post.author} avatarColor={post.avatar_color} avatarUrl={post.avatar_url}/>
+          <PostAvatar author={post.author} avatarColor={post.avatar_color} avatarUrl={post.avatar_url}
+            onAvatarClick={post.avatar_url ? e => { e.stopPropagation(); setLightboxSrc(post.avatar_url); } : undefined}
+          />
         </div>
         <div style={{ flex: 1, cursor: 'pointer' }} onClick={goToProfile}>
           <div style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>

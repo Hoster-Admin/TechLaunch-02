@@ -7,6 +7,7 @@ import toast from 'react-hot-toast';
 import RichText from '../../components/home/RichText';
 import FormattingToolbar from '../../components/home/FormattingToolbar';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
+import PhotoViewer from '../../components/home/PhotoViewer';
 
 const TAG_COLORS = {
   Milestone: { bg: '#f3e8ff', color: '#7c3aed' },
@@ -25,15 +26,16 @@ function timeAgo(dateStr) {
   return `${Math.floor(s / 86400)}d ago`;
 }
 
-function Avatar({ name, avatarUrl, color, size = 36 }) {
+function Avatar({ name, avatarUrl, color, size = 36, onAvatarClick }) {
   const initials = name ? name.split(' ').map(w => w[0]).join('').slice(0, 2).toUpperCase() : '?';
   const base = {
     width: size, height: size, borderRadius: '50%',
     display: 'flex', alignItems: 'center', justifyContent: 'center',
     background: color || '#E15033', color: '#fff',
     fontSize: size * 0.37, fontWeight: 700, flexShrink: 0, overflow: 'hidden',
+    cursor: onAvatarClick ? 'zoom-in' : 'default',
   };
-  if (avatarUrl) return <img src={avatarUrl} alt={name} style={{ ...base, objectFit: 'cover' }} />;
+  if (avatarUrl) return <img src={avatarUrl} alt={name} style={{ ...base, objectFit: 'cover' }} onClick={onAvatarClick} />;
   return <div style={base}>{initials}</div>;
 }
 
@@ -56,7 +58,7 @@ function CommentBody({ body }) {
 const REPLY_LIMIT = 1000;
 
 /* ─── single comment ───────────────────────────────────────────── */
-function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply = false }) {
+function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply = false, onPhotoClick }) {
   const navigate = useNavigate();
   const { setAuthModal } = useUI();
   const [liked, setLiked]           = useState(comment.liked);
@@ -142,7 +144,9 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
       {/* avatar column */}
       <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', flexShrink: 0 }}>
         <div style={{ cursor: 'pointer' }} onClick={() => navigate(`/u/${comment.author_handle}`)}>
-          <Avatar name={comment.author} avatarUrl={comment.avatar_url} color={comment.avatar_color} size={isReply ? 28 : 36} />
+          <Avatar name={comment.author} avatarUrl={comment.avatar_url} color={comment.avatar_color} size={isReply ? 28 : 36}
+            onAvatarClick={comment.avatar_url && onPhotoClick ? e => { e.stopPropagation(); onPhotoClick(comment.avatar_url); } : undefined}
+          />
         </div>
         {/* vertical thread line — shown when reply box is open OR replies exist and are shown */}
         {(showReplyBox || (showReplies && replyCount > 0)) && (
@@ -322,6 +326,7 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
                   postId={postId}
                   onUpdate={onUpdate}
                   isReply={true}
+                  onPhotoClick={onPhotoClick}
                 />
               </div>
             ))}
@@ -350,6 +355,7 @@ export default function PostDetailPage() {
   const [commentFocused, setCommentFocused] = useState(false);
   const [totalComments, setTotalComments]   = useState(0);
   const [showEditModal, setShowEditModal]   = useState(false);
+  const [lightboxSrc, setLightboxSrc]       = useState(null);
   const commentAreaRef = useRef(null);
   const commentBoxRef  = useRef(null);
 
@@ -441,6 +447,7 @@ export default function PostDetailPage() {
 
   return (
     <>
+      {lightboxSrc && <PhotoViewer src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       {showEditModal && (
         <SubmitPostModal
           editDraft={{ ...post, body: post.content, post_type: post.post_type || 'post', type: post.post_type || 'post' }}
@@ -495,7 +502,9 @@ export default function PostDetailPage() {
           }}>
             <div style={{ display: 'flex', gap: 12, alignItems: 'flex-start', marginBottom: 14 }}>
               <div style={{ cursor: 'pointer' }} onClick={() => navigate(`/u/${post.author_handle}`)}>
-                <Avatar name={post.author} avatarUrl={post.avatar_url} color={post.avatar_color} size={46} />
+                <Avatar name={post.author} avatarUrl={post.avatar_url} color={post.avatar_color} size={46}
+                  onAvatarClick={post.avatar_url ? e => { e.stopPropagation(); setLightboxSrc(post.avatar_url); } : undefined}
+                />
               </div>
               <div style={{ flex: 1 }}>
                 <div style={{ display: 'flex', alignItems: 'center', gap: 7, flexWrap: 'wrap' }}>
@@ -609,6 +618,7 @@ export default function PostDetailPage() {
                       postId={id}
                       onUpdate={load}
                       replies={repliesMap[c.id] || []}
+                      onPhotoClick={setLightboxSrc}
                     />
                   </div>
                 ))}

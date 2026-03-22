@@ -10,6 +10,7 @@ import { usersAPI, productsAPI, launcherAPI } from '../../utils/api';
 import ProductCard from '../../components/home/ProductCard';
 import SubmitPostModal from '../../components/home/SubmitPostModal';
 import { MENA_COUNTRIES } from '../../utils/menaCountries';
+import PhotoViewer from '../../components/home/PhotoViewer';
 
 const PERSONA_ICONS = { Founder:'🚀', Investor:'💰', Builder:'⚡', 'Product Manager':'🧠', Accelerator:'🏢', Enthusiast:'⭐', 'Venture Studio':'🏗️' };
 const PERSONA_MAP   = { founder:'Founder', investor:'Investor', builder:'Builder', pm:'Product Manager', accelerator:'Accelerator', enthusiast:'Enthusiast', venture:'Venture Studio', 'product manager':'Product Manager', 'venture studio':'Venture Studio' };
@@ -55,7 +56,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [deletingPostId, setDeletingPostId]   = useState(null);
   const [editingPost, setEditingPost]         = useState(null);
   const [loadingTab, setLoadingTab]           = useState(false);
-  const [showAvatarLightbox, setShowAvatarLightbox] = useState(false);
+  const [lightboxSrc, setLightboxSrc]         = useState(null);
 
   const isOwn = user && ((user.handle || '').replace('@','') === handle);
 
@@ -276,6 +277,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         <meta property="og:url" content={`https://tlmena.com/u/${profile.handle}`} />
         <meta name="twitter:card" content="summary" />
       </Helmet>
+      {lightboxSrc && <PhotoViewer src={lightboxSrc} onClose={() => setLightboxSrc(null)} />}
       <Navbar onSignIn={onSignIn} onSignUp={onSignUp}/>
 
       {/* ── First-time welcome popup ── */}
@@ -314,8 +316,9 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
 
               {/* Avatar */}
               <div
-                onClick={() => profile.avatar_url && setShowAvatarLightbox(true)}
-                style={{ width:80, height:80, borderRadius:'50%', border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)', overflow:'hidden', flexShrink:0, cursor: profile.avatar_url ? 'zoom-in' : 'default' }}>
+                style={{ width:80, height:80, borderRadius:'50%', border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)', overflow:'hidden', flexShrink:0, cursor: profile.avatar_url ? 'zoom-in' : 'default' }}
+                onClick={() => { if (profile.avatar_url) setLightboxSrc(profile.avatar_url); }}
+              >
                 {profile.avatar_url
                   ? <img src={profile.avatar_url} alt={profile.name} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
                   : <div style={{ width:'100%', height:'100%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:24, fontWeight:900 }}>{initials}</div>
@@ -663,25 +666,6 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         </div>
       </div>
       <Footer/>
-
-      {/* ── Avatar Lightbox ── */}
-      {showAvatarLightbox && profile.avatar_url && (
-        <div
-          onClick={() => setShowAvatarLightbox(false)}
-          style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,.88)', backdropFilter:'blur(6px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
-
-          {/* Photo */}
-          <div onClick={e => e.stopPropagation()} style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
-            <img
-              src={profile.avatar_url}
-              alt={profile.name}
-              style={{ maxWidth:'min(90vw, 520px)', maxHeight:'78vh', borderRadius:20, objectFit:'contain', boxShadow:'0 24px 80px rgba(0,0,0,.5)', display:'block' }}
-            />
-          </div>
-
-          <p style={{ marginTop:16, color:'rgba(255,255,255,.4)', fontSize:12 }}>Click anywhere to close</p>
-        </div>
-      )}
 
       {/* ── Write Post / Article modal ── */}
       {showPostModal && (

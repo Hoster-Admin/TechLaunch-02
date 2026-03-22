@@ -37,6 +37,28 @@ const upvoteLimiter = rateLimit({
   message: { success:false, message:'Too many votes. Please slow down.' },
 });
 
+// ── Multer config for message attachments
+const msgAttachStorage = multer.diskStorage({
+  destination(req, file, cb) {
+    const dir = path.join(__dirname, '../../uploads/messages');
+    fs.mkdirSync(dir, { recursive: true });
+    cb(null, dir);
+  },
+  filename(req, file, cb) {
+    const ext = path.extname(file.originalname).toLowerCase() || '.bin';
+    cb(null, `${Date.now()}-${Math.random().toString(36).slice(2)}${ext}`);
+  },
+});
+const uploadMsgAttach = multer({
+  storage: msgAttachStorage,
+  limits: { fileSize: 10 * 1024 * 1024 },
+  fileFilter(req, file, cb) {
+    const allowed = ['image/jpeg','image/png','image/gif','image/webp','application/pdf','text/plain'];
+    if (allowed.includes(file.mimetype) || file.mimetype.startsWith('image/')) cb(null, true);
+    else cb(new Error('File type not supported'));
+  },
+});
+
 // ── Multer config for post images
 const postImgStorage = multer.diskStorage({
   destination(req, file, cb) {
@@ -341,8 +363,10 @@ messagesRouter.get('/unread-count',  msgCtrl.getUnreadCount);
 messagesRouter.get('/threads',       msgCtrl.getThreads);
 messagesRouter.get('/:handle',       msgCtrl.getThread);
 messagesRouter.post('/:handle',
-  [body('body').trim().notEmpty().isLength({ max:2000 })], validate,
+  [body('body').optional().trim().isLength({ max:2000 })], validate,
   msgCtrl.sendMessage);
+messagesRouter.post('/:handle/typing', msgCtrl.setTyping);
+messagesRouter.get('/:handle/typing',  msgCtrl.getTyping);
 
 // ══════════════════════════════════════════════════
 // APPLICATIONS  /api/applications
@@ -433,6 +457,12 @@ uploadRouter.post('/post-media', authenticate, uploadPostMedia.single('media'), 
   const url = `/uploads/posts/${req.file.filename}`;
   const isVideo = req.file.mimetype.startsWith('video/');
   res.json({ success: true, data: { url, type: isVideo ? 'video' : 'image' } });
+});
+uploadRouter.post('/message-attachment', authenticate, uploadMsgAttach.single('file'), (req, res) => {
+  if (!req.file) return res.status(400).json({ success: false, message: 'No file uploaded' });
+  const url = `/uploads/messages/${req.file.filename}`;
+  const isImage = req.file.mimetype.startsWith('image/');
+  res.json({ success: true, data: { url, type: isImage ? 'image' : 'file', filename: req.file.originalname } });
 });
 
 // ── Mount all routers

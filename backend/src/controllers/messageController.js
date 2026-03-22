@@ -1,7 +1,26 @@
 const { query } = require('../config/database');
 
+// Ensure attachment columns exist (run once on startup)
+async function ensureColumns() {
+  try {
+    await query(`
+      ALTER TABLE messages
+        ADD COLUMN IF NOT EXISTS attachment_url   TEXT,
+        ADD COLUMN IF NOT EXISTS attachment_type  TEXT,
+        ADD COLUMN IF NOT EXISTS attachment_name  TEXT,
+        ADD COLUMN IF NOT EXISTS is_delivered     BOOLEAN DEFAULT false
+    `);
+  } catch (e) {
+    console.warn('Could not add message columns (may already exist):', e.message);
+  }
+}
+ensureColumns();
+
+// In-memory typing indicator store: { recipientId: { senderId: timestamp } }
+const typingStore = {};
+const TYPING_TIMEOUT = 4000;
+
 // ── GET /api/messages/threads
-// List all conversations for the current user, with latest message + unread count
 const getThreads = async (req, res, next) => {
   try {
     const { rows } = await query(`
@@ -39,7 +58,6 @@ const getThreads = async (req, res, next) => {
 };
 
 // ── GET /api/messages/:handle
-// Get all messages in a thread with a specific user
 const getThread = async (req, res, next) => {
   try {
     const { rows: userRows } = await query(
@@ -49,14 +67,21 @@ const getThread = async (req, res, next) => {
     if (!userRows.length) return res.status(404).json({ success: false, message: 'User not found' });
     const otherId = userRows[0].id;
 
-    // Mark incoming messages as read
+    // When I open a thread: mark messages FROM the other user TO me as read + delivered
     await query(
-      'UPDATE messages SET is_read = true WHERE sender_id = $1 AND recipient_id = $2 AND is_read = false',
+      'UPDATE messages SET is_read = true, is_delivered = true WHERE sender_id = $1 AND recipient_id = $2 AND is_read = false',
+      [otherId, req.user.id]
+    );
+
+    // When I open a thread: mark messages FROM other user TO me as delivered (covers already-read but not-yet-delivered edge case)
+    await query(
+      'UPDATE messages SET is_delivered = true WHERE sender_id = $1 AND recipient_id = $2 AND is_delivered = false',
       [otherId, req.user.id]
     );
 
     const { rows } = await query(`
-      SELECT m.id, m.sender_id, m.recipient_id, m.body, m.is_read, m.created_at,
+      SELECT m.id, m.sender_id, m.recipient_id, m.body, m.is_read, m.is_delivered, m.created_at,
+             m.attachment_url, m.attachment_type, m.attachment_name,
              s.handle AS sender_handle, s.name AS sender_name, s.avatar_url AS sender_avatar_url, s.avatar_color AS sender_avatar_color
       FROM   messages m
       JOIN   users s ON s.id = m.sender_id
@@ -70,12 +95,19 @@ const getThread = async (req, res, next) => {
 };
 
 // ── POST /api/messages/:handle
-// Send a message to a user by handle
 const sendMessage = async (req, res, next) => {
   try {
-    const { body } = req.body;
-    if (!body?.trim()) return res.status(400).json({ success: false, message: 'Message body required' });
-    if (body.trim().length > 2000) return res.status(400).json({ success: false, message: 'Message too long (max 2000 chars)' });
+    const { body, attachment_url, attachment_type, attachment_name } = req.body;
+    if (!body?.trim() && !attachment_url) return res.status(400).json({ success: false, message: 'Message body or attachment required' });
+    if (body && body.trim().length > 2000) return res.status(400).json({ success: false, message: 'Message too long (max 2000 chars)' });
+
+    if (attachment_url && !attachment_url.startsWith('/uploads/messages/')) {
+      return res.status(400).json({ success: false, message: 'Invalid attachment URL' });
+    }
+    const allowedTypes = ['image', 'pdf', 'text'];
+    if (attachment_type && !allowedTypes.includes(attachment_type)) {
+      return res.status(400).json({ success: false, message: 'Invalid attachment type' });
+    }
 
     const { rows: userRows } = await query(
       'SELECT id FROM users WHERE handle = $1 LIMIT 1',
@@ -89,10 +121,15 @@ const sendMessage = async (req, res, next) => {
     }
 
     const { rows } = await query(`
-      INSERT INTO messages (sender_id, recipient_id, body)
-      VALUES ($1, $2, $3)
-      RETURNING id, sender_id, recipient_id, body, is_read, created_at
-    `, [req.user.id, recipientId, body.trim()]);
+      INSERT INTO messages (sender_id, recipient_id, body, attachment_url, attachment_type, attachment_name)
+      VALUES ($1, $2, $3, $4, $5, $6)
+      RETURNING id, sender_id, recipient_id, body, is_read, is_delivered, created_at, attachment_url, attachment_type, attachment_name
+    `, [req.user.id, recipientId, (body || '').trim(), attachment_url || null, attachment_type || null, attachment_name || null]);
+
+    // Clear typing indicator for this sender -> recipient
+    if (typingStore[recipientId]) {
+      delete typingStore[recipientId][req.user.id];
+    }
 
     res.status(201).json({ success: true, data: rows[0] });
   } catch (err) { next(err); }
@@ -109,4 +146,40 @@ const getUnreadCount = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
-module.exports = { getThreads, getThread, sendMessage, getUnreadCount };
+// ── POST /api/messages/:handle/typing
+const setTyping = async (req, res, next) => {
+  try {
+    const { rows: userRows } = await query(
+      'SELECT id FROM users WHERE handle = $1 LIMIT 1',
+      [req.params.handle]
+    );
+    if (!userRows.length) return res.status(404).json({ success: false, message: 'User not found' });
+    const recipientId = userRows[0].id;
+
+    if (!typingStore[recipientId]) typingStore[recipientId] = {};
+    typingStore[recipientId][req.user.id] = Date.now();
+
+    res.json({ success: true });
+  } catch (err) { next(err); }
+};
+
+// ── GET /api/messages/:handle/typing
+const getTyping = async (req, res, next) => {
+  try {
+    const { rows: userRows } = await query(
+      'SELECT id FROM users WHERE handle = $1 LIMIT 1',
+      [req.params.handle]
+    );
+    if (!userRows.length) return res.status(404).json({ success: false, message: 'User not found' });
+    const otherId = userRows[0].id;
+
+    const now = Date.now();
+    const isTyping = typingStore[req.user.id]
+      && typingStore[req.user.id][otherId]
+      && (now - typingStore[req.user.id][otherId]) < TYPING_TIMEOUT;
+
+    res.json({ success: true, data: { typing: !!isTyping } });
+  } catch (err) { next(err); }
+};
+
+module.exports = { getThreads, getThread, sendMessage, getUnreadCount, setTyping, getTyping };
