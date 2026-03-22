@@ -93,7 +93,7 @@ const toggleLike = async (req, res, next) => {
         query(
           `INSERT INTO notifications (user_id, type, title, body, link, data)
            VALUES ($1,'like','Someone liked your post',$2,$3,$4)`,
-          [post[0].user_id, `${req.user.name} liked your post`, `/launcher`, JSON.stringify({ actor_id: req.user.id, post_id: id })]
+          [post[0].user_id, `${req.user.name} liked your post`, `/launcher/posts/${id}`, JSON.stringify({ actor_id: req.user.id, post_id: id })]
         ).catch(() => {});
       }
     }
@@ -122,7 +122,7 @@ const addComment = async (req, res, next) => {
       await query(
         `INSERT INTO notifications (user_id, type, title, body, link, data)
          VALUES ($1,'comment','New reply on your post',$2,$3,$4)`,
-        [post[0].user_id, `${req.user.name} replied to your post`, `/launcher`, JSON.stringify({ actor_id: req.user.id, post_id: req.params.id })]
+        [post[0].user_id, `${req.user.name} replied to your post`, `/launcher/posts/${req.params.id}`, JSON.stringify({ actor_id: req.user.id, post_id: req.params.id })]
       ).catch(() => {});
     }
     res.status(201).json({

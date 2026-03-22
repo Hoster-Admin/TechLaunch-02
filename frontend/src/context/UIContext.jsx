@@ -1,4 +1,5 @@
 import React, { createContext, useContext, useState, useCallback } from 'react';
+import { usersAPI } from '../utils/api';
 
 const UIContext = createContext(null);
 
@@ -30,14 +31,25 @@ export const UIProvider = ({ children }) => {
 
   const loadNotifications = useCallback((apiNotifs) => {
     if (!Array.isArray(apiNotifs)) return;
-    const mapped = apiNotifs.map(n => ({
-      type: n.type || 'system',
-      text: n.body || n.message || n.text || '',
-      icon: n.type === 'upvote' ? '▲' : n.type === 'follow' ? '👤' : n.type === 'comment' ? '💬' : '🔔',
-      time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recently',
-      unread: !n.read_at,
-      handle: n.actor_handle || null,
-    }));
+    const mapped = apiNotifs.map(n => {
+      let parsedData = null;
+      try { parsedData = n.data ? (typeof n.data === 'string' ? JSON.parse(n.data) : n.data) : null; } catch {}
+      const actorHandle = n.actor_handle || parsedData?.actor_handle || null;
+      const postId = parsedData?.post_id || null;
+      const navLink = n.link || (postId ? `/launcher/posts/${postId}` : (actorHandle ? `/u/${actorHandle}` : null));
+      return {
+        type: n.type || 'system',
+        text: n.body || n.message || n.text || '',
+        icon: n.type === 'like' || n.type === 'upvote' ? '🎉'
+            : n.type === 'follow' ? '👤'
+            : n.type === 'comment' ? '💬'
+            : '🔔',
+        time: n.created_at ? new Date(n.created_at).toLocaleDateString() : 'Recently',
+        unread: !n.read_at,
+        handle: actorHandle,
+        link: navLink,
+      };
+    });
     setNotifications(mapped);
     setUnreadCount(mapped.filter(n => n.unread).length);
   }, []);
@@ -57,6 +69,7 @@ export const UIProvider = ({ children }) => {
   const markAllRead = useCallback(() => {
     setNotifications(prev => prev.map(n => ({ ...n, unread: false })));
     setUnreadCount(0);
+    usersAPI.markRead().catch(() => {});
   }, []);
 
   const markOneRead = useCallback((idx) => {

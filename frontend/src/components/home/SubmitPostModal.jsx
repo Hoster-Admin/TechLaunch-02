@@ -1,5 +1,5 @@
 import React, { useState, useEffect, useRef } from 'react';
-import { communityAPI, uploadAPI } from '../../utils/api';
+import { launcherAPI, communityAPI, uploadAPI } from '../../utils/api';
 import toast from 'react-hot-toast';
 import FormattingToolbar from './FormattingToolbar';
 
@@ -33,14 +33,14 @@ const ACCEPTED_VID = 'video/mp4,video/webm,video/quicktime';
 
 export default function SubmitPostModal({ onClose, editDraft = null, initialDraft = null, defaultType = null, onPublished, onSaved }) {
   const draft = initialDraft || editDraft;
-  const initType = draft?.type || defaultType;
+  const initType = draft?.post_type || draft?.type || defaultType;
   const [step, setStep]       = useState(draft || defaultType ? 'write' : 'type');
-  const [type, setType]       = useState(initType);
+  const [type, setType]       = useState(initType || 'post');
   const [title, setTitle]     = useState(draft?.title || '');
-  const [body, setBody]       = useState(draft?.body || '');
-  const [tagId, setTagId]     = useState(draft?.tag_id || '');
+  const [body, setBody]       = useState(draft?.body || draft?.content || '');
+  const [tagName, setTagName] = useState(draft?.tag || '');
   const [tags, setTags]       = useState([]);
-  const [saving, setSaving]   = useState(false);
+  const [publishing, setPublishing] = useState(false);
   const [showCloseConfirm, setShowCloseConfirm] = useState(false);
 
   const [mediaFile, setMediaFile]       = useState(null);
@@ -50,7 +50,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
   const mediaInputRef = useRef(null);
   const bodyRef = useRef(null);
 
-  const typeCfg = TYPE_OPTIONS.find(t => t.id === type);
+  const typeCfg = TYPE_OPTIONS.find(t => t.id === type) || TYPE_OPTIONS[0];
   const isDirty = body.trim().length > 0 || title.trim().length > 0;
 
   useEffect(() => {
@@ -99,53 +99,40 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
     } finally { setUploading(false); }
   };
 
-  const saveDraft = async () => {
-    if (!body.trim() && !title.trim()) { onClose(); return; }
-    setSaving(true);
-    try {
-      const imageUrl = await uploadMediaIfNeeded();
-      const payload = { type, title: title.trim() || null, body: body.trim() || '', tag_id: tagId || null, status: 'draft', image_url: imageUrl };
-      let result;
-      if (draft?.id) {
-        result = await communityAPI.update(draft.id, payload);
-      } else {
-        result = await communityAPI.create(payload);
-      }
-      const saved = result?.data?.data || {};
-      toast.success('Saved to drafts');
-      if (onSaved) onSaved(saved);
-      else onClose();
-    } catch { toast.error('Failed to save draft'); }
-    finally { setSaving(false); }
-  };
-
   const handlePublish = async () => {
     if (!body.trim()) { toast.error('Please write something first'); return; }
     if (charOver) { toast.error(`Too long — keep it under ${charMax} characters`); return; }
     if (type === 'article' && !title.trim()) { toast.error('Articles need a title'); return; }
-    setSaving(true);
+    setPublishing(true);
     try {
       const imageUrl = await uploadMediaIfNeeded();
-      const payload = { type, title: title.trim() || null, body: body.trim(), tag_id: tagId || null, status: 'published', image_url: imageUrl };
+      const payload = {
+        post_type: type,
+        title: title.trim() || null,
+        content: body.trim(),
+        tag: tagName || null,
+        image_url: imageUrl,
+      };
       let result;
       if (draft?.id) {
-        result = await communityAPI.update(draft.id, payload);
+        result = await launcherAPI.editPost(draft.id, payload);
       } else {
-        result = await communityAPI.create(payload);
+        result = await launcherAPI.createPost(payload);
       }
       const published = result?.data?.data || {};
       toast.success(type === 'article' ? 'Article published!' : 'Post published!');
       if (onPublished) onPublished(published);
       else onClose();
-    } catch { toast.error('Failed to publish'); }
-    finally { setSaving(false); }
+    } catch (err) {
+      const msg = err.response?.data?.message || 'Failed to publish';
+      toast.error(msg);
+    } finally { setPublishing(false); }
   };
 
-  // bodyRef is already declared above — passed to FormattingToolbar
   const charCount = body.length;
   const charMax   = typeCfg?.bodyMax || 1000;
   const charOver  = charCount > charMax;
-  const busy      = saving || uploading;
+  const busy      = publishing || uploading;
 
   const inp = {
     width: '100%', padding: '12px 14px', borderRadius: 12,
@@ -165,7 +152,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
           <div style={{ padding:'20px 24px 16px', borderBottom:'1px solid #f0f0f0', display:'flex', alignItems:'center', justifyContent:'space-between', flexShrink:0 }}>
             <div>
               <div style={{ fontSize:16, fontWeight:800, color:'#0a0a0a' }}>
-                {step === 'type' ? 'What do you want to share?' : typeCfg?.id === 'article' ? 'Write an Article' : 'Write a Post'}
+                {step === 'type' ? 'What do you want to share?' : draft?.id ? `Edit ${type === 'article' ? 'Article' : 'Post'}` : type === 'article' ? 'Write an Article' : 'Write a Post'}
               </div>
               {step === 'write' && (
                 <div style={{ fontSize:12, color:'#aaa', marginTop:2 }}>{typeCfg?.desc}</div>
@@ -276,8 +263,8 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                   <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:8 }}>Tag (optional)</label>
                   <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                     {tags.map(t => (
-                      <button key={t.id} onClick={() => setTagId(tagId === t.id ? '' : t.id)}
-                        style={{ padding:'6px 14px', borderRadius:99, border:`2px solid ${tagId === t.id ? t.color : '#e8e8e8'}`, background: tagId === t.id ? t.color : '#fff', color: tagId === t.id ? '#fff' : '#666', fontSize:12, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
+                      <button key={t.id} onClick={() => setTagName(tagName === t.name ? '' : t.name)}
+                        style={{ padding:'6px 14px', borderRadius:99, border:`2px solid ${tagName === t.name ? t.color : '#e8e8e8'}`, background: tagName === t.name ? t.color : '#fff', color: tagName === t.name ? '#fff' : '#666', fontSize:12, fontWeight:700, cursor:'pointer', transition:'all .15s' }}>
                         {t.name}
                       </button>
                     ))}
@@ -295,13 +282,9 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
                 ← Change type
               </button>
               <div style={{ display:'flex', gap:10 }}>
-                <button onClick={saveDraft} disabled={busy}
-                  style={{ padding:'10px 20px', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#fff', color:'#444', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                  {saving ? 'Saving…' : 'Save Draft'}
-                </button>
                 <button onClick={handlePublish} disabled={busy || charOver || !body.trim()}
-                  style={{ padding:'10px 24px', borderRadius:12, border:'none', background: (!body.trim() || charOver) ? '#f0f0f0' : 'var(--orange)', color: (!body.trim() || charOver) ? '#bbb' : '#fff', fontSize:13, fontWeight:700, cursor: (!body.trim() || charOver) ? 'not-allowed' : 'pointer', transition:'all .15s', minWidth:110 }}>
-                  {uploading ? 'Uploading…' : saving ? 'Publishing…' : 'Publish →'}
+                  style={{ padding:'10px 24px', borderRadius:12, border:'none', background: (!body.trim() || charOver) ? '#f0f0f0' : 'var(--orange)', color: (!body.trim() || charOver) ? '#bbb' : '#fff', fontSize:13, fontWeight:700, cursor: (!body.trim() || charOver) ? 'not-allowed' : 'pointer', transition:'all .15s', minWidth:130 }}>
+                  {uploading ? 'Uploading…' : publishing ? (draft?.id ? 'Saving…' : 'Publishing…') : draft?.id ? 'Save Changes →' : 'Publish →'}
                 </button>
               </div>
             </div>
@@ -309,23 +292,23 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
         </div>
       </div>
 
-      {/* Close / save-to-draft confirmation */}
+      {/* Discard confirmation */}
       {showCloseConfirm && (
         <div style={{ position:'fixed', inset:0, zIndex:4000, background:'rgba(0,0,0,.6)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
           <div style={{ background:'#fff', borderRadius:20, padding:'28px 28px', width:'100%', maxWidth:380, textAlign:'center', boxShadow:'0 20px 60px rgba(0,0,0,.25)' }}>
-            <div style={{ fontSize:28, marginBottom:12 }}>💾</div>
-            <div style={{ fontSize:16, fontWeight:800, color:'#0a0a0a', marginBottom:8 }}>Save to drafts?</div>
+            <div style={{ fontSize:28, marginBottom:12 }}>✏️</div>
+            <div style={{ fontSize:16, fontWeight:800, color:'#0a0a0a', marginBottom:8 }}>Discard changes?</div>
             <p style={{ fontSize:13, color:'#888', marginBottom:24, lineHeight:1.6 }}>
-              You've started writing. Would you like to save this as a draft so you can come back to it later?
+              You've started writing. If you leave now, your changes won't be saved.
             </p>
             <div style={{ display:'flex', gap:10 }}>
-              <button onClick={() => { setShowCloseConfirm(false); onClose(); }}
+              <button onClick={() => setShowCloseConfirm(false)}
                 style={{ flex:1, padding:'11px', borderRadius:12, border:'1.5px solid #e8e8e8', background:'#fff', color:'#666', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                Discard
+                Keep Editing
               </button>
-              <button onClick={() => { setShowCloseConfirm(false); saveDraft(); }}
-                style={{ flex:1, padding:'11px', borderRadius:12, border:'none', background:'var(--orange)', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
-                Save Draft
+              <button onClick={() => { setShowCloseConfirm(false); onClose(); }}
+                style={{ flex:1, padding:'11px', borderRadius:12, border:'none', background:'#e11d48', color:'#fff', fontSize:13, fontWeight:700, cursor:'pointer' }}>
+                Discard
               </button>
             </div>
           </div>

@@ -73,7 +73,7 @@ function CommentBubble({ comment, user, postId, onUpdate, replies = [], isReply 
   const [isEdited, setIsEdited]         = useState(comment.edited || false);
   const replyRef = useRef(null);
   const menuRef  = useRef(null);
-  const isOwner = user && user.id === comment.user_id;
+  const isOwner = user && String(user.id) === String(comment.user_id);
   const TRUNCATE_LIMIT = 280;
   const needsTruncation = commentBody.length > TRUNCATE_LIMIT;
 

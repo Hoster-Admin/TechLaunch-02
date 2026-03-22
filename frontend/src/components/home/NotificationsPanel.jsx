@@ -20,8 +20,19 @@ export default function NotificationsPanel({ open, onClose }) {
 
   const handleClick = (n, idx) => {
     markOneRead(idx);
-    if (n.handle) navigate(`/u/${n.handle.replace('@', '')}`);
-    if (n.type === 'product') navigate('/');
+    onClose();
+    if (n.link) {
+      navigate(n.link);
+    } else if (n.handle) {
+      navigate(`/u/${n.handle.replace('@', '')}`);
+    }
+  };
+
+  const iconBg = (type) => {
+    if (type === 'follow')  return '#e0f2fe';
+    if (type === 'like' || type === 'upvote') return '#fff3ee';
+    if (type === 'comment') return '#f0fdf4';
+    return '#f4f4f4';
   };
 
   return (
@@ -53,7 +64,7 @@ export default function NotificationsPanel({ open, onClose }) {
             style={{ display:'flex', alignItems:'flex-start', gap:12, padding:'12px 16px', borderBottom:'1px solid #f8f8f8', cursor:'pointer', background:n.unread ? '#fffaf9' : '#fff', transition:'background .1s' }}
             onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
             onMouseOut={e => e.currentTarget.style.background=n.unread ? '#fffaf9' : '#fff'}>
-            <div style={{ width:36, height:36, borderRadius:10, background:'var(--orange-light)', display:'grid', placeItems:'center', fontSize:16, flexShrink:0 }}>
+            <div style={{ width:36, height:36, borderRadius:10, background:iconBg(n.type), display:'grid', placeItems:'center', fontSize:16, flexShrink:0 }}>
               {n.icon}
             </div>
             <div style={{ flex:1 }}>

@@ -30,7 +30,7 @@ export default function SearchDropdown({ query, onClose }) {
       setLoading(true);
       try {
         const [prodRes, peopleRes, entRes] = await Promise.allSettled([
-          productsAPI.list({ search: query.trim(), status: 'all', limit: 5, sort: 'upvotes' }),
+          productsAPI.list({ search: query.trim(), status: 'all', limit: 5 }),
           usersAPI.people({ search: query.trim(), limit: 3 }),
           entitiesAPI.list({ search: query.trim(), limit: 4 }),
         ]);
@@ -145,7 +145,8 @@ export default function SearchDropdown({ query, onClose }) {
               onMouseOut={e => e.currentTarget.style.background=''}>
               <div style={{ width:36, height:36, borderRadius:10, background:'#f4f4f4', display:'grid', placeItems:'center', fontSize:18, flexShrink:0, border:'1px solid #eee', overflow:'hidden' }}>
                 {p.logo_url
-                  ? <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
+                  ? <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}
+                      onError={e => { e.currentTarget.style.display='none'; e.currentTarget.parentElement.textContent = p.logo_emoji || '📦'; }}/>
                   : p.logo_emoji || '📦'}
               </div>
               <div style={{ minWidth:0, flex:1 }}>

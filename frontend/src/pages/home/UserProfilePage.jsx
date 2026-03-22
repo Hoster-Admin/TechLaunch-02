@@ -53,6 +53,7 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [activityItems, setActivityItems]     = useState([]);
   const [launcherPosts, setLauncherPosts]     = useState(null);
   const [deletingPostId, setDeletingPostId]   = useState(null);
+  const [editingPost, setEditingPost]         = useState(null);
   const [loadingTab, setLoadingTab]           = useState(false);
 
   const isOwn = user && ((user.handle || '').replace('@','') === handle);
@@ -496,20 +497,26 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                             </div>
                           </div>
                           {isOwn && (
-                            <button onClick={async e => {
-                              e.stopPropagation();
-                              if (!window.confirm('Delete this post?')) return;
-                              setDeletingPostId(post.id);
-                              try {
-                                await launcherAPI.deletePost(post.id);
-                                setLauncherPosts(prev => (prev || []).filter(p => p.id !== post.id));
-                                toast.success('Post deleted');
-                              } catch { toast.error('Failed to delete'); }
-                              finally { setDeletingPostId(null); }
-                            }} disabled={deletingPostId === post.id}
-                              style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
-                              {deletingPostId === post.id ? '…' : '🗑 Delete'}
-                            </button>
+                            <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                              <button onClick={e => { e.stopPropagation(); setEditingPost(post); }}
+                                style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #e8e8e8', background:'#f8f8f8', color:'#444', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                ✏️ Edit
+                              </button>
+                              <button onClick={async e => {
+                                e.stopPropagation();
+                                if (!window.confirm('Delete this post?')) return;
+                                setDeletingPostId(post.id);
+                                try {
+                                  await launcherAPI.deletePost(post.id);
+                                  setLauncherPosts(prev => (prev || []).filter(p => p.id !== post.id));
+                                  toast.success('Post deleted');
+                                } catch { toast.error('Failed to delete'); }
+                                finally { setDeletingPostId(null); }
+                              }} disabled={deletingPostId === post.id}
+                                style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                {deletingPostId === post.id ? '…' : '🗑 Delete'}
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -555,20 +562,26 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
                             </div>
                           </div>
                           {isOwn && (
-                            <button onClick={async e => {
-                              e.stopPropagation();
-                              if (!window.confirm('Delete this article?')) return;
-                              setDeletingPostId(article.id);
-                              try {
-                                await launcherAPI.deletePost(article.id);
-                                setLauncherPosts(prev => (prev || []).filter(p => p.id !== article.id));
-                                toast.success('Article deleted');
-                              } catch { toast.error('Failed to delete'); }
-                              finally { setDeletingPostId(null); }
-                            }} disabled={deletingPostId === article.id}
-                              style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:11, fontWeight:700, cursor:'pointer', flexShrink:0 }}>
-                              {deletingPostId === article.id ? '…' : '🗑 Delete'}
-                            </button>
+                            <div style={{ display:'flex', gap:6, flexShrink:0 }} onClick={e => e.stopPropagation()}>
+                              <button onClick={e => { e.stopPropagation(); setEditingPost(article); }}
+                                style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #e8e8e8', background:'#f8f8f8', color:'#444', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                ✏️ Edit
+                              </button>
+                              <button onClick={async e => {
+                                e.stopPropagation();
+                                if (!window.confirm('Delete this article?')) return;
+                                setDeletingPostId(article.id);
+                                try {
+                                  await launcherAPI.deletePost(article.id);
+                                  setLauncherPosts(prev => (prev || []).filter(p => p.id !== article.id));
+                                  toast.success('Article deleted');
+                                } catch { toast.error('Failed to delete'); }
+                                finally { setDeletingPostId(null); }
+                              }} disabled={deletingPostId === article.id}
+                                style={{ padding:'4px 12px', borderRadius:8, border:'1.5px solid #fdd', background:'#fff5f5', color:'#e63946', fontSize:11, fontWeight:700, cursor:'pointer' }}>
+                                {deletingPostId === article.id ? '…' : '🗑 Delete'}
+                              </button>
+                            </div>
                           )}
                         </div>
                       </div>
@@ -652,12 +665,22 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
       {showPostModal && (
         <SubmitPostModal
           onClose={() => setShowPostModal(false)}
-          onPublished={(post) => {
+          onPublished={(published) => {
             setShowPostModal(false);
-            setActiveTab('activity');
-            usersAPI.activity(profile.handle.replace('@',''))
-              .then(({ data }) => setActivityItems(data.data || []))
-              .catch(() => {});
+            const postType = published?.post_type || 'post';
+            setActiveTab(postType === 'article' ? 'articles' : 'posts');
+            setLauncherPosts(null);
+          }}
+        />
+      )}
+
+      {editingPost && (
+        <SubmitPostModal
+          editDraft={{ ...editingPost, body: editingPost.content, post_type: editingPost.post_type || 'post', type: editingPost.post_type || 'post' }}
+          onClose={() => setEditingPost(null)}
+          onPublished={(updated) => {
+            setEditingPost(null);
+            setLauncherPosts(prev => (prev || []).map(p => p.id === editingPost.id ? { ...p, ...(updated || {}), content: updated?.content || p.content } : p));
           }}
         />
       )}

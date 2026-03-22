@@ -166,7 +166,7 @@ function PostCard({ post, onDeleted, currentUser }) {
     )}
     {showEditModal && (
       <SubmitPostModal
-        editDraft={{ ...postData, body: postData.body || postData.content, type: postData.type || 'post' }}
+        editDraft={{ ...postData, body: postData.body || postData.content, post_type: postData.post_type || postData.type || 'post', type: postData.post_type || postData.type || 'post' }}
         onClose={() => setShowEditModal(false)}
         onPublished={(updated) => {
           if (updated) setPostData(prev => ({ ...prev, ...updated, content: updated.body || updated.content || prev.content }));
@@ -272,21 +272,35 @@ function PostCard({ post, onDeleted, currentUser }) {
               <div style={{ fontSize: 13, fontWeight: 600, color: '#aaa' }}>No replies yet</div>
               <div style={{ fontSize: 12, color: '#ccc', marginTop: 4 }}>Be the first to reply</div>
             </div>
-          ) : (
-            <div style={{ display: 'flex', flexDirection: 'column', gap: 12, marginBottom: 14 }}>
-              {comments.map(c => (
-                <div key={c.id} style={{ display: 'flex', gap: 8 }}>
-                  <PostAvatar author={c.author} avatarColor={c.avatar_color} avatarUrl={c.avatar_url} size={28}/>
-                  <div style={{ flex: 1 }}>
-                    <div style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', marginBottom: 2 }}>
-                      {c.author} <span style={{ fontWeight: 400, color: '#bbb' }}>· {timeAgo(c.created_at)}</span>
-                    </div>
-                    <RichText text={c.body} style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }} />
+          ) : (() => {
+              const topLevel = comments.filter(c => !c.parent_id);
+              const replyCount = comments.length - topLevel.length;
+              return (
+                <div style={{ marginBottom: 14 }}>
+                  <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
+                    {topLevel.map(c => (
+                      <div key={c.id} style={{ display: 'flex', gap: 8 }}>
+                        <PostAvatar author={c.author} avatarColor={c.avatar_color} avatarUrl={c.avatar_url} size={28}/>
+                        <div style={{ flex: 1 }}>
+                          <div style={{ fontSize: 12, fontWeight: 700, color: '#0a0a0a', marginBottom: 2 }}>
+                            {c.author} <span style={{ fontWeight: 400, color: '#bbb' }}>· {timeAgo(c.created_at)}</span>
+                          </div>
+                          <RichText text={c.body} style={{ fontSize: 13, color: '#444', lineHeight: 1.5 }} />
+                        </div>
+                      </div>
+                    ))}
                   </div>
+                  {replyCount > 0 && (
+                    <div
+                      style={{ marginTop: 8, fontSize: 12, color: 'var(--orange)', fontWeight: 600, cursor: 'pointer' }}
+                      onClick={() => navigate(`/launcher/posts/${post.id}`)}
+                    >
+                      View {replyCount} {replyCount === 1 ? 'reply' : 'replies'} →
+                    </div>
+                  )}
                 </div>
-              ))}
-            </div>
-          )}
+              );
+            })()}
           <div style={{ display: 'flex', gap: 10, marginTop: 4 }}>
             <input value={reply} onChange={e => setReply(e.target.value)}
               onKeyDown={e => e.key === 'Enter' && !e.shiftKey && handleReply()}

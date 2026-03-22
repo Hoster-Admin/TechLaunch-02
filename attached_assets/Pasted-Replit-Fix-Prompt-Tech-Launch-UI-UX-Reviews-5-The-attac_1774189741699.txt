@@ -1,0 +1,69 @@
+Replit Fix Prompt — Tech Launch UI/UX Reviews #5
+The attached images show screenshots of each bug. Reference them as you fix each issue.
+
+🔴 CRITICAL BUGS — Fix First
+[Bug-9] Post edit fails to publish (see Image 11 — top)
+When a user edits a post and clicks Publish, the system fails and shows an error. Fix the edit post publishing pipeline so edited posts save and publish successfully without errors.
+[Bug-10] Bold button inserts markdown syntax instead of formatting (see Image 11 — middle)
+Clicking Bold inserts **bold text** as raw text instead of applying actual bold formatting. Fix: the Bold button must apply real rich-text bold formatting to the selected text and show the icon in an active state.
+[Bug-11] Italic button inserts markdown syntax instead of formatting (see Image 11 — bottom)
+Same issue as Bold — clicking Italic inserts _italic text_ as raw text. Fix: apply real italic formatting to the selected text and show the icon active.
+[Bug-22] User's posts not showing in profile (see Image 10 — top)
+The Posts tab in the user profile appears empty even though the user has published posts. Fix: fetch and display all the user's posts in the profile, matching the layout of the community feed. Each post must include the three-dot menu for Edit and Delete.
+[Bug-23] User's articles not showing in profile (see Image 10 — bottom)
+Same as above for the Articles tab — appears empty despite published articles. Fix: fetch and display all published articles in the profile with matching layout. Each article must include the three-dot menu for Edit and Delete.
+
+🟠 FUNCTIONAL BUGS
+[Bug-1] "Mark All as Read" not persisting after refresh (see Image 3 — top)
+Clicking "Mark All as Read" updates the UI but reverts to unread on page refresh. Fix: write the read state to the database so it persists across sessions and page reloads.
+[Bug-2] Follow notification does not link to user profile (see Image 3 — middle)
+When a follow notification appears, clicking the follower's name does nothing. Fix: clicking the follower's name in any follow notification must navigate directly to that user's profile page.
+[Bug-3] Like notification does not open the post (see Image 3 — bottom)
+Clicking a like notification has no effect. Fix: clicking a like notification must open the exact post that received the like.
+[Bug-5] Notifications not fully linked (see Image 2 — middle)
+Several notification types don't navigate correctly. Fix all notification types:
+
+Post/Like notification → opens the specific post
+Product interaction notification → opens the exact product
+Follow notification → navigates to the follower's profile
+Followers list notification → opens the full followers list
+
+[Bug-12] Numbered list does not maintain active state (see Image 6 — top)
+After pressing Enter on a numbered list item, the editor does not continue numbering automatically. The user must click the button again for each item. Fix: once the Numbered List is activated, it must continue numbering each new line automatically and remain active until the user clicks to deactivate it.
+[Bug-14] Post editor scroll resets to top when using toolbar (see Image 4 — top)
+When the user clicks Bold, Italic, or List while editing, the editor scrolls back to the top. Fix: the cursor and scroll position must stay at the current editing location when any toolbar option is used.
+[Bug-18] Publish and Save Draft buttons trigger each other (see Image 7 — top)
+Clicking Publish also triggers Save Draft behavior. Fix: each button must operate completely independently — Publish only runs the publish flow, Save Draft only saves the draft.
+[Bug-19] Replies displayed outside parent comment (see Image 7 — bottom)
+Replies to comments appear as standalone comments outside their parent, breaking the hierarchy. Fix: replies must be nested inside their parent comment. Each comment with replies must show an indicator (e.g., "View 2 replies") that expands inline when clicked.
+[Bug-20] Users cannot delete their own comments or replies (see Image 9 — top)
+Users have no way to edit or delete their own comments or replies on posts, articles, or product posts. Fix: add Edit and Delete options (via three-dot menu) to every comment and reply authored by the current user, across all content types.
+[Bug-21] Edit article button opens details page instead of editor (see Image 9 — bottom)
+Clicking Edit on a published article opens the article details page instead of the edit modal. Fix: clicking Edit must open the edit pop-up/modal directly with all formatting tools available and content pre-loaded.
+[Bug-24] Newly added post not displayed immediately in profile (see Image 5 — top)
+After publishing a post from the profile, the success toast appears but the post does not show in the My Posts section without a page refresh. Fix: after a successful publish, immediately prepend the new post to the My Posts list without requiring a reload.
+[Bug-25] Newly added article not displayed immediately in profile (see Image 5 — bottom)
+Same issue for articles — they don't appear in My Articles without a refresh. Fix: prepend the new article to the My Articles list immediately after successful publish.
+
+🟡 UX / UI ISSUES
+[Bug-4] Like notification icon doesn't match post reaction icon (see Image 2 — top)
+The icon in the like notification does not match the reaction emoji used on the post. Fix: use the exact same reaction emoji/icon in the notification as the one used on the post itself.
+[Bug-6] Inconsistent product card display (see Image 2 — bottom)
+Product cards look different on the homepage vs. the All Products search results page. Fix: standardize the product card layout, spacing, and styling across all pages to match the homepage design exactly.
+[Bug-7] Product images not showing in search suggestions (see Image 1 — top)
+In the search dropdown, product images appear broken or as blank placeholders. Fix: load the correct product image in each suggestion item. If the image is still loading, show a skeleton/loading placeholder instead of a broken frame.
+[Bug-8] Search suggestions not ordered by relevance (see Image 1 — bottom)
+Search results appear in inconsistent order that doesn't prioritize closest matches. Fix: order suggestions so items whose names, usernames, or titles start with the typed string appear first. Closest prefix matches take priority over partial matches.
+[Bug-13] Link input uses browser native dialog (see Image 6 — bottom)
+Clicking "Add Link" opens a browser native prompt. Fix: remove the native dialog. Users should be able to paste or type URLs directly into the editor. The editor must auto-detect pasted URLs and format them as clickable links automatically.
+[Bug-15] Post editor toolbar not available in all input contexts (see Image 4 — bottom)
+The formatting toolbar only appears when editing an existing post or article. It is missing when: creating a new post, creating a new article, adding a comment, adding a reply, editing a comment, editing a reply. Fix: the toolbar must be present and functional in every text input context across the platform.
+[Bug-16] Inconsistent editor pop-up between new and edit modes (see Image 8 — top)
+The Create Post modal and the Edit Post modal look and behave differently — different toolbar placement, spacing, button styles, and available features. Fix: make both modals identical in layout, toolbar options, spacing, font sizes, colors, and button placement. Users must not notice any visual or functional difference.
+[Bug-17] Edit form button label not updated (see Image 8 — bottom)
+In all edit modals (post, article, comment, reply), the save button still says "Publish" or "Post" instead of indicating an update action. Fix: change the save/update button label to "Update" in all edit forms across the platform.
+
+Tech stack: React frontend, Node.js/Express backend, PostgreSQL.
+Design tokens: Primary orange #E8471C, Inter font, DM Mono for mono elements.
+All modals must match the existing design system — consistent border-radius, button hierarchy, and spacing.
+All write actions (publish, save, follow, like, delete) must be authenticated server-side before executing.
