@@ -55,6 +55,8 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
   const [deletingPostId, setDeletingPostId]   = useState(null);
   const [editingPost, setEditingPost]         = useState(null);
   const [loadingTab, setLoadingTab]           = useState(false);
+  const [showAvatarLightbox, setShowAvatarLightbox] = useState(false);
+  const [avatarZoom, setAvatarZoom]           = useState(1);
 
   const isOwn = user && ((user.handle || '').replace('@','') === handle);
 
@@ -312,7 +314,9 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
             <div style={{ padding:'0 28px 24px', position:'relative' }}>
 
               {/* Avatar */}
-              <div style={{ width:80, height:80, borderRadius:'50%', border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)', overflow:'hidden', flexShrink:0 }}>
+              <div
+                onClick={() => profile.avatar_url && setShowAvatarLightbox(true)}
+                style={{ width:80, height:80, borderRadius:'50%', border:'4px solid #fff', position:'absolute', top:-40, left:28, boxShadow:'0 4px 16px rgba(0,0,0,.15)', overflow:'hidden', flexShrink:0, cursor: profile.avatar_url ? 'zoom-in' : 'default' }}>
                 {profile.avatar_url
                   ? <img src={profile.avatar_url} alt={profile.name} style={{ width:'100%', height:'100%', objectFit:'cover', display:'block' }}/>
                   : <div style={{ width:'100%', height:'100%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:24, fontWeight:900 }}>{initials}</div>
@@ -660,6 +664,53 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
         </div>
       </div>
       <Footer/>
+
+      {/* ── Avatar Lightbox ── */}
+      {showAvatarLightbox && profile.avatar_url && (
+        <div
+          onClick={() => { setShowAvatarLightbox(false); setAvatarZoom(1); }}
+          style={{ position:'fixed', inset:0, zIndex:9000, background:'rgba(0,0,0,.88)', backdropFilter:'blur(6px)', display:'flex', flexDirection:'column', alignItems:'center', justifyContent:'center' }}>
+
+          {/* Photo */}
+          <div onClick={e => e.stopPropagation()} style={{ position:'relative', display:'flex', alignItems:'center', justifyContent:'center' }}>
+            <img
+              src={profile.avatar_url}
+              alt={profile.name}
+              style={{ maxWidth:'min(90vw, 520px)', maxHeight:'70vh', borderRadius: avatarZoom > 1 ? 0 : 20, objectFit:'contain', boxShadow:'0 24px 80px rgba(0,0,0,.5)', transform:`scale(${avatarZoom})`, transition:'transform .2s ease', transformOrigin:'center center', display:'block' }}
+            />
+          </div>
+
+          {/* Zoom + Close controls */}
+          <div onClick={e => e.stopPropagation()} style={{ marginTop:24, display:'flex', alignItems:'center', gap:12 }}>
+            <button
+              onClick={() => setAvatarZoom(z => Math.max(0.5, +(z - 0.25).toFixed(2)))}
+              style={{ width:44, height:44, borderRadius:'50%', border:'none', background:'rgba(255,255,255,.15)', color:'#fff', fontSize:22, cursor:'pointer', display:'grid', placeItems:'center', backdropFilter:'blur(4px)', transition:'background .15s' }}
+              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.28)'}
+              onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,.15)'}>
+              −
+            </button>
+            <span style={{ color:'rgba(255,255,255,.7)', fontSize:13, fontWeight:700, minWidth:48, textAlign:'center' }}>
+              {Math.round(avatarZoom * 100)}%
+            </span>
+            <button
+              onClick={() => setAvatarZoom(z => Math.min(3, +(z + 0.25).toFixed(2)))}
+              style={{ width:44, height:44, borderRadius:'50%', border:'none', background:'rgba(255,255,255,.15)', color:'#fff', fontSize:22, cursor:'pointer', display:'grid', placeItems:'center', backdropFilter:'blur(4px)', transition:'background .15s' }}
+              onMouseEnter={e => e.currentTarget.style.background='rgba(255,255,255,.28)'}
+              onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,.15)'}>
+              +
+            </button>
+            <button
+              onClick={() => { setShowAvatarLightbox(false); setAvatarZoom(1); }}
+              style={{ marginLeft:12, width:44, height:44, borderRadius:'50%', border:'none', background:'rgba(255,255,255,.15)', color:'#fff', fontSize:18, cursor:'pointer', display:'grid', placeItems:'center', backdropFilter:'blur(4px)', transition:'background .15s' }}
+              onMouseEnter={e => e.currentTarget.style.background='rgba(255,100,80,.5)'}
+              onMouseLeave={e => e.currentTarget.style.background='rgba(255,255,255,.15)'}>
+              ✕
+            </button>
+          </div>
+
+          <p style={{ marginTop:14, color:'rgba(255,255,255,.4)', fontSize:12 }}>Click outside to close</p>
+        </div>
+      )}
 
       {/* ── Write Post / Article modal ── */}
       {showPostModal && (
