@@ -69,6 +69,14 @@ export default function AdminLayout() {
   const [editSaving,      setEditSaving]      = useState(false);
   const avatarInputRef = useRef(null);
 
+  const CROP_SIZE = 220;
+  const [cropSrc,         setCropSrc]         = useState('');
+  const [cropScale,       setCropScale]       = useState(1);
+  const [cropOffset,      setCropOffset]      = useState({ x: 0, y: 0 });
+  const [cropNatural,     setCropNatural]     = useState({ w: 1, h: 1 });
+  const [cropUploading,   setCropUploading]   = useState(false);
+  const cropDragRef = useRef(null);
+
   const openEditProfile = () => {
     setEditName(user?.admin_display_name || user?.name || '');
     setEditAvatar(user?.admin_avatar_url || '');
@@ -78,47 +86,86 @@ export default function AdminLayout() {
   const handleAvatarFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    const inputEl = e.target;
-    const MAX = 500;
+    e.target.value = '';
     const reader = new FileReader();
     reader.onerror = () => toast.error('Could not read the image file');
     reader.onload = (ev) => {
-      const img = new Image();
-      img.onerror = () => toast.error('Could not load image');
-      img.onload = () => {
-        try {
-          const scale = Math.min(MAX / img.width, MAX / img.height, 1);
-          const w = Math.max(1, Math.round(img.width * scale));
-          const h = Math.max(1, Math.round(img.height * scale));
-          const canvas = document.createElement('canvas');
-          canvas.width = w; canvas.height = h;
-          const ctx = canvas.getContext('2d');
-          ctx.drawImage(img, 0, 0, w, h);
-          canvas.toBlob((blob) => {
-            if (!blob) { toast.error('Image processing failed'); return; }
-            const fd = new FormData();
-            fd.append('file', blob, 'avatar.jpg');
-            const token = localStorage.getItem('tlmena_admin_token');
-            fetch('/api/upload', {
-              method: 'POST',
-              headers: { Authorization: `Bearer ${token}` },
-              body: fd,
-            })
-              .then(r => r.json())
-              .then(d => {
-                if (d.url) setEditAvatar(d.url);
-                else toast.error('Upload failed: ' + (d.message || 'unknown error'));
-              })
-              .catch(err => toast.error('Upload failed: ' + (err.message || 'network error')))
-              .finally(() => { inputEl.value = ''; });
-          }, 'image/jpeg', 0.88);
-        } catch(err) {
-          toast.error('Image processing error: ' + err.message);
-        }
-      };
-      img.src = ev.target.result;
+      setCropSrc(ev.target.result);
+      setCropScale(1);
+      setCropOffset({ x: 0, y: 0 });
     };
     reader.readAsDataURL(file);
+  };
+
+  const handleCropImgLoad = (e) => {
+    setCropNatural({ w: e.target.naturalWidth, h: e.target.naturalHeight });
+  };
+
+  const handleCropPointerDown = (e) => {
+    e.preventDefault();
+    const clientX = e.touches ? e.touches[0].clientX : e.clientX;
+    const clientY = e.touches ? e.touches[0].clientY : e.clientY;
+    cropDragRef.current = { startX: clientX - cropOffset.x, startY: clientY - cropOffset.y };
+    const onMove = (ev) => {
+      const cx = ev.touches ? ev.touches[0].clientX : ev.clientX;
+      const cy = ev.touches ? ev.touches[0].clientY : ev.clientY;
+      setCropOffset({ x: cx - cropDragRef.current.startX, y: cy - cropDragRef.current.startY });
+    };
+    const onUp = () => {
+      document.removeEventListener('mousemove', onMove);
+      document.removeEventListener('mouseup', onUp);
+      document.removeEventListener('touchmove', onMove);
+      document.removeEventListener('touchend', onUp);
+      cropDragRef.current = null;
+    };
+    document.addEventListener('mousemove', onMove);
+    document.addEventListener('mouseup', onUp);
+    document.addEventListener('touchmove', onMove, { passive: false });
+    document.addEventListener('touchend', onUp);
+  };
+
+  const applyCrop = () => {
+    const { w: natW, h: natH } = cropNatural;
+    if (!cropSrc || !natW || !natH) return;
+    const coverScale = Math.max(CROP_SIZE / natW, CROP_SIZE / natH);
+    const totalScale = coverScale * cropScale;
+    const dispW = natW * totalScale;
+    const dispH = natH * totalScale;
+    const imgLeft = (CROP_SIZE - dispW) / 2 + cropOffset.x;
+    const imgTop  = (CROP_SIZE - dispH) / 2 + cropOffset.y;
+    const srcX = -imgLeft / totalScale;
+    const srcY = -imgTop  / totalScale;
+    const srcW = CROP_SIZE / totalScale;
+    const srcH = CROP_SIZE / totalScale;
+    const OUT = 500;
+    const canvas = document.createElement('canvas');
+    canvas.width = OUT; canvas.height = OUT;
+    const ctx = canvas.getContext('2d');
+    const img = new Image();
+    img.onerror = () => toast.error('Could not process image');
+    img.onload = () => {
+      ctx.drawImage(img, srcX, srcY, srcW, srcH, 0, 0, OUT, OUT);
+      canvas.toBlob((blob) => {
+        if (!blob) { toast.error('Image processing failed'); return; }
+        setCropUploading(true);
+        const fd = new FormData();
+        fd.append('file', blob, 'avatar.jpg');
+        const token = localStorage.getItem('tlmena_admin_token');
+        fetch('/api/upload', {
+          method: 'POST',
+          headers: { Authorization: `Bearer ${token}` },
+          body: fd,
+        })
+          .then(r => r.json())
+          .then(d => {
+            if (d.url) { setEditAvatar(d.url); setCropSrc(''); }
+            else toast.error('Upload failed: ' + (d.message || 'unknown error'));
+          })
+          .catch(err => toast.error('Upload failed: ' + (err.message || 'network error')))
+          .finally(() => setCropUploading(false));
+      }, 'image/jpeg', 0.88);
+    };
+    img.src = cropSrc;
   };
 
   const submitEditProfile = async () => {
@@ -379,6 +426,76 @@ export default function AdminLayout() {
           </div>
         </div>
       )}
+
+      {/* Crop / Resize overlay */}
+      {cropSrc && (() => {
+        const coverScale = cropNatural.w && cropNatural.h
+          ? Math.max(CROP_SIZE / cropNatural.w, CROP_SIZE / cropNatural.h) : 1;
+        const dispW = cropNatural.w * coverScale * cropScale;
+        const dispH = cropNatural.h * coverScale * cropScale;
+        const imgLeft = (CROP_SIZE - dispW) / 2 + cropOffset.x;
+        const imgTop  = (CROP_SIZE - dispH) / 2 + cropOffset.y;
+        return (
+          <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.82)',zIndex:10001,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(6px)'}}>
+            <div style={{background:'#fff',borderRadius:22,padding:'32px 28px',width:300,maxWidth:'92vw',display:'flex',flexDirection:'column',alignItems:'center',gap:18,boxShadow:'0 28px 80px rgba(0,0,0,.35)'}}>
+              <div style={{fontSize:17,fontWeight:800,color:'#0A0A0A'}}>Crop Photo</div>
+              <div style={{fontSize:12,color:'#aaa',marginTop:-14,textAlign:'center'}}>Drag to reposition · Slider to zoom</div>
+
+              {/* Circle crop preview */}
+              <div
+                style={{width:CROP_SIZE,height:CROP_SIZE,borderRadius:'50%',overflow:'hidden',background:'#f0f0f0',position:'relative',cursor:'grab',border:'3px solid #e0e0e0',flexShrink:0,touchAction:'none'}}
+                onMouseDown={handleCropPointerDown}
+                onTouchStart={handleCropPointerDown}
+              >
+                <img
+                  src={cropSrc}
+                  alt="crop preview"
+                  draggable={false}
+                  onLoad={handleCropImgLoad}
+                  style={{
+                    position:'absolute',
+                    width: dispW,
+                    height: dispH,
+                    left: imgLeft,
+                    top: imgTop,
+                    userSelect:'none',
+                    pointerEvents:'none',
+                  }}
+                />
+              </div>
+
+              {/* Zoom slider */}
+              <div style={{width:'100%',display:'flex',alignItems:'center',gap:10}}>
+                <span style={{fontSize:18,color:'#bbb',lineHeight:1,cursor:'pointer',userSelect:'none'}} onClick={()=>setCropScale(s=>Math.max(1,+(s-0.1).toFixed(2)))}>−</span>
+                <input
+                  type="range" min="1" max="4" step="0.02"
+                  value={cropScale}
+                  onChange={e=>setCropScale(parseFloat(e.target.value))}
+                  style={{flex:1,accentColor:'var(--orange)',height:4,cursor:'pointer'}}
+                />
+                <span style={{fontSize:18,color:'#bbb',lineHeight:1,cursor:'pointer',userSelect:'none'}} onClick={()=>setCropScale(s=>Math.min(4,+(s+0.1).toFixed(2)))}>+</span>
+              </div>
+              <div style={{fontSize:11,color:'#ccc',marginTop:-10}}>{Math.round(cropScale * 100)}% zoom</div>
+
+              {/* Buttons */}
+              <div style={{display:'flex',gap:10,width:'100%'}}>
+                <button
+                  onClick={()=>setCropSrc('')}
+                  disabled={cropUploading}
+                  style={{flex:1,padding:'11px',borderRadius:10,border:'1.5px solid #e8e8e8',background:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',color:'#555',fontFamily:'inherit'}}>
+                  Cancel
+                </button>
+                <button
+                  onClick={applyCrop}
+                  disabled={cropUploading}
+                  style={{flex:2,padding:'11px',borderRadius:10,border:'none',background:'var(--orange)',color:'#fff',fontSize:13,fontWeight:700,cursor:cropUploading?'not-allowed':'pointer',opacity:cropUploading?0.7:1,fontFamily:'inherit'}}>
+                  {cropUploading ? 'Uploading…' : 'Use Photo'}
+                </button>
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       <div className="admin-main">
         {/* Topbar */}
