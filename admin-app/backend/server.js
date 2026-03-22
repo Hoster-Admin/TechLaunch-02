@@ -1053,7 +1053,7 @@ admin.get('/platform-profile', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
-admin.put('/platform-profile', async (req, res) => {
+admin.put('/platform-profile', express.json({ limit: '5mb' }), async (req, res) => {
   if (req.user.role !== 'admin') return res.status(403).json({ success:false, message:'Admin only' });
   try {
     const { name, avatar_url } = req.body;
@@ -1683,37 +1683,22 @@ admin.delete('/tags/:id/assign', async (req, res) => {
 app.use('/api/admin', admin);
 
 // ─── FILE UPLOADS ─────────────────────────────────────────────────────────────
-const fs     = require('fs');
-const uploadsDir = path.join(__dirname, '../../backend/uploads');
-if (!fs.existsSync(uploadsDir)) fs.mkdirSync(uploadsDir, { recursive: true });
-
-const uploadStorage = multer.diskStorage({
-  destination: (req, file, cb) => cb(null, uploadsDir),
-  filename:    (req, file, cb) => {
-    const ext  = path.extname(file.originalname).toLowerCase() || '.jpg';
-    cb(null, Date.now() + '-' + Math.random().toString(36).slice(2,8) + ext);
-  },
-});
 const adminUpload = multer({
-  storage: uploadStorage,
-  limits:  { fileSize: 5 * 1024 * 1024 },
+  storage: multer.memoryStorage(),
+  limits:  { fileSize: 2 * 1024 * 1024 },
   fileFilter: (req, file, cb) => {
     const ok = /image\/(jpeg|jpg|png|gif|webp|svg\+xml)/.test(file.mimetype);
     cb(ok ? null : new Error('Only image files allowed'), ok);
   },
 });
 
+// Returns image as base64 data URL — persists across restarts since it's stored in the DB
 app.post('/api/upload', authenticate, adminUpload.single('file'), (req, res) => {
   if (!req.file) return res.status(400).json({ success:false, message:'No file uploaded' });
-  const base = process.env.REPLIT_DOMAINS
-    ? 'https://' + process.env.REPLIT_DOMAINS.split(',')[0].trim()
-    : `${req.protocol}://${req.get('host')}`;
-  const url = `${base}/uploads/${req.file.filename}`;
-  res.json({ success:true, url, filename: req.file.filename });
+  const b64 = req.file.buffer.toString('base64');
+  const url  = `data:${req.file.mimetype};base64,${b64}`;
+  res.json({ success:true, url });
 });
-
-// Serve uploaded files (forwarded from public backend at port 3001, but also reachable here)
-app.use('/uploads', express.static(uploadsDir, { maxAge:'7d', immutable:true }));
 
 // ─── PUBLIC API — /api/* ──────────────────────────────────────────────────────
 const apiLimiter = rateLimit({

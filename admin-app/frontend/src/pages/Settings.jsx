@@ -374,6 +374,7 @@ function PlatformProfileCard({ isAdmin }) {
 
   const handleUpload = async (file) => {
     if (!file) return;
+    if (file.size > 2 * 1024 * 1024) return toast.error('Image must be under 2 MB');
     setUploading(true);
     try {
       const fd = new FormData();
@@ -383,7 +384,7 @@ function PlatformProfileCard({ isAdmin }) {
       const data = await res.json();
       if (!res.ok) throw new Error(data.message || 'Upload failed');
       handleChange('avatar_url', data.url);
-      toast.success('Logo uploaded');
+      toast.success('Logo ready — click Save to apply');
     } catch(e) { toast.error(e.message || 'Upload failed'); }
     finally { setUploading(false); }
   };
