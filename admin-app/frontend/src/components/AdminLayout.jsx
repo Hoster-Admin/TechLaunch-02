@@ -78,34 +78,47 @@ export default function AdminLayout() {
   const handleAvatarFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
+    const inputEl = e.target;
     const MAX = 500;
     const reader = new FileReader();
+    reader.onerror = () => toast.error('Could not read the image file');
     reader.onload = (ev) => {
       const img = new Image();
+      img.onerror = () => toast.error('Could not load image');
       img.onload = () => {
-        const scale = Math.min(MAX / img.width, MAX / img.height, 1);
-        const w = Math.round(img.width * scale);
-        const h = Math.round(img.height * scale);
-        const canvas = document.createElement('canvas');
-        canvas.width = w; canvas.height = h;
-        canvas.getContext('2d').drawImage(img, 0, 0, w, h);
-        canvas.toBlob((blob) => {
-          const fd = new FormData();
-          fd.append('file', blob, 'avatar.jpg');
-          const token = localStorage.getItem('tlmena_admin_token');
-          fetch('/api/upload', { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd })
-            .then(r => r.json())
-            .then(d => {
-              if (d.url) setEditAvatar(d.url);
-              else toast.error('Upload failed: ' + (d.message || 'unknown error'));
+        try {
+          const scale = Math.min(MAX / img.width, MAX / img.height, 1);
+          const w = Math.max(1, Math.round(img.width * scale));
+          const h = Math.max(1, Math.round(img.height * scale));
+          const canvas = document.createElement('canvas');
+          canvas.width = w; canvas.height = h;
+          const ctx = canvas.getContext('2d');
+          ctx.drawImage(img, 0, 0, w, h);
+          canvas.toBlob((blob) => {
+            if (!blob) { toast.error('Image processing failed'); return; }
+            const fd = new FormData();
+            fd.append('file', blob, 'avatar.jpg');
+            const token = localStorage.getItem('tlmena_admin_token');
+            fetch('/api/upload', {
+              method: 'POST',
+              headers: { Authorization: `Bearer ${token}` },
+              body: fd,
             })
-            .catch(() => toast.error('Image upload failed'));
-        }, 'image/jpeg', 0.90);
+              .then(r => r.json())
+              .then(d => {
+                if (d.url) setEditAvatar(d.url);
+                else toast.error('Upload failed: ' + (d.message || 'unknown error'));
+              })
+              .catch(err => toast.error('Upload failed: ' + (err.message || 'network error')))
+              .finally(() => { inputEl.value = ''; });
+          }, 'image/jpeg', 0.88);
+        } catch(err) {
+          toast.error('Image processing error: ' + err.message);
+        }
       };
       img.src = ev.target.result;
     };
     reader.readAsDataURL(file);
-    e.target.value = '';
   };
 
   const submitEditProfile = async () => {
@@ -312,28 +325,34 @@ export default function AdminLayout() {
             <div style={{fontSize:13,color:'#888',marginBottom:24}}>Update your name and photo</div>
 
             {/* Avatar picker */}
-            <div style={{display:'flex',justifyContent:'center',marginBottom:22}}>
-              <div style={{position:'relative',cursor:'pointer'}} onClick={()=>avatarInputRef.current?.click()}>
-                <div style={{width:76,height:76,borderRadius:'50%',overflow:'hidden',background:user?.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:700,color:'#fff',border:'3px solid var(--gray-200)'}}>
+            <div style={{display:'flex',flexDirection:'column',alignItems:'center',marginBottom:22,gap:8}}>
+              <label htmlFor="admin-avatar-file-input" style={{cursor:'pointer',position:'relative',display:'block'}}>
+                <div style={{width:80,height:80,borderRadius:'50%',overflow:'hidden',background:user?.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:26,fontWeight:700,color:'#fff',border:'3px solid #e8e8e8'}}>
                   {editAvatar
                     ? <img src={editAvatar} alt="avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
                     : (editName||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
                   }
                 </div>
-                <div style={{position:'absolute',bottom:0,right:0,background:'var(--orange)',borderRadius:'50%',width:24,height:24,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}}>
+                <div style={{position:'absolute',bottom:0,right:0,background:'var(--orange)',borderRadius:'50%',width:26,height:26,display:'flex',alignItems:'center',justifyContent:'center',border:'3px solid #fff',boxShadow:'0 2px 6px rgba(0,0,0,.18)'}}>
                   <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#fff" strokeWidth="2.5">
                     <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
                     <circle cx="12" cy="13" r="3"/>
                   </svg>
                 </div>
-              </div>
-              <input ref={avatarInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleAvatarFile}/>
+              </label>
+              <input
+                id="admin-avatar-file-input"
+                ref={avatarInputRef}
+                type="file"
+                accept="image/jpeg,image/jpg,image/png,image/webp,image/gif"
+                style={{display:'none'}}
+                onChange={handleAvatarFile}
+              />
+              {editAvatar
+                ? <button onClick={()=>setEditAvatar('')} style={{background:'none',border:'none',fontSize:11,color:'#aaa',cursor:'pointer',textDecoration:'underline',padding:0}}>Remove photo</button>
+                : <span style={{fontSize:11,color:'#aaa'}}>Click photo to upload</span>
+              }
             </div>
-            {editAvatar && (
-              <div style={{textAlign:'center',marginBottom:14}}>
-                <button onClick={()=>setEditAvatar('')} style={{background:'none',border:'none',fontSize:11,color:'#aaa',cursor:'pointer',textDecoration:'underline'}}>Remove photo</button>
-              </div>
-            )}
 
             {/* Name field */}
             <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>Display Name</label>
