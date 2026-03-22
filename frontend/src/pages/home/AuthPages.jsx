@@ -41,6 +41,22 @@ export function LoginPage() {
   const [form, setForm]     = useState({ email:'', password:'' });
   const [errors, setErrors] = useState({});
   const [loading, setLoading] = useState(false);
+  const [showForgot, setShowForgot] = useState(false);
+  const [fpEmail, setFpEmail]       = useState('');
+  const [fpLoading, setFpLoading]   = useState(false);
+  const [fpSent, setFpSent]         = useState(false);
+
+  const handleForgot = async (e) => {
+    e.preventDefault();
+    if (!fpEmail.trim()) return;
+    setFpLoading(true);
+    try {
+      await api.post('/auth/forgot-password', { email: fpEmail.trim() });
+      setFpSent(true);
+    } catch {
+      setFpSent(true); // Always show success to prevent email enumeration
+    } finally { setFpLoading(false); }
+  };
 
   const set = k => e => setForm(p => ({ ...p, [k]: e.target.value }));
 
@@ -77,35 +93,86 @@ export function LoginPage() {
         </div>
 
         <div style={cardStyle}>
-          {errors.general && (
-            <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'12px 16px', borderRadius:10, marginBottom:20, fontWeight:500 }}>
-              {errors.general}
-            </div>
+          {showForgot ? (
+            fpSent ? (
+              <div style={{ textAlign:'center', padding:'8px 0' }}>
+                <div style={{ fontSize:40, marginBottom:12 }}>📬</div>
+                <p style={{ fontSize:15, fontWeight:700, color:'#0a0a0a', marginBottom:8 }}>Check your email</p>
+                <p style={{ fontSize:13, color:'#888', marginBottom:20, lineHeight:1.6 }}>
+                  If <strong>{fpEmail}</strong> is registered, a reset link is on its way.
+                </p>
+                <button onClick={() => { setShowForgot(false); setFpSent(false); setFpEmail(''); }}
+                  style={{ fontSize:13, color:'var(--orange)', fontWeight:700, background:'none', border:'none', cursor:'pointer' }}>
+                  Back to Sign In
+                </button>
+              </div>
+            ) : (
+              <>
+                <p style={{ fontSize:14, color:'#555', marginBottom:20, lineHeight:1.6 }}>
+                  Enter your email and we'll send you a reset link.
+                </p>
+                <form onSubmit={handleForgot}>
+                  <div style={{ marginBottom:20 }}>
+                    <label style={labelStyle}>Email</label>
+                    <input type="email" value={fpEmail} onChange={e => setFpEmail(e.target.value)}
+                      placeholder="you@example.com" autoComplete="email"
+                      style={inputStyle(false)}
+                      onFocus={e => e.target.style.borderColor='var(--orange)'}
+                      onBlur={e => e.target.style.borderColor='#e8e8e8'}/>
+                  </div>
+                  <button type="submit" disabled={fpLoading || !fpEmail.trim()}
+                    style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', opacity:(fpLoading||!fpEmail.trim())?.75:1, fontFamily:"'DM Sans',sans-serif" }}>
+                    {fpLoading ? 'Sending…' : 'Send Reset Link'}
+                  </button>
+                </form>
+                <p style={{ textAlign:'center', fontSize:13, color:'#888', marginTop:20 }}>
+                  <button onClick={() => { setShowForgot(false); setFpEmail(''); }}
+                    style={{ fontSize:13, color:'var(--orange)', fontWeight:700, background:'none', border:'none', cursor:'pointer' }}>
+                    Back to Sign In
+                  </button>
+                </p>
+              </>
+            )
+          ) : (
+            <>
+              {errors.general && (
+                <div style={{ background:'#fef2f2', border:'1px solid #fecaca', color:'#dc2626', fontSize:13, padding:'12px 16px', borderRadius:10, marginBottom:20, fontWeight:500 }}>
+                  {errors.general}
+                </div>
+              )}
+              <form onSubmit={handleSubmit}>
+                <div style={{ marginBottom:16 }}>
+                  <label style={labelStyle}>Email</label>
+                  <input type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" autoComplete="email"
+                    style={inputStyle(errors.email)}
+                    onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor=errors.email?'#dc2626':'#e8e8e8'}/>
+                  {errors.email && <div style={errStyle}>{errors.email}</div>}
+                </div>
+                <div style={{ marginBottom:8 }}>
+                  <div style={{ display:'flex', justifyContent:'space-between', alignItems:'center', marginBottom:5 }}>
+                    <label style={labelStyle}>Password</label>
+                    <button type="button" onClick={() => { setShowForgot(true); setFpEmail(form.email); }}
+                      style={{ fontSize:12, fontWeight:600, color:'var(--orange)', background:'none', border:'none', cursor:'pointer', padding:0 }}>
+                      Forgot password?
+                    </button>
+                  </div>
+                  <input type="password" value={form.password} onChange={set('password')} placeholder="Your password" autoComplete="current-password"
+                    style={inputStyle(errors.password)}
+                    onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor=errors.password?'#dc2626':'#e8e8e8'}/>
+                  {errors.password && <div style={errStyle}>{errors.password}</div>}
+                </div>
+                <div style={{ marginBottom:24 }}/>
+                <button type="submit" disabled={loading}
+                  style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', opacity:loading?.75:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>
+                  {loading ? 'Signing in…' : 'Sign In'}
+                </button>
+              </form>
+              <p style={{ textAlign:'center', fontSize:13, color:'#888', marginTop:20 }}>
+                Don't have an account?{' '}
+                <Link to="/register" style={{ color:'var(--orange)', fontWeight:700, textDecoration:'none' }}>Join Tech Launch</Link>
+              </p>
+            </>
           )}
-          <form onSubmit={handleSubmit}>
-            <div style={{ marginBottom:16 }}>
-              <label style={labelStyle}>Email</label>
-              <input type="email" value={form.email} onChange={set('email')} placeholder="you@example.com" autoComplete="email"
-                style={inputStyle(errors.email)}
-                onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor=errors.email?'#dc2626':'#e8e8e8'}/>
-              {errors.email && <div style={errStyle}>{errors.email}</div>}
-            </div>
-            <div style={{ marginBottom:24 }}>
-              <label style={labelStyle}>Password</label>
-              <input type="password" value={form.password} onChange={set('password')} placeholder="Your password" autoComplete="current-password"
-                style={inputStyle(errors.password)}
-                onFocus={e => e.target.style.borderColor='var(--orange)'} onBlur={e => e.target.style.borderColor=errors.password?'#dc2626':'#e8e8e8'}/>
-              {errors.password && <div style={errStyle}>{errors.password}</div>}
-            </div>
-            <button type="submit" disabled={loading}
-              style={{ width:'100%', padding:'13px 0', borderRadius:12, background:'var(--orange)', border:'none', color:'#fff', fontSize:15, fontWeight:800, cursor:'pointer', opacity:loading?.75:1, transition:'opacity .15s', fontFamily:"'DM Sans',sans-serif" }}>
-              {loading ? 'Signing in…' : 'Sign In'}
-            </button>
-          </form>
-          <p style={{ textAlign:'center', fontSize:13, color:'#888', marginTop:20 }}>
-            Don't have an account?{' '}
-            <Link to="/register" style={{ color:'var(--orange)', fontWeight:700, textDecoration:'none' }}>Join Tech Launch</Link>
-          </p>
         </div>
       </div>
     </div>
