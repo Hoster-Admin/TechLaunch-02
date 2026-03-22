@@ -3,6 +3,7 @@ import { useParams, useNavigate } from 'react-router-dom';
 import { Helmet } from 'react-helmet-async';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
+import LogoPlaceholder from '../../components/common/LogoPlaceholder';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
@@ -328,9 +329,12 @@ export default function ProductDetailPage({ onSignIn, onSignUp }) {
 
           {/* Header */}
           <div style={{ display:'flex', alignItems:'flex-start', gap:20, marginBottom:16 }}>
-            <div style={{ width:72, height:72, borderRadius:20, background:'#f5f5f5', border:'1px solid #e8e8e8', display:'grid', placeItems:'center', fontSize:34, flexShrink:0 }}>
-              {p.logo_emoji || p.logo || '🚀'}
-            </div>
+            {p.logo_url
+              ? <div style={{ width:72, height:72, borderRadius:20, overflow:'hidden', flexShrink:0, border:'1px solid #e8e8e8' }}>
+                  <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} />
+                </div>
+              : <LogoPlaceholder name={p.name} size={72} radius={20} />
+            }
             <div style={{ flex:1, minWidth:0 }}>
               <h1 style={{ fontSize:26, fontWeight:900, letterSpacing:'-.03em', margin:'0 0 4px' }}>{p.name}</h1>
               <p style={{ fontSize:15, color:'#555', margin:0, lineHeight:1.5 }}>{p.tagline}</p>

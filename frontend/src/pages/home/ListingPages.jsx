@@ -6,6 +6,7 @@ import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
 import { MENA_COUNTRIES } from '../../utils/menaCountries';
 import { INDUSTRIES, INDUSTRY_ICONS } from '../../utils/menaIndustries';
+import LogoPlaceholder from '../../components/common/LogoPlaceholder';
 
 const STAGE_COLORS = {
   'Ideation Stage':{ bg:'#f0fdf4', color:'#15803d' },
@@ -108,15 +109,13 @@ function FilterDropdown({ label, icon, options, selected, onToggle, onReset, get
   );
 }
 
-function LogoBox({ item, size=56, radius=16, fontSize=28 }) {
-  return (
-    <div style={{ width:size, height:size, borderRadius:radius, background:'#f5f5f5', border:'1px solid #eee', display:'grid', placeItems:'center', fontSize, flexShrink:0, overflow:'hidden' }}>
-      {item.logo_url
-        ? <img src={item.logo_url} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={ev => { ev.currentTarget.style.display='none'; ev.currentTarget.nextSibling.style.display='block'; }} />
-        : null}
-      <span style={{ display: item.logo_url ? 'none' : 'block' }}>{item.icon}</span>
-    </div>
-  );
+function LogoBox({ item, size=56, radius=16 }) {
+  const [imgErr, setImgErr] = React.useState(false);
+  return item.logo_url && !imgErr
+    ? <div style={{ width:size, height:size, borderRadius:radius, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}>
+        <img src={item.logo_url} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={() => setImgErr(true)} />
+      </div>
+    : <LogoPlaceholder name={item.name} size={size} radius={radius} />;
 }
 
 function StartupCard({ item, onClick }) {
@@ -176,10 +175,7 @@ function EntityCard({ item, type, teamMembers, onClick }) {
     <div className="entity-card" onClick={onClick}>
       <div className="entity-card-top">
         <div className="entity-logo" style={{ overflow:'hidden' }}>
-          {item.logo_url
-            ? <img src={item.logo_url} alt={item.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }} onError={ev => { ev.currentTarget.style.display='none'; ev.currentTarget.nextSibling.style.display='block'; }} />
-            : null}
-          <span style={{ display: item.logo_url ? 'none' : 'block' }}>{item.icon}</span>
+          <LogoBox item={item} size={52} radius={14} />
         </div>
         <div className="entity-name-row">
           <div className="entity-name">{item.name}</div>

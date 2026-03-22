@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { productsAPI, usersAPI, entitiesAPI } from '../../utils/api';
 import { useUI } from '../../context/UIContext';
+import LogoPlaceholder from '../common/LogoPlaceholder';
 
 const COLOR_MAP = {
   orange:'#E15033', violet:'#7c3aed', blue:'#2563eb', emerald:'#059669',
@@ -116,11 +117,10 @@ export default function SearchDropdown({ query, onClose }) {
               style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
               onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
               onMouseOut={e => e.currentTarget.style.background=''}>
-              <div style={{ width:36, height:36, borderRadius:10, background:'#f4f4f4', display:'grid', placeItems:'center', fontSize:18, flexShrink:0, border:'1px solid #eee', overflow:'hidden' }}>
-                {ent.logo_url
-                  ? <img src={ent.logo_url} alt={ent.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/>
-                  : ent.logo_emoji || '🏢'}
-              </div>
+              {ent.logo_url
+                ? <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}><img src={ent.logo_url} alt={ent.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/></div>
+                : <LogoPlaceholder name={ent.name} size={36} radius={10} />
+              }
               <div style={{ minWidth:0, flex:1 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{ent.name}</div>
                 <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{ENTITY_TYPE_LABEL[ent.type] || ent.type} · {ent.country || 'MENA'}</div>
@@ -143,12 +143,10 @@ export default function SearchDropdown({ query, onClose }) {
               style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
               onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
               onMouseOut={e => e.currentTarget.style.background=''}>
-              <div style={{ width:36, height:36, borderRadius:10, background:'#f4f4f4', display:'grid', placeItems:'center', fontSize:18, flexShrink:0, border:'1px solid #eee', overflow:'hidden' }}>
-                {p.logo_url
-                  ? <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}
-                      onError={e => { e.currentTarget.style.display='none'; e.currentTarget.parentElement.textContent = p.logo_emoji || '📦'; }}/>
-                  : p.logo_emoji || '📦'}
-              </div>
+              {p.logo_url
+                ? <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}><img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/></div>
+                : <LogoPlaceholder name={p.name} size={36} radius={10} />
+              }
               <div style={{ minWidth:0, flex:1 }}>
                 <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}</div>
                 <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{p.industry} · {(p.countries || [])[0] || ''}</div>

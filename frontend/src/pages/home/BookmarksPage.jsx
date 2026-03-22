@@ -3,6 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
+import LogoPlaceholder from '../../components/common/LogoPlaceholder';
 import { useUI } from '../../context/UIContext';
 import { usersAPI, productsAPI } from '../../utils/api';
 
@@ -53,9 +54,10 @@ export default function BookmarksPage({ onSignIn, onSignUp }) {
                 <div key={p.id}
                   style={{ display:'flex', alignItems:'center', gap:14, padding:'14px 20px', borderBottom: i < items.length - 1 ? '1px solid #f4f4f4' : 'none', cursor:'pointer' }}
                   onClick={() => navigate(`/products/${p.id}`)}>
-                  <div style={{ width:40, height:40, borderRadius:10, background:'#f5f5f5', display:'flex', alignItems:'center', justifyContent:'center', fontSize:22, flexShrink:0 }}>
-                    {p.logo_emoji || '🚀'}
-                  </div>
+                  {p.logo_url
+                    ? <div style={{ width:40, height:40, borderRadius:10, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}><img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} /></div>
+                    : <LogoPlaceholder name={p.name} size={40} radius={10} />
+                  }
                   <div style={{ flex:1, minWidth:0 }}>
                     <div style={{ fontWeight:700, fontSize:14, marginBottom:2 }}>{p.name}</div>
                     <div style={{ fontSize:12, color:'#888', whiteSpace:'nowrap', overflow:'hidden', textOverflow:'ellipsis' }}>{p.tagline}</div>

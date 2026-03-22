@@ -3,6 +3,7 @@ import { useNavigate, useSearchParams } from 'react-router-dom';
 import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
+import LogoPlaceholder from '../../components/common/LogoPlaceholder';
 import { useUI } from '../../context/UIContext';
 import { productsAPI } from '../../utils/api';
 import { Spinner } from '../../components/ui';
@@ -237,9 +238,10 @@ export default function AllProductsPage({ onSignIn, onSignUp }) {
 
                     {/* Top row: logo + name + upvote */}
                     <div style={{ display:'flex', alignItems:'flex-start', gap:14 }}>
-                      <div style={{ width:52, height:52, borderRadius:14, background:'var(--gray-100)', display:'grid', placeItems:'center', fontSize:24, flexShrink:0 }}>
-                        {p.logo_emoji || '🚀'}
-                      </div>
+                      {p.logo_url
+                        ? <div style={{ width:52, height:52, borderRadius:14, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}><img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} /></div>
+                        : <LogoPlaceholder name={p.name} size={52} radius={14} />
+                      }
                       <div style={{ flex:1, minWidth:0 }}>
                         <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:4, flexWrap:'wrap' }}>
                           <span style={{ fontSize:15, fontWeight:800, color:'#0a0a0a', letterSpacing:'-.01em' }}>{p.name}</span>

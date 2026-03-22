@@ -3,6 +3,7 @@ import { productsAPI } from '../../utils/api';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
+import LogoPlaceholder from '../common/LogoPlaceholder';
 
 export default function ProductCard({ product, rank, onVote }) {
   const { user } = useAuth();
@@ -59,7 +60,7 @@ export default function ProductCard({ product, rank, onVote }) {
         {product.logo_url && !imgError
           ? <img src={product.logo_url} alt={product.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:'inherit' }}
               onError={() => setImgError(true)}/>
-          : <span style={{ fontSize: 26 }}>{product.logo_emoji || '🚀'}</span>
+          : <LogoPlaceholder name={product.name} size={48} radius={12} />
         }
       </div>
 

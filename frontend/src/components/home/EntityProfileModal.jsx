@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useUI } from '../../context/UIContext';
 import { useAuth } from '../../context/AuthContext';
+import LogoPlaceholder from '../common/LogoPlaceholder';
 
 const APPLY_TYPES    = new Set(['Accelerator', 'Venture Studio']);
 const INVESTOR_TYPES = new Set(['Investor']);
@@ -80,7 +81,6 @@ export default function EntityProfileModal() {
     : Array.isArray(e.focus) ? e.focus : null;
 
   const logoUrl  = e.logo_url || null;
-  const logoEmoji = e.logo_emoji || e.logo || e.icon || '🏢';
 
   // Parse why_us — try JSON array, fall back to newline-split plain text
   let whyUs = null;
@@ -116,12 +116,12 @@ export default function EntityProfileModal() {
 
           {/* Header */}
           <div style={{ display:'flex', alignItems:'flex-start', gap:20, marginBottom:16 }}>
-            <div style={{ width:72, height:72, borderRadius:20, background:'#f5f5f5', border:'1px solid #e8e8e8', display:'grid', placeItems:'center', fontSize:34, flexShrink:0, overflow:'hidden' }}>
-              {logoUrl
-                ? <img src={logoUrl} alt={e.name} style={{ width:'100%', height:'100%', objectFit:'cover', borderRadius:20 }} onError={ev => { ev.currentTarget.style.display='none'; ev.currentTarget.nextSibling.style.display='grid'; }} />
-                : null}
-              <span style={{ display: logoUrl ? 'none' : 'grid', placeItems:'center', width:'100%', height:'100%' }}>{logoEmoji}</span>
-            </div>
+            {logoUrl
+              ? <div style={{ width:72, height:72, borderRadius:20, overflow:'hidden', flexShrink:0, border:'1px solid #e8e8e8' }}>
+                  <img src={logoUrl} alt={e.name} style={{ width:'100%', height:'100%', objectFit:'cover' }} onError={ev => { ev.currentTarget.parentElement.replaceWith(Object.assign(document.createElement('div'), {})); }} />
+                </div>
+              : <LogoPlaceholder name={e.name} size={72} radius={20} />
+            }
             <div style={{ flex:1, minWidth:0 }}>
               <div style={{ display:'flex', alignItems:'center', gap:10, flexWrap:'wrap', marginBottom:4 }}>
                 <h1 style={{ fontSize:26, fontWeight:900, letterSpacing:'-.03em', margin:0 }}>{e.name}</h1>
