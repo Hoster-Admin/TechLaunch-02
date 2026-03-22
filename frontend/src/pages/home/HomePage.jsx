@@ -177,7 +177,7 @@ export default function HomePage() {
               <div className="filter-sidebar-label">🏭 Industry</div>
               <div className="country-dropdown-wrap" ref={industryWrapRef}>
                 <button className={`filter-sidebar-btn ${selectedIndustries.length ? 'active' : ''}`} onClick={openIndustryDD}>
-                  {selectedIndustries.length ? `${selectedIndustries.length} selected` : 'All Industries'} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
+                  {selectedIndustries.length === 0 ? 'All Industries' : selectedIndustries.length === 1 ? selectedIndustries[0] : `${selectedIndustries.length} industries`} <span style={{ fontSize: 10, marginLeft: 'auto' }}>▼</span>
                 </button>
                 {industryDDOpen && (
                   <div className="filter-sidebar-dd">

@@ -665,11 +665,16 @@ export default function UserProfilePage({ onSignIn, onSignUp }) {
       {showPostModal && (
         <SubmitPostModal
           onClose={() => setShowPostModal(false)}
-          onPublished={(published) => {
+          onPublished={async (published) => {
             setShowPostModal(false);
             const postType = published?.post_type || 'post';
             setActiveTab(postType === 'article' ? 'articles' : 'posts');
-            setLauncherPosts(null);
+            setLoadingTab(true);
+            try {
+              const { data } = await launcherAPI.userPosts(profile.id);
+              setLauncherPosts(data.data || []);
+            } catch { setLauncherPosts([]); }
+            finally { setLoadingTab(false); }
           }}
         />
       )}

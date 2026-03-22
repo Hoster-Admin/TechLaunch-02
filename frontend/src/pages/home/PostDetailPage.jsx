@@ -6,6 +6,7 @@ import { useUI } from '../../context/UIContext';
 import toast from 'react-hot-toast';
 import RichText from '../../components/home/RichText';
 import FormattingToolbar from '../../components/home/FormattingToolbar';
+import SubmitPostModal from '../../components/home/SubmitPostModal';
 
 const TAG_COLORS = {
   Milestone: { bg: '#f3e8ff', color: '#7c3aed' },
@@ -348,6 +349,7 @@ export default function PostDetailPage() {
   const [submitting, setSubmitting]   = useState(false);
   const [commentFocused, setCommentFocused] = useState(false);
   const [totalComments, setTotalComments]   = useState(0);
+  const [showEditModal, setShowEditModal]   = useState(false);
   const commentAreaRef = useRef(null);
   const commentBoxRef  = useRef(null);
 
@@ -435,9 +437,20 @@ export default function PostDetailPage() {
   );
 
   const tagStyle = TAG_COLORS[post.tag] || { bg: '#f1f5f9', color: '#475569' };
+  const isOwner = user && String(user.id) === String(post.user_id);
 
   return (
     <>
+      {showEditModal && (
+        <SubmitPostModal
+          editDraft={{ ...post, body: post.content, post_type: post.post_type || 'post', type: post.post_type || 'post' }}
+          onClose={() => setShowEditModal(false)}
+          onPublished={(updated) => {
+            if (updated) setPost(prev => ({ ...prev, ...updated, content: updated.content || updated.body || prev.content }));
+            setShowEditModal(false);
+          }}
+        />
+      )}
       <style>{`
         @keyframes slideDown {
           from { opacity: 0; transform: translateY(-6px); }
@@ -458,6 +471,18 @@ export default function PostDetailPage() {
               cursor: 'pointer', fontSize: 14, color: '#334155', fontWeight: 700,
               fontFamily: 'Inter,sans-serif', padding: '6px 10px 6px 6px', borderRadius: 8,
             }}>← Back</button>
+            {isOwner && (
+              <button onClick={() => setShowEditModal(true)} style={{
+                marginLeft: 'auto', display: 'flex', alignItems: 'center', gap: 5,
+                background: '#f8f8f8', border: '1.5px solid #e8e8e8', borderRadius: 8,
+                padding: '6px 14px', fontSize: 13, fontWeight: 700, cursor: 'pointer',
+                color: '#444', fontFamily: 'Inter,sans-serif',
+              }}
+              onMouseEnter={e => { e.currentTarget.style.borderColor='var(--orange)'; e.currentTarget.style.color='var(--orange)'; }}
+              onMouseLeave={e => { e.currentTarget.style.borderColor='#e8e8e8'; e.currentTarget.style.color='#444'; }}>
+                ✏️ Edit {post.post_type === 'article' ? 'Article' : 'Post'}
+              </button>
+            )}
           </div>
         </div>
 

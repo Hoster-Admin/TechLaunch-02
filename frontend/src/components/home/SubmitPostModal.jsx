@@ -190,7 +190,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
               {/* Title (articles only) */}
               {typeCfg?.fields.includes('title') && (
                 <div>
-                  <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:6 }}>Title *</label>
+                  <label style={{ fontSize:12, fontWeight:700, color:'#888', display:'block', marginBottom:6 }}>Title *</label>
                   <input value={title} onChange={e => setTitle(e.target.value)}
                     placeholder="Give your article a compelling title…"
                     style={{ ...inp, fontSize:18, fontWeight:700 }}
@@ -201,7 +201,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
 
               {/* Body */}
               <div style={{ flex:1 }}>
-                <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:6 }}>
+                <label style={{ fontSize:12, fontWeight:700, color:'#888', display:'block', marginBottom:6 }}>
                   {typeCfg?.bodyLabel || 'Content'} *
                 </label>
                 <FormattingToolbar textareaRef={bodyRef} value={body} setValue={setBody} />
@@ -218,7 +218,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
 
               {/* Media upload */}
               <div>
-                <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:8 }}>
+                <label style={{ fontSize:12, fontWeight:700, color:'#888', display:'block', marginBottom:8 }}>
                   {type === 'article' ? 'Cover Image (optional)' : 'Photo / Video (optional)'}
                 </label>
 
@@ -260,7 +260,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
               {/* Tag selector */}
               {tags.length > 0 && (
                 <div>
-                  <label style={{ fontSize:11, fontWeight:800, letterSpacing:'.06em', textTransform:'uppercase', color:'#aaa', display:'block', marginBottom:8 }}>Tag (optional)</label>
+                  <label style={{ fontSize:12, fontWeight:700, color:'#888', display:'block', marginBottom:8 }}>Tag (optional)</label>
                   <div style={{ display:'flex', gap:8, flexWrap:'wrap' }}>
                     {tags.map(t => (
                       <button key={t.id} onClick={() => setTagName(tagName === t.name ? '' : t.name)}
@@ -284,7 +284,7 @@ export default function SubmitPostModal({ onClose, editDraft = null, initialDraf
               <div style={{ display:'flex', gap:10 }}>
                 <button onClick={handlePublish} disabled={busy || charOver || !body.trim()}
                   style={{ padding:'10px 24px', borderRadius:12, border:'none', background: (!body.trim() || charOver) ? '#f0f0f0' : 'var(--orange)', color: (!body.trim() || charOver) ? '#bbb' : '#fff', fontSize:13, fontWeight:700, cursor: (!body.trim() || charOver) ? 'not-allowed' : 'pointer', transition:'all .15s', minWidth:130 }}>
-                  {uploading ? 'Uploading…' : publishing ? (draft?.id ? 'Saving…' : 'Publishing…') : draft?.id ? 'Save Changes →' : 'Publish →'}
+                  {uploading ? 'Uploading…' : publishing ? (draft?.id ? 'Updating…' : 'Publishing…') : draft?.id ? 'Update →' : 'Publish →'}
                 </button>
               </div>
             </div>

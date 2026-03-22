@@ -348,7 +348,7 @@ export default function SubmitProductModal({ open, onClose }) {
 
   return (
     <div onClick={handleOverlayClick} style={{ position:'fixed', inset:0, zIndex:2000, background:'rgba(0,0,0,.6)', backdropFilter:'blur(4px)', display:'flex', alignItems:'center', justifyContent:'center', padding:20 }}>
-      <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:540, maxHeight:'93vh', overflowY:'auto', padding:'32px 36px', position:'relative', boxShadow:'0 24px 80px rgba(0,0,0,.2)' }}>
+      <div style={{ background:'#fff', borderRadius:20, width:'100%', maxWidth:540, maxHeight:'93vh', overflowY:'auto', padding:'52px 36px 32px', position:'relative', boxShadow:'0 24px 80px rgba(0,0,0,.2)' }}>
 
         {/* ── Draft: restore prompt ── */}
         {draftPrompt === 'restore' && (

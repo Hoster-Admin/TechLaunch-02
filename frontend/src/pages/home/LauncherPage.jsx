@@ -328,10 +328,12 @@ function PostCard({ post, onDeleted, currentUser }) {
   );
 }
 
-function ArticleCard({ article, onClick, currentUser, onDeleted }) {
+function ArticleCard({ article, onClick, currentUser, onDeleted, onUpdated }) {
   const navigate = useNavigate();
   const [showMenu, setShowMenu] = useState(false);
   const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [showEditModal, setShowEditModal] = useState(false);
+  const [articleData, setArticleData] = useState(article);
   const menuRef = useRef(null);
   const tagStyle = TAG_COLORS[article.tag] || { bg: '#f4f4f4', color: '#555' };
   const excerpt = article.content ? article.content.slice(0, 160) + (article.content.length > 160 ? '…' : '') : '';
@@ -364,6 +366,17 @@ function ArticleCard({ article, onClick, currentUser, onDeleted }) {
         onCancel={() => setShowDeleteModal(false)}
       />
     )}
+    {showEditModal && (
+      <SubmitPostModal
+        editDraft={{ ...articleData, body: articleData.content, post_type: 'article', type: 'article' }}
+        onClose={() => setShowEditModal(false)}
+        onPublished={(updated) => {
+          if (updated) setArticleData(prev => ({ ...prev, ...updated, content: updated.content || updated.body || prev.content }));
+          setShowEditModal(false);
+          if (onUpdated) onUpdated(updated);
+        }}
+      />
+    )}
     <div onClick={onClick} style={{
       background: '#fff', border: '1.5px solid #f0f0f0', borderRadius: 16, padding: '22px 24px',
       cursor: 'pointer', transition: 'box-shadow .15s, border-color .15s', position: 'relative',
@@ -382,7 +395,7 @@ function ArticleCard({ article, onClick, currentUser, onDeleted }) {
               style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#bbb', fontSize: 20, padding: '2px 6px', lineHeight: 1, borderRadius: 6 }}>⋯</button>
             {showMenu && (
               <div style={{ position: 'absolute', right: 0, top: '100%', marginTop: 4, background: '#fff', border: '1.5px solid #e2e8f0', borderRadius: 10, boxShadow: '0 6px 20px rgba(0,0,0,.1)', zIndex: 200, minWidth: 140, overflow: 'hidden' }}>
-                <button onClick={e => { e.stopPropagation(); setShowMenu(false); navigate(`/launcher/posts/${article.id}`); }}
+                <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowEditModal(true); }}
                   style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#334155', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>✏️ Edit article</button>
                 <button onClick={e => { e.stopPropagation(); setShowMenu(false); setShowDeleteModal(true); }}
                   style={{ display: 'block', width: '100%', padding: '9px 14px', background: 'none', border: 'none', textAlign: 'left', fontSize: 13, cursor: 'pointer', color: '#e15033', fontWeight: 500, fontFamily: 'Inter,sans-serif' }}>🗑️ Delete article</button>

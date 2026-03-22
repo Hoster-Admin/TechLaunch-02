@@ -83,6 +83,32 @@ export default function SearchDropdown({ query, onClose }) {
         </div>
       )}
 
+      {/* ── Products ── */}
+      {!loading && products.length > 0 && (
+        <>
+          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', padding:'12px 16px 6px' }}>Products</div>
+          {products.map(p => (
+            <div key={p.id} onMouseDown={() => { navigate(`/products/${p.id}`); onClose(); }}
+              style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
+              onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
+              onMouseOut={e => e.currentTarget.style.background=''}>
+              {p.logo_url
+                ? <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}><img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/></div>
+                : <LogoPlaceholder name={p.name} size={36} radius={10} />
+              }
+              <div style={{ minWidth:0, flex:1 }}>
+                <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}</div>
+                <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{p.industry} · {(p.countries || [])[0] || ''}</div>
+              </div>
+              <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, flexShrink:0, background:p.status==='soon'?'#fff8ed':'#eefbf3', color:p.status==='soon'?'#d97706':'#16a34a' }}>
+                {p.status === 'soon' ? 'Soon' : 'Live'}
+              </span>
+            </div>
+          ))}
+          {(people.length > 0 || entities.length > 0) && <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>}
+        </>
+      )}
+
       {/* ── People ── */}
       {!loading && people.length > 0 && (
         <>
@@ -104,7 +130,7 @@ export default function SearchDropdown({ query, onClose }) {
               </div>
             );
           })}
-          {(entities.length > 0 || products.length > 0) && <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>}
+          {entities.length > 0 && <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>}
         </>
       )}
 
@@ -130,39 +156,17 @@ export default function SearchDropdown({ query, onClose }) {
               </span>
             </div>
           ))}
-          {products.length > 0 && <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>}
         </>
       )}
 
-      {/* ── Products ── */}
-      {!loading && products.length > 0 && (
-        <>
-          <div style={{ fontSize:10, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', padding:'12px 16px 6px' }}>Products</div>
-          {products.map(p => (
-            <div key={p.id} onMouseDown={() => { navigate(`/products/${p.id}`); onClose(); }}
-              style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
-              onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
-              onMouseOut={e => e.currentTarget.style.background=''}>
-              {p.logo_url
-                ? <div style={{ width:36, height:36, borderRadius:10, overflow:'hidden', flexShrink:0, border:'1px solid #eee' }}><img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'cover' }}/></div>
-                : <LogoPlaceholder name={p.name} size={36} radius={10} />
-              }
-              <div style={{ minWidth:0, flex:1 }}>
-                <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}</div>
-                <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{p.industry} · {(p.countries || [])[0] || ''}</div>
-              </div>
-              <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, flexShrink:0, background:p.status==='soon'?'#fff8ed':'#eefbf3', color:p.status==='soon'?'#d97706':'#16a34a' }}>
-                {p.status === 'soon' ? 'Soon' : 'Live'}
-              </span>
-            </div>
-          ))}
-          <div onMouseDown={() => { navigate(`/products?q=${encodeURIComponent(query)}`); onClose(); }}
-            style={{ padding:'10px 16px', fontSize:12, fontWeight:700, color:'var(--orange)', cursor:'pointer', textAlign:'center', borderTop:'1px solid #f0f0f0' }}
-            onMouseOver={e => e.currentTarget.style.background='#fef5f3'}
-            onMouseOut={e => e.currentTarget.style.background=''}>
-            See all results for "{query}" →
-          </div>
-        </>
+      {/* ── See all ── */}
+      {!loading && (products.length > 0 || people.length > 0 || entities.length > 0) && (
+        <div onMouseDown={() => { navigate(`/products?q=${encodeURIComponent(query)}`); onClose(); }}
+          style={{ padding:'10px 16px', fontSize:12, fontWeight:700, color:'var(--orange)', cursor:'pointer', textAlign:'center', borderTop:'1px solid #f0f0f0' }}
+          onMouseOver={e => e.currentTarget.style.background='#fef5f3'}
+          onMouseOut={e => e.currentTarget.style.background=''}>
+          See all results for "{query}" →
+        </div>
       )}
     </div>
   );
