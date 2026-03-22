@@ -928,6 +928,66 @@ admin.post('/entities/:id/verify', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
+// Get single entity
+admin.get('/entities/:id', async (req, res) => {
+  try {
+    const { rows } = await q(`SELECT * FROM entities WHERE id=$1`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    res.json({ success:true, data:rows[0] });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+// Update entity (partial)
+admin.patch('/entities/:id', async (req, res) => {
+  try {
+    const allowed = ['name','type','country','description','website','stage','industry','aum','portfolio_count','employees','founded_year','logo_url','logo_emoji','focus','linkedin','twitter','why_us','verified'];
+    const fields=[], vals=[];
+    for (const [k,v] of Object.entries(req.body)) {
+      if (!allowed.includes(k)) continue;
+      vals.push(v === '' ? null : v);
+      if (k === 'type') fields.push(`${k}=$${vals.length}::entity_type`);
+      else fields.push(`${k}=$${vals.length}`);
+    }
+    if (!fields.length) return res.json({ success:true });
+    fields.push('updated_at=NOW()');
+    vals.push(req.params.id);
+    const { rows } = await q(`UPDATE entities SET ${fields.join(',')} WHERE id=$${vals.length} RETURNING id,name,type`, vals);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'entity.updated', 'entity', rows[0].id, { name:rows[0].name }, req.ip);
+    res.json({ success:true, data:rows[0], message:`${rows[0].name} updated` });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+// Suspend entity
+admin.post('/entities/:id/suspend', async (req, res) => {
+  try {
+    const { rows } = await q(`UPDATE entities SET status='suspended',updated_at=NOW() WHERE id=$1 RETURNING name`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'entity.suspended', 'entity', req.params.id, { name:rows[0].name }, req.ip);
+    res.json({ success:true, message:`${rows[0].name} suspended` });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+// Unsuspend entity
+admin.post('/entities/:id/unsuspend', async (req, res) => {
+  try {
+    const { rows } = await q(`UPDATE entities SET status='active',updated_at=NOW() WHERE id=$1 RETURNING name`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'entity.unsuspended', 'entity', req.params.id, { name:rows[0].name }, req.ip);
+    res.json({ success:true, message:`${rows[0].name} reactivated` });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+// Delete entity
+admin.delete('/entities/:id', async (req, res) => {
+  try {
+    const { rows } = await q(`DELETE FROM entities WHERE id=$1 RETURNING name`, [req.params.id]);
+    if (!rows.length) return res.status(404).json({ success:false, message:'Not found' });
+    await logAction(req.user.id, 'entity.deleted', 'entity', req.params.id, { name:rows[0].name }, req.ip);
+    res.json({ success:true, message:`${rows[0].name} deleted` });
+  } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
 // Applications
 admin.get('/applications', async (req, res) => {
   try {
