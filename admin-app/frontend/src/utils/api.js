@@ -65,6 +65,7 @@ export const adminAPI = {
   saveBanner:         (body) => req('PUT',  '/admin/platform/banner', body),
   saveEditorsPick:    (body) => req('PUT',  '/admin/platform/editors-pick', body),
   changePassword:     (body) => req('POST', '/admin/auth/change-password', body),
+  updateMe:           (body) => req('PUT',  '/admin/me', body),
   exportCSV:    (type, p={}) => {
     const token = getToken();
     const qs = new URLSearchParams(p).toString();

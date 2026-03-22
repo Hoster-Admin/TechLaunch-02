@@ -63,6 +63,42 @@ export default function AdminLayout() {
   const [pwdConfirm,    setPwdConfirm]    = useState('');
   const [pwdSaving,     setPwdSaving]     = useState(false);
 
+  const [editProfileOpen, setEditProfileOpen] = useState(false);
+  const [editName,        setEditName]        = useState('');
+  const [editAvatar,      setEditAvatar]      = useState('');
+  const [editSaving,      setEditSaving]      = useState(false);
+  const avatarInputRef = useRef(null);
+
+  const openEditProfile = () => {
+    setEditName(user?.name || '');
+    setEditAvatar(user?.avatar_url || '');
+    setEditProfileOpen(true);
+  };
+
+  const handleAvatarFile = (e) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+    const fd = new FormData();
+    fd.append('file', file);
+    const token = localStorage.getItem('tlmena_admin_token');
+    fetch('/api/upload', { method:'POST', headers:{ Authorization:`Bearer ${token}` }, body: fd })
+      .then(r => r.json())
+      .then(d => { if (d.url) setEditAvatar(d.url); })
+      .catch(() => toast.error('Image upload failed'));
+  };
+
+  const submitEditProfile = async () => {
+    if (!editName.trim()) { toast.error('Name cannot be empty'); return; }
+    setEditSaving(true);
+    try {
+      await adminAPI.updateMe({ name: editName.trim(), avatar_url: editAvatar || null });
+      toast.success('Profile updated');
+      setEditProfileOpen(false);
+      if (typeof refreshUser === 'function') refreshUser();
+    } catch(e) { toast.error(e.message || 'Failed to save profile'); }
+    finally { setEditSaving(false); }
+  };
+
   useEffect(() => {
     if (user?.force_password_change) setShowChangePwd(true);
   }, [user?.force_password_change]);
@@ -243,7 +279,66 @@ export default function AdminLayout() {
         onToggleCollapse={toggleCollapse}
         panelName={panelProfile.name}
         panelAvatar={panelProfile.avatar_url}
+        onEditProfile={openEditProfile}
       />
+
+      {/* Edit my profile modal */}
+      {editProfileOpen && (
+        <div style={{position:'fixed',inset:0,background:'rgba(0,0,0,.55)',zIndex:9999,display:'flex',alignItems:'center',justifyContent:'center',backdropFilter:'blur(4px)'}}
+          onClick={e=>{ if(e.target===e.currentTarget) setEditProfileOpen(false); }}>
+          <div style={{background:'#fff',borderRadius:20,padding:36,width:400,maxWidth:'92vw',boxShadow:'0 24px 72px rgba(0,0,0,.28)'}}>
+            <div style={{fontSize:18,fontWeight:800,color:'#0A0A0A',marginBottom:4}}>Edit Profile</div>
+            <div style={{fontSize:13,color:'#888',marginBottom:24}}>Update your name and photo</div>
+
+            {/* Avatar picker */}
+            <div style={{display:'flex',justifyContent:'center',marginBottom:22}}>
+              <div style={{position:'relative',cursor:'pointer'}} onClick={()=>avatarInputRef.current?.click()}>
+                <div style={{width:76,height:76,borderRadius:'50%',overflow:'hidden',background:user?.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:24,fontWeight:700,color:'#fff',border:'3px solid var(--gray-200)'}}>
+                  {editAvatar
+                    ? <img src={editAvatar} alt="avatar" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                    : (editName||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+                  }
+                </div>
+                <div style={{position:'absolute',bottom:0,right:0,background:'var(--orange)',borderRadius:'50%',width:24,height:24,display:'flex',alignItems:'center',justifyContent:'center',border:'2px solid #fff'}}>
+                  <svg width="12" height="12" fill="none" viewBox="0 0 24 24" stroke="#fff" strokeWidth="2.5">
+                    <path strokeLinecap="round" strokeLinejoin="round" d="M3 9a2 2 0 012-2h.93a2 2 0 001.664-.89l.812-1.22A2 2 0 0110.07 4h3.86a2 2 0 011.664.89l.812 1.22A2 2 0 0018.07 7H19a2 2 0 012 2v9a2 2 0 01-2 2H5a2 2 0 01-2-2V9z"/>
+                    <circle cx="12" cy="13" r="3"/>
+                  </svg>
+                </div>
+              </div>
+              <input ref={avatarInputRef} type="file" accept="image/*" style={{display:'none'}} onChange={handleAvatarFile}/>
+            </div>
+            {editAvatar && (
+              <div style={{textAlign:'center',marginBottom:14}}>
+                <button onClick={()=>setEditAvatar('')} style={{background:'none',border:'none',fontSize:11,color:'#aaa',cursor:'pointer',textDecoration:'underline'}}>Remove photo</button>
+              </div>
+            )}
+
+            {/* Name field */}
+            <label style={{display:'block',fontSize:11,fontWeight:700,color:'#666',textTransform:'uppercase',letterSpacing:'.05em',marginBottom:6}}>Display Name</label>
+            <input
+              value={editName}
+              onChange={e=>setEditName(e.target.value)}
+              onKeyDown={e=>{ if(e.key==='Enter') submitEditProfile(); }}
+              placeholder="Your name"
+              style={{width:'100%',borderRadius:10,border:'1.5px solid var(--gray-200)',padding:'10px 12px',fontSize:13,fontFamily:'inherit',outline:'none',boxSizing:'border-box',marginBottom:22}}
+              onFocus={e=>e.target.style.borderColor='var(--orange)'}
+              onBlur={e=>e.target.style.borderColor='var(--gray-200)'}
+            />
+
+            <div style={{display:'flex',gap:10}}>
+              <button onClick={submitEditProfile} disabled={editSaving}
+                style={{flex:1,padding:'11px',borderRadius:10,border:'none',background:'var(--orange)',color:'#fff',fontSize:13,fontWeight:700,cursor:editSaving?'not-allowed':'pointer',opacity:editSaving?0.6:1,fontFamily:'inherit'}}>
+                {editSaving ? 'Saving…' : 'Save Changes'}
+              </button>
+              <button onClick={()=>setEditProfileOpen(false)}
+                style={{padding:'11px 18px',borderRadius:10,border:'1.5px solid var(--gray-200)',background:'#fff',fontSize:13,fontWeight:600,cursor:'pointer',color:'#555',fontFamily:'inherit'}}>
+                Cancel
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
 
       <div className="admin-main">
         {/* Topbar */}

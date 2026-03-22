@@ -64,7 +64,7 @@ const ROLE_PILL = {
   editor:    { bg:'rgba(124,58,237,.15)', color:'#7c3aed' },
 };
 
-export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose, collapsed, onToggleCollapse, panelName, panelAvatar }) {
+export default function AdminSidebar({ current, onChange, user, onLogout, isOpen, onClose, collapsed, onToggleCollapse, panelName, panelAvatar, onEditProfile }) {
   const role = user?.role || 'admin';
   const pill = ROLE_PILL[role] || ROLE_PILL.admin;
 
@@ -136,17 +136,30 @@ export default function AdminSidebar({ current, onChange, user, onLogout, isOpen
       </nav>
 
       <div className="sidebar-footer">
-        <div className="sidebar-admin-user">
-          <div className="admin-avatar" style={{background:user?.avatar_color||'var(--orange)'}}>
-            {(user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()}
+        <div className="sidebar-admin-user"
+          onClick={onEditProfile}
+          title="Edit your profile"
+          style={{cursor: onEditProfile ? 'pointer' : 'default', position:'relative'}}
+          onMouseEnter={e=>{ if(onEditProfile) e.currentTarget.querySelector('.edit-profile-hint')?.style && (e.currentTarget.querySelector('.edit-profile-hint').style.opacity='1'); }}
+          onMouseLeave={e=>{ if(onEditProfile) e.currentTarget.querySelector('.edit-profile-hint')?.style && (e.currentTarget.querySelector('.edit-profile-hint').style.opacity='0'); }}>
+          <div className="admin-avatar" style={{background:user?.avatar_color||'var(--orange)',position:'relative',overflow:'hidden',flexShrink:0}}>
+            {user?.avatar_url
+              ? <img src={user.avatar_url} alt={user.name} style={{width:'100%',height:'100%',objectFit:'cover',borderRadius:'50%'}}/>
+              : (user?.name||'A').split(' ').map(w=>w[0]).join('').slice(0,2).toUpperCase()
+            }
           </div>
           <div className="sidebar-user-info" style={{flex:1,minWidth:0}}>
             <div style={{display:'flex',alignItems:'center',gap:6,flexWrap:'wrap'}}>
               <div className="admin-name" style={{overflow:'hidden',textOverflow:'ellipsis',whiteSpace:'nowrap'}}>{user?.name||'Admin'}</div>
               <span style={{fontSize:10,fontWeight:700,borderRadius:5,padding:'2px 7px',background:pill.bg,color:pill.color,whiteSpace:'nowrap',textTransform:'capitalize',flexShrink:0}}>{role}</span>
             </div>
+            {onEditProfile && (
+              <div className="edit-profile-hint" style={{fontSize:10,color:'var(--orange)',opacity:0,transition:'opacity .15s',marginTop:2}}>
+                Edit profile
+              </div>
+            )}
           </div>
-          <button onClick={onLogout} title="Sign out"
+          <button onClick={e=>{ e.stopPropagation(); onLogout(); }} title="Sign out"
             style={{background:'none',border:'none',cursor:'pointer',padding:4,borderRadius:6,color:'#AAAAAA',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0}}
             onMouseEnter={e=>e.currentTarget.style.color='#E15033'}
             onMouseLeave={e=>e.currentTarget.style.color='#AAAAAA'}>
