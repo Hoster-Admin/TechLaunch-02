@@ -153,7 +153,9 @@ const deletePost = async (req, res, next) => {
 };
 
 // ── GET /api/launcher/:id  — single post with viewer's like status
+const UUID_RE = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 const getPost = async (req, res, next) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(404).json({ success: false, message: 'Post not found' });
   try {
     const userId = req.user?.id || null;
     const { rows } = await query(`
@@ -181,6 +183,7 @@ const getPost = async (req, res, next) => {
 
 // ── GET /api/launcher/:id/comments  (with liked status per comment)
 const getCommentsWithLikes = async (req, res, next) => {
+  if (!UUID_RE.test(req.params.id)) return res.status(404).json({ success: false, data: [] });
   try {
     const userId = req.user?.id || null;
     const { rows } = await query(`
