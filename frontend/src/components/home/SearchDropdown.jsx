@@ -1,103 +1,133 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { useUI } from '../../context/UIContext';
 
-const MOCK_PRODUCTS = [
-  { id:1,  name:'Tabby',        tagline:'Buy now, pay later for MENA shoppers', logo_emoji:'💳', industry:'Fintech',    country:'UAE',           status:'live' },
-  { id:2,  name:'Noon Academy', tagline:'Social learning platform for students', logo_emoji:'📚', industry:'Edtech',     country:'Saudi Arabia',  status:'live' },
-  { id:3,  name:'Vezeeta',      tagline:'Book doctors and healthcare services',  logo_emoji:'🏥', industry:'Healthtech', country:'Egypt',         status:'live' },
-  { id:4,  name:'Baraka',       tagline:'Invest in global stocks from the GCC',  logo_emoji:'📈', industry:'Fintech',    country:'UAE',           status:'live' },
-  { id:5,  name:'Tamara',       tagline:'BNPL shopping for Saudi consumers',     logo_emoji:'🛒', industry:'Fintech',    country:'Saudi Arabia',  status:'live' },
-  { id:6,  name:'Kader AI',     tagline:'AI-powered job matching for MENA',      logo_emoji:'🤖', industry:'AI & ML',    country:'Jordan',        status:'soon' },
-  { id:7,  name:'Trella',       tagline:'Digital freight marketplace in MENA',   logo_emoji:'🚛', industry:'Logistics',  country:'Egypt',         status:'live' },
-  { id:8,  name:'Foodics',      tagline:'Restaurant management system for F&B',  logo_emoji:'🍽️', industry:'Foodtech',   country:'Saudi Arabia',  status:'live' },
-  { id:9,  name:'Waffarha',     tagline:'Discount coupons and deals platform',   logo_emoji:'🎟️', industry:'E-Commerce', country:'Egypt',         status:'live' },
-  { id:10, name:'Cura',         tagline:'Arabic mental health therapy online',   logo_emoji:'🧠', industry:'Healthtech', country:'Saudi Arabia',  status:'soon' },
-];
+function UserAvatar({ user, size = 36 }) {
+  const initials = (user.name || user.handle || '?').split(' ').slice(0, 2).map(w => w[0]).join('').toUpperCase();
+  if (user.avatar_url && (user.avatar_url.startsWith('http') || user.avatar_url.startsWith('data:'))) {
+    return (
+      <img src={user.avatar_url} alt={user.name}
+        style={{ width: size, height: size, borderRadius: '50%', objectFit: 'cover' }}
+        onError={e => { e.target.style.display = 'none'; e.target.nextSibling.style.display = 'flex'; }}
+      />
+    );
+  }
+  return (
+    <div style={{ width: size, height: size, borderRadius: '50%', background: user.avatar_color || 'var(--orange)', color: '#fff', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: size * 0.36, fontWeight: 900, flexShrink: 0 }}>
+      {initials}
+    </div>
+  );
+}
 
 export default function SearchDropdown({ query, onClose }) {
-  const { profiles } = useUI();
   const navigate = useNavigate();
+  const [products, setProducts] = useState([]);
+  const [users,    setUsers]    = useState([]);
+  const [loading,  setLoading]  = useState(false);
+
+  useEffect(() => {
+    const q = query.trim();
+    if (!q) { setProducts([]); setUsers([]); return; }
+
+    setLoading(true);
+    const timer = setTimeout(async () => {
+      try {
+        const [prodRes, userRes] = await Promise.all([
+          fetch(`/api/products?search=${encodeURIComponent(q)}&status=all&limit=5`),
+          fetch(`/api/users?search=${encodeURIComponent(q)}&limit=5`),
+        ]);
+        const [prodJson, userJson] = await Promise.all([prodRes.json(), userRes.json()]);
+        setProducts(prodJson.success ? prodJson.data || [] : []);
+        setUsers(userJson.success ? userJson.data || [] : []);
+      } catch {
+        setProducts([]);
+        setUsers([]);
+      } finally {
+        setLoading(false);
+      }
+    }, 220);
+
+    return () => clearTimeout(timer);
+  }, [query]);
 
   if (!query.trim()) return null;
 
-  const ql = query.toLowerCase();
+  const dropStyle = {
+    position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0,
+    background: '#fff', border: '1px solid #e8e8e8', borderRadius: 16,
+    boxShadow: '0 12px 48px rgba(0,0,0,.14)', zIndex: 9999,
+    overflow: 'hidden', maxHeight: 440, overflowY: 'auto',
+  };
 
-  const prodMatches = MOCK_PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(ql) ||
-    p.tagline.toLowerCase().includes(ql) ||
-    p.industry.toLowerCase().includes(ql)
-  ).slice(0, 5);
-
-  const profileMatches = Object.values(profiles).filter(p =>
-    (p.name || '').toLowerCase().includes(ql) ||
-    (p.handle || '').toLowerCase().includes(ql) ||
-    (p.persona || '').toLowerCase().includes(ql)
-  ).slice(0, 3);
-
-  const totalProds = MOCK_PRODUCTS.filter(p =>
-    p.name.toLowerCase().includes(ql) || p.tagline.toLowerCase().includes(ql) || p.industry.toLowerCase().includes(ql)
-  ).length;
-
-  if (!prodMatches.length && !profileMatches.length) {
+  if (loading) {
     return (
-      <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, right:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, boxShadow:'0 12px 48px rgba(0,0,0,.14)', zIndex:9999, overflow:'hidden' }}>
-        <div style={{ padding:'20px 16px', textAlign:'center', fontSize:13, color:'#aaa' }}>No results for "<b>{query}</b>"</div>
+      <div style={dropStyle}>
+        <div style={{ padding: '18px 16px', textAlign: 'center', fontSize: 13, color: '#aaa' }}>Searching…</div>
+      </div>
+    );
+  }
+
+  if (!products.length && !users.length) {
+    return (
+      <div style={dropStyle}>
+        <div style={{ padding: '20px 16px', textAlign: 'center', fontSize: 13, color: '#aaa' }}>
+          No results for "<b>{query}</b>"
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ position:'absolute', top:'calc(100% + 6px)', left:0, right:0, background:'#fff', border:'1px solid #e8e8e8', borderRadius:16, boxShadow:'0 12px 48px rgba(0,0,0,.14)', zIndex:9999, overflow:'hidden', maxHeight:440, overflowY:'auto' }}>
-      {profileMatches.length > 0 && <>
-        <div style={{ fontSize:10, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', padding:'12px 16px 6px' }}>People</div>
-        {profileMatches.map(p => (
-          <div key={p.handle} onMouseDown={() => { navigate(`/u/${p.handle.replace('@','')}`); onClose(); }}
-            style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
-            onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
-            onMouseOut={e => e.currentTarget.style.background=''}>
-            <div style={{ width:36, height:36, borderRadius:'50%', background:'var(--orange)', color:'#fff', display:'grid', placeItems:'center', fontSize:13, fontWeight:900, flexShrink:0 }}>{p.avatar}</div>
-            <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}{p.verified ? ' ✓' : ''}</div>
-              <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{p.handle} · {p.persona}</div>
+    <div style={dropStyle}>
+      {users.length > 0 && (
+        <>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: '#aaa', padding: '12px 16px 6px' }}>People</div>
+          {users.map(u => (
+            <div key={u.id} onMouseDown={() => { navigate(`/u/${(u.handle || '').replace('@', '')}`); onClose(); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', cursor: 'pointer', transition: 'background .1s' }}
+              onMouseOver={e => e.currentTarget.style.background = '#f8f8f8'}
+              onMouseOut={e => e.currentTarget.style.background = ''}>
+              <div style={{ flexShrink: 0 }}>
+                <UserAvatar user={u} size={36} />
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>
+                  {u.name || u.handle}
+                  {u.verified ? <span style={{ color: '#2563eb', marginLeft: 4 }}>✓</span> : null}
+                </div>
+                <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>@{(u.handle || '').replace('@', '')} · {u.persona}</div>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, background: '#f4f4f4', color: '#888', flexShrink: 0 }}>{u.persona}</span>
             </div>
-            <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, background:'#f4f4f4', color:'#888', flexShrink:0 }}>{p.persona}</span>
-          </div>
-        ))}
-        {prodMatches.length > 0 && <div style={{ height:1, background:'#f0f0f0', margin:'4px 0' }}/>}
-      </>}
+          ))}
+          {products.length > 0 && <div style={{ height: 1, background: '#f0f0f0', margin: '4px 0' }} />}
+        </>
+      )}
 
-      {prodMatches.length > 0 && <>
-        <div style={{ fontSize:10, fontWeight:800, letterSpacing:'.08em', textTransform:'uppercase', color:'#aaa', padding:'12px 16px 6px' }}>Products</div>
-        {prodMatches.map(p => (
-          <div key={p.id} onMouseDown={() => { navigate(`/products/${p.id}`); onClose(); }}
-            style={{ display:'flex', alignItems:'center', gap:12, padding:'10px 16px', cursor:'pointer', transition:'background .1s' }}
-            onMouseOver={e => e.currentTarget.style.background='#f8f8f8'}
-            onMouseOut={e => e.currentTarget.style.background=''}>
-            <div style={{ width:36, height:36, borderRadius:10, background:'#f4f4f4', display:'grid', placeItems:'center', fontSize:18, flexShrink:0, border:'1px solid #eee', overflow:'hidden' }}>
-              {p.logo_url && (p.logo_url.startsWith('http') || p.logo_url.startsWith('data:'))
-                ? <img src={p.logo_url} alt={p.name} style={{ width:'100%', height:'100%', objectFit:'contain' }}/>
-                : (p.logo_emoji || '🚀')
-              }
+      {products.length > 0 && (
+        <>
+          <div style={{ fontSize: 10, fontWeight: 800, letterSpacing: '.08em', textTransform: 'uppercase', color: '#aaa', padding: '12px 16px 6px' }}>Products</div>
+          {products.map(p => (
+            <div key={p.id} onMouseDown={() => { navigate(`/products/${p.id}`); onClose(); }}
+              style={{ display: 'flex', alignItems: 'center', gap: 12, padding: '10px 16px', cursor: 'pointer', transition: 'background .1s' }}
+              onMouseOver={e => e.currentTarget.style.background = '#f8f8f8'}
+              onMouseOut={e => e.currentTarget.style.background = ''}>
+              <div style={{ width: 36, height: 36, borderRadius: 10, background: '#f4f4f4', display: 'grid', placeItems: 'center', fontSize: 18, flexShrink: 0, border: '1px solid #eee', overflow: 'hidden' }}>
+                {p.logo_url && (p.logo_url.startsWith('http') || p.logo_url.startsWith('data:'))
+                  ? <img src={p.logo_url} alt={p.name} style={{ width: '100%', height: '100%', objectFit: 'contain' }} />
+                  : (p.logo_emoji || '🚀')
+                }
+              </div>
+              <div style={{ minWidth: 0, flex: 1 }}>
+                <div style={{ fontSize: 13, fontWeight: 700, color: '#0a0a0a' }}>{p.name}</div>
+                <div style={{ fontSize: 11, color: '#aaa', marginTop: 1 }}>{p.industry} · {Array.isArray(p.countries) ? p.countries[0] : p.country}</div>
+              </div>
+              <span style={{ fontSize: 10, fontWeight: 700, padding: '2px 7px', borderRadius: 20, flexShrink: 0, background: p.status === 'soon' ? '#fff8ed' : '#eefbf3', color: p.status === 'soon' ? '#d97706' : '#16a34a' }}>
+                {p.status === 'soon' ? 'Soon' : 'Live'}
+              </span>
             </div>
-            <div style={{ minWidth:0, flex:1 }}>
-              <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{p.name}</div>
-              <div style={{ fontSize:11, color:'#aaa', marginTop:1 }}>{p.industry} · {p.country}</div>
-            </div>
-            <span style={{ fontSize:10, fontWeight:700, padding:'2px 7px', borderRadius:20, flexShrink:0, background:p.status==='soon'?'#fff8ed':'#eefbf3', color:p.status==='soon'?'#d97706':'#16a34a' }}>
-              {p.status === 'soon' ? 'Soon' : 'Live'}
-            </span>
-          </div>
-        ))}
-        {totalProds > 5 && (
-          <div onMouseDown={() => { navigate(`/products?q=${encodeURIComponent(query)}`); onClose(); }}
-            style={{ padding:'10px 16px', fontSize:12, fontWeight:700, color:'var(--orange)', cursor:'pointer', textAlign:'center', borderTop:'1px solid #f0f0f0' }}
-            onMouseOver={e => e.currentTarget.style.background='#fef5f3'}
-            onMouseOut={e => e.currentTarget.style.background=''}>
-            See all {totalProds} results for "{query}" →
-          </div>
-        )}
-      </>}
+          ))}
+        </>
+      )}
     </div>
   );
 }
