@@ -545,7 +545,8 @@ admin.post('/users', async (req, res) => {
           return res.json({ success:true, data:{ id:existing[0].id, name:existing[0].name, email:req.body.email, role:targetRole }, message:`${existing[0].name} already had an account — they've been promoted to ${targetRole.charAt(0).toUpperCase()+targetRole.slice(1)}` });
         }
         if (existing.length && ['admin','moderator','editor'].includes(existing[0].role)) {
-          return res.status(409).json({ success:false, message:`${existing[0].name} is already a team member (${existing[0].role})` });
+          // Team members already have a full platform account — treat as success
+          return res.json({ success:true, data:{ id:existing[0].id, name:existing[0].name, email:req.body.email, role:existing[0].role }, message:`${existing[0].name} already has an account as a team member and can use the platform` });
         }
       } catch(inner) { /* fall through to generic error */ }
       return res.status(409).json({ success:false, message:'Email already in use' });
