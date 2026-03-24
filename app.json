@@ -6,7 +6,10 @@
       }
     },
     "ios": {
-      "bundleIdentifier": "com.techlaunchmena.app"
+      "bundleIdentifier": "com.techlaunchmena.app",
+      "infoPlist": {
+        "ITSAppUsesNonExemptEncryption": false
+      }
     }
   }
 }
