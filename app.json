@@ -4,6 +4,9 @@
       "eas": {
         "projectId": "8a401a37-b1b3-4f0e-a552-3ac88e3cb702"
       }
+    },
+    "ios": {
+      "bundleIdentifier": "com.techlaunchmena.app"
     }
   }
 }
