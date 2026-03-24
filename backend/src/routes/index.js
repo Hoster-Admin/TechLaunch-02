@@ -290,14 +290,125 @@ router.put('/platform-profile', authenticate, requireAdmin, async (req, res, nex
   } catch(err){ next(err); }
 });
 
+// ══════════════════════════════════════════════════
+// LAUNCHER POSTS  /api/launcher-posts  (community feed)
+// ══════════════════════════════════════════════════
+const launcherRouter = express.Router();
+
+launcherRouter.get('/', optionalAuth, async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { page = 1, limit = 20, tag, user_id } = req.query;
+    const offset = (Math.max(1, parseInt(page)) - 1) * parseInt(limit);
+    const params = [], conds = [];
+    if (tag)     { params.push(tag);     conds.push(`lp.tag = $${params.length}`); }
+    if (user_id) { params.push(user_id); conds.push(`lp.user_id = $${params.length}`); }
+    const where = conds.length ? 'WHERE ' + conds.join(' AND ') : '';
+    params.push(parseInt(limit), offset);
+    const { rows } = await dbQuery(`
+      SELECT lp.id, lp.content, lp.title, lp.post_type, lp.tag, lp.likes_count, lp.created_at,
+             u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
+             u.avatar_url, u.avatar_color, u.verified,
+             COUNT(lpc.id)::int AS comment_count,
+             COUNT(*) OVER() AS total_count
+      FROM launcher_posts lp
+      JOIN users u ON u.id = lp.user_id
+      LEFT JOIN launcher_post_comments lpc ON lpc.post_id = lp.id
+      ${where}
+      GROUP BY lp.id, u.id
+      ORDER BY lp.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
+    res.json({
+      success: true,
+      data: rows.map(({ total_count, ...r }) => r),
+      pagination: { total: parseInt(rows[0]?.total_count || 0), page: parseInt(page), limit: parseInt(limit) }
+    });
+  } catch(err) { next(err); }
+});
+
+launcherRouter.post('/', authenticate,
+  [body('content').trim().notEmpty().isLength({ max: 5000 }).withMessage('Content required (max 5000 chars)')],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { query: dbQuery } = require('../config/database');
+      const { content, title, post_type = 'post', tag } = req.body;
+      const { rows } = await dbQuery(`
+        INSERT INTO launcher_posts (user_id, content, title, post_type, tag)
+        VALUES ($1, $2, $3, $4, $5)
+        RETURNING *
+      `, [req.user.id, content.trim(), title?.trim() || null, post_type, tag?.trim() || null]);
+      res.status(201).json({ success: true, data: rows[0] });
+    } catch(err) { next(err); }
+  }
+);
+
+launcherRouter.get('/:id/comments', optionalAuth, async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { rows } = await dbQuery(`
+      SELECT lpc.id, lpc.body, lpc.likes_count, lpc.created_at,
+             u.id AS user_id, u.name AS user_name, u.handle AS user_handle,
+             u.avatar_url, u.avatar_color, u.verified
+      FROM launcher_post_comments lpc
+      JOIN users u ON u.id = lpc.user_id
+      WHERE lpc.post_id = $1
+      ORDER BY lpc.created_at ASC
+    `, [req.params.id]);
+    res.json({ success: true, data: rows });
+  } catch(err) { next(err); }
+});
+
+launcherRouter.post('/:id/comments', authenticate,
+  [body('body').trim().notEmpty().isLength({ max: 2000 }).withMessage('Comment body required')],
+  validate,
+  async (req, res, next) => {
+    try {
+      const { query: dbQuery } = require('../config/database');
+      const { rows } = await dbQuery(`
+        INSERT INTO launcher_post_comments (post_id, user_id, body)
+        VALUES ($1, $2, $3)
+        RETURNING *
+      `, [req.params.id, req.user.id, req.body.body.trim()]);
+      res.status(201).json({ success: true, data: rows[0] });
+    } catch(err) { next(err); }
+  }
+);
+
+launcherRouter.delete('/:id', authenticate, async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { rows } = await dbQuery(
+      `DELETE FROM launcher_posts WHERE id=$1 AND user_id=$2 RETURNING id`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Post not found or not yours' });
+    res.json({ success: true, message: 'Post deleted' });
+  } catch(err) { next(err); }
+});
+
+launcherRouter.delete('/:postId/comments/:id', authenticate, async (req, res, next) => {
+  try {
+    const { query: dbQuery } = require('../config/database');
+    const { rows } = await dbQuery(
+      `DELETE FROM launcher_post_comments WHERE id=$1 AND user_id=$2 RETURNING id`,
+      [req.params.id, req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'Comment not found or not yours' });
+    res.json({ success: true, message: 'Comment deleted' });
+  } catch(err) { next(err); }
+});
+
 // ── Mount all routers
-router.use('/auth',        authRouter);
-router.use('/products',    productsRouter);
-router.use('/entities',    entitiesRouter);
-router.use('/users',       usersRouter);
-router.use('/messages',    messagesRouter);
-router.use('/suggestions', suggestionsRouter);
-router.use('/admin',       adminRouter);
+router.use('/auth',            authRouter);
+router.use('/products',        productsRouter);
+router.use('/entities',        entitiesRouter);
+router.use('/users',           usersRouter);
+router.use('/messages',        messagesRouter);
+router.use('/suggestions',     suggestionsRouter);
+router.use('/launcher-posts',  launcherRouter);
+router.use('/admin',           adminRouter);
 
 // Health check
 router.get('/health', (req, res) => {

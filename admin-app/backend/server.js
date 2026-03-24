@@ -156,7 +156,7 @@ app.post('/api/auth/login', loginLimiter, async (req, res) => {
   }
 });
 
-app.get('/api/auth/me', authenticate, requireAdmin, (req, res) => {
+app.get('/api/auth/me', authenticate, (req, res) => {
   res.json({ success:true, data: { user: req.user } });
 });
 
