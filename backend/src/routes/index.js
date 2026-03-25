@@ -120,7 +120,9 @@ usersRouter.get ('/me/bookmarks',         authenticate, userCtrl.getBookmarks);
 usersRouter.get ('/me/products',          authenticate, userCtrl.getMyProducts);
 usersRouter.get ('/me/notifications',     authenticate, userCtrl.getNotifications);
 usersRouter.put ('/me/notifications/read',authenticate, userCtrl.markNotificationsRead);
-usersRouter.put ('/me',                   authenticate,
+usersRouter.put  ('/me',                   authenticate,
+  [body('name').optional().trim().notEmpty()], validate, userCtrl.updateProfile);
+usersRouter.patch('/me',                   authenticate,
   [body('name').optional().trim().notEmpty()], validate, userCtrl.updateProfile);
 usersRouter.post('/me/change-password',   authenticate,
   [

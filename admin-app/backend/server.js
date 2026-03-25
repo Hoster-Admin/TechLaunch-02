@@ -1603,6 +1603,60 @@ admin.get('/export/:type', async (req, res) => {
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });
 
+// ─── PUSH NOTIFICATIONS ───────────────────────────────────────────────────────
+
+admin.get('/push-tokens', async (req, res) => {
+  try {
+    const { rows } = await q(
+      `SELECT id, name, handle, email, push_token
+       FROM users
+       WHERE push_token IS NOT NULL AND push_token != ''
+       ORDER BY name`
+    );
+    res.json({ success:true, data:rows, count:rows.length });
+  } catch(e) { console.error('[Push Tokens]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
+admin.post('/notifications/send', async (req, res) => {
+  try {
+    const { title, body, data = {}, target = 'all', user_ids = [] } = req.body;
+    if (!title?.trim() || !body?.trim()) return res.status(400).json({ success:false, message:'title and body are required' });
+
+    let tokenRows;
+    if (target === 'specific' && user_ids.length) {
+      const placeholders = user_ids.map((_,i) => `$${i+1}`).join(',');
+      ({ rows: tokenRows } = await q(
+        `SELECT push_token FROM users WHERE id IN (${placeholders}) AND push_token IS NOT NULL AND push_token != ''`,
+        user_ids
+      ));
+    } else {
+      ({ rows: tokenRows } = await q(
+        `SELECT push_token FROM users WHERE push_token IS NOT NULL AND push_token != ''`
+      ));
+    }
+
+    const tokens = tokenRows.map(r => r.push_token);
+    if (!tokens.length) return res.json({ success:true, message:'No push tokens found', sent:0 });
+
+    const BATCH = 100;
+    let sent = 0, failed = 0;
+    for (let i = 0; i < tokens.length; i += BATCH) {
+      const batch = tokens.slice(i, i + BATCH).map(to => ({ to, title: title.trim(), body: body.trim(), data }));
+      const expoRes = await fetch('https://exp.host/--/api/v2/push/send', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json', 'Accept': 'application/json' },
+        body: JSON.stringify(batch),
+      });
+      const json = await expoRes.json();
+      const results = Array.isArray(json.data) ? json.data : [json.data];
+      results.forEach(r => { if (r?.status === 'ok') sent++; else failed++; });
+    }
+
+    await logAction(req.user.id, 'notifications.send', 'broadcast', null, { title: title.trim(), target, sent, failed }, req.ip);
+    res.json({ success:true, sent, failed, total: tokens.length });
+  } catch(e) { console.error('[Push Notify]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
+});
+
 // ─── TAG MANAGEMENT ───────────────────────────────────────────────────────────
 admin.get('/tags', async (req, res) => {
   try {

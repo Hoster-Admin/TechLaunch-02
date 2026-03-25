@@ -122,6 +122,9 @@ export const adminAPI = {
   assignTag:           (id, body)  => req('POST', `/admin/tags/${id}/assign`, body),
   unassignTag:         (id, body)  => req('DELETE',`/admin/tags/${id}/assign`, body),
   autoAssignUserTags:  ()          => req('POST', '/admin/tags/auto-assign-user-tags'),
+
+  pushTokens:          ()          => req('GET',  '/admin/push-tokens'),
+  sendNotification:    (body)      => req('POST', '/admin/notifications/send', body),
 };
 
 export async function uploadFile(file) {
