@@ -509,7 +509,7 @@ admin.get('/users', async (req, res) => {
     if (search)  { params.push(`%${search}%`); conds.push(`(u.name ILIKE $${params.length} OR u.handle ILIKE $${params.length})`); }
     const offset = (parseInt(page)-1)*parseInt(limit);
     params.push(parseInt(limit), offset);
-    const { rows } = await q(`SELECT u.id,u.name,u.handle,u.email,u.persona,u.country,u.verified,u.status,u.role,u.avatar_color,u.created_at,u.products_count,u.votes_given,u.followers_count,COUNT(*) OVER() AS total_count FROM users u WHERE ${conds.join(' AND ')} ORDER BY ${col_u} ${dir_u} LIMIT $${params.length-1} OFFSET $${params.length}`, params);
+    const { rows } = await q(`SELECT u.id,u.name,u.handle,u.email,u.persona,u.country,u.verified,u.status,u.role,u.avatar_color,u.avatar_url,u.created_at,u.products_count,u.votes_given,u.followers_count,COUNT(*) OVER() AS total_count FROM users u WHERE ${conds.join(' AND ')} ORDER BY ${col_u} ${dir_u} LIMIT $${params.length-1} OFFSET $${params.length}`, params);
     res.json({ success:true, data:rows.map(({total_count,...r})=>r), pagination:{total:parseInt(rows[0]?.total_count||0)} });
   } catch(e) { console.error('[Admin API]', e.message); res.status(500).json({ success:false, message:'Internal server error' }); }
 });

@@ -235,8 +235,10 @@ function UserDrawer({ userId, onClose, onAction }) {
           <>
             {/* Avatar + identity */}
             <div style={{display:'flex',gap:14,alignItems:'center',marginBottom:24,paddingBottom:20,borderBottom:'1px solid #F0F0F0'}}>
-              <div style={{width:52,height:52,borderRadius:'50%',background:detail.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,color:'#fff',flexShrink:0}}>
-                {(detail.name||'U').split(' ').map(w=>w[0]).join('').slice(0,2)}
+              <div style={{width:52,height:52,borderRadius:'50%',background:detail.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:18,fontWeight:800,color:'#fff',flexShrink:0,overflow:'hidden'}}>
+                {detail.avatar_url
+                  ? <img src={detail.avatar_url} alt={detail.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                  : (detail.name||'U').split(' ').map(w=>w[0]).join('').slice(0,2)}
               </div>
               <div>
                 <div style={{display:'flex',alignItems:'center',gap:8,marginBottom:3}}>
@@ -758,8 +760,10 @@ export default function Users() {
                     </td>
                     <td style={{padding:'11px 16px'}}>
                       <div style={{display:'flex',alignItems:'center',gap:10}}>
-                        <div style={{width:32,height:32,borderRadius:10,background:u.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'#fff',flexShrink:0}}>
-                          {(u.name||'U').split(' ').map(w=>w[0]).join('').slice(0,2)}
+                        <div style={{width:32,height:32,borderRadius:10,background:u.avatar_color||'var(--orange)',display:'flex',alignItems:'center',justifyContent:'center',fontSize:11,fontWeight:800,color:'#fff',flexShrink:0,overflow:'hidden'}}>
+                          {u.avatar_url
+                            ? <img src={u.avatar_url} alt={u.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                            : (u.name||'U').split(' ').map(w=>w[0]).join('').slice(0,2)}
                         </div>
                         <div>
                           <div style={{fontSize:13,fontWeight:700,color:'#0A0A0A'}}>{u.name} {u.verified && <span style={{color:'var(--orange)',fontSize:11}}>✓</span>}</div>
