@@ -266,7 +266,7 @@ router.get('/platform-profile', async (req, res, next) => {
     const { rows } = await dbQuery(
       `SELECT id,name,handle,headline,bio,website,twitter,linkedin,avatar_url,avatar_color,
               verified,followers_count,products_count,created_at
-       FROM users WHERE handle='techlaunchmena' LIMIT 1`
+       FROM users WHERE handle='techlaunch' LIMIT 1`
     );
     if (!rows.length) return res.status(404).json({ success:false, message:'Platform profile not found' });
     res.json({ success:true, data: rows[0] });
@@ -282,7 +282,7 @@ router.put('/platform-profile', authenticate, requireAdmin, async (req, res, nex
         name=COALESCE($1,name), headline=COALESCE($2,headline), bio=COALESCE($3,bio),
         website=COALESCE($4,website), twitter=COALESCE($5,twitter), linkedin=COALESCE($6,linkedin),
         avatar_url=COALESCE($7,avatar_url), updated_at=NOW()
-       WHERE handle='techlaunchmena'
+       WHERE handle='techlaunch'
        RETURNING id,name,handle,headline,bio,website,twitter,linkedin,avatar_url`,
       [name||null, headline||null, bio||null, website||null, twitter||null, linkedin||null, avatar_url||null]
     );

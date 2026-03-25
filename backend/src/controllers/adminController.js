@@ -174,7 +174,7 @@ const adminGetUsers = async (req, res, next) => {
   try {
     const { status, persona, verified, search, page = 1, limit = 50 } = req.query;
     const params = [];
-    const conditions = [`u.handle != 'techlaunchmena'`];
+    const conditions = [`u.handle != 'techlaunch'`];
 
     if (status)   { params.push(status);  conditions.push(`u.status = $${params.length}`); }
     if (persona)  { params.push(persona); conditions.push(`u.persona = $${params.length}`); }

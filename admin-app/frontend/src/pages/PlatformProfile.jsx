@@ -248,7 +248,7 @@ export default function PlatformProfile() {
 
           {/* Edit button top-right */}
           <div style={{ display: 'flex', justifyContent: 'flex-end', gap: 8, paddingTop: 12, marginBottom: 8 }}>
-            <a href={`${getPublicBaseUrl()}/u/${(profile?.handle || 'techlaunchmena').replace('@','')}`}
+            <a href={`${getPublicBaseUrl()}/u/${(profile?.handle || 'techlaunch').replace('@','')}`}
               target="_blank" rel="noopener noreferrer"
               style={{ padding: '8px 16px', borderRadius: 10, background: '#f4f4f4', color: '#555', border: '1.5px solid #e8e8e8', fontSize: 13, fontWeight: 700, cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 6, textDecoration: 'none' }}>
               🌐 View on Public Site
@@ -266,11 +266,11 @@ export default function PlatformProfile() {
               <span style={{ fontSize: 12, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: '#eff6ff', color: '#2563eb' }}>✓ Verified</span>
             </div>
             <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 8 }}>
-              <span style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>@{(profile?.handle || 'techlaunchmena').replace('@', '')}</span>
-              <a href={`${getPublicBaseUrl()}/u/${(profile?.handle || 'techlaunchmena').replace('@','')}`}
+              <span style={{ fontSize: 13, color: '#aaa', fontWeight: 600 }}>@{(profile?.handle || 'techlaunch').replace('@', '')}</span>
+              <a href={`${getPublicBaseUrl()}/u/${(profile?.handle || 'techlaunch').replace('@','')}`}
                 target="_blank" rel="noopener noreferrer"
                 style={{ fontSize: 11, color: 'var(--orange)', fontWeight: 600, textDecoration: 'none', opacity: 0.85 }}>
-                tlmena.com/u/{(profile?.handle || 'techlaunchmena').replace('@','')} ↗
+                tlmena.com/u/{(profile?.handle || 'techlaunch').replace('@','')} ↗
               </a>
             </div>
 
@@ -484,7 +484,7 @@ export default function PlatformProfile() {
             <AvatarDisplay src={avatarUrl} fontSize={13} fallback="TL" />
           </div>
           <div style={{ fontSize: 13, color: 'var(--gray-500)' }}>
-            <strong style={{ color: 'var(--ink)' }}>Posting as @{(profile?.handle || 'techlaunchmena').replace('@', '')}</strong>
+            <strong style={{ color: 'var(--ink)' }}>Posting as @{(profile?.handle || 'techlaunch').replace('@', '')}</strong>
             <div style={{ fontSize: 11, color: 'var(--gray-400)' }}>Platform Admin Account</div>
           </div>
         </div>
