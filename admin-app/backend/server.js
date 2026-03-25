@@ -393,15 +393,15 @@ admin.get('/dashboard', async (req, res) => {
     const [products, users, upvotes, apps, waitlist, activity, topProducts, newUsers, upvoteChart, signupChart] =
       await Promise.all([
         q(`SELECT COUNT(*) FILTER(WHERE status='live') AS live, COUNT(*) FILTER(WHERE status='pending') AS pending, COUNT(*) FILTER(WHERE status='soon') AS soon, COUNT(*) FILTER(WHERE status='rejected') AS rejected, COUNT(*) AS total FROM products`),
-        q(`SELECT COUNT(*) FILTER(WHERE status='active') AS active, COUNT(*) AS total FROM users WHERE role='user'`),
+        q(`SELECT COUNT(*) FILTER(WHERE status='active') AS active, COUNT(*) AS total FROM users WHERE handle != 'techlaunch'`),
         q(`SELECT COALESCE(SUM(upvotes_count),0) AS total FROM products`),
         q(`SELECT COUNT(*) FILTER(WHERE status IN ('pending','reviewing')) AS pending FROM accelerator_applications`),
         q(`SELECT COALESCE(SUM(waitlist_count),0) AS total FROM products`),
         q(`SELECT al.action, al.created_at, al.details, u.name AS actor_name, u.handle AS actor_handle, u.avatar_color FROM activity_log al LEFT JOIN users u ON u.id=al.actor_id ORDER BY al.created_at DESC LIMIT 10`),
         q(`SELECT id,name,logo_emoji,industry,upvotes_count,status FROM products WHERE status='live' ORDER BY upvotes_count DESC LIMIT 5`),
-        q(`SELECT id,name,handle,persona,country,avatar_color,created_at FROM users WHERE role='user' ORDER BY created_at DESC LIMIT 8`),
+        q(`SELECT id,name,handle,persona,country,avatar_color,created_at FROM users WHERE handle != 'techlaunch' ORDER BY created_at DESC LIMIT 8`),
         q(`SELECT TO_CHAR(DATE_TRUNC('day',created_at),'Dy') AS day, COUNT(*) AS count FROM upvotes WHERE created_at>NOW()-INTERVAL '7 days' GROUP BY DATE_TRUNC('day',created_at),day ORDER BY DATE_TRUNC('day',created_at)`),
-        q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'WW') AS week, COUNT(*) AS count FROM users WHERE role='user' AND created_at>NOW()-INTERVAL '8 weeks' GROUP BY DATE_TRUNC('week',created_at),week ORDER BY DATE_TRUNC('week',created_at)`),
+        q(`SELECT TO_CHAR(DATE_TRUNC('week',created_at),'WW') AS week, COUNT(*) AS count FROM users WHERE handle != 'techlaunch' AND created_at>NOW()-INTERVAL '8 weeks' GROUP BY DATE_TRUNC('week',created_at),week ORDER BY DATE_TRUNC('week',created_at)`),
       ]);
     const dashData = {
       stats: { products:products.rows[0], users:users.rows[0], upvotes:parseInt(upvotes.rows[0].total), apps_pending:parseInt(apps.rows[0].pending), waitlist:parseInt(waitlist.rows[0].total) },
@@ -502,7 +502,7 @@ admin.get('/users', async (req, res) => {
     const SAFE_COLS_U = { name:1, status:1, created_at:1, persona:1, products_count:1, verified:1 };
     const col_u = SAFE_COLS_U[sortBy] ? `u.${sortBy}` : 'u.created_at';
     const dir_u = sortDir === 'asc' ? 'ASC' : 'DESC';
-    const params = [], conds = [`u.role='user'`];
+    const params = [], conds = [`u.handle != 'techlaunch'`];
     if (status)  { params.push(status);  conds.push(`u.status=$${params.length}`); }
     if (persona) { params.push(persona); conds.push(`u.persona=$${params.length}`); }
     if (verified==='true') conds.push('u.verified=true');
