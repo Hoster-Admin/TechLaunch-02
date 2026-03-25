@@ -133,23 +133,53 @@ function WarnModal({ userName, onConfirm, onCancel, loading }) {
 
 // ── User Detail Drawer ────────────────────────────────────────────────────────
 function UserDrawer({ userId, onClose, onAction }) {
-  const [detail,       setDetail]       = useState(null);
-  const [loading,      setLoading]      = useState(true);
-  const [acting,       setActing]       = useState('');
+  const [detail,        setDetail]       = useState(null);
+  const [loading,       setLoading]      = useState(true);
+  const [acting,        setActing]       = useState('');
   const [confirmAction, setConfirmAction] = useState(null);
-  const [warnings,     setWarnings]     = useState([]);
-  const [warnLoading,  setWarnLoading]  = useState(false);
+  const [warnings,      setWarnings]     = useState([]);
+  const [warnLoading,   setWarnLoading]  = useState(false);
   const [showWarnModal, setShowWarnModal] = useState(false);
+  const [allUserTags,   setAllUserTags]  = useState([]);
+  const [tagToggling,   setTagToggling]  = useState(null);
 
-  const loadDetail = () => adminAPI.getUser(userId).then(r => setDetail(r.data.data));
+  const loadDetail  = () => adminAPI.getUser(userId).then(r => setDetail(r.data.data));
   const loadWarnings = () => adminAPI.getUserWarnings(userId).then(r => setWarnings(r.data.data || []));
+  const loadTags    = useCallback(() => {
+    adminAPI.tags().then(r => {
+      const all = r.data?.data || r.data || [];
+      setAllUserTags(all.filter(t => t.category === 'user' && t.is_active !== false));
+    }).catch(() => {});
+  }, []);
 
   useEffect(() => {
     setLoading(true);
-    Promise.all([loadDetail(), loadWarnings()])
+    Promise.all([loadDetail(), loadWarnings(), loadTags()])
       .catch(() => toast.error('Failed to load user'))
       .finally(() => setLoading(false));
   }, [userId]);
+
+  useEffect(() => {
+    const onFocus = () => loadTags();
+    window.addEventListener('focus', onFocus);
+    return () => window.removeEventListener('focus', onFocus);
+  }, [loadTags]);
+
+  const toggleTag = async (tag) => {
+    if (tagToggling) return;
+    const assigned = (detail?.user_tags || []).some(t => t.id === tag.id);
+    setTagToggling(tag.id);
+    try {
+      if (assigned) {
+        await adminAPI.unassignTag(tag.id, { item_type: 'user', item_id: userId });
+      } else {
+        await adminAPI.assignTag(tag.id, { item_type: 'user', item_id: userId });
+      }
+      const res = await adminAPI.getUser(userId);
+      setDetail(res.data.data);
+    } catch(e) { toast.error(e.message || 'Tag update failed'); }
+    finally { setTagToggling(null); }
+  };
 
   const perform = async (action, fn, successMsg) => {
     setActing(action);
@@ -280,6 +310,39 @@ function UserDrawer({ userId, onClose, onAction }) {
                       </div>
                     </div>
                   ))}
+                </div>
+              )}
+            </div>
+
+            {/* Tags */}
+            <div style={{marginBottom:20,paddingTop:20,borderTop:'1px solid #F0F0F0'}}>
+              <div style={{fontSize:10,fontWeight:700,color:'#AAAAAA',textTransform:'uppercase',letterSpacing:'.08em',marginBottom:10}}>
+                Tag <span style={{fontWeight:400,textTransform:'none',fontSize:10}}>(optional)</span>
+              </div>
+              {allUserTags.length === 0 ? (
+                <div style={{fontSize:12,color:'#AAAAAA',fontStyle:'italic'}}>
+                  No user tags yet — add some in Tag Management → User Tags.
+                </div>
+              ) : (
+                <div style={{display:'flex',flexWrap:'wrap',gap:6}}>
+                  {allUserTags.map(tag => {
+                    const sel = (detail?.user_tags || []).some(t => t.id === tag.id);
+                    const busy = tagToggling === tag.id;
+                    return (
+                      <button key={tag.id} onClick={() => toggleTag(tag)}
+                        disabled={!!tagToggling}
+                        style={{
+                          padding:'4px 11px', borderRadius:20, cursor: tagToggling ? 'wait' : 'pointer',
+                          border:`1.5px solid ${sel ? 'var(--orange)' : 'var(--gray-200,#E8E8E8)'}`,
+                          background: sel ? (tag.color || 'rgba(225,80,51,.1)') : 'transparent',
+                          color: sel ? (tag.text_color || 'var(--orange)') : '#888',
+                          fontSize:12, fontWeight:600, transition:'all .15s',
+                          opacity: busy ? 0.5 : 1, fontFamily:'inherit',
+                        }}>
+                        {busy ? '…' : tag.name}
+                      </button>
+                    );
+                  })}
                 </div>
               )}
             </div>

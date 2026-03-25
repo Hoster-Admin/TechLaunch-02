@@ -209,16 +209,22 @@ const adminGetUsers = async (req, res, next) => {
 const adminGetUser = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const [userRes, prodsRes] = await Promise.all([
+    const [userRes, prodsRes, tagsRes] = await Promise.all([
       query(`SELECT u.id, u.name, u.handle, u.email, u.persona, u.country, u.bio,
                     u.verified, u.status, u.role, u.avatar_color, u.created_at,
                     u.products_count, u.votes_given, u.followers_count, u.following_count
              FROM users u WHERE u.id=$1`, [id]),
       query(`SELECT id, name, logo_emoji, industry, status, upvotes_count, created_at
              FROM products WHERE submitted_by=$1 ORDER BY created_at DESC`, [id]),
+      query(`SELECT t.id, t.name, t.color, t.text_color FROM user_tags ut
+             JOIN tags t ON t.id = ut.tag_id WHERE ut.user_id=$1`, [id]),
     ]);
     if (!userRes.rows.length) return res.status(404).json({ success:false, message:'User not found' });
-    res.json({ success:true, data: { ...userRes.rows[0], products: prodsRes.rows } });
+    res.json({ success:true, data: {
+      ...userRes.rows[0],
+      products: prodsRes.rows,
+      user_tags: tagsRes.rows,
+    }});
   } catch (err) { next(err); }
 };
 
