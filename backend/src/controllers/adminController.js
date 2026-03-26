@@ -298,7 +298,7 @@ const adminUpdateEntity = async (req, res, next) => {
     const { id } = req.params;
     const {
       name, type, country, description, website, stage, industry,
-      employees, founded_year, aum, portfolio_count, focus,
+      founded_year, aum, portfolio_count, focus,
       logo_url, logo_emoji, linkedin, twitter, why_us, verified,
     } = req.body;
 
@@ -322,7 +322,6 @@ const adminUpdateEntity = async (req, res, next) => {
     maybeSet('website', website);
     maybeSet('stage', stage);
     maybeSet('industry', industry);
-    maybeSet('employees', employees);
     maybeSet('founded_year', founded_year, v => v ? parseInt(v) : null);
     maybeSet('aum', aum);
     maybeSet('portfolio_count', portfolio_count, v => v ? parseInt(v) : null);

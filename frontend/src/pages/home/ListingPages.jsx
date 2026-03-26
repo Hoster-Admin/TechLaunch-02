@@ -142,12 +142,6 @@ function StartupCard({ item, onClick }) {
       </div>
 
       <div style={{ display:'flex', alignItems:'center', gap:14, paddingTop:14, borderTop:'1px solid #f0f0f0', fontSize:12, color:'#999', marginTop:'auto' }}>
-        {item.employees && (
-          <div style={{ display:'flex', alignItems:'center', gap:5 }}>
-            <span style={{ fontSize:14 }}>👥</span>
-            <span><b style={{ color:'#0a0a0a', fontWeight:800 }}>{item.employees}</b> employees</span>
-          </div>
-        )}
         <button className="btn-entity-more" style={{ marginLeft:'auto' }} onClick={e => { e.stopPropagation(); onClick(); }}>
           View Profile →
         </button>

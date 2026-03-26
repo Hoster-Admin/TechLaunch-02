@@ -337,7 +337,7 @@ export function AdminEntities() {
   };
 
   const heads = {
-    startups:     ['Entity','Industry','Country','Stage','Employees','Followers','Verified','Actions'],
+    startups:     ['Entity','Industry','Country','Stage','Followers','Verified','Actions'],
     accelerators: ['Entity','Country','Focus','Stage','Portfolio','Verified','Actions'],
     investors:    ['Entity','Country','Focus','AUM','Portfolio','Verified','Actions'],
     ventures:     ['Entity','Country','Focus','Ventures Built','Verified','Actions'],
@@ -357,7 +357,6 @@ export function AdminEntities() {
             <td style={{padding:'11px 16px'}}><span style={{background:'#F4F4F4',color:'#666',fontSize:11,fontWeight:600,padding:'3px 8px',borderRadius:6}}>{e.industry||'—'}</span></td>
             <td style={{padding:'11px 16px',fontSize:12}}>{e.country||'—'}</td>
             <td style={{padding:'11px 16px'}}><Badge variant="purple">{e.stage||'—'}</Badge></td>
-            <td style={{padding:'11px 16px',fontSize:12}}>{e.employees||'—'}</td>
             <td style={{padding:'11px 16px',fontSize:13,fontWeight:700}}>{e.followers_count?.toLocaleString()||'0'}</td>
           </>;
           else if (tab === 'accelerators') cols = <>

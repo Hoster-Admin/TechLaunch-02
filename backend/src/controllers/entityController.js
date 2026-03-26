@@ -64,7 +64,7 @@ const createEntity = async (req, res, next) => {
   try {
     const {
       name, type, description, website, country, industry,
-      stage, employees, founded_year, aum, focus, logo_emoji
+      stage, founded_year, aum, focus, logo_emoji
     } = req.body;
 
     if (!name || !type) return res.status(400).json({ success:false, message:'Name and type are required' });
@@ -85,11 +85,11 @@ const createEntity = async (req, res, next) => {
 
     const { rows } = await query(`
       INSERT INTO entities (name, slug, type, description, website, country, industry,
-        stage, employees, founded_year, aum, focus, logo_emoji, created_by, verified, status)
-      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,false,'pending')
+        stage, founded_year, aum, focus, logo_emoji, created_by, verified, status)
+      VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,false,'pending')
       RETURNING *`,
       [name, slug, type, description||null, website||null, country||null, industry||null,
-       stage||null, employees||null, founded_year||null, aum||null, focus||null,
+       stage||null, founded_year||null, aum||null, focus||null,
        logo_emoji||null, req.user.id]
     );
 

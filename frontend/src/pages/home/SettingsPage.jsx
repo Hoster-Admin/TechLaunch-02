@@ -573,7 +573,6 @@ export default function SettingsPage() {
   const [coTwitter,  setCoTwitter] = useState('');
   const [coTikTok,   setCoTikTok]  = useState('');
   const [coInstagram,setCoInstagram]=useState('');
-  const [coTeam,     setCoTeam]    = useState('');
   const [coFounded,  setCoFounded] = useState('');
   const [coStageOpen,setCoStageOpen]=useState(false);
   const [coSubmitted,setCoSubmitted]=useState(false);
@@ -670,7 +669,6 @@ export default function SettingsPage() {
         country: countryLabel,
         industry: coIndustry || null,
         stage: coStages.length > 0 ? coStages.join(', ') : null,
-        employees: coTeam || null,
         founded_year: coFounded ? parseInt(coFounded) : null,
         focus: null,
         logo_emoji: '🏢',
@@ -1114,7 +1112,7 @@ export default function SettingsPage() {
               const resetForm = () => {
                 setCoType(''); setCoName(''); setCoLogoImg(null); setCoIndustry(''); setCoCountry([]);
                 setCoStages([]); setCoAbout(''); setCoWebsite(''); setCoLinkedIn(''); setCoTwitter('');
-                setCoTikTok(''); setCoInstagram(''); setCoTeam(''); setCoFounded(''); setCoSubmitted(false);
+                setCoTikTok(''); setCoInstagram(''); setCoFounded(''); setCoSubmitted(false);
               };
 
               const previewLinks = [
@@ -1165,7 +1163,6 @@ export default function SettingsPage() {
                             {coCountry.length>0 && coIndustry && <span>·</span>}
                             {coIndustry && <span>{coIndustry}</span>}
                             {isInvFirm && coStages.length > 0 && <><span>·</span><span>{coStages.join(', ')}</span></>}
-                            {isCompany && coTeam && <><span>·</span><span>{coTeam} people</span></>}
                             {coFounded && <><span>·</span><span>Est. {coFounded}</span></>}
                           </div>
                           {coAbout && <div style={{ fontSize:13, color:'#555', lineHeight:1.6, marginBottom:previewLinks.length?8:0 }}>{coAbout}</div>}
@@ -1287,17 +1284,6 @@ export default function SettingsPage() {
                               </div>
                             </div>
                           )}
-                        </div>
-                      )}
-
-                      {/* Team size — Company only */}
-                      {isCompany && (
-                        <div style={{ marginBottom:16 }}>
-                          <label style={labelStyle}>TEAM SIZE</label>
-                          <select value={coTeam} onChange={e=>setCoTeam(e.target.value)} style={selStyle} onFocus={fo} onBlur={bl}>
-                            <option value="">Select size</option>
-                            {['1–5','6–15','16–30','31–60','61–100','100–250','250+'].map(s => <option key={s} value={s}>{s}</option>)}
-                          </select>
                         </div>
                       )}
 

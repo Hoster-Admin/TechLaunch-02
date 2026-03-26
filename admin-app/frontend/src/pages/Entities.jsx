@@ -157,7 +157,7 @@ function ChipSelect({ options, selected, onChange, color='#E15033' }) {
 const EMPTY_FORM = {
   name:'', type:'accelerator', country:'', description:'', website:'',
   stages:[], industries:[], logo_url:'',
-  employees:'', founded_year:'', aum:'', focus:'',
+  founded_year:'', aum:'', focus:'',
   linkedin:'', twitter:'', why_us_items:[''], verified:false,
 };
 
@@ -254,7 +254,6 @@ export default function Entities() {
       stages,
       industries,
       logo_url: entity.logo_url || '',
-      employees: entity.employees || '',
       founded_year: entity.founded_year ? String(entity.founded_year) : '',
       aum: entity.aum || '',
       focus: entity.focus || '',
@@ -276,7 +275,6 @@ export default function Entities() {
     website: form.website || null,
     stage: form.stages.join(', ') || null,
     industry: form.industries.join(', ') || null,
-    employees: form.employees || null,
     founded_year: form.founded_year ? parseInt(form.founded_year) : null,
     aum: form.aum || null,
     focus: form.focus || null,
@@ -476,14 +474,6 @@ export default function Entities() {
                 </Field>
               </div>
 
-              {/* Employees */}
-              <Field label="Team Size">
-                <select style={selectStyle} value={form.employees} onChange={e=>setForm(f=>({...f,employees:e.target.value}))}>
-                  <option value="">Select…</option>
-                  {['1-10','11-50','51-200','201-500','500+'].map(v=><option key={v} value={v}>{v}</option>)}
-                </select>
-              </Field>
-
               {/* Founded year */}
               <Field label="Founded Year">
                 <input style={inputStyle} type="number" min="1990" max="2030" value={form.founded_year} onChange={e=>setForm(f=>({...f,founded_year:e.target.value}))} placeholder="2019"/>
@@ -616,7 +606,6 @@ export default function Entities() {
             <DrawerField label="Country">{viewEntity.country || '—'}</DrawerField>
             <DrawerField label="Founded">{viewEntity.founded_year || '—'}</DrawerField>
             <DrawerField label="Industry">{viewEntity.industry || '—'}</DrawerField>
-            <DrawerField label="Team Size">{viewEntity.employees || '—'}</DrawerField>
             {viewEntity.stage && <DrawerField label="Stage">{viewEntity.stage}</DrawerField>}
             {viewEntity.aum && <DrawerField label="AUM / Fund Size">{viewEntity.aum}</DrawerField>}
           </div>
@@ -685,7 +674,6 @@ export default function Entities() {
                   ['website','https://…'],
                   ['industry','Fintech, AI & ML, Healthtech…'],
                   ['stage','Pre-Seed, Seed, Series A, Growth'],
-                  ['employees','1-10 / 11-50 / 51-200 / 201-500 / 500+'],
                   ['founded_year','Number: 2019'],
                   ['aum','Investors only: $50M, $200M'],
                   ['focus','Short focus area description'],

@@ -53,7 +53,6 @@ export default function EntityProfileModal() {
   const statsItems = [
     portfolioVal != null && { num: portfolioVal, label: ['investor','Investor'].includes(e.type) ? 'Portfolio Cos' : ['accelerator','Accelerator'].includes(e.type) ? 'Alumni' : 'Portfolio' },
     e.aum         && { num: e.aum,        label: 'AUM' },
-    e.employees   && { num: e.employees,  label: 'Employees' },
     foundedVal    && { num: foundedVal,   label: 'Founded' },
     e.checkSize   && { num: e.checkSize,  label: 'Check Size' },
     Array.isArray(e.industries) && e.industries.length && { num: e.industries.length, label: 'Industries' },
