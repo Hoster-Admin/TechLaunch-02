@@ -728,17 +728,17 @@ admin.get('/entities', async (req, res) => {
 
 admin.post('/entities', async (req, res) => {
   try {
-    const { name, type, country, description, website, stage, industry, aum, portfolio_count, employees, founded_year, logo_url, logo_emoji, focus, linkedin, twitter, why_us, verified } = req.body;
+    const { name, type, country, description, website, stage, industry, aum, employees, founded_year, logo_url, focus, linkedin, twitter, why_us, verified } = req.body;
     if (!name || !type || !country) return res.status(400).json({ success:false, message:'name, type and country are required' });
     const validTypes = ['startup','accelerator','investor','venture_studio'];
     if (!validTypes.includes(type)) return res.status(400).json({ success:false, message:'Invalid entity type' });
     const base = name.toLowerCase().replace(/[^a-z0-9]+/g,'-').replace(/^-|-$/g,'');
     const slug = `${base}-${Date.now().toString(36)}`;
     const { rows } = await q(`
-      INSERT INTO entities (name,slug,type,country,description,website,stage,industry,aum,portfolio_count,employees,founded_year,logo_url,logo_emoji,focus,linkedin,twitter,why_us,verified,created_by)
-      VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18,$19,$20)
+      INSERT INTO entities (name,slug,type,country,description,website,stage,industry,aum,employees,founded_year,logo_url,focus,linkedin,twitter,why_us,verified,created_by)
+      VALUES ($1,$2,$3::entity_type,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
       RETURNING id,name,type,country`,
-      [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,portfolio_count||null,employees||null,founded_year||null,logo_url||null,logo_emoji||null,focus||null,linkedin||null,twitter||null,why_us||null,verified===true||verified==='true',req.user.id]);
+      [name,slug,type,country,description||null,website||null,stage||null,industry||null,aum||null,employees||null,founded_year||null,logo_url||null,focus||null,linkedin||null,twitter||null,why_us||null,verified===true||verified==='true',req.user.id]);
     await logAction(req.user.id, 'entity.created', 'entity', rows[0].id, { name:rows[0].name, type:rows[0].type }, req.ip);
     res.json({ success:true, data:rows[0], message:`${rows[0].name} created` });
   } catch(e) {
@@ -758,11 +758,11 @@ app.get('/api/admin/entities/csv-template', async (req, res) => {
     if (!rows.length || rows[0].status !== 'active') return res.status(401).json({ success:false, message:'Unauthorized' });
     if (!['admin','moderator','editor'].includes(rows[0].role)) return res.status(403).json({ success:false, message:'Admin access required' });
   } catch { return res.status(401).json({ success:false, message:'Invalid token' }); }
-  const CSV_TEMPLATE = `name,type,description,website,country,industry,stage,employees,founded_year,aum,portfolio_count,focus,logo_url,logo_emoji,linkedin,twitter,why_us,verified
-STC Ventures,investor,Corporate venture arm of STC Group investing in tech startups across MENA.,https://stcventures.com,Saudi Arabia,Fintech,,11-50,2018,$500M,45,Deep tech and digital infrastructure,https://logo.clearbit.com/stcventures.com,💰,https://linkedin.com/company/stc-ventures,@stcventures,Backed by one of MENA's largest telcos | $500M+ fund size | Access to STC network,true
-Flat6Labs,accelerator,Pan-regional startup accelerator running programs across MENA.,https://flat6labs.com,Egypt,Fintech,,51-200,2011,,500,Early-stage startups across all sectors,https://logo.clearbit.com/flat6labs.com,🏢,https://linkedin.com/company/flat6labs,@flat6labs,Over 500 startups accelerated across 8 cities | Equity-free grant | Regional network,true
-Foodics,startup,Restaurant management and POS platform for the MENA region.,https://foodics.com,Saudi Arabia,Fintech,Series B,201-500,2014,,,SaaS for F&B businesses,https://logo.clearbit.com/foodics.com,🚀,https://linkedin.com/company/foodics,@foodics,Used by 15000+ restaurants across MENA | Series B funded | Strong MENA network,true
-Wa'ed Ventures,venture_studio,"Aramco entrepreneurship center building and investing in startups.",https://waed.com,Saudi Arabia,Cleantech,,51-200,2011,$500M,80,Energy tech and sustainability,https://logo.clearbit.com/waed.com,🎯,https://linkedin.com/company/waed-ventures,,Backed by Saudi Aramco | Up to $1M seed | NEOM access,true`;
+  const CSV_TEMPLATE = `name,type,description,website,country,industry,stage,employees,founded_year,aum,focus,logo_url,linkedin,twitter,why_us,verified
+STC Ventures,investor,Corporate venture arm of STC Group investing in tech startups across MENA.,https://stcventures.com,Saudi Arabia,Fintech,,11-50,2018,$500M,Deep tech and digital infrastructure,https://logo.clearbit.com/stcventures.com,https://linkedin.com/company/stc-ventures,@stcventures,Backed by one of MENA's largest telcos | $500M+ fund size | Access to STC network,true
+Flat6Labs,accelerator,Pan-regional startup accelerator running programs across MENA.,https://flat6labs.com,Egypt,Fintech,,51-200,2011,,Early-stage startups across all sectors,https://logo.clearbit.com/flat6labs.com,https://linkedin.com/company/flat6labs,@flat6labs,Over 500 startups accelerated across 8 cities | Equity-free grant | Regional network,true
+Foodics,startup,Restaurant management and POS platform for the MENA region.,https://foodics.com,Saudi Arabia,Fintech,Series B,201-500,2014,,SaaS for F&B businesses,https://logo.clearbit.com/foodics.com,https://linkedin.com/company/foodics,@foodics,Used by 15000+ restaurants across MENA | Series B funded | Strong MENA network,true
+Wa'ed Ventures,venture_studio,"Aramco entrepreneurship center building and investing in startups.",https://waed.com,Saudi Arabia,Cleantech,,51-200,2011,$500M,Energy tech and sustainability,https://logo.clearbit.com/waed.com,https://linkedin.com/company/waed-ventures,,Backed by Saudi Aramco | Up to $1M seed | NEOM access,true`;
   res.setHeader('Content-Type', 'text/csv; charset=utf-8');
   res.setHeader('Content-Disposition', 'attachment; filename="entities-template.csv"');
   res.send('\uFEFF' + CSV_TEMPLATE);
@@ -832,30 +832,26 @@ admin.post('/entities/bulk-import', authenticate, csvUpload.single('file'), asyn
     if (!validCountries.includes(country)) { failed.push({ row:rowNum, name, reason:`Country "${country}" not recognised — use exact name e.g. "Saudi Arabia"` }); continue; }
     if (r.website && r.website.trim() && !r.website.trim().startsWith('http')) { failed.push({ row:rowNum, name, reason:'website must start with http or https' }); continue; }
 
-    const founded_year    = r.founded_year    ? parseInt(r.founded_year)    : null;
-    const portfolio_count = r.portfolio_count ? parseInt(r.portfolio_count) : null;
-    if (r.founded_year    && isNaN(founded_year))    { failed.push({ row:rowNum, name, reason:'founded_year must be a number e.g. 2019' }); continue; }
-    if (r.portfolio_count && isNaN(portfolio_count)) { failed.push({ row:rowNum, name, reason:'portfolio_count must be a number' }); continue; }
+    const founded_year = r.founded_year ? parseInt(r.founded_year) : null;
+    if (r.founded_year && isNaN(founded_year)) { failed.push({ row:rowNum, name, reason:'founded_year must be a number e.g. 2019' }); continue; }
 
     const entity = {
       name,
       type,
       country,
-      description:     r.description?.trim()     || null,
-      website:         r.website?.trim()          || null,
-      industry:        r.industry?.trim()         || null,
-      stage:           r.stage?.trim()            || null,
-      employees:       r.employees?.trim()        || null,
+      description: r.description?.trim() || null,
+      website:     r.website?.trim()     || null,
+      industry:    r.industry?.trim()    || null,
+      stage:       r.stage?.trim()       || null,
+      employees:   r.employees?.trim()   || null,
       founded_year,
-      aum:             r.aum?.trim()              || null,
-      portfolio_count,
-      focus:           r.focus?.trim()            || null,
-      logo_url:        r.logo_url?.trim()         || null,
-      logo_emoji:      r.logo_emoji?.trim()       || null,
-      linkedin:        r.linkedin?.trim()         || null,
-      twitter:         r.twitter?.trim()          || null,
-      why_us:          r.why_us?.trim()           || null,
-      verified:        r.verified === 'true' || r.verified === true,
+      aum:         r.aum?.trim()         || null,
+      focus:       r.focus?.trim()       || null,
+      logo_url:    r.logo_url?.trim()    || null,
+      linkedin:    r.linkedin?.trim()    || null,
+      twitter:     r.twitter?.trim()     || null,
+      why_us:      r.why_us?.trim()      || null,
+      verified:    r.verified === 'true' || r.verified === true,
     };
 
     try {
@@ -870,13 +866,13 @@ admin.post('/entities/bulk-import', authenticate, csvUpload.single('file'), asyn
         await q(
           `UPDATE entities SET
              description=$1, website=$2, country=$3, industry=$4, stage=$5,
-             employees=$6, founded_year=$7, aum=$8, portfolio_count=$9, focus=$10,
-             logo_url=$11, logo_emoji=$12, linkedin=$13, twitter=$14, why_us=$15,
-             verified=$16, updated_at=NOW()
-           WHERE id=$17`,
+             employees=$6, founded_year=$7, aum=$8, focus=$9,
+             logo_url=$10, linkedin=$11, twitter=$12, why_us=$13,
+             verified=$14, updated_at=NOW()
+           WHERE id=$15`,
           [entity.description, entity.website, entity.country, entity.industry, entity.stage,
-           entity.employees, entity.founded_year, entity.aum, entity.portfolio_count, entity.focus,
-           entity.logo_url, entity.logo_emoji, entity.linkedin, entity.twitter, entity.why_us,
+           entity.employees, entity.founded_year, entity.aum, entity.focus,
+           entity.logo_url, entity.linkedin, entity.twitter, entity.why_us,
            entity.verified, existing[0].id]
         );
         await logAction(req.user.id,'entity.updated','entity',existing[0].id,{name,source:'csv_import'},req.ip);
@@ -888,18 +884,18 @@ admin.post('/entities/bulk-import', authenticate, csvUpload.single('file'), asyn
         const { rows: ins } = await q(
           `INSERT INTO entities (
              name,slug,type,country,description,website,stage,industry,
-             employees,founded_year,aum,portfolio_count,focus,
-             logo_url,logo_emoji,linkedin,twitter,why_us,
+             employees,founded_year,aum,focus,
+             logo_url,linkedin,twitter,why_us,
              verified,created_by,created_at,updated_at
            ) VALUES (
              $1,$2,$3::entity_type,$4,$5,$6,$7,$8,
-             $9,$10,$11,$12,$13,
-             $14,$15,$16,$17,$18,
-             $19,$20,NOW(),NOW()
+             $9,$10,$11,$12,
+             $13,$14,$15,$16,
+             $17,$18,NOW(),NOW()
            ) RETURNING id,name,type`,
           [name,slug,type,country,entity.description,entity.website,entity.stage,entity.industry,
-           entity.employees,entity.founded_year,entity.aum,entity.portfolio_count,entity.focus,
-           entity.logo_url,entity.logo_emoji,entity.linkedin,entity.twitter,entity.why_us,
+           entity.employees,entity.founded_year,entity.aum,entity.focus,
+           entity.logo_url,entity.linkedin,entity.twitter,entity.why_us,
            entity.verified,req.user.id]
         );
         await logAction(req.user.id,'entity.created','entity',ins[0].id,{name,type,source:'csv_import'},req.ip);
@@ -940,7 +936,7 @@ admin.get('/entities/:id', async (req, res) => {
 // Update entity (partial)
 admin.patch('/entities/:id', async (req, res) => {
   try {
-    const allowed = ['name','type','country','description','website','stage','industry','aum','portfolio_count','employees','founded_year','logo_url','logo_emoji','focus','linkedin','twitter','why_us','verified'];
+    const allowed = ['name','type','country','description','website','stage','industry','aum','employees','founded_year','logo_url','focus','linkedin','twitter','why_us','verified'];
     const fields=[], vals=[];
     for (const [k,v] of Object.entries(req.body)) {
       if (!allowed.includes(k)) continue;
@@ -1565,9 +1561,9 @@ admin.get('/export/:type', async (req, res) => {
     } else if (type === 'entities') {
       const params = [];
       const dateClause = buildDateFilter('created_at', params);
-      const result = await q(`SELECT name,type,country,industry,stage,aum,portfolio_count,verified,website,created_at FROM entities${dateClause ? ' WHERE 1=1' + dateClause : ''} ORDER BY created_at DESC`, params);
+      const result = await q(`SELECT name,type,country,industry,stage,aum,verified,website,created_at FROM entities${dateClause ? ' WHERE 1=1' + dateClause : ''} ORDER BY created_at DESC`, params);
       rows = result.rows;
-      headers = ['Name','Type','Country','Industry','Stage','AUM','Portfolio','Verified','Website','Created At'];
+      headers = ['Name','Type','Country','Industry','Stage','AUM','Verified','Website','Created At'];
       filename = 'entities';
     } else if (type === 'applications') {
       const params = [];

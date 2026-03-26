@@ -156,8 +156,8 @@ function ChipSelect({ options, selected, onChange, color='#E15033' }) {
 
 const EMPTY_FORM = {
   name:'', type:'accelerator', country:'', description:'', website:'',
-  stages:[], industries:[], logo_url:'', logo_emoji:'',
-  employees:'', founded_year:'', aum:'', portfolio_count:'', focus:'',
+  stages:[], industries:[], logo_url:'',
+  employees:'', founded_year:'', aum:'', focus:'',
   linkedin:'', twitter:'', why_us_items:[''], verified:false,
 };
 
@@ -254,11 +254,9 @@ export default function Entities() {
       stages,
       industries,
       logo_url: entity.logo_url || '',
-      logo_emoji: entity.logo_emoji || '',
       employees: entity.employees || '',
       founded_year: entity.founded_year ? String(entity.founded_year) : '',
       aum: entity.aum || '',
-      portfolio_count: entity.portfolio_count ? String(entity.portfolio_count) : '',
       focus: entity.focus || '',
       linkedin: entity.linkedin || '',
       twitter: entity.twitter || '',
@@ -281,10 +279,8 @@ export default function Entities() {
     employees: form.employees || null,
     founded_year: form.founded_year ? parseInt(form.founded_year) : null,
     aum: form.aum || null,
-    portfolio_count: form.portfolio_count ? parseInt(form.portfolio_count) : null,
     focus: form.focus || null,
     logo_url: form.logo_url || null,
-    logo_emoji: form.logo_emoji || null,
     linkedin: form.linkedin || null,
     twitter: form.twitter || null,
     why_us: form.why_us_items.filter(s=>s.trim()).join(' | ') || null,
@@ -480,11 +476,6 @@ export default function Entities() {
                 </Field>
               </div>
 
-              {/* Logo emoji fallback */}
-              <Field label="Logo Emoji (fallback)">
-                <input style={inputStyle} value={form.logo_emoji} onChange={e=>setForm(f=>({...f,logo_emoji:e.target.value}))} placeholder="🚀 🏢 💰 🎯"/>
-              </Field>
-
               {/* Employees */}
               <Field label="Team Size">
                 <select style={selectStyle} value={form.employees} onChange={e=>setForm(f=>({...f,employees:e.target.value}))}>
@@ -502,13 +493,6 @@ export default function Entities() {
               {(form.type==='investor'||form.type==='venture_studio') && (
                 <Field label="AUM / Fund Size">
                   <input style={inputStyle} value={form.aum} onChange={e=>setForm(f=>({...f,aum:e.target.value}))} placeholder="$50M"/>
-                </Field>
-              )}
-
-              {/* Portfolio count — investors/accelerators/venture studios */}
-              {form.type!=='startup' && (
-                <Field label="Portfolio / Alumni Count">
-                  <input style={inputStyle} type="number" min="0" value={form.portfolio_count} onChange={e=>setForm(f=>({...f,portfolio_count:e.target.value}))} placeholder="45"/>
                 </Field>
               )}
 
@@ -611,7 +595,7 @@ export default function Entities() {
             <div style={{width:72,height:72,borderRadius:16,background:`${typeColor[viewEntity.type]||'#E15033'}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden',border:'1px solid #E8E8E8'}}>
               {viewEntity.logo_url
                 ? <img src={viewEntity.logo_url} alt={viewEntity.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
-                : <span style={{fontSize:32}}>{viewEntity.logo_emoji||'🏢'}</span>
+                : <span style={{fontSize:28,fontWeight:800,color:'#888'}}>{viewEntity.name?.charAt(0)?.toUpperCase()||'E'}</span>
               }
             </div>
             <div>
@@ -635,9 +619,6 @@ export default function Entities() {
             <DrawerField label="Team Size">{viewEntity.employees || '—'}</DrawerField>
             {viewEntity.stage && <DrawerField label="Stage">{viewEntity.stage}</DrawerField>}
             {viewEntity.aum && <DrawerField label="AUM / Fund Size">{viewEntity.aum}</DrawerField>}
-            {viewEntity.portfolio_count != null && viewEntity.portfolio_count > 0 && (
-              <DrawerField label="Portfolio / Alumni">{viewEntity.portfolio_count}</DrawerField>
-            )}
           </div>
 
           {viewEntity.focus && <DrawerField label="Focus">{viewEntity.focus}</DrawerField>}
@@ -707,10 +688,8 @@ export default function Entities() {
                   ['employees','1-10 / 11-50 / 51-200 / 201-500 / 500+'],
                   ['founded_year','Number: 2019'],
                   ['aum','Investors only: $50M, $200M'],
-                  ['portfolio_count','Investors only: number of portfolio companies'],
                   ['focus','Short focus area description'],
                   ['logo_url','Use https://logo.clearbit.com/domain.com'],
-                  ['logo_emoji','Fallback emoji if no logo: 🚀 🏢 💰 🎯'],
                   ['linkedin','Full LinkedIn URL'],
                   ['twitter','@handle'],
                   ['why_us','Pipe-separated: Reason 1 | Reason 2 | Reason 3'],
