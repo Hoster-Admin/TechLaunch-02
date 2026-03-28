@@ -60,6 +60,7 @@ build = ["bash", "-c", "cd admin-app/frontend && npm install && npm run build"]
 RESEND_FROM_EMAIL = "TechLaunch MENA <hello@tlmena.com>"
 APP_URL = "https://tlmena.com"
 ADMIN_URL = "https://admin.tlmena.com"
+ADMIN_NOTIFY_EMAIL = "omalluhayyan@gmail.com"
 
 [postMerge]
 path = "scripts/post-merge.sh"
