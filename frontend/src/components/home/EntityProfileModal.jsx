@@ -72,7 +72,7 @@ export default function EntityProfileModal() {
         <div style={{ background:'linear-gradient(135deg,#0a0a0a 0%,#1a1a1a 100%)', padding:'32px 32px 24px', position:'relative' }}>
           <button onClick={() => setEntityModal(null)} style={{ position:'absolute', top:14, right:14, width:30, height:30, borderRadius:8, border:'1px solid rgba(255,255,255,.2)', background:'rgba(255,255,255,.1)', cursor:'pointer', fontSize:15, color:'rgba(255,255,255,.7)', display:'grid', placeItems:'center' }}>✕</button>
           <div style={{ display:'flex', alignItems:'flex-start', gap:16 }}>
-            <div style={{ width:64, height:64, borderRadius:16, background:'rgba(255,255,255,.1)', border:'1px solid rgba(255,255,255,.15)', display:'grid', placeItems:'center', flexShrink:0, overflow:'hidden' }}>
+            <div style={{ width:64, height:64, borderRadius:16, background:'#fff', border:'1px solid rgba(255,255,255,.15)', display:'grid', placeItems:'center', flexShrink:0, overflow:'hidden', padding:4, boxSizing:'border-box' }}>
               <EntityLogo entity={e} size={64} />
             </div>
             <div style={{ flex:1 }}>

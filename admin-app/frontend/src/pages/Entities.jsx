@@ -447,7 +447,7 @@ export default function Entities() {
                       onClick={()=>fileRef.current.click()}
                       style={{width:64,height:64,borderRadius:12,border:'2px dashed #E8E8E8',display:'flex',alignItems:'center',justifyContent:'center',cursor:'pointer',overflow:'hidden',background:'#FAFAFA',flexShrink:0}}>
                       {logoPreview
-                        ? <img src={logoPreview} alt="logo" style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                        ? <img src={logoPreview} alt="logo" style={{width:'88%',height:'88%',objectFit:'contain'}}/>
                         : <span style={{fontSize:24,color:'#DDD'}}>+</span>
                       }
                     </div>
@@ -582,9 +582,9 @@ export default function Entities() {
             <div style={{textAlign:'center',padding:'32px 0',color:'#AAAAAA',fontSize:13}}>Loading details…</div>
           )}
           <div style={{display:'flex',alignItems:'center',gap:16,marginBottom:24,paddingBottom:20,borderBottom:'1px solid #F0F0F0',opacity:viewLoading?0.4:1}}>
-            <div style={{width:72,height:72,borderRadius:16,background:`${typeColor[viewEntity.type]||'#E15033'}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden',border:'1px solid #E8E8E8'}}>
+            <div style={{width:72,height:72,borderRadius:16,background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden',border:'1px solid #E8E8E8'}}>
               {viewEntity.logo_url
-                ? <img src={viewEntity.logo_url} alt={viewEntity.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                ? <img src={viewEntity.logo_url} alt={viewEntity.name} style={{width:'88%',height:'88%',objectFit:'contain'}}/>
                 : <span style={{fontSize:28,fontWeight:800,color:'#888'}}>{viewEntity.name?.charAt(0)?.toUpperCase()||'E'}</span>
               }
             </div>
@@ -794,9 +794,9 @@ export default function Entities() {
                   onMouseLeave={el=>el.currentTarget.style.background='transparent'}>
                   <td style={{padding:'11px 16px'}}>
                     <div style={{display:'flex',alignItems:'center',gap:10}}>
-                      <div style={{width:36,height:36,borderRadius:10,background:`${typeColor[e.type]||'#E15033'}18`,display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden'}}>
+                      <div style={{width:36,height:36,borderRadius:10,background:'#fff',display:'flex',alignItems:'center',justifyContent:'center',flexShrink:0,overflow:'hidden',border:'1px solid #F0F0F0'}}>
                         {e.logo_url
-                          ? <img src={e.logo_url} alt={e.name} style={{width:'100%',height:'100%',objectFit:'cover'}}/>
+                          ? <img src={e.logo_url} alt={e.name} style={{width:'88%',height:'88%',objectFit:'contain'}}/>
                           : <span style={{fontSize:16,color:typeColor[e.type]||'#E15033'}}>◈</span>
                         }
                       </div>
