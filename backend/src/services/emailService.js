@@ -383,6 +383,68 @@ const sendPasswordResetEmail = ({ to, resetLink }) => {
   return send(to, 'Reset your Tech Launch MENA password', html, 'password-reset');
 };
 
+const sendNewUserNotificationEmail = ({ name, handle, email, persona, country }) => {
+  const to = process.env.ADMIN_NOTIFY_EMAIL || 'hello@tlmena.com';
+  const html = `<!DOCTYPE html>
+<html>
+<head><meta charset="UTF-8"><meta name="viewport" content="width=device-width,initial-scale=1"></head>
+<body style="margin:0;padding:0;background:#f4f4f5;font-family:'Segoe UI',Arial,sans-serif">
+  <table width="100%" cellpadding="0" cellspacing="0" style="background:#f4f4f5;padding:40px 0">
+    <tr><td align="center">
+      <table width="560" cellpadding="0" cellspacing="0" style="background:#ffffff;border-radius:12px;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.08)">
+        <tr><td style="background:#0a0a0a;padding:24px 32px;text-align:center">
+          <img src="${LOGO_URL}" alt="TechLaunch MENA" height="36" style="display:inline-block">
+        </td></tr>
+        <tr><td style="padding:32px">
+          <h2 style="margin:0 0 8px;font-size:20px;color:#0a0a0a">New Platform Signup 🎉</h2>
+          <p style="margin:0 0 24px;color:#666;font-size:14px">Someone just joined TechLaunch MENA.</p>
+          <table width="100%" cellpadding="0" cellspacing="0" style="background:#f9f9f9;border-radius:8px;padding:0;margin-bottom:24px">
+            <tr>
+              <td style="padding:12px 20px;border-bottom:1px solid #f0f0f0">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:.5px">Name</span><br>
+                <span style="font-size:15px;color:#0a0a0a;font-weight:600">${name}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 20px;border-bottom:1px solid #f0f0f0">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:.5px">Handle</span><br>
+                <span style="font-size:15px;color:#0a0a0a;font-weight:600">@${handle}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 20px;border-bottom:1px solid #f0f0f0">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:.5px">Email</span><br>
+                <span style="font-size:15px;color:#0a0a0a">${email}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 20px;border-bottom:1px solid #f0f0f0">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:.5px">Persona</span><br>
+                <span style="font-size:15px;color:#0a0a0a">${persona || '—'}</span>
+              </td>
+            </tr>
+            <tr>
+              <td style="padding:12px 20px">
+                <span style="font-size:12px;color:#999;text-transform:uppercase;letter-spacing:.5px">Country</span><br>
+                <span style="font-size:15px;color:#0a0a0a">${country || '—'}</span>
+              </td>
+            </tr>
+          </table>
+          <div style="text-align:center">
+            <a href="${ADMIN_URL}/users" style="display:inline-block;background:#0a0a0a;color:#ffffff;text-decoration:none;font-size:14px;font-weight:600;padding:12px 28px;border-radius:8px">View in Admin Panel</a>
+          </div>
+        </td></tr>
+        <tr><td style="background:#f9f9f9;padding:16px 32px;text-align:center;font-size:12px;color:#999">
+          TechLaunch MENA — Admin Notification
+        </td></tr>
+      </table>
+    </td></tr>
+  </table>
+</body>
+</html>`;
+  return send(to, `New signup: ${name} (@${handle})`, html, 'new-user-notify');
+};
+
 module.exports = {
   sendWelcomeEmail,
   sendPublicInvitationEmail,
@@ -391,4 +453,5 @@ module.exports = {
   sendSubmissionConfirmationEmail,
   sendRejectionEmail,
   sendPasswordResetEmail,
+  sendNewUserNotificationEmail,
 };

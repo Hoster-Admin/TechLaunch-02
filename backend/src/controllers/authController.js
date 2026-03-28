@@ -3,7 +3,7 @@ const jwt    = require('jsonwebtoken');
 const { v4: uuid } = require('uuid');
 const crypto = require('crypto');
 const { query } = require('../config/database');
-const { sendWelcomeEmail, sendPasswordResetEmail } = require('../services/emailService');
+const { sendWelcomeEmail, sendPasswordResetEmail, sendNewUserNotificationEmail } = require('../services/emailService');
 
 // ── Helper: generate tokens
 const generateTokens = (userId) => {
@@ -67,6 +67,10 @@ const register = async (req, res, next) => {
     // Send welcome email (non-blocking)
     sendWelcomeEmail({ to: user.email, name: user.name, handle: user.handle })
       .catch(err => console.error('[Email] Welcome email failed for', user.email, ':', err.message));
+
+    // Notify admin of new signup (non-blocking)
+    sendNewUserNotificationEmail({ name: user.name, handle: user.handle, email: user.email, persona: user.persona, country: user.country })
+      .catch(err => console.error('[Email] Admin signup notify failed:', err.message));
 
     res.status(201).json({
       success: true,
