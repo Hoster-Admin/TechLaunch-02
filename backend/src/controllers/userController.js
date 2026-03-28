@@ -268,9 +268,97 @@ const getPeople = async (req, res, next) => {
   } catch(err){ next(err); }
 };
 
+// ── POST /api/users/entity-claim
+const submitEntityClaim = async (req, res, next) => {
+  try {
+    const { entity_id } = req.body;
+    if (!entity_id) return res.status(400).json({ success: false, message: 'entity_id is required' });
+
+    const { rows: entity } = await query('SELECT id, name FROM entities WHERE id=$1', [entity_id]);
+    if (!entity.length) return res.status(404).json({ success: false, message: 'Entity not found' });
+
+    const { rows: existing } = await query(
+      `SELECT id, status FROM entity_claims WHERE user_id=$1 AND status='pending'`, [req.user.id]
+    );
+    if (existing.length) {
+      return res.status(409).json({ success: false, message: 'You already have a pending claim. Wait for it to be reviewed before submitting another.' });
+    }
+
+    const { rows: approved } = await query(
+      `SELECT id FROM users WHERE id=$1 AND associated_entity_id IS NOT NULL`, [req.user.id]
+    );
+    if (approved.length) {
+      return res.status(409).json({ success: false, message: 'You already have an approved entity association.' });
+    }
+
+    const { rows } = await query(
+      `INSERT INTO entity_claims (user_id, entity_id, status) VALUES ($1,$2,'pending') RETURNING *`,
+      [req.user.id, entity_id]
+    );
+
+    res.status(201).json({ success: true, data: rows[0] });
+  } catch (err) { next(err); }
+};
+
+// ── GET /api/users/entity-claim
+const getEntityClaim = async (req, res, next) => {
+  try {
+    const { rows: userRows } = await query(
+      `SELECT u.associated_entity_id,
+              e.id AS entity_id, e.name AS entity_name, e.type AS entity_type,
+              e.country AS entity_country, e.logo_url AS entity_logo_url, e.logo_emoji AS entity_logo_emoji, e.slug AS entity_slug
+       FROM users u
+       LEFT JOIN entities e ON e.id = u.associated_entity_id
+       WHERE u.id=$1`, [req.user.id]
+    );
+
+    const { rows: claimRows } = await query(
+      `SELECT ec.id, ec.entity_id, ec.status, ec.created_at,
+              e.name AS entity_name, e.type AS entity_type, e.country AS entity_country,
+              e.logo_url AS entity_logo_url, e.logo_emoji AS entity_logo_emoji, e.slug AS entity_slug
+       FROM entity_claims ec
+       JOIN entities e ON e.id = ec.entity_id
+       WHERE ec.user_id=$1
+       ORDER BY ec.created_at DESC LIMIT 1`, [req.user.id]
+    );
+
+    const user = userRows[0] || {};
+    const claim = claimRows[0] || null;
+
+    res.json({
+      success: true,
+      data: {
+        associated_entity: user.associated_entity_id ? {
+          id: user.entity_id,
+          name: user.entity_name,
+          type: user.entity_type,
+          country: user.entity_country,
+          logo_url: user.entity_logo_url,
+          logo_emoji: user.entity_logo_emoji,
+          slug: user.entity_slug,
+        } : null,
+        claim,
+      },
+    });
+  } catch (err) { next(err); }
+};
+
+// ── DELETE /api/users/entity-claim  (cancel pending claim)
+const cancelEntityClaim = async (req, res, next) => {
+  try {
+    const { rows } = await query(
+      `DELETE FROM entity_claims WHERE user_id=$1 AND status='pending' RETURNING id`,
+      [req.user.id]
+    );
+    if (!rows.length) return res.status(404).json({ success: false, message: 'No pending claim found' });
+    res.json({ success: true, message: 'Claim cancelled' });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getProfile, updateProfile, changePassword, toggleFollow,
   getBookmarks, getMyProducts, getNotifications, markNotificationsRead,
   searchUsers, getUserUpvoted, getUserActivity,
-  getUserFollowers, getUserFollowing, getPeople
+  getUserFollowers, getUserFollowing, getPeople,
+  submitEntityClaim, getEntityClaim, cancelEntityClaim,
 };

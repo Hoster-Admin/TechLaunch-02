@@ -24,6 +24,7 @@ import LauncherActivity    from '../pages/LauncherActivity.jsx';
 import AdminSuggestions  from '../pages/Suggestions.jsx';
 import AdminActivityLog  from '../pages/ActivityLog.jsx';
 import PlatformProfile   from '../pages/PlatformProfile.jsx';
+import EntityClaims      from '../pages/EntityClaims.jsx';
 import { useAuth } from '../App.jsx';
 import { adminAPI } from '../utils/api.js';
 import toast from 'react-hot-toast';
@@ -33,6 +34,7 @@ const PAGES = {
   products:     { title:'Products',                sub:'Manage all submitted products',         Component: AdminProducts },
   users:        { title:'User Management',         sub:'Manage all platform users',             Component: AdminUsers },
   entities:     { title:'Entities',                sub:'Startups, accelerators, investors',     Component: AdminEntities },
+  entityclaims: { title:'Entity Claims',           sub:'Review user entity association requests', Component: EntityClaims },
   applications: { title:'Applications & Waitlists',sub:'Review applications and waitlists',    Component: AdminApplications },
   featured:     { title:'Featured & Spotlight',    sub:'Control what appears on homepage',      Component: AdminFeatured },
   launcher:     { title:'Launcher Activity',        sub:'Community posts, comments and moderation', Component: LauncherActivity },
@@ -223,7 +225,7 @@ export default function AdminLayout() {
   const searchTimer = useRef(null);
 
   const ROLE_ACCESS = {
-    moderator: new Set(['dashboard','products','users','entities','launcher','suggestions','platformprofile']),
+    moderator: new Set(['dashboard','products','users','entities','entityclaims','launcher','suggestions','platformprofile']),
     editor:    new Set(['dashboard','products','entities','featured','platformprofile']),
   };
 

@@ -1,4 +1,4 @@
-const { query } = require('../config/database');
+const { query, getClient } = require('../config/database');
 const bcrypt = require('bcryptjs');
 
 // ═══════════════════════════════════════════════
@@ -594,6 +594,124 @@ const respondSuggestion = async (req, res, next) => {
   } catch (err) { next(err); }
 };
 
+// ═══════════════════════════════════════════════
+// ENTITY CLAIMS (admin)
+// ═══════════════════════════════════════════════
+const adminGetEntityClaims = async (req, res, next) => {
+  try {
+    const { status = 'pending', page = 1, limit = 50 } = req.query;
+    const offset = (parseInt(page) - 1) * parseInt(limit);
+    const params = [];
+    const conditions = [];
+
+    if (status && status !== 'all') {
+      params.push(status);
+      conditions.push(`ec.status = $${params.length}`);
+    }
+
+    const where = conditions.length ? 'WHERE ' + conditions.join(' AND ') : '';
+    params.push(parseInt(limit), offset);
+
+    const { rows } = await query(`
+      SELECT ec.id, ec.status, ec.created_at, ec.reviewed_at,
+             u.id AS user_id, u.name AS user_name, u.handle AS user_handle, u.email AS user_email,
+             u.avatar_color AS user_avatar_color, u.avatar_url AS user_avatar_url,
+             e.id AS entity_id, e.name AS entity_name, e.type AS entity_type,
+             e.country AS entity_country, e.logo_url AS entity_logo_url, e.logo_emoji AS entity_logo_emoji, e.slug AS entity_slug,
+             rv.name AS reviewed_by_name,
+             COUNT(*) OVER() AS total_count
+      FROM entity_claims ec
+      JOIN users u ON u.id = ec.user_id
+      JOIN entities e ON e.id = ec.entity_id
+      LEFT JOIN users rv ON rv.id = ec.reviewed_by
+      ${where}
+      ORDER BY ec.created_at DESC
+      LIMIT $${params.length - 1} OFFSET $${params.length}
+    `, params);
+
+    const total = rows[0]?.total_count || 0;
+    res.json({
+      success: true,
+      data: rows.map(({ total_count, ...r }) => r),
+      pagination: { total: parseInt(total), page: parseInt(page), limit: parseInt(limit) },
+    });
+  } catch (err) { next(err); }
+};
+
+const approveEntityClaim = async (req, res, next) => {
+  const client = await getClient();
+  try {
+    const { id } = req.params;
+
+    const { rows: claimRows } = await client.query(
+      `SELECT * FROM entity_claims WHERE id=$1`, [id]
+    );
+    if (!claimRows.length) {
+      await client.release();
+      return res.status(404).json({ success: false, message: 'Claim not found' });
+    }
+    const claim = claimRows[0];
+    if (claim.status !== 'pending') {
+      await client.release();
+      return res.status(400).json({ success: false, message: `Claim is already ${claim.status}` });
+    }
+
+    await client.query('BEGIN');
+
+    await client.query(
+      `UPDATE entity_claims SET status='approved', reviewed_by=$1, reviewed_at=NOW() WHERE id=$2`,
+      [req.user.id, id]
+    );
+
+    await client.query(
+      `UPDATE users SET associated_entity_id=$1 WHERE id=$2`,
+      [claim.entity_id, claim.user_id]
+    );
+
+    await client.query(
+      'INSERT INTO activity_log (actor_id, action, entity, entity_id, details) VALUES ($1,$2,$3,$4,$5)',
+      [req.user.id, 'entity_claim.approve', 'entity_claims', id,
+       JSON.stringify({ user_id: claim.user_id, entity_id: claim.entity_id })]
+    );
+
+    await client.query('COMMIT');
+    res.json({ success: true, message: 'Claim approved and user associated with entity' });
+  } catch (err) {
+    await client.query('ROLLBACK').catch(() => {});
+    next(err);
+  } finally {
+    client.release();
+  }
+};
+
+const rejectEntityClaim = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+
+    const { rows: claimRows } = await query(
+      `SELECT * FROM entity_claims WHERE id=$1`, [id]
+    );
+    if (!claimRows.length) return res.status(404).json({ success: false, message: 'Claim not found' });
+    const claim = claimRows[0];
+    if (claim.status !== 'pending') {
+      return res.status(400).json({ success: false, message: `Claim is already ${claim.status}` });
+    }
+
+    await query(
+      `UPDATE entity_claims SET status='rejected', reviewed_by=$1, reviewed_at=NOW() WHERE id=$2`,
+      [req.user.id, id]
+    );
+
+    await query(
+      'INSERT INTO activity_log (actor_id, action, entity, entity_id, details) VALUES ($1,$2,$3,$4,$5)',
+      [req.user.id, 'entity_claim.reject', 'entity_claims', id,
+       JSON.stringify({ user_id: claim.user_id, entity_id: claim.entity_id })]
+    );
+
+    res.json({ success: true, message: 'Claim rejected' });
+  } catch (err) { next(err); }
+};
+
 module.exports = {
   getDashboard,
   adminGetProducts, approveProduct, rejectProduct, toggleFeatured,
@@ -605,4 +723,5 @@ module.exports = {
   getReports,
   getPlatformPosts, createPlatformPost, deletePlatformPost,
   getSuggestions, respondSuggestion,
+  adminGetEntityClaims, approveEntityClaim, rejectEntityClaim,
 };

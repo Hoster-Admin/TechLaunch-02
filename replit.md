@@ -50,9 +50,10 @@ Two separate applications share one PostgreSQL database:
 
 PostgreSQL (Replit built-in + Neon NEON_DATABASE_URL). Key tables:
 
-- `users` — roles: user/admin/moderator/editor
+- `users` — roles: user/admin/moderator/editor; `associated_entity_id` links to approved entity
 - `products` — status: pending/live/soon/rejected/draft
 - `entities` — type: accelerator/investor/venture_studio
+- `entity_claims` — users request association with an entity; status: pending/approved/rejected
 - `platform_settings` — key/value store for all platform config
 - `platform_posts` — posts made by the TechLaunch MENA platform account
 - `tags` — category: role/user/product/article

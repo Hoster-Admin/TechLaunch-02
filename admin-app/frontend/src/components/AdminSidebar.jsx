@@ -19,6 +19,7 @@ const ALL_NAV_PLATFORM = [
 ];
 const ALL_NAV_CONTENT = [
   { key:'entities',     icon:'🏢', label:'Entities' },
+  { key:'entityclaims', icon:'🔗', label:'Entity Claims' },
   { key:'applications', icon:'📋', label:'Applications' },
   { key:'featured',     icon:'⭐', label:'Featured' },
   { key:'launcher',     icon:'🔥', label:'Launcher Activity' },
@@ -35,7 +36,7 @@ const ALL_NAV_PLATFORM_SECTION = [
 // Pages each role can access
 const ROLE_ACCESS = {
   admin:     null, // null = all pages
-  moderator: new Set(['dashboard','products','users','entities','launcher','suggestions','platformprofile']),
+  moderator: new Set(['dashboard','products','users','entities','entityclaims','launcher','suggestions','platformprofile']),
   editor:    new Set(['dashboard','products','entities','featured','platformprofile']),
 };
 

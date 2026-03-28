@@ -125,6 +125,10 @@ export const adminAPI = {
 
   pushTokens:          ()          => req('GET',  '/admin/push-tokens'),
   sendNotification:    (body)      => req('POST', '/admin/notifications/send', body),
+
+  entityClaims:        (p={})      => req('GET',  '/admin/entity-claims?' + new URLSearchParams(p)),
+  approveEntityClaim:  (id)        => req('POST', `/admin/entity-claims/${id}/approve`),
+  rejectEntityClaim:   (id)        => req('POST', `/admin/entity-claims/${id}/reject`),
 };
 
 export async function uploadFile(file) {

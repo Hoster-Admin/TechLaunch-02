@@ -4,7 +4,7 @@ import Navbar from '../../components/layout/Navbar';
 import Footer from '../../components/home/Footer';
 import { useAuth } from '../../context/AuthContext';
 import { useUI } from '../../context/UIContext';
-import { productsAPI, entitiesAPI } from '../../utils/api';
+import { productsAPI, entitiesAPI, entityClaimAPI } from '../../utils/api';
 import api from '../../utils/api';
 import toast from 'react-hot-toast';
 import ReactCrop, { centerCrop, makeAspectCrop } from 'react-image-crop';
@@ -66,6 +66,7 @@ const NAV_ITEMS = [
   { key:'applied',   icon:'📋', label:'Applied'            },
   { key:'messages',  icon:'💬', label:'Messages'           },
   { key:'bookmarks', icon:'🔖', label:'Bookmarks'          },
+  { key:'entity',    icon:'🔗', label:'My Entity'          },
   { key:'company',   icon:'🏢', label:'Create Entity Page'},
 ];
 
@@ -577,6 +578,57 @@ export default function SettingsPage() {
   const [coStageOpen,setCoStageOpen]=useState(false);
   const [coSubmitted,setCoSubmitted]=useState(false);
   const [coSaving,   setCoSaving]  = useState(false);
+
+  const [claimData,       setClaimData]       = useState(null);
+  const [claimLoading,    setClaimLoading]    = useState(false);
+  const [claimEntityQ,    setClaimEntityQ]    = useState('');
+  const [claimResults,    setClaimResults]    = useState([]);
+  const [claimSelected,   setClaimSelected]   = useState(null);
+  const [claimSubmitting, setClaimSubmitting] = useState(false);
+
+  React.useEffect(() => {
+    if (activeTab !== 'entity') return;
+    setClaimLoading(true);
+    entityClaimAPI.get()
+      .then(r => setClaimData(r.data?.data || null))
+      .catch(() => {})
+      .finally(() => setClaimLoading(false));
+  }, [activeTab]);
+
+  const handleClaimSearch = useCallback((q) => {
+    setClaimEntityQ(q);
+    if (!q.trim()) { setClaimResults([]); return; }
+    entitiesAPI.list({ search: q, limit: 8 })
+      .then(r => setClaimResults(r.data?.data || []))
+      .catch(() => setClaimResults([]));
+  }, []);
+
+  const handleClaimSubmit = async () => {
+    if (!claimSelected) { toast.error('Please select an entity first'); return; }
+    setClaimSubmitting(true);
+    try {
+      await entityClaimAPI.submit(claimSelected.id);
+      toast.success('Claim submitted! Awaiting admin review.');
+      setClaimSelected(null);
+      setClaimEntityQ('');
+      setClaimResults([]);
+      const r = await entityClaimAPI.get();
+      setClaimData(r.data?.data || null);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to submit claim');
+    } finally { setClaimSubmitting(false); }
+  };
+
+  const handleClaimCancel = async () => {
+    try {
+      await entityClaimAPI.cancel();
+      toast.success('Claim cancelled');
+      const r = await entityClaimAPI.get();
+      setClaimData(r.data?.data || null);
+    } catch (err) {
+      toast.error(err?.response?.data?.message || 'Failed to cancel claim');
+    }
+  };
 
   const handleAvatarUpload = (e) => {
     const file = e.target.files[0];
@@ -1097,6 +1149,165 @@ export default function SettingsPage() {
                 </div>
               </div>
             )}
+
+            {/* ── MY ASSOCIATED ENTITY ── */}
+            {activeTab === 'entity' && (() => {
+              const associatedEntity = claimData?.associated_entity;
+              const claim = claimData?.claim;
+              const hasPending  = claim?.status === 'pending';
+              const hasApproved = !!associatedEntity;
+              const hasRejected = claim?.status === 'rejected';
+
+              const ENTITY_TYPE_LABELS = {
+                startup: 'Company', accelerator: 'Accelerator', investor: 'Investor', venture_studio: 'Venture Studio',
+              };
+
+              return (
+                <div>
+                  {/* Header */}
+                  <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px', marginBottom:20 }}>
+                    <div style={{ fontSize:14, fontWeight:800, marginBottom:6, color:'#0a0a0a', display:'flex', alignItems:'center', gap:8 }}>
+                      🔗 My Associated Entity
+                    </div>
+                    <div style={{ fontSize:13, color:'#888', lineHeight:1.6 }}>
+                      Link your profile to an entity you represent — such as your startup, accelerator, or investment firm.
+                      Admins will verify your association before it goes live.
+                    </div>
+                  </div>
+
+                  {claimLoading ? (
+                    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:40, textAlign:'center', color:'#aaa', fontSize:14 }}>
+                      Loading…
+                    </div>
+                  ) : hasApproved ? (
+                    /* ── Approved: show entity ── */
+                    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:6, marginBottom:16, fontSize:12, fontWeight:700, color:'#16a34a', background:'#dcfce7', padding:'6px 12px', borderRadius:20, width:'fit-content' }}>
+                        ✓ Verified Association
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:16 }}>
+                        {associatedEntity.logo_url
+                          ? <img src={associatedEntity.logo_url} alt={associatedEntity.name} style={{ width:56, height:56, borderRadius:14, objectFit:'cover', flexShrink:0 }} />
+                          : <div style={{ width:56, height:56, borderRadius:14, background:'#f4f4f4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:28, flexShrink:0 }}>{associatedEntity.logo_emoji || '🏢'}</div>
+                        }
+                        <div>
+                          <div style={{ fontSize:17, fontWeight:800, color:'#0a0a0a' }}>{associatedEntity.name}</div>
+                          <div style={{ fontSize:13, color:'#888', marginTop:2 }}>
+                            {ENTITY_TYPE_LABELS[associatedEntity.type] || associatedEntity.type}
+                            {associatedEntity.country ? ` · ${associatedEntity.country}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ) : hasPending ? (
+                    /* ── Pending: show status ── */
+                    <div style={{ background:'#fff', border:'1.5px solid #ffd6c2', borderRadius:18, padding:'24px 28px' }}>
+                      <div style={{ display:'flex', alignItems:'center', gap:8, marginBottom:16 }}>
+                        <div style={{ fontSize:12, fontWeight:700, color:'#c0600a', background:'#fff3e0', padding:'5px 12px', borderRadius:20 }}>
+                          ⏳ Awaiting Approval
+                        </div>
+                      </div>
+                      <div style={{ display:'flex', alignItems:'center', gap:14, marginBottom:16 }}>
+                        {claim.entity_logo_url
+                          ? <img src={claim.entity_logo_url} alt={claim.entity_name} style={{ width:48, height:48, borderRadius:12, objectFit:'cover', flexShrink:0 }} />
+                          : <div style={{ width:48, height:48, borderRadius:12, background:'#f4f4f4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:24, flexShrink:0 }}>{claim.entity_logo_emoji || '🏢'}</div>
+                        }
+                        <div>
+                          <div style={{ fontSize:15, fontWeight:700, color:'#0a0a0a' }}>{claim.entity_name}</div>
+                          <div style={{ fontSize:12, color:'#888' }}>
+                            {ENTITY_TYPE_LABELS[claim.entity_type] || claim.entity_type}
+                            {claim.entity_country ? ` · ${claim.entity_country}` : ''}
+                          </div>
+                        </div>
+                      </div>
+                      <div style={{ fontSize:13, color:'#888', marginBottom:16 }}>
+                        Your request is pending admin review. You'll be notified once a decision is made.
+                      </div>
+                      <button onClick={handleClaimCancel}
+                        style={{ padding:'8px 18px', borderRadius:10, border:'1.5px solid #e8e8e8', background:'#fff', fontSize:13, fontWeight:600, cursor:'pointer', color:'#888' }}>
+                        Cancel Request
+                      </button>
+                    </div>
+                  ) : (
+                    /* ── No claim: search & submit ── */
+                    <div style={{ background:'#fff', border:'1px solid #e8e8e8', borderRadius:18, padding:'24px 28px' }}>
+                      {hasRejected && (
+                        <div style={{ background:'#fee2e2', borderRadius:12, padding:'12px 16px', marginBottom:20, fontSize:13, color:'#991b1b', fontWeight:600 }}>
+                          ✕ Your previous claim was rejected. You can submit a new request below.
+                        </div>
+                      )}
+                      <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a', marginBottom:12 }}>Search for an entity</div>
+                      <div style={{ position:'relative', marginBottom:claimResults.length > 0 ? 0 : 16 }}>
+                        <input
+                          type="text"
+                          value={claimSelected ? claimSelected.name : claimEntityQ}
+                          onChange={e => { setClaimSelected(null); handleClaimSearch(e.target.value); }}
+                          placeholder="Type to search entities…"
+                          style={{ width:'100%', padding:'11px 14px', border:'1.5px solid #e8e8e8', borderRadius:11, fontSize:14, fontFamily:'Inter,sans-serif', outline:'none', boxSizing:'border-box' }}
+                          onFocus={e => e.target.style.borderColor='var(--orange)'}
+                          onBlur={e => e.target.style.borderColor='#e8e8e8'}
+                        />
+                        {claimSelected && (
+                          <button onClick={() => { setClaimSelected(null); setClaimEntityQ(''); setClaimResults([]); }}
+                            style={{ position:'absolute', right:12, top:'50%', transform:'translateY(-50%)', background:'none', border:'none', cursor:'pointer', fontSize:16, color:'#aaa', padding:0, lineHeight:1 }}>
+                            ✕
+                          </button>
+                        )}
+                      </div>
+
+                      {claimResults.length > 0 && !claimSelected && (
+                        <div style={{ border:'1.5px solid #e8e8e8', borderRadius:11, overflow:'hidden', marginBottom:16 }}>
+                          {claimResults.map(e => (
+                            <div key={e.id} onClick={() => { setClaimSelected(e); setClaimResults([]); setClaimEntityQ(''); }}
+                              style={{ display:'flex', alignItems:'center', gap:12, padding:'12px 14px', cursor:'pointer', borderBottom:'1px solid #f4f4f4', transition:'background .1s' }}
+                              onMouseOver={ev => ev.currentTarget.style.background='#fff5f3'}
+                              onMouseOut={ev => ev.currentTarget.style.background='transparent'}>
+                              {e.logo_url
+                                ? <img src={e.logo_url} alt={e.name} style={{ width:36, height:36, borderRadius:9, objectFit:'cover', flexShrink:0 }} />
+                                : <div style={{ width:36, height:36, borderRadius:9, background:'#f4f4f4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:18, flexShrink:0 }}>{e.logo_emoji || '🏢'}</div>
+                              }
+                              <div>
+                                <div style={{ fontSize:13, fontWeight:700, color:'#0a0a0a' }}>{e.name}</div>
+                                <div style={{ fontSize:11, color:'#888' }}>
+                                  {ENTITY_TYPE_LABELS[e.type] || e.type}{e.country ? ` · ${e.country}` : ''}
+                                </div>
+                              </div>
+                            </div>
+                          ))}
+                        </div>
+                      )}
+
+                      {claimSelected && (
+                        <div style={{ border:'1.5px solid var(--orange)', borderRadius:11, padding:'12px 14px', marginBottom:16, display:'flex', alignItems:'center', gap:12 }}>
+                          {claimSelected.logo_url
+                            ? <img src={claimSelected.logo_url} alt={claimSelected.name} style={{ width:40, height:40, borderRadius:10, objectFit:'cover', flexShrink:0 }} />
+                            : <div style={{ width:40, height:40, borderRadius:10, background:'#f4f4f4', display:'flex', alignItems:'center', justifyContent:'center', fontSize:20, flexShrink:0 }}>{claimSelected.logo_emoji || '🏢'}</div>
+                          }
+                          <div style={{ flex:1 }}>
+                            <div style={{ fontSize:14, fontWeight:700, color:'#0a0a0a' }}>{claimSelected.name}</div>
+                            <div style={{ fontSize:12, color:'#888' }}>
+                              {ENTITY_TYPE_LABELS[claimSelected.type] || claimSelected.type}{claimSelected.country ? ` · ${claimSelected.country}` : ''}
+                            </div>
+                          </div>
+                          <div style={{ fontSize:11, color:'var(--orange)', fontWeight:700 }}>Selected</div>
+                        </div>
+                      )}
+
+                      <button
+                        onClick={handleClaimSubmit}
+                        disabled={!claimSelected || claimSubmitting}
+                        style={{
+                          padding:'12px 28px', borderRadius:12, border:'none', fontSize:14, fontWeight:700, cursor:claimSelected&&!claimSubmitting?'pointer':'not-allowed',
+                          background:claimSelected&&!claimSubmitting?'var(--orange)':'#e8e8e8',
+                          color:claimSelected&&!claimSubmitting?'#fff':'#aaa', transition:'all .15s',
+                        }}>
+                        {claimSubmitting ? 'Submitting…' : '🔗 Link Entity'}
+                      </button>
+                    </div>
+                  )}
+                </div>
+              );
+            })()}
 
             {/* ── CREATE ENTITY PAGE ── */}
             {activeTab === 'company' && (() => {

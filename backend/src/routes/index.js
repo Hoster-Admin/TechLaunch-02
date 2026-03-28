@@ -133,6 +133,10 @@ usersRouter.get ('/:handle/followers', optionalAuth, userCtrl.getUserFollowers);
 usersRouter.get ('/:handle/following', optionalAuth, userCtrl.getUserFollowing);
 usersRouter.get ('/:handle/upvoted',  optionalAuth, userCtrl.getUserUpvoted);
 usersRouter.get ('/:handle/activity', optionalAuth, userCtrl.getUserActivity);
+usersRouter.get ('/entity-claim',     authenticate, userCtrl.getEntityClaim);
+usersRouter.post('/entity-claim',     authenticate,
+  [body('entity_id').notEmpty().withMessage('entity_id is required')], validate, userCtrl.submitEntityClaim);
+usersRouter.delete('/entity-claim',   authenticate, userCtrl.cancelEntityClaim);
 usersRouter.get ('/:handle',    optionalAuth, userCtrl.getProfile);
 usersRouter.post('/:id/follow', authenticate, userCtrl.toggleFollow);
 
@@ -169,6 +173,11 @@ adminRouter.delete('/entities/:id',           requireMod,    adminCtrl.deleteEnt
 
 // Applications (read-only)
 adminRouter.get('/applications', requireMod, adminCtrl.adminGetApplications);
+
+// Entity Claims
+adminRouter.get ('/entity-claims',             requireMod, adminCtrl.adminGetEntityClaims);
+adminRouter.post('/entity-claims/:id/approve', requireMod, adminCtrl.approveEntityClaim);
+adminRouter.post('/entity-claims/:id/reject',  requireMod, adminCtrl.rejectEntityClaim);
 
 // Settings
 adminRouter.get('/settings',     requireAdmin, adminCtrl.getSettings);

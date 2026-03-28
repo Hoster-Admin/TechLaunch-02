@@ -165,3 +165,9 @@ export const adminAPI = {
 export const suggestionsAPI = {
   submit: (body) => api.post('/suggestions', { body }),
 };
+
+export const entityClaimAPI = {
+  get:    ()          => api.get('/users/entity-claim'),
+  submit: (entity_id) => api.post('/users/entity-claim', { entity_id }),
+  cancel: ()          => api.delete('/users/entity-claim'),
+};
