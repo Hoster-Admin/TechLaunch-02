@@ -1,0 +1,64 @@
+{
+  "expo": {
+    "name": "Tech Launch MENA",
+    "slug": "mobile",
+    "version": "1.0.0",
+    "orientation": "portrait",
+    "icon": "./assets/images/icon.png",
+    "scheme": "tlmena",
+    "userInterfaceStyle": "automatic",
+    "newArchEnabled": true,
+    "privacy": "public",
+    "splash": {
+      "image": "./assets/images/splash-icon.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#E15033"
+    },
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "com.tlmena.app",
+      "appleTeamId": "46DDQPQS6S",
+      "buildNumber": "20",
+      "entitlements": {
+        "aps-environment": "production"
+      },
+      "infoPlist": {
+        "NSPhotoLibraryUsageDescription": "Used to upload a logo or screenshots for your product listing.",
+        "NSPhotoLibraryAddUsageDescription": "Used to save images from your product listing.",
+        "NSCameraUsageDescription": "Used to take a photo for your profile picture or product listing.",
+        "ITSAppUsesNonExemptEncryption": false
+      }
+    },
+    "android": {
+      "package": "com.tlmena.app",
+      "versionCode": 1
+    },
+    "web": {
+      "favicon": "./assets/images/icon.png"
+    },
+    "plugins": [
+      "expo-router",
+      "expo-font",
+      "expo-web-browser",
+      "expo-secure-store",
+      [
+        "expo-notifications",
+        {
+          "icon": "./assets/images/icon.png",
+          "color": "#E15033",
+          "sounds": []
+        }
+      ]
+    ],
+    "experiments": {
+      "typedRoutes": true,
+      "reactCompiler": true
+    },
+    "extra": {
+      "eas": {
+        "projectId": "1ac2cabc-caab-4e29-82e9-7f5b2824fad6"
+      }
+    },
+    "owner": "abudeem"
+  }
+}
