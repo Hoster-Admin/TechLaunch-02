@@ -1,4 +1,5 @@
 import { Feather } from '@expo/vector-icons';
+import * as Clipboard from 'expo-clipboard';
 import { router, useNavigation } from 'expo-router';
 import React, { useLayoutEffect, useState } from 'react';
 import {
@@ -13,6 +14,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { Toast } from '@/components/Toast';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, getApiError } from '@/lib/api';
@@ -33,9 +35,25 @@ interface SettingsSection {
 export default function SettingsScreen() {
   const insets = useSafeAreaInsets();
   const navigation = useNavigation();
-  const { logout } = useAuth();
+  const { logout, user } = useAuth();
   const [deletingAccount, setDeletingAccount] = useState(false);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
   const { prefs, loading: prefsLoading, setNotificationsEnabled, setSoundEnabled } = useNotificationPrefs();
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(false);
+    setTimeout(() => setToastVisible(true), 30);
+  };
+
+  const handleCopyProfileLink = async () => {
+    const handle = user?.username;
+    if (!handle) return;
+    const link = `https://tlmena.com/${handle}`;
+    await Clipboard.setStringAsync(link);
+    showToast('Link copied successfully');
+  };
 
   useLayoutEffect(() => {
     navigation.setOptions({
@@ -149,6 +167,27 @@ export default function SettingsScreen() {
         </View>
       ))}
 
+      {user?.username ? (
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Profile Link</Text>
+          <View style={[styles.sectionItems, styles.profileLinkCard]}>
+            <View style={styles.iconWrap}>
+              <Feather name="link" size={18} color={Colors.brand.orange} />
+            </View>
+            <Text style={styles.profileLinkText} numberOfLines={1}>
+              tlmena.com/{user.username}
+            </Text>
+            <Pressable
+              style={({ pressed }) => [styles.copyBtn, { opacity: pressed ? 0.75 : 1 }]}
+              onPress={handleCopyProfileLink}
+            >
+              <Feather name="copy" size={16} color={Colors.brand.orange} />
+              <Text style={styles.copyBtnText}>Copy</Text>
+            </Pressable>
+          </View>
+        </View>
+      ) : null}
+
       <View style={styles.section}>
         <Text style={styles.sectionTitle}>Notifications</Text>
         <View style={styles.sectionItems}>
@@ -224,6 +263,8 @@ export default function SettingsScreen() {
         <Text style={styles.versionText}>Tech Launch MENA</Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </View>
+
+      <Toast message={toastMessage} visible={toastVisible} type="success" />
     </ScrollView>
   );
 }
@@ -245,4 +286,8 @@ const styles = StyleSheet.create({
   itemLabelDisabled: { color: Colors.text.tertiary },
   version: { alignItems: 'center', marginTop: 40, gap: 4 },
   versionText: { fontSize: 12, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular' },
+  profileLinkCard: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
+  profileLinkText: { flex: 1, fontSize: 14, color: Colors.text.secondary, fontFamily: 'Inter_400Regular' },
+  copyBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: Colors.brand.light, borderRadius: 8 },
+  copyBtnText: { fontSize: 13, fontWeight: '600', color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
 });

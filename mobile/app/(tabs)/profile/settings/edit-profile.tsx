@@ -1,9 +1,12 @@
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
+import { Image } from 'expo-image';
+import * as ImagePicker from 'expo-image-picker';
 import { router } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
+  Alert,
   Platform,
   Pressable,
   ScrollView,
@@ -125,6 +128,9 @@ export default function EditProfileScreen() {
   const [linkedin, setLinkedin] = useState(user?.linkedin ?? '');
   const [avatarColor, setAvatarColor] = useState(user?.avatarColor ?? AVATAR_COLORS[0]);
 
+  const [localAvatarUri, setLocalAvatarUri] = useState<string | null>(null);
+  const [uploadingAvatar, setUploadingAvatar] = useState(false);
+
   const [nameError, setNameError] = useState('');
   const [handleError, setHandleError] = useState('');
   const [websiteError, setWebsiteError] = useState('');
@@ -189,9 +195,43 @@ export default function EditProfileScreen() {
     },
   });
 
-  const handleSave = () => {
+  const handlePickAvatar = async () => {
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') {
+      Alert.alert('Permission required', 'Please allow access to your photo library to change your profile photo.');
+      return;
+    }
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [1, 1],
+      quality: 0.85,
+    });
+    if (!result.canceled && result.assets[0]) {
+      setLocalAvatarUri(result.assets[0].uri);
+    }
+  };
+
+  const handleSave = async () => {
     if (!validateAll()) return;
     setApiError('');
+
+    if (localAvatarUri) {
+      setUploadingAvatar(true);
+      try {
+        const formData = new FormData();
+        formData.append('avatar', { uri: localAvatarUri, type: 'image/jpeg', name: 'avatar.jpg' } as unknown as Blob);
+        await api.put('/users/me/avatar', formData, {
+          headers: { 'Content-Type': 'multipart/form-data' },
+          transformRequest: [(d: unknown) => d],
+        });
+      } catch {
+        // Avatar upload failed silently — save other profile fields anyway
+      } finally {
+        setUploadingAvatar(false);
+      }
+    }
+
     mutation.mutate();
   };
 
@@ -214,6 +254,30 @@ export default function EditProfileScreen() {
           <Text style={styles.successText}>Profile updated!</Text>
         </View>
       )}
+
+      <View style={styles.avatarSection}>
+        <Pressable onPress={handlePickAvatar} style={styles.avatarPickerWrap}>
+          {(localAvatarUri ?? user?.avatar) ? (
+            <Image
+              source={{ uri: localAvatarUri ?? user!.avatar! }}
+              style={styles.avatarPickerImage}
+              contentFit="cover"
+            />
+          ) : (
+            <View style={[styles.avatarPickerPlaceholder, { backgroundColor: avatarColor }]}>
+              <Text style={styles.avatarPickerInitial}>
+                {(user?.name ?? 'U')[0].toUpperCase()}
+              </Text>
+            </View>
+          )}
+          <View style={styles.avatarCameraOverlay}>
+            <Feather name="camera" size={18} color="#fff" />
+          </View>
+        </Pressable>
+        <Text style={styles.avatarPickerHint}>
+          {localAvatarUri ? 'Photo selected — tap to change' : 'Tap to change photo'}
+        </Text>
+      </View>
 
       <View style={styles.field}>
         <Text style={styles.label}>Full Name *</Text>
@@ -383,11 +447,13 @@ export default function EditProfileScreen() {
       </View>
 
       <Pressable
-        style={({ pressed }) => [styles.saveBtn, (!isValid || mutation.isPending) && styles.saveBtnDisabled, { opacity: pressed ? 0.85 : 1 }]}
+        style={({ pressed }) => [styles.saveBtn, (!isValid || mutation.isPending || uploadingAvatar) && styles.saveBtnDisabled, { opacity: pressed ? 0.85 : 1 }]}
         onPress={handleSave}
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || uploadingAvatar}
       >
-        <Text style={styles.saveBtnText}>{mutation.isPending ? 'Saving...' : 'Save Changes'}</Text>
+        <Text style={styles.saveBtnText}>
+          {uploadingAvatar ? 'Uploading photo...' : mutation.isPending ? 'Saving...' : 'Save Changes'}
+        </Text>
       </Pressable>
     </ScrollView>
   );
@@ -420,4 +486,11 @@ const styles = StyleSheet.create({
   saveBtn: { backgroundColor: Colors.brand.orange, borderRadius: 14, paddingVertical: 16, alignItems: 'center' },
   saveBtnDisabled: { opacity: 0.5 },
   saveBtnText: { fontSize: 16, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  avatarSection: { alignItems: 'center', gap: 10, paddingVertical: 8 },
+  avatarPickerWrap: { position: 'relative', width: 86, height: 86 },
+  avatarPickerImage: { width: 86, height: 86, borderRadius: 43, borderWidth: 2.5, borderColor: Colors.border.default },
+  avatarPickerPlaceholder: { width: 86, height: 86, borderRadius: 43, justifyContent: 'center', alignItems: 'center' },
+  avatarPickerInitial: { fontSize: 32, fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' },
+  avatarCameraOverlay: { position: 'absolute', bottom: 0, right: 0, width: 28, height: 28, borderRadius: 14, backgroundColor: Colors.brand.orange, justifyContent: 'center', alignItems: 'center', borderWidth: 2, borderColor: Colors.bg.primary },
+  avatarPickerHint: { fontSize: 12, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular' },
 });

@@ -18,8 +18,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
+import { ConfirmModal } from '@/components/ConfirmModal';
+import { Toast } from '@/components/Toast';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, getApiError } from '@/lib/api';
@@ -48,6 +51,16 @@ export default function ProductDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
   const [screenshotIndex, setScreenshotIndex] = useState(0);
+  const [showUnsaveModal, setShowUnsaveModal] = useState(false);
+  const [deleteCommentModal, setDeleteCommentModal] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(false);
+    setTimeout(() => setToastVisible(true), 30);
+  };
 
   const { data, isLoading } = useQuery<ProductDetailData>({
     queryKey: ['product', id],
@@ -125,13 +138,17 @@ export default function ProductDetailScreen() {
       setCommentText('');
       setReplyingTo(null);
       queryClient.invalidateQueries({ queryKey: ['product', id] });
+      showToast('Comment posted');
     },
     onError: (e) => Alert.alert('Could not post comment', getApiError(e)),
   });
 
   const deleteCommentMutation = useMutation({
     mutationFn: (commentId: string) => api.delete(`/products/comments/${commentId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['product', id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['product', id] });
+      showToast('Comment deleted');
+    },
   });
 
   useEffect(() => {
@@ -147,17 +164,7 @@ export default function ProductDetailScreen() {
   const showCommentMenu = (comment: Comment) => {
     const isOwn = comment.user.username === user?.username;
     if (isOwn) {
-      Alert.alert('Comment Options', undefined, [
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => Alert.alert('Delete Comment', 'Delete this comment?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => deleteCommentMutation.mutate(comment.id) },
-          ]),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
+      setDeleteCommentModal(comment.id);
     } else {
       Alert.alert('Report Comment', 'Report this comment as inappropriate?', [
         { text: 'Cancel', style: 'cancel' },
@@ -203,10 +210,13 @@ export default function ProductDetailScreen() {
             <Feather name="share" size={18} color={Colors.text.primary} />
           </Pressable>
           <Pressable
-            style={[styles.actionBtn, product.bookmarked && styles.actionBtnActive]}
-            onPress={() => bookmarkMutation.mutate()}
+            style={[styles.actionBtn, styles.saveBtn, product.bookmarked && styles.actionBtnActive]}
+            onPress={() => product.bookmarked ? setShowUnsaveModal(true) : bookmarkMutation.mutate()}
           >
             <Feather name="bookmark" size={18} color={product.bookmarked ? Colors.brand.orange : Colors.text.primary} />
+            <Text style={[styles.saveBtnLabel, product.bookmarked && styles.saveBtnLabelActive]}>
+              {product.bookmarked ? 'Saved' : 'Save'}
+            </Text>
           </Pressable>
         </View>
       </View>
@@ -246,14 +256,22 @@ export default function ProductDetailScreen() {
               </View>
 
               <View style={styles.voteRow}>
-                <Pressable
-                  style={[styles.voteBtn, product.upvoted && styles.voteBtnActive, upvoteMutation.isPending && { opacity: 0.5 }]}
-                  onPress={() => upvoteMutation.mutate()}
-                  disabled={upvoteMutation.isPending}
-                >
-                  <Text style={styles.voteEmoji}>🎉</Text>
-                  <Text style={[styles.voteCount, product.upvoted && styles.voteCountActive]}>{product.upvotes}</Text>
-                </Pressable>
+                <View style={styles.voteBtnWrap}>
+                  <Pressable
+                    style={[styles.voteBtn, product.upvoted && styles.voteBtnActive, upvoteMutation.isPending && { opacity: 0.5 }]}
+                    onPress={() => upvoteMutation.mutate()}
+                    disabled={upvoteMutation.isPending}
+                  >
+                    <Text style={styles.voteEmoji}>🎉</Text>
+                    <Text style={[styles.voteCount, product.upvoted && styles.voteCountActive]}>{product.upvotes}</Text>
+                  </Pressable>
+                  {!product.upvoted && (
+                    <Text style={styles.voteHint}>Tap to upvote</Text>
+                  )}
+                  {product.upvoted && (
+                    <Text style={styles.voteHintActive}>Tap again to remove</Text>
+                  )}
+                </View>
                 {product.website && (
                   <Pressable
                     style={styles.websiteBtn}
@@ -420,6 +438,30 @@ export default function ProductDetailScreen() {
           </Pressable>
         </View>
       </View>
+
+      <Toast message={toastMessage} visible={toastVisible} type="success" />
+
+      <ConfirmModal
+        visible={showUnsaveModal}
+        title="Remove from Saved"
+        message="Are you sure you want to unsave this product?"
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => { setShowUnsaveModal(false); bookmarkMutation.mutate(); }}
+        onCancel={() => setShowUnsaveModal(false)}
+      />
+      <ConfirmModal
+        visible={deleteCommentModal !== null}
+        title="Delete comment"
+        message="Are you sure you want to delete this comment?"
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deleteCommentModal) deleteCommentMutation.mutate(deleteCommentModal);
+          setDeleteCommentModal(null);
+        }}
+        onCancel={() => setDeleteCommentModal(null)}
+      />
     </View>
   );
 }
@@ -431,6 +473,12 @@ const styles = StyleSheet.create({
   topBarActions: { flexDirection: 'row', gap: 8 },
   actionBtn: { width: 36, height: 36, borderRadius: 10, backgroundColor: Colors.bg.secondary, justifyContent: 'center', alignItems: 'center' },
   actionBtnActive: { backgroundColor: Colors.brand.light },
+  saveBtn: { width: 'auto', flexDirection: 'row', gap: 5, paddingHorizontal: 12 },
+  saveBtnLabel: { fontSize: 13, fontWeight: '600', color: Colors.text.primary, fontFamily: 'Inter_600SemiBold' },
+  saveBtnLabelActive: { color: Colors.brand.orange },
+  voteBtnWrap: { alignItems: 'center', gap: 4 },
+  voteHint: { fontSize: 10, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular' },
+  voteHintActive: { fontSize: 10, color: Colors.brand.orange, fontFamily: 'Inter_400Regular' },
   listContent: { paddingBottom: 120 },
   productHeader: { backgroundColor: Colors.bg.primary, marginBottom: 12 },
   coverImage: { width: '100%', height: 200 },

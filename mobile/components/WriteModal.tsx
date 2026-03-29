@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
@@ -19,12 +19,13 @@ import {
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Colors } from '@/constants/Colors';
+import { Toast } from '@/components/Toast';
 import { api, getApiError } from '@/lib/api';
 
 type Mode = 'post' | 'article';
 
-const DEFAULT_POST_CATEGORIES = ['Discussion', 'Milestone', 'Tip', 'Question', 'Announcement', 'Ask'];
-const DEFAULT_ARTICLE_CATEGORIES = ['Guide', 'Founder Story', 'Report', 'Tip', 'For Students', 'Business'];
+const POST_CATEGORIES = ['Discussion', 'Milestone', 'Tip', 'Question', 'Announcement', 'Ask'];
+const ARTICLE_CATEGORIES = ['Guide', 'Founder Story', 'Report', 'Tip', 'For Students', 'Business'];
 
 interface Props {
   visible: boolean;
@@ -41,24 +42,21 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
   const [body, setBody] = useState('');
   const [title, setTitle] = useState('');
   const [imageUri, setImageUri] = useState<string | null>(null);
-  const [postCategory, setPostCategory] = useState('');
-  const [articleCategory, setArticleCategory] = useState('');
+  const [postCategory, setPostCategory] = useState('Discussion');
+  const [articleCategory, setArticleCategory] = useState('Guide');
   const [showCategoryPicker, setShowCategoryPicker] = useState(false);
   const [error, setError] = useState('');
-
-  const { data: tagsData } = useQuery({
-    queryKey: ['tags'],
-    queryFn: () => api.get('/tags').then(r => r.data?.data ?? {}),
-    staleTime: 5 * 60 * 1000,
-  });
-  const postCategories    = (tagsData?.post    ?? []).map((t: { name: string }) => t.name).filter(Boolean).length > 0
-    ? (tagsData.post).map((t: { name: string }) => t.name)
-    : DEFAULT_POST_CATEGORIES;
-  const articleCategories = (tagsData?.article ?? []).map((t: { name: string }) => t.name).filter(Boolean).length > 0
-    ? (tagsData.article).map((t: { name: string }) => t.name)
-    : DEFAULT_ARTICLE_CATEGORIES;
+  const [selection, setSelection] = useState({ start: 0, end: 0 });
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
 
   const bodyRef = useRef<TextInput>(null);
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(false);
+    setTimeout(() => setToastVisible(true), 30);
+  };
 
   useEffect(() => {
     if (visible) {
@@ -82,8 +80,8 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
     setBody('');
     setTitle('');
     setImageUri(null);
-    setPostCategory('');
-    setArticleCategory('');
+    setPostCategory('Discussion');
+    setArticleCategory('Guide');
     setShowCategoryPicker(false);
     setError('');
   }, []);
@@ -104,13 +102,37 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
     }
   };
 
-  const currentCategories = mode === 'post' ? postCategories : articleCategories;
-  const currentCategory = (mode === 'post' ? postCategory : articleCategory) || currentCategories[0] || '';
-  const setCurrentCategory = mode === 'post' ? setPostCategory : setArticleCategory;
+  const insertFormat = (prefix: string, suffix: string, placeholder: string) => {
+    const { start, end } = selection;
+    let newBody: string;
+    if (start !== end) {
+      const selected = body.slice(start, end);
+      newBody = body.slice(0, start) + prefix + selected + suffix + body.slice(end);
+    } else {
+      newBody = body.slice(0, start) + prefix + placeholder + suffix + body.slice(start);
+    }
+    setBody(newBody);
+    setTimeout(() => bodyRef.current?.focus(), 50);
+  };
+
+  const insertLinePrefix = (prefix: string) => {
+    const lines = body.split('\n');
+    const newPrefix = '\n' + prefix;
+    setBody(body + newPrefix);
+    setTimeout(() => bodyRef.current?.focus(), 50);
+  };
+
+  const insertNumberedList = () => {
+    const lines = body.split('\n');
+    const lastListLine = [...lines].reverse().find(l => /^\d+\.\s/.test(l));
+    const nextNum = lastListLine ? parseInt(lastListLine) + 1 : 1;
+    setBody(body + '\n' + nextNum + '. ');
+    setTimeout(() => bodyRef.current?.focus(), 50);
+  };
 
   const mutation = useMutation({
     mutationFn: async () => {
-      const category = currentCategory;
+      const category = mode === 'post' ? postCategory : articleCategory;
 
       if (imageUri) {
         const formData = new FormData();
@@ -152,9 +174,12 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
       queryClient.invalidateQueries({ queryKey: ['launcher'] });
       queryClient.invalidateQueries({ queryKey: ['launcher-posts'] });
-      reset();
-      onClose();
-      onSuccess?.();
+      showToast('Post published');
+      setTimeout(() => {
+        reset();
+        onClose();
+        onSuccess?.();
+      }, 800);
     },
     onError: (e) => {
       setError(getApiError(e));
@@ -165,6 +190,10 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
   const canPost = mode === 'post'
     ? body.trim().length >= 5 && body.trim().length <= 200
     : body.trim().length >= 20 && title.trim().length >= 5;
+
+  const currentCategories = mode === 'post' ? POST_CATEGORIES : ARTICLE_CATEGORIES;
+  const currentCategory = mode === 'post' ? postCategory : articleCategory;
+  const setCurrentCategory = mode === 'post' ? setPostCategory : setArticleCategory;
 
   const translateY = slideAnim.interpolate({
     inputRange: [0, 1],
@@ -188,6 +217,7 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
         </TouchableWithoutFeedback>
 
         <Animated.View style={[styles.sheet, { transform: [{ translateY }], paddingBottom: insets.bottom + 16 }]}>
+          <Toast message={toastMessage} visible={toastVisible} type="success" />
           <View style={styles.handle} />
 
           <View style={styles.sheetHeader}>
@@ -237,6 +267,21 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
               />
             )}
 
+            <View style={styles.toolbar}>
+              <Pressable style={styles.toolbarBtn} onPress={() => insertFormat('**', '**', 'bold')} hitSlop={4}>
+                <Text style={styles.toolbarBtnText}>B</Text>
+              </Pressable>
+              <Pressable style={styles.toolbarBtn} onPress={() => insertFormat('_', '_', 'italic')} hitSlop={4}>
+                <Text style={[styles.toolbarBtnText, styles.toolbarBtnItalic]}>I</Text>
+              </Pressable>
+              <Pressable style={styles.toolbarBtn} onPress={() => insertLinePrefix('- ')} hitSlop={4}>
+                <Feather name="list" size={14} color={Colors.text.secondary} />
+              </Pressable>
+              <Pressable style={styles.toolbarBtn} onPress={insertNumberedList} hitSlop={4}>
+                <Text style={styles.toolbarBtnText}>1.</Text>
+              </Pressable>
+            </View>
+
             <TextInput
               ref={bodyRef}
               style={[styles.bodyInput, mode === 'article' && styles.bodyInputArticle]}
@@ -248,6 +293,8 @@ export function WriteModal({ visible, onClose, onSuccess }: Props) {
               placeholderTextColor={Colors.text.tertiary}
               value={body}
               onChangeText={setBody}
+              onSelectionChange={e => setSelection(e.nativeEvent.selection)}
+              selection={undefined}
               multiline
               textAlignVertical="top"
               maxLength={mode === 'post' ? 200 : 2000}
@@ -401,6 +448,33 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   errorText: { flex: 1, fontSize: 12, color: Colors.status.error, fontFamily: 'Inter_400Regular' },
+  toolbar: {
+    flexDirection: 'row',
+    gap: 4,
+    marginBottom: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.light,
+    paddingBottom: 8,
+  },
+  toolbarBtn: {
+    width: 32,
+    height: 28,
+    borderRadius: 6,
+    backgroundColor: Colors.bg.secondary,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+    justifyContent: 'center',
+    alignItems: 'center',
+  },
+  toolbarBtnText: {
+    fontSize: 13,
+    fontWeight: '700',
+    color: Colors.text.secondary,
+    fontFamily: 'Inter_700Bold',
+  },
+  toolbarBtnItalic: {
+    fontStyle: 'italic',
+  },
   titleInput: {
     fontSize: 16,
     fontWeight: '600',

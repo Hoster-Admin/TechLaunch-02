@@ -29,18 +29,17 @@ const SORT_PILLS: { id: SortFilter; label: string; emoji?: string }[] = [
   { id: 'all',  label: 'All' },
   { id: 'new',  label: 'New',  emoji: '🆕' },
   { id: 'soon', label: 'Soon', emoji: '⏳' },
+  { id: 'top',  label: 'Top',  emoji: '🏆' },
 ];
 
 const COUNTRIES = ['All', 'Saudi Arabia', 'UAE', 'Egypt', 'Jordan', 'Lebanon', 'Kuwait', 'Qatar', 'Bahrain', 'Oman', 'Morocco', 'Tunisia', 'Iraq'];
 const INDUSTRIES = ['All', 'Fintech', 'Edtech', 'Healthtech', 'E-Commerce Tech', 'Proptech', 'Agritech', 'Logistics Tech', 'AI & ML Tech', 'SaaS Tech', 'Gaming Tech', 'Cleantech', 'Foodtech', 'Traveltech', 'Cybersecurity Tech', 'HR & Work Tech', 'Media Tech', 'Dev Tools Tech', 'Web3 Tech'];
 
 function getSortParams(sort: SortFilter): Record<string, string> {
-  switch (sort) {
-    case 'new':  return { sort: 'newest' };
-    case 'soon': return { status: 'upcoming' };
-    case 'top':
-    default:     return { sort: 'upvotes' };
-  }
+  if (sort === 'new') return { sort: 'newest' };
+  if (sort === 'top') return { sort: 'upvotes' };
+  if (sort === 'soon') return { status: 'upcoming' };
+  return {};
 }
 
 export default function HomeScreen() {

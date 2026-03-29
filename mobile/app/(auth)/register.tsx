@@ -78,6 +78,10 @@ export default function RegisterScreen() {
       setError('Password must be at least 8 characters');
       return;
     }
+    if (!/[a-zA-Z]/.test(password) || !/[0-9]/.test(password)) {
+      setError('Password must contain both letters and numbers');
+      return;
+    }
     setError('');
     setEmailError('');
     setIsLoading(true);

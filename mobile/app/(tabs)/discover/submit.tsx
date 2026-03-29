@@ -149,6 +149,14 @@ export default function SubmitProductScreen() {
       setNameError('Product name must be at least 3 characters.');
       return;
     }
+    if (/^[^a-zA-Z0-9\s]+$/.test(name.trim())) {
+      setNameError('Product name cannot consist of only symbols.');
+      return;
+    }
+    if (/^[0-9\s]+$/.test(name.trim())) {
+      setNameError('Product name cannot consist of only numbers.');
+      return;
+    }
     if (!validateUrl(website)) {
       setUrlError('Please enter a valid URL starting with https://');
       return;

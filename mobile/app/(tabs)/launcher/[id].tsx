@@ -15,8 +15,11 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import Markdown from 'react-native-markdown-display';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { Avatar } from '@/components/Avatar';
+import { ConfirmModal } from '@/components/ConfirmModal';
+import { Toast } from '@/components/Toast';
 import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { notifyComment, notifyReply } from '@/lib/notify';
@@ -38,6 +41,16 @@ export default function PostDetailScreen() {
   const { user } = useAuth();
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
+  const [deletePostModal, setDeletePostModal] = useState(false);
+  const [deleteCommentModal, setDeleteCommentModal] = useState<string | null>(null);
+  const [toastVisible, setToastVisible] = useState(false);
+  const [toastMessage, setToastMessage] = useState('');
+
+  const showToast = (msg: string) => {
+    setToastMessage(msg);
+    setToastVisible(false);
+    setTimeout(() => setToastVisible(true), 30);
+  };
 
   const { data, isLoading } = useQuery<PostDetailData>({
     queryKey: ['launcherPost', id],
@@ -79,6 +92,7 @@ export default function PostDetailScreen() {
       setCommentText('');
       setReplyingTo(null);
       queryClient.invalidateQueries({ queryKey: ['launcherPost', id] });
+      showToast('Comment posted');
     },
     onError: (e) => Alert.alert('Could not post comment', getApiError(e)),
   });
@@ -94,13 +108,17 @@ export default function PostDetailScreen() {
     mutationFn: () => api.delete(`/launcher/${id}`),
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['launcher'] });
+      queryClient.invalidateQueries({ queryKey: ['launcher-posts'] });
       router.back();
     },
   });
 
   const deleteCommentMutation = useMutation({
     mutationFn: (commentId: string) => api.delete(`/launcher/comments/${commentId}`),
-    onSuccess: () => queryClient.invalidateQueries({ queryKey: ['launcherPost', id] }),
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['launcherPost', id] });
+      showToast('Comment deleted');
+    },
   });
 
   const showPostMenu = (post: Post) => {
@@ -117,10 +135,7 @@ export default function PostDetailScreen() {
         {
           text: 'Delete',
           style: 'destructive',
-          onPress: () => Alert.alert('Delete Post', 'Are you sure?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => deletePostMutation.mutate() },
-          ]),
+          onPress: () => setDeletePostModal(true),
         },
         { text: 'Cancel', style: 'cancel' },
       ]);
@@ -135,17 +150,7 @@ export default function PostDetailScreen() {
   const showCommentMenu = (comment: Comment) => {
     const isOwn = comment.user.username === user?.username;
     if (isOwn) {
-      Alert.alert('Comment Options', undefined, [
-        {
-          text: 'Delete',
-          style: 'destructive',
-          onPress: () => Alert.alert('Delete Comment', 'Delete this comment?', [
-            { text: 'Cancel', style: 'cancel' },
-            { text: 'Delete', style: 'destructive', onPress: () => deleteCommentMutation.mutate(comment.id) },
-          ]),
-        },
-        { text: 'Cancel', style: 'cancel' },
-      ]);
+      setDeleteCommentModal(comment.id);
     } else {
       Alert.alert('Report Comment', 'Report this comment as inappropriate?', [
         { text: 'Cancel', style: 'cancel' },
@@ -202,7 +207,7 @@ export default function PostDetailScreen() {
               </View>
             </Pressable>
             {post.title && <Text style={styles.postTitle}>{post.title}</Text>}
-            <Text style={styles.postBody}>{post.body}</Text>
+            <Markdown style={postMarkdownStyles}>{post.body ?? ''}</Markdown>
             {post.image && (
               <Image
                 source={{ uri: post.image }}
@@ -318,9 +323,44 @@ export default function PostDetailScreen() {
           </Pressable>
         </View>
       </View>
+
+      <Toast message={toastMessage} visible={toastVisible} type="success" />
+
+      <ConfirmModal
+        visible={deletePostModal}
+        title="Delete post"
+        message="Are you sure? This cannot be undone."
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => { setDeletePostModal(false); deletePostMutation.mutate(); }}
+        onCancel={() => setDeletePostModal(false)}
+      />
+      <ConfirmModal
+        visible={deleteCommentModal !== null}
+        title="Delete comment"
+        message="Are you sure you want to delete this comment?"
+        confirmLabel="Delete"
+        destructive
+        onConfirm={() => {
+          if (deleteCommentModal) deleteCommentMutation.mutate(deleteCommentModal);
+          setDeleteCommentModal(null);
+        }}
+        onCancel={() => setDeleteCommentModal(null)}
+      />
     </View>
   );
 }
+
+const postMarkdownStyles = StyleSheet.create({
+  body: { fontSize: 15, color: Colors.text.secondary, lineHeight: 22, fontFamily: 'Inter_400Regular' },
+  strong: { fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
+  em: { fontStyle: 'italic', color: Colors.text.secondary },
+  link: { color: Colors.brand.orange, textDecorationLine: 'underline' },
+  bullet_list: { marginVertical: 2 },
+  ordered_list: { marginVertical: 2 },
+  list_item: { flexDirection: 'row', marginVertical: 2 },
+  paragraph: { marginVertical: 2 },
+});
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg.secondary },
