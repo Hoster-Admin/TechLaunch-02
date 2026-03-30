@@ -73,16 +73,34 @@ async function ensurePermissionGranted(): Promise<boolean> {
   }
 }
 
+const EAS_PROJECT_ID = '1ac2cabc-caab-4e29-82e9-7f5b2824fad6';
+
 async function registerPushToken(username?: string): Promise<void> {
   if (Platform.OS === 'web') return;
   try {
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    const tokenData = await Notifications.getExpoPushTokenAsync({ projectId: EAS_PROJECT_ID });
     await api.patch('/users/me', { pushToken: tokenData.data });
     if (username) {
       await registerTokenWithServer(username, tokenData.data);
     }
   } catch (err) {
     console.warn('[Notifications] Failed to register push token:', err);
+  }
+}
+
+async function playPreviewSound(): Promise<void> {
+  if (Platform.OS === 'web') return;
+  try {
+    await Notifications.scheduleNotificationAsync({
+      content: {
+        title: 'Sound Preview',
+        body: 'Notification sound is enabled',
+        sound: true,
+      },
+      trigger: null,
+    });
+  } catch (err) {
+    console.warn('[Notifications] Failed to play preview sound:', err);
   }
 }
 
@@ -181,6 +199,9 @@ export function NotificationProvider({
     setPrefs(next);
     await savePrefs(next);
     applyHandler(next.notificationsEnabled, next.soundEnabled);
+    if (enabled && next.notificationsEnabled) {
+      await playPreviewSound();
+    }
   }, [prefs]);
 
   return (

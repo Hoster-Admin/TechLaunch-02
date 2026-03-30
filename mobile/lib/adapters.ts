@@ -144,11 +144,16 @@ export function adaptEntity(raw: Raw): EcosystemEntity {
 }
 
 export function adaptThread(raw: Raw): Conversation {
-  const participant = raw.participant ?? raw.other_user ?? raw.user ?? {};
+  const nested = raw.participant ?? raw.other_user ?? raw.user ?? raw.sender ?? null;
+  // If no nested user object (or it has no identifying info), treat the thread
+  // row itself as the participant — some API shapes return user fields at root level
+  const hasIdentity = (o: Raw | null) =>
+    o && (o.name || o.username || o.handle || o.id);
+  const participantRaw: Raw = hasIdentity(nested) ? (nested as Raw) : hasIdentity(raw) ? raw : {};
   const lastMsg = raw.last_message ?? raw.lastMessage ?? raw.latest_message ?? null;
   return {
-    id: String(raw.id ?? raw.thread_id ?? participant.handle ?? participant.username ?? Math.random()),
-    participant: adaptUser(participant),
+    id: String(raw.id ?? raw.thread_id ?? participantRaw.handle ?? participantRaw.username ?? Math.random()),
+    participant: adaptUser(participantRaw),
     lastMessage: lastMsg ? {
       body: lastMsg.body ?? lastMsg.content ?? lastMsg.message ?? '',
       senderHandle: lastMsg.sender_handle ?? lastMsg.senderHandle ?? lastMsg.sender?.handle ?? '',

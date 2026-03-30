@@ -18,7 +18,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tlmena.app",
       "appleTeamId": "46DDQPQS6S",
-      "buildNumber": "24",
+      "buildNumber": "26",
       "entitlements": {
         "aps-environment": "production"
       },

@@ -268,7 +268,6 @@ export default function HomeScreen() {
               <ActivityIndicator color={Colors.brand.orange} style={{ paddingVertical: 20 }} />
             ) : null
           }
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
       )}
     </View>
@@ -407,7 +406,7 @@ const styles = StyleSheet.create({
     color: Colors.brand.orange,
     fontFamily: 'Inter_600SemiBold',
   },
-  listContent: { padding: 16, gap: 12 },
+  listContent: { padding: 16, gap: 6 },
   listHeading: {
     flexDirection: 'row',
     alignItems: 'center',
