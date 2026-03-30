@@ -275,12 +275,6 @@ export default function ProductDetailScreen() {
                       <Text style={[styles.voteCount, product.upvoted && styles.voteCountActive]}>{product.upvotes}</Text>
                     </Pressable>
                   </Animated.View>
-                  {!product.upvoted && (
-                    <Text style={styles.voteHint}>Tap to upvote</Text>
-                  )}
-                  {product.upvoted && (
-                    <Text style={styles.voteHintActive}>Tap again to remove</Text>
-                  )}
                 </View>
                 {product.website && (
                   <Pressable

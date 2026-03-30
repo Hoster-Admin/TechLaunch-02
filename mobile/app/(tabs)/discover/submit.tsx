@@ -1,12 +1,14 @@
+import { EventArg, NavigationAction } from '@react-navigation/native';
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQueryClient } from '@tanstack/react-query';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import * as ImagePicker from 'expo-image-picker';
-import { router } from 'expo-router';
+import { router, useNavigation } from 'expo-router';
 import React, { useEffect, useRef, useState } from 'react';
 import {
   Alert,
+  BackHandler,
   Platform,
   Pressable,
   ScrollView,
@@ -25,6 +27,7 @@ export default function SubmitProductScreen() {
   const insets = useSafeAreaInsets();
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
   const queryClient = useQueryClient();
+  const navigation = useNavigation();
   const submittedRef = useRef(false);
 
   const [name, setName] = useState('');
@@ -42,14 +45,41 @@ export default function SubmitProductScreen() {
   const [success, setSuccess] = useState(false);
   const mountedRef = useRef(true);
   const backTimerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const navigatingRef = useRef(false);
+
+  function goBackToProfile() {
+    if (navigatingRef.current) return;
+    navigatingRef.current = true;
+    router.replace({ pathname: '/(tabs)/profile', params: { tab: 'products' } });
+  }
 
   useEffect(() => {
     mountedRef.current = true;
+
+    const unsubscribeBeforeRemove = navigation.addListener(
+      'beforeRemove',
+      (e: EventArg<'beforeRemove', true, { action: NavigationAction }>) => {
+        if (navigatingRef.current) return;
+        e.preventDefault();
+        goBackToProfile();
+      },
+    );
+
+    let androidSubscription: ReturnType<typeof BackHandler.addEventListener> | null = null;
+    if (Platform.OS === 'android') {
+      androidSubscription = BackHandler.addEventListener('hardwareBackPress', () => {
+        goBackToProfile();
+        return true;
+      });
+    }
+
     return () => {
       mountedRef.current = false;
       if (backTimerRef.current) clearTimeout(backTimerRef.current);
+      unsubscribeBeforeRemove();
+      androidSubscription?.remove();
     };
-  }, []);
+  }, [navigation]);
 
   const validateUrl = (url: string): boolean => {
     if (!url.trim()) return true;
@@ -129,7 +159,7 @@ export default function SubmitProductScreen() {
       queryClient.invalidateQueries({ queryKey: ['home-products'] });
       queryClient.invalidateQueries({ queryKey: ['submissions'] });
       backTimerRef.current = setTimeout(() => {
-        if (mountedRef.current) router.back();
+        if (mountedRef.current) goBackToProfile();
       }, 2000);
     },
     onError: (e) => {
@@ -177,7 +207,7 @@ export default function SubmitProductScreen() {
     return (
       <View style={[styles.container, { paddingTop: topPad }]}>
         <View style={styles.topBar}>
-          <Pressable onPress={() => router.back()} style={styles.backBtn}>
+          <Pressable onPress={goBackToProfile} style={styles.backBtn}>
             <Feather name="arrow-left" size={22} color={Colors.text.primary} />
           </Pressable>
         </View>
@@ -197,7 +227,7 @@ export default function SubmitProductScreen() {
   return (
     <View style={[styles.container, { paddingTop: topPad }]}>
       <View style={styles.topBar}>
-        <Pressable onPress={() => router.back()} style={styles.backBtn}>
+        <Pressable onPress={goBackToProfile} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={Colors.text.primary} />
         </Pressable>
         <Text style={styles.topBarTitle}>Submit Product</Text>

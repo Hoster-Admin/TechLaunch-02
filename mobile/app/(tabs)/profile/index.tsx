@@ -1,7 +1,7 @@
 import { Feather } from '@expo/vector-icons';
 import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
-import { router } from 'expo-router';
-import React, { useState } from 'react';
+import { router, useLocalSearchParams } from 'expo-router';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -84,9 +84,16 @@ interface ProfileData {
 export default function ProfileScreen() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
+  const params = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<ProfileTab>('activity');
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
+
+  useEffect(() => {
+    if (params.tab === 'products') {
+      setActiveTab('products');
+    }
+  }, [params.tab]);
 
   const { data, isLoading } = useQuery<ProfileData>({
     queryKey: ['myProfile', me?.username],
@@ -165,7 +172,7 @@ export default function ProfileScreen() {
 
   const listData = getListData();
 
-  const ProfileHeader = (
+  const ProfileHeader = () => (
     <View>
       <View style={[styles.cover, { backgroundColor: profile?.avatarColor ?? '#111827' }]} />
 

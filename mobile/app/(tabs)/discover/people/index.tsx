@@ -54,15 +54,19 @@ export default function PeopleScreen() {
       const res = await api.get('/users', { params });
       const body = res.data;
       const raw: unknown[] =
-        Array.isArray(body?.data) ? body.data :
-        Array.isArray(body?.users) ? body.users :
-        Array.isArray(body?.members) ? body.members :
         Array.isArray(body) ? body :
+        Array.isArray(body?.data) ? body.data :
+        Array.isArray(body?.data?.data) ? body.data.data :
+        Array.isArray(body?.users) ? body.users :
+        Array.isArray(body?.data?.users) ? body.data.users :
+        Array.isArray(body?.members) ? body.members :
+        Array.isArray(body?.results) ? body.results :
+        Array.isArray(body?.data?.results) ? body.data.results :
         [];
       const items = (raw as Record<string, unknown>[]).map(adaptUser);
-      const pag = body?.pagination;
-      const page = (pag?.page ?? pageParam) as number;
-      const hasMore = pag ? pag.page < pag.pages : false;
+      const pag = body?.pagination ?? body?.meta ?? body?.data?.pagination ?? body?.data?.meta;
+      const page = (pag?.current_page ?? pag?.page ?? pageParam) as number;
+      const hasMore = pag ? (pag.current_page ?? pag.page ?? 1) < (pag.last_page ?? pag.pages ?? 1) : false;
       return { items, hasMore, page };
     },
     initialPageParam: 1,

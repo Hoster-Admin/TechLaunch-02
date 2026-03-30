@@ -23,13 +23,12 @@ import { api, getApiError } from '@/lib/api';
 import { adaptProductsPage } from '@/lib/adapters';
 import type { PaginatedResponse, Product } from '@/types';
 
-type SortFilter = 'all' | 'new' | 'soon' | 'top';
+type SortFilter = 'all' | 'new' | 'soon';
 
 const SORT_PILLS: { id: SortFilter; label: string; emoji?: string }[] = [
   { id: 'all',  label: 'All' },
   { id: 'new',  label: 'New',  emoji: '🆕' },
   { id: 'soon', label: 'Soon', emoji: '⏳' },
-  { id: 'top',  label: 'Top',  emoji: '🏆' },
 ];
 
 const COUNTRIES = ['All', 'Saudi Arabia', 'UAE', 'Egypt', 'Jordan', 'Lebanon', 'Kuwait', 'Qatar', 'Bahrain', 'Oman', 'Morocco', 'Tunisia', 'Iraq'];
@@ -37,7 +36,6 @@ const INDUSTRIES = ['All', 'Fintech', 'Edtech', 'Healthtech', 'E-Commerce Tech',
 
 function getSortParams(sort: SortFilter): Record<string, string> {
   if (sort === 'new') return { sort: 'newest' };
-  if (sort === 'top') return { sort: 'upvotes' };
   if (sort === 'soon') return { status: 'upcoming' };
   return {};
 }
@@ -131,8 +129,6 @@ export default function HomeScreen() {
     ? 'New Products'
     : sortFilter === 'soon'
     ? 'Coming Soon'
-    : sortFilter === 'top'
-    ? 'Top Products'
     : 'Today\'s Top Products';
 
   const ListHeader = (

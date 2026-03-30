@@ -12,22 +12,12 @@ function rebaseUrl(url: string | undefined | null): string | undefined {
 }
 
 /**
- * Rebase an avatar/image URL and strip paths known to serve SPA HTML on
- * tlmena.com instead of actual image files (e.g. /uploads/*, /storage/*).
- * When the URL is stripped the Avatar component's onError fallback is not
- * needed — it renders initials immediately without a network round-trip.
+ * Rebase an avatar/image URL. Returns the rebased URL, or undefined if the
+ * input is empty. The onError fallback in each component handles any real
+ * load failures.
  */
 function rebaseAvatarUrl(url: string | undefined | null): string | undefined {
-  const rebased = rebaseUrl(url);
-  if (!rebased) return undefined;
-  // tlmena.com serves the Next.js SPA for these paths instead of static files
-  if (
-    rebased.includes('tlmena.com/uploads/') ||
-    rebased.includes('tlmena.com/storage/')
-  ) {
-    return undefined;
-  }
-  return rebased;
+  return rebaseUrl(url) ?? undefined;
 }
 
 export function adaptUser(raw: Raw): User {
@@ -220,18 +210,29 @@ export function adaptPostsPage(apiResponse: Raw): PaginatedResponse<Post> {
 
 export function adaptUsersPage(apiResponse: Raw): PaginatedResponse<User> {
   const raw: unknown[] =
-    Array.isArray(apiResponse?.data) ? apiResponse.data :
-    Array.isArray(apiResponse?.users) ? apiResponse.users :
-    Array.isArray(apiResponse?.members) ? apiResponse.members :
     Array.isArray(apiResponse) ? (apiResponse as unknown[]) :
+    Array.isArray(apiResponse?.data) ? apiResponse.data :
+    Array.isArray(apiResponse?.data?.data) ? apiResponse.data.data :
+    Array.isArray(apiResponse?.users) ? apiResponse.users :
+    Array.isArray(apiResponse?.data?.users) ? apiResponse.data.users :
+    Array.isArray(apiResponse?.members) ? apiResponse.members :
+    Array.isArray(apiResponse?.results) ? apiResponse.results :
+    Array.isArray(apiResponse?.data?.results) ? apiResponse.data.results :
     [];
   const items = (raw as Raw[]).map(adaptUser);
-  const pag = apiResponse?.pagination ?? apiResponse?.meta;
+  const pag =
+    apiResponse?.pagination ??
+    apiResponse?.meta ??
+    apiResponse?.data?.pagination ??
+    apiResponse?.data?.meta ??
+    null;
   return {
     items,
     total: pag?.total ?? items.length,
-    page: pag?.page ?? 1,
-    perPage: pag?.limit ?? pag?.per_page ?? 20,
-    hasMore: pag ? pag.page < (pag.pages ?? pag.last_page ?? 1) : false,
+    page: pag?.current_page ?? pag?.page ?? 1,
+    perPage: pag?.per_page ?? pag?.limit ?? 20,
+    hasMore: pag
+      ? (pag.current_page ?? pag.page ?? 1) < (pag.last_page ?? pag.pages ?? 1)
+      : false,
   };
 }

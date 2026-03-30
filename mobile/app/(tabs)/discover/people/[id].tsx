@@ -180,14 +180,6 @@ export default function UserProfileScreen() {
                 <Pressable onPress={() => router.back()} style={styles.backBtnCover}>
                   <Feather name="arrow-left" size={22} color="#fff" />
                 </Pressable>
-                {!isOwnProfile && (
-                  <Pressable
-                    style={styles.msgBtnCover}
-                    onPress={() => router.push({ pathname: '/(tabs)/inbox/[id]', params: { id: user.username, name: user.name } })}
-                  >
-                    <Feather name="message-circle" size={20} color="#fff" />
-                  </Pressable>
-                )}
               </View>
             </View>
 

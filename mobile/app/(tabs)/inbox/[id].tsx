@@ -99,7 +99,7 @@ export default function ConversationScreen() {
     .pop()?.i ?? -1;
 
   const bottomPad = Platform.OS === 'web'
-    ? 34
+    ? TAB_BAR_HEIGHT + 8
     : insets.bottom + TAB_BAR_HEIGHT + 8;
 
   return (
