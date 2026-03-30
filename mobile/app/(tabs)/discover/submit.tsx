@@ -251,6 +251,16 @@ export default function SubmitProductScreen() {
             style={[styles.input, !!nameError && styles.inputError]}
             value={name}
             onChangeText={(v) => { setName(v); if (nameError) setNameError(''); }}
+            onBlur={() => {
+              const trimmed = name.trim();
+              if (trimmed.length > 0 && trimmed.length < 3) {
+                setNameError('Product name must be at least 3 characters.');
+              } else if (trimmed.length >= 3 && /^[^a-zA-Z0-9\s]+$/.test(trimmed)) {
+                setNameError('Product name cannot consist of only symbols.');
+              } else if (trimmed.length >= 3 && /^[0-9\s]+$/.test(trimmed)) {
+                setNameError('Product name cannot consist of only numbers.');
+              }
+            }}
             placeholder="e.g. Supercart"
             placeholderTextColor={Colors.text.tertiary}
             autoCorrect={false}

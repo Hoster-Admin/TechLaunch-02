@@ -7,6 +7,7 @@ import React, { useEffect, useRef, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
+  Animated,
   FlatList,
   Linking,
   Platform,
@@ -55,6 +56,7 @@ export default function ProductDetailScreen() {
   const [deleteCommentModal, setDeleteCommentModal] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const upvoteScale = useRef(new Animated.Value(1)).current;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
@@ -257,14 +259,22 @@ export default function ProductDetailScreen() {
 
               <View style={styles.voteRow}>
                 <View style={styles.voteBtnWrap}>
-                  <Pressable
-                    style={[styles.voteBtn, product.upvoted && styles.voteBtnActive, upvoteMutation.isPending && { opacity: 0.5 }]}
-                    onPress={() => upvoteMutation.mutate()}
-                    disabled={upvoteMutation.isPending}
-                  >
-                    <Text style={styles.voteEmoji}>🎉</Text>
-                    <Text style={[styles.voteCount, product.upvoted && styles.voteCountActive]}>{product.upvotes}</Text>
-                  </Pressable>
+                  <Animated.View style={{ transform: [{ scale: upvoteScale }] }}>
+                    <Pressable
+                      style={[styles.voteBtn, product.upvoted && styles.voteBtnActive, upvoteMutation.isPending && { opacity: 0.5 }]}
+                      onPress={() => {
+                        Animated.sequence([
+                          Animated.spring(upvoteScale, { toValue: 1.35, useNativeDriver: true, speed: 40, bounciness: 12 }),
+                          Animated.spring(upvoteScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
+                        ]).start();
+                        upvoteMutation.mutate();
+                      }}
+                      disabled={upvoteMutation.isPending}
+                    >
+                      <Text style={styles.voteEmoji}>🎉</Text>
+                      <Text style={[styles.voteCount, product.upvoted && styles.voteCountActive]}>{product.upvotes}</Text>
+                    </Pressable>
+                  </Animated.View>
                   {!product.upvoted && (
                     <Text style={styles.voteHint}>Tap to upvote</Text>
                   )}

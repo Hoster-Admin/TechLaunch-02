@@ -13,6 +13,7 @@ import {
   View,
 } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { ConfirmModal } from '@/components/ConfirmModal';
 import { EmptyState } from '@/components/EmptyState';
 import { PostCard } from '@/components/PostCard';
 import { ProductCard } from '@/components/ProductCard';
@@ -27,6 +28,7 @@ export default function BookmarksScreen() {
   const insets = useSafeAreaInsets();
   const queryClient = useQueryClient();
   const [activeTab, setActiveTab] = useState<Tab>('products');
+  const [unsaveProduct, setUnsaveProduct] = useState<Product | null>(null);
 
   const bookmarksQuery = useQuery<{ products: Product[]; posts: Post[] }>({
     queryKey: ['bookmarks'],
@@ -68,18 +70,7 @@ export default function BookmarksScreen() {
 
   const handleBookmark = (product: Product) => {
     if (product.bookmarked) {
-      Alert.alert(
-        'Remove from Saved',
-        `Are you sure you want to remove "${product.name}" from your saved products?`,
-        [
-          { text: 'Cancel', style: 'cancel' },
-          {
-            text: 'Remove',
-            style: 'destructive',
-            onPress: () => bookmarkMutation.mutate(product.id),
-          },
-        ],
-      );
+      setUnsaveProduct(product);
     } else {
       bookmarkMutation.mutate(product.id);
     }
@@ -165,6 +156,18 @@ export default function BookmarksScreen() {
           ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
         />
       )}
+      <ConfirmModal
+        visible={unsaveProduct !== null}
+        title="Remove from Saved"
+        message={unsaveProduct ? `Remove "${unsaveProduct.name}" from your saved products?` : ''}
+        confirmLabel="Remove"
+        destructive
+        onConfirm={() => {
+          if (unsaveProduct) bookmarkMutation.mutate(unsaveProduct.id);
+          setUnsaveProduct(null);
+        }}
+        onCancel={() => setUnsaveProduct(null)}
+      />
     </View>
   );
 }

@@ -270,7 +270,7 @@ export default function RegisterScreen() {
         <Pressable
           style={({ pressed }) => [styles.primaryBtn, { opacity: !isEmailValid ? 0.5 : pressed || isLoading ? 0.85 : 1 }]}
           onPress={handleRegister}
-          disabled={isLoading || !isEmailValid}
+          disabled={isLoading || !isEmailValid || password.length < 8}
         >
           <Text style={styles.primaryBtnText}>{isLoading ? 'Creating account...' : 'Create Account'}</Text>
         </Pressable>

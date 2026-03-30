@@ -138,9 +138,9 @@ export default function ChangePasswordScreen() {
       </View>
 
       <Pressable
-        style={({ pressed }) => [styles.saveBtn, { opacity: pressed || mutation.isPending ? 0.85 : 1 }]}
+        style={({ pressed }) => [styles.saveBtn, (!currentPassword || !newPassword || !confirmPassword || mutation.isPending) && { opacity: 0.5 }, { opacity: pressed ? 0.85 : 1 }]}
         onPress={handleSubmit}
-        disabled={mutation.isPending}
+        disabled={mutation.isPending || !currentPassword || !newPassword || !confirmPassword}
       >
         <Text style={styles.saveBtnText}>{mutation.isPending ? 'Updating...' : 'Update Password'}</Text>
       </Pressable>

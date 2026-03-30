@@ -108,35 +108,6 @@ export default function HomeScreen() {
     },
   });
 
-  const bookmarkMutation = useMutation({
-    mutationFn: (id: string) => api.post(`/products/${id}/bookmark`),
-    onMutate: async (id) => {
-      await queryClient.cancelQueries({ queryKey: qKey });
-      const prev = queryClient.getQueryData(qKey);
-      queryClient.setQueryData<{ pages: PaginatedResponse<Product>[]; pageParams: unknown[] }>(qKey, (old) => {
-        if (!old) return old;
-        return {
-          ...old,
-          pages: old.pages.map((page) => ({
-            ...page,
-            items: page.items.map((p) =>
-              p.id === id ? { ...p, bookmarked: !p.bookmarked } : p,
-            ),
-          })),
-        };
-      });
-      return { prev };
-    },
-    onError: (_err, _id, ctx) => {
-      if (ctx?.prev) queryClient.setQueryData(qKey, ctx.prev);
-      Alert.alert('Could not bookmark', getApiError(_err));
-    },
-    onSettled: () => {
-      queryClient.invalidateQueries({ queryKey: ['home-products'] });
-      queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
-    },
-  });
-
   const allProducts = data?.pages.flatMap((p) => p.items) ?? [];
   const totalCount = data?.pages[0]?.total ?? allProducts.length;
   const hasActiveFilters = country !== 'All' || industry !== 'All';
@@ -148,11 +119,10 @@ export default function HomeScreen() {
         rank={index + 1}
         onPress={() => router.push({ pathname: '/(tabs)/home/[id]', params: { id: item.id } })}
         onUpvote={() => upvoteMutation.mutate(item.id)}
-        onBookmark={() => bookmarkMutation.mutate(item.id)}
         upvotePending={upvoteMutation.isPending && upvoteMutation.variables === item.id}
       />
     ),
-    [upvoteMutation, bookmarkMutation],
+    [upvoteMutation],
   );
 
   const listTitle = search

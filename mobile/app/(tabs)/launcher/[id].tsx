@@ -109,7 +109,8 @@ export default function PostDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['launcher'] });
       queryClient.invalidateQueries({ queryKey: ['launcher-posts'] });
-      router.back();
+      showToast('Post deleted');
+      setTimeout(() => router.back(), 900);
     },
   });
 
