@@ -75,6 +75,9 @@ function SubmitEntityModal({ visible, defaultType, onClose, onSuccess }: SubmitF
   const [description, setDescription] = useState('');
   const [website, setWebsite] = useState('');
   const [country, setCountry] = useState('');
+  const [industry, setIndustry] = useState('');
+  const [founded, setFounded] = useState('');
+  const [twitter, setTwitter] = useState('');
   const [formError, setFormError] = useState('');
   const [submitted, setSubmitted] = useState(false);
 
@@ -86,6 +89,9 @@ function SubmitEntityModal({ visible, defaultType, onClose, onSuccess }: SubmitF
         description: description.trim(),
         website: website.trim() || undefined,
         country: country.trim() || undefined,
+        focus: industry.trim() ? industry.split(',').map(s => s.trim()).filter(Boolean) : undefined,
+        founded_year: founded.trim() ? Number(founded.trim()) : undefined,
+        twitter: twitter.trim() || undefined,
       }),
     onSuccess: () => {
       Haptics.notificationAsync(Haptics.NotificationFeedbackType.Success);
@@ -99,7 +105,8 @@ function SubmitEntityModal({ visible, defaultType, onClose, onSuccess }: SubmitF
 
   function reset() {
     setName(''); setType(defaultType); setDescription('');
-    setWebsite(''); setCountry(''); setFormError(''); setSubmitted(false);
+    setWebsite(''); setCountry(''); setIndustry(''); setFounded('');
+    setTwitter(''); setFormError(''); setSubmitted(false);
   }
 
   function handleClose() {
@@ -224,6 +231,44 @@ function SubmitEntityModal({ visible, defaultType, onClose, onSuccess }: SubmitF
                     placeholder="e.g. Saudi Arabia, UAE, Egypt"
                     placeholderTextColor={Colors.text.tertiary}
                   />
+                </View>
+
+                <View style={styles.field}>
+                  <Text style={styles.fieldLabel}>Industry / Focus</Text>
+                  <TextInput
+                    style={styles.fieldInput}
+                    value={industry}
+                    onChangeText={setIndustry}
+                    placeholder="e.g. Foodtech, Fintech, SaaS"
+                    placeholderTextColor={Colors.text.tertiary}
+                  />
+                  <Text style={styles.fieldHint}>Separate multiple with commas</Text>
+                </View>
+
+                <View style={styles.fieldRow}>
+                  <View style={[styles.field, { flex: 1 }]}>
+                    <Text style={styles.fieldLabel}>Founded Year</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={founded}
+                      onChangeText={setFounded}
+                      placeholder="e.g. 2023"
+                      placeholderTextColor={Colors.text.tertiary}
+                      keyboardType="number-pad"
+                      maxLength={4}
+                    />
+                  </View>
+                  <View style={[styles.field, { flex: 1 }]}>
+                    <Text style={styles.fieldLabel}>Twitter / X</Text>
+                    <TextInput
+                      style={styles.fieldInput}
+                      value={twitter}
+                      onChangeText={setTwitter}
+                      placeholder="@handle"
+                      placeholderTextColor={Colors.text.tertiary}
+                      autoCapitalize="none"
+                    />
+                  </View>
                 </View>
 
                 <Pressable
@@ -543,6 +588,8 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg.secondary,
   },
   fieldMultiline: { height: 110, textAlignVertical: 'top' },
+  fieldHint: { fontSize: 12, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular' },
+  fieldRow: { flexDirection: 'row', gap: 12 },
   typeRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   typeChip: {
     paddingHorizontal: 14,
