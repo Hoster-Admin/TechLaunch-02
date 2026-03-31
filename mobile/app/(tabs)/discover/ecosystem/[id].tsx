@@ -6,6 +6,7 @@ import { router, useLocalSearchParams } from 'expo-router';
 import React, { useState } from 'react';
 import {
   ActivityIndicator,
+  KeyboardAvoidingView,
   Linking,
   Platform,
   Pressable,
@@ -89,26 +90,35 @@ export default function EntityDetailScreen() {
   if (!entity) return null;
 
   return (
-    <View style={[styles.container, { paddingTop: topPad }]}>
+    <KeyboardAvoidingView
+      style={[styles.container, { paddingTop: topPad }]}
+      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+    >
       <View style={styles.topBar}>
         <Pressable onPress={() => router.back()} style={styles.backBtn}>
           <Feather name="arrow-left" size={22} color={Colors.text.primary} />
         </Pressable>
       </View>
 
-      <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 24 }}
+        keyboardShouldPersistTaps="handled"
+      >
         <View style={styles.hero}>
           <EntityLogoImage uri={entity.logo} name={entity.name} />
           <Text style={styles.entityName}>{entity.name}</Text>
           {!!entity.description && (
             <Text style={styles.entityDesc}>{entity.description}</Text>
           )}
-          <View style={styles.tagRow}>
-            {entity.country && <View style={styles.tag}><Text style={styles.tagText}>{entity.country}</Text></View>}
-            {entity.focus?.slice(0, 3).map((f) => (
-              <View key={f} style={styles.tag}><Text style={styles.tagText}>{f}</Text></View>
-            ))}
-          </View>
+          {(entity.country || (entity.focus && entity.focus.length > 0)) && (
+            <View style={styles.tagRow}>
+              {entity.country && <View style={styles.tag}><Text style={styles.tagText}>{entity.country}</Text></View>}
+              {entity.focus?.slice(0, 3).map((f) => (
+                <View key={f} style={styles.tag}><Text style={styles.tagText}>{f}</Text></View>
+              ))}
+            </View>
+          )}
         </View>
 
         {entity.stage && entity.stage.length > 0 && (
@@ -124,22 +134,12 @@ export default function EntityDetailScreen() {
           </View>
         )}
 
-        <View style={styles.actionRow}>
-          {entity.website && (
-            <Pressable style={styles.websiteBtn} onPress={() => Linking.openURL(entity.website!)}>
-              <Feather name="globe" size={16} color={Colors.brand.orange} />
-              <Text style={styles.websiteBtnText}>Website</Text>
-            </Pressable>
-          )}
-          <Pressable style={styles.applyBtn} onPress={() => setShowApplyForm(true)}>
-            <Feather name="send" size={16} color="#fff" />
-            <Text style={styles.applyBtnText}>Apply / Pitch</Text>
-          </Pressable>
-        </View>
-
         {showApplyForm && !applySuccess && (
           <View style={styles.applyForm}>
             <Text style={styles.applyFormTitle}>Submit Your Application</Text>
+            <Text style={styles.applyFormSub}>
+              Tell {entity.name} about your startup and why you'd be a great fit.
+            </Text>
             {!!applyError && (
               <View style={styles.errorBanner}>
                 <Feather name="alert-circle" size={14} color={Colors.status.error} />
@@ -157,7 +157,7 @@ export default function EntityDetailScreen() {
             <View style={styles.field}>
               <Text style={styles.fieldLabel}>Pitch</Text>
               <TextInput
-                style={[styles.fieldInput, { height: 100, textAlignVertical: 'top' }]}
+                style={[styles.fieldInput, { height: 110, textAlignVertical: 'top', paddingTop: 12 }]}
                 value={formPitch}
                 onChangeText={setFormPitch}
                 placeholder="Tell them about your startup and why you're applying..."
@@ -170,7 +170,7 @@ export default function EntityDetailScreen() {
               onPress={() => applyMutation.mutate()}
               disabled={applyMutation.isPending}
             >
-              <Text style={styles.submitBtnText}>{applyMutation.isPending ? 'Submitting...' : 'Submit Application'}</Text>
+              <Text style={styles.submitBtnText}>{applyMutation.isPending ? 'Submitting…' : 'Submit Application'}</Text>
             </Pressable>
           </View>
         )}
@@ -182,40 +182,86 @@ export default function EntityDetailScreen() {
           </View>
         )}
       </ScrollView>
-    </View>
+
+      <View style={[styles.footer, { paddingBottom: insets.bottom + 12 }]}>
+        {entity.website && (
+          <Pressable
+            style={({ pressed }) => [styles.websiteBtn, { opacity: pressed ? 0.85 : 1 }]}
+            onPress={() => Linking.openURL(entity.website!)}
+          >
+            <Feather name="globe" size={16} color={Colors.brand.orange} />
+            <Text style={styles.websiteBtnText}>Website</Text>
+          </Pressable>
+        )}
+        <Pressable
+          style={({ pressed }) => [styles.applyBtn, { flex: entity.website ? 1 : undefined, opacity: pressed ? 0.85 : 1 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
+            setShowApplyForm(v => !v);
+          }}
+        >
+          <Feather name="send" size={16} color="#fff" />
+          <Text style={styles.applyBtnText}>{showApplyForm ? 'Hide Form' : 'Apply / Pitch'}</Text>
+        </Pressable>
+      </View>
+    </KeyboardAvoidingView>
   );
 }
 
 const styles = StyleSheet.create({
-  container: { flex: 1, backgroundColor: Colors.bg.secondary },
-  topBar: { flexDirection: 'row', alignItems: 'center', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.bg.primary, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
+  container: { flex: 1, backgroundColor: Colors.bg.primary },
+  topBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: 16,
+    paddingVertical: 10,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
   backBtn: { width: 36, height: 36, justifyContent: 'center' },
-  hero: { backgroundColor: Colors.bg.primary, alignItems: 'center', padding: 24, gap: 10 },
-  logo: { width: 80, height: 80, borderRadius: 18, borderWidth: 1, borderColor: Colors.border.light },
+  hero: {
+    alignItems: 'center',
+    paddingHorizontal: 24,
+    paddingTop: 28,
+    paddingBottom: 20,
+    gap: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
+  logo: { width: 80, height: 80, borderRadius: 18 },
   logoFallback: { backgroundColor: Colors.brand.light, justifyContent: 'center', alignItems: 'center' },
   logoText: { fontSize: 30, fontWeight: '700', color: Colors.brand.orange, fontFamily: 'Inter_700Bold' },
   entityName: { fontSize: 22, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold', textAlign: 'center' },
   entityDesc: { fontSize: 14, color: Colors.text.secondary, textAlign: 'center', lineHeight: 20, fontFamily: 'Inter_400Regular' },
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6, justifyContent: 'center' },
-  tag: { backgroundColor: Colors.bg.tertiary, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
-  tagText: { fontSize: 11, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
-  section: { backgroundColor: Colors.bg.primary, padding: 16, gap: 10, marginTop: 8 },
-  sectionTitle: { fontSize: 16, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
+  tag: { backgroundColor: Colors.bg.tertiary, borderRadius: 8, paddingHorizontal: 10, paddingVertical: 4 },
+  tagText: { fontSize: 12, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
+  section: { padding: 20, gap: 12, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
+  sectionTitle: { fontSize: 15, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
   stageRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
   stageChip: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 10, borderWidth: 1.5, borderColor: Colors.brand.orange, backgroundColor: Colors.brand.light },
   stageText: { fontSize: 13, color: Colors.brand.orange, fontFamily: 'Inter_500Medium' },
-  actionRow: { flexDirection: 'row', gap: 10, padding: 16, backgroundColor: Colors.bg.primary, marginTop: 8 },
-  websiteBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, borderWidth: 1.5, borderColor: Colors.brand.orange, backgroundColor: Colors.brand.light },
+  footer: {
+    flexDirection: 'row',
+    gap: 10,
+    paddingHorizontal: 16,
+    paddingTop: 12,
+    borderTopWidth: 1,
+    borderTopColor: Colors.border.default,
+    backgroundColor: Colors.bg.primary,
+  },
+  websiteBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, borderWidth: 1.5, borderColor: Colors.brand.orange, backgroundColor: Colors.brand.light },
   websiteBtnText: { fontSize: 15, fontWeight: '600', color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
-  applyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 13, borderRadius: 12, backgroundColor: Colors.brand.orange },
+  applyBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 14, borderRadius: 14, backgroundColor: Colors.brand.orange },
   applyBtnText: { fontSize: 15, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' },
-  applyForm: { backgroundColor: Colors.bg.primary, margin: 16, borderRadius: 14, padding: 16, gap: 14, borderWidth: 1.5, borderColor: Colors.border.default },
+  applyForm: { margin: 16, borderRadius: 14, padding: 16, gap: 14, borderWidth: 1.5, borderColor: Colors.border.default, backgroundColor: Colors.bg.secondary },
   applyFormTitle: { fontSize: 17, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
+  applyFormSub: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_400Regular', lineHeight: 18 },
   errorBanner: { flexDirection: 'row', alignItems: 'center', gap: 8, backgroundColor: '#FEF2F2', borderRadius: 8, padding: 10 },
   errorText: { flex: 1, fontSize: 13, color: Colors.status.error, fontFamily: 'Inter_400Regular' },
   field: { gap: 6 },
   fieldLabel: { fontSize: 14, fontWeight: '500', color: Colors.text.primary, fontFamily: 'Inter_500Medium' },
-  fieldInput: { borderWidth: 1.5, borderColor: Colors.border.default, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: Colors.text.primary, fontFamily: 'Inter_400Regular', backgroundColor: Colors.bg.secondary },
+  fieldInput: { borderWidth: 1.5, borderColor: Colors.border.default, borderRadius: 10, paddingHorizontal: 12, paddingVertical: 10, fontSize: 14, color: Colors.text.primary, fontFamily: 'Inter_400Regular', backgroundColor: Colors.bg.primary },
   submitBtn: { backgroundColor: Colors.brand.orange, borderRadius: 12, paddingVertical: 14, alignItems: 'center' },
   submitBtnText: { fontSize: 15, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' },
   successBanner: { flexDirection: 'row', alignItems: 'center', gap: 12, backgroundColor: '#D1FAE5', borderRadius: 12, padding: 16, margin: 16 },

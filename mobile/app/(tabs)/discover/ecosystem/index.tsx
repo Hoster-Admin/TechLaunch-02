@@ -486,7 +486,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: Colors.brand.light, borderColor: Colors.brand.orange },
   tabText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   tabTextActive: { color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
-  listContent: { padding: 16 },
+  listContent: { paddingTop: 8, paddingHorizontal: 16 },
   skeleton: { height: 100, borderRadius: 14, backgroundColor: Colors.bg.tertiary },
   card: {
     backgroundColor: Colors.bg.primary,
