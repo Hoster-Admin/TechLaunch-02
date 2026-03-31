@@ -8,6 +8,7 @@ import {
   FlatList,
   Linking,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   View,
@@ -76,12 +77,19 @@ export default function ProfileScreen() {
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [aboutExpanded, setAboutExpanded] = useState(false);
+  const [refreshing, setRefreshing] = useState(false);
 
   useEffect(() => {
     if (params.tab === 'products') {
       setActiveTab('products');
     }
   }, [params.tab]);
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ['myProfile', me?.username] });
+    setRefreshing(false);
+  };
 
   const { data, isLoading } = useQuery<ProfileData>({
     queryKey: ['myProfile', me?.username],
@@ -330,6 +338,14 @@ export default function ProfileScreen() {
         contentContainerStyle={styles.listContent}
         showsVerticalScrollIndicator={false}
         ListHeaderComponent={ProfileHeader}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.brand.orange}
+            colors={[Colors.brand.orange]}
+          />
+        }
         renderItem={({ item }) => {
           if (activeTab === 'products') {
             const product = item as Product;

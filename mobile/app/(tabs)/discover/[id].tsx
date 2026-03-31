@@ -12,6 +12,7 @@ import {
   Linking,
   Platform,
   Pressable,
+  RefreshControl,
   ScrollView,
   Share,
   StyleSheet,
@@ -59,12 +60,19 @@ export default function ProductDetailScreen() {
   const [deleteCommentModal, setDeleteCommentModal] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
   const upvoteScale = useRef(new Animated.Value(1)).current;
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setToastVisible(false);
     setTimeout(() => setToastVisible(true), 30);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ['product', id] });
+    setRefreshing(false);
   };
 
   const { data, isLoading } = useQuery<ProductDetailData>({
@@ -233,6 +241,14 @@ export default function ProductDetailScreen() {
         showsVerticalScrollIndicator={false}
         contentContainerStyle={styles.listContent}
         onScrollToIndexFailed={() => {}}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.brand.orange}
+            colors={[Colors.brand.orange]}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.productHeader}>
             {product.coverImage && !coverError ? (

@@ -9,6 +9,7 @@ import {
   KeyboardAvoidingView,
   Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -33,6 +34,7 @@ export default function ConversationScreen() {
   const queryClient = useQueryClient();
   const flatRef = useRef<FlatList>(null);
   const [messageText, setMessageText] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const { data: participant } = useQuery<User>({
     queryKey: ['user-profile-mini', id],
@@ -43,6 +45,12 @@ export default function ConversationScreen() {
     },
     staleTime: 5 * 60 * 1000,
   });
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ['conversation', id] });
+    setRefreshing(false);
+  };
 
   const { data: messages, isLoading } = useQuery<DirectMessage[]>({
     queryKey: ['conversation', id],
@@ -131,6 +139,14 @@ export default function ConversationScreen() {
         keyExtractor={(m) => m.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={[styles.messageList, { paddingBottom: 16 }]}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.brand.orange}
+            colors={[Colors.brand.orange]}
+          />
+        }
         renderItem={({ item: message, index }) => {
           const isMe = message.senderHandle === user?.username;
           const isLastSent = isMe && index === lastSentIndex;

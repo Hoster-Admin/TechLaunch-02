@@ -120,7 +120,7 @@ export function adaptEntity(raw: Raw): EcosystemEntity {
     id: raw.id ?? '',
     slug: raw.slug ?? raw.id ?? '',
     name: raw.name ?? '',
-    type: raw.type ?? 'accelerator',
+    type: raw.type ?? 'company',
     logo: rebaseUrl(raw.logo_url ?? raw.logo ?? undefined),
     description: raw.description ?? '',
     website: raw.website ?? undefined,

@@ -14,7 +14,7 @@ export default function DiscoverLayout() {
     >
       <Stack.Screen name="index" options={{ headerShown: false }} />
       <Stack.Screen name="[id]" options={{ headerShown: false }} />
-      <Stack.Screen name="ecosystem/index" options={{ title: 'Ecosystem', headerShown: true }} />
+      <Stack.Screen name="ecosystem/index" options={{ headerShown: false }} />
       <Stack.Screen name="ecosystem/[id]" options={{ headerShown: false }} />
       <Stack.Screen name="people/index" options={{ title: 'People', headerShown: true }} />
       <Stack.Screen name="people/[id]" options={{ headerShown: false }} />

@@ -88,7 +88,7 @@ export interface EcosystemEntity {
   id: string;
   slug?: string;
   name: string;
-  type: 'accelerator' | 'investor' | 'venture_studio';
+  type: 'company' | 'startup' | 'accelerator' | 'investor' | 'venture_studio' | string;
   logo?: string;
   description: string;
   website?: string;

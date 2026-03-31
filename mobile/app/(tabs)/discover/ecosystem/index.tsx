@@ -27,11 +27,18 @@ import { adaptEntity } from '@/lib/adapters';
 import type { EcosystemEntity } from '@/types';
 
 const TYPES = [
-  { key: 'company',        label: 'Companies',       singular: 'Company',       icon: 'briefcase' as const },
-  { key: 'accelerator',    label: 'Accelerators',    singular: 'Accelerator',   icon: 'trending-up' as const },
+  { key: 'company',        label: 'Companies',       singular: 'Company',        icon: 'briefcase' as const },
+  { key: 'accelerator',    label: 'Accelerators',    singular: 'Accelerator',    icon: 'trending-up' as const },
   { key: 'investor',       label: 'Investors',       singular: 'Investment Firm', icon: 'dollar-sign' as const },
   { key: 'venture_studio', label: 'Venture Studios', singular: 'Venture Studio', icon: 'layers' as const },
 ];
+
+const TYPE_API_ALIASES: Record<string, string[]> = {
+  company:        ['company', 'startup'],
+  accelerator:    ['accelerator'],
+  investor:       ['investor', 'vc', 'venture_capital'],
+  venture_studio: ['venture_studio', 'studio'],
+};
 
 interface EntityPage {
   items: EcosystemEntity[];
@@ -260,11 +267,11 @@ export default function EcosystemScreen() {
     refetch,
     isRefetching,
   } = useInfiniteQuery<EntityPage>({
-    queryKey: ['ecosystem', activeType],
+    queryKey: ['ecosystem-all'],
     queryFn: async ({ pageParam = 1 }) => {
       try {
         const res = await api.get('/entities', {
-          params: { type: activeType, page: pageParam, limit: 20 },
+          params: { page: pageParam, limit: 100 },
         });
         const raw = Array.isArray(res.data?.data) ? res.data.data : [];
         const items = raw.map(adaptEntity);
@@ -280,7 +287,11 @@ export default function EcosystemScreen() {
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
   });
 
-  const entities = data?.pages.flatMap((p) => p.items) ?? [];
+  const allEntities = data?.pages.flatMap((p) => p.items) ?? [];
+  const aliases = TYPE_API_ALIASES[activeType] ?? [activeType];
+  const entities = allEntities.filter(
+    (e) => !e.type || aliases.includes((e.type as string).toLowerCase()),
+  );
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
   return (
@@ -402,7 +413,7 @@ export default function EcosystemScreen() {
         defaultType={activeType}
         onClose={() => setShowSubmit(false)}
         onSuccess={() => {
-          queryClient.invalidateQueries({ queryKey: ['ecosystem', activeType] });
+          queryClient.invalidateQueries({ queryKey: ['ecosystem-all'] });
         }}
       />
     </View>
@@ -450,22 +461,29 @@ const styles = StyleSheet.create({
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.default,
   },
-  tabs: { flexDirection: 'row', gap: 8, paddingHorizontal: 12, paddingVertical: 10 },
+  tabs: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+  },
   tab: {
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
+    alignSelf: 'center',
     gap: 5,
-    paddingVertical: 7,
+    paddingVertical: 6,
     paddingHorizontal: 14,
-    borderRadius: 10,
+    borderRadius: 20,
     backgroundColor: Colors.bg.secondary,
     borderWidth: 1.5,
     borderColor: Colors.border.default,
   },
   tabActive: { backgroundColor: Colors.brand.light, borderColor: Colors.brand.orange },
   tabText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
-  tabTextActive: { color: Colors.brand.orange },
+  tabTextActive: { color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
   listContent: { padding: 16, gap: 12 },
   skeleton: { height: 100, borderRadius: 14, backgroundColor: Colors.bg.tertiary },
   card: {

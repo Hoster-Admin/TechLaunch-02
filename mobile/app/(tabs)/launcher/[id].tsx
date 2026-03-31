@@ -10,6 +10,7 @@ import {
   FlatList,
   Platform,
   Pressable,
+  RefreshControl,
   StyleSheet,
   Text,
   TextInput,
@@ -45,11 +46,18 @@ export default function PostDetailScreen() {
   const [deleteCommentModal, setDeleteCommentModal] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
   const [toastMessage, setToastMessage] = useState('');
+  const [refreshing, setRefreshing] = useState(false);
 
   const showToast = (msg: string) => {
     setToastMessage(msg);
     setToastVisible(false);
     setTimeout(() => setToastVisible(true), 30);
+  };
+
+  const onRefresh = async () => {
+    setRefreshing(true);
+    await queryClient.refetchQueries({ queryKey: ['launcherPost', id] });
+    setRefreshing(false);
   };
 
   const { data, isLoading } = useQuery<PostDetailData>({
@@ -195,6 +203,14 @@ export default function PostDetailScreen() {
         keyExtractor={(c) => c.id}
         showsVerticalScrollIndicator={false}
         contentContainerStyle={{ paddingBottom: 120 }}
+        refreshControl={
+          <RefreshControl
+            refreshing={refreshing}
+            onRefresh={onRefresh}
+            tintColor={Colors.brand.orange}
+            colors={[Colors.brand.orange]}
+          />
+        }
         ListHeaderComponent={
           <View style={styles.postCard}>
             <Pressable
