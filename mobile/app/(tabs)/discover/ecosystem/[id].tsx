@@ -23,9 +23,10 @@ import type { EcosystemEntity } from '@/types';
 
 function EntityLogoImage({ uri, name }: { uri?: string; name: string }) {
   const [err, setErr] = useState(false);
+  React.useEffect(() => { setErr(false); }, [uri]);
   if (uri && !err) {
     return (
-      <Image source={{ uri }} style={styles.logo} contentFit="contain" onError={() => setErr(true)} />
+      <Image source={{ uri }} style={[styles.logo, { overflow: 'hidden' }]} contentFit="contain" onError={() => setErr(true)} />
     );
   }
   return (
@@ -99,7 +100,9 @@ export default function EntityDetailScreen() {
         <View style={styles.hero}>
           <EntityLogoImage uri={entity.logo} name={entity.name} />
           <Text style={styles.entityName}>{entity.name}</Text>
-          <Text style={styles.entityDesc}>{entity.description}</Text>
+          {!!entity.description && (
+            <Text style={styles.entityDesc}>{entity.description}</Text>
+          )}
           <View style={styles.tagRow}>
             {entity.country && <View style={styles.tag}><Text style={styles.tagText}>{entity.country}</Text></View>}
             {entity.focus?.slice(0, 3).map((f) => (

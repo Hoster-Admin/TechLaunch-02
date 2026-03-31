@@ -372,9 +372,11 @@ export default function EcosystemScreen() {
                   <Text style={styles.entityName} numberOfLines={1}>
                     {item.name}
                   </Text>
-                  <Text style={styles.entityDesc} numberOfLines={2}>
-                    {item.description}
-                  </Text>
+                  {!!item.description && (
+                    <Text style={styles.entityDesc} numberOfLines={2}>
+                      {item.description}
+                    </Text>
+                  )}
                   <View style={styles.tagRow}>
                     {item.country && (
                       <View style={styles.tag}>
@@ -484,7 +486,7 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: Colors.brand.light, borderColor: Colors.brand.orange },
   tabText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   tabTextActive: { color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
-  listContent: { padding: 16, gap: 12 },
+  listContent: { padding: 16 },
   skeleton: { height: 100, borderRadius: 14, backgroundColor: Colors.bg.tertiary },
   card: {
     backgroundColor: Colors.bg.primary,
