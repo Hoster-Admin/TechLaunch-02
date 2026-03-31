@@ -22,6 +22,7 @@ import { Colors } from '@/constants/Colors';
 import { useAuth } from '@/contexts/AuthContext';
 import { api, getApiError } from '@/lib/api';
 import { adaptActivityItem, adaptPost, adaptProduct, adaptUser } from '@/lib/adapters';
+import { timeAgo } from '@/lib/utils';
 import type { ActivityItem, Post, Product, User } from '@/types';
 
 type ProfileTab = 'activity' | 'products' | 'posts' | 'articles' | 'interests';
@@ -39,17 +40,6 @@ function sinceYear(createdAt?: string): string | null {
   const d = new Date(createdAt);
   if (isNaN(d.getTime())) return null;
   return String(d.getFullYear());
-}
-
-function timeAgo(dateStr: string): string {
-  const now = Date.now();
-  const then = new Date(dateStr).getTime();
-  const diff = Math.floor((now - then) / 1000);
-  if (diff < 60) return `${diff}s ago`;
-  if (diff < 3600) return `${Math.floor(diff / 60)}m ago`;
-  if (diff < 86400) return `${Math.floor(diff / 3600)}h ago`;
-  if (diff < 604800) return `${Math.floor(diff / 86400)}d ago`;
-  return `${Math.floor(diff / 604800)}w ago`;
 }
 
 function activityIcon(type: string): React.ComponentProps<typeof Feather>['name'] {
@@ -86,7 +76,6 @@ export default function ProfileScreen() {
   const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
-  const [aboutExpanded, setAboutExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
   useEffect(() => {
@@ -222,28 +211,26 @@ export default function ProfileScreen() {
 
         {(profile?.bio || year || profile?.country) && (
           <View style={styles.aboutSection}>
-            <Pressable style={styles.aboutHeader} onPress={() => setAboutExpanded(v => !v)}>
+            <View style={styles.aboutHeader}>
               <Text style={styles.aboutLabel}>About</Text>
-            </Pressable>
-            {aboutExpanded && (
-              <View style={styles.aboutBox}>
-                {profile?.bio ? <Text style={styles.aboutText}>{profile.bio}</Text> : null}
-                <View style={styles.metaRow}>
-                  {year && (
-                    <View style={styles.sinceChip}>
-                      <Feather name="calendar" size={12} color={Colors.text.secondary} />
-                      <Text style={styles.sinceText}>Since {year}</Text>
-                    </View>
-                  )}
-                  {profile?.country && (
-                    <View style={styles.sinceChip}>
-                      <Feather name="map-pin" size={12} color={Colors.text.secondary} />
-                      <Text style={styles.sinceText}>{profile.country}</Text>
-                    </View>
-                  )}
-                </View>
+            </View>
+            <View style={styles.aboutBox}>
+              {profile?.bio ? <Text style={styles.aboutText}>{profile.bio}</Text> : null}
+              <View style={styles.metaRow}>
+                {year && (
+                  <View style={styles.sinceChip}>
+                    <Feather name="calendar" size={12} color={Colors.text.secondary} />
+                    <Text style={styles.sinceText}>Since {year}</Text>
+                  </View>
+                )}
+                {profile?.country && (
+                  <View style={styles.sinceChip}>
+                    <Feather name="map-pin" size={12} color={Colors.text.secondary} />
+                    <Text style={styles.sinceText}>{profile.country}</Text>
+                  </View>
+                )}
               </View>
-            )}
+            </View>
           </View>
         )}
 

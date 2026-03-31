@@ -128,7 +128,7 @@ export default function HomeScreen() {
     ? 'New Products'
     : sortFilter === 'soon'
     ? 'Coming Soon'
-    : 'Today\'s Top Products';
+    : `Today · ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`;
 
   const ListHeader = (
     <>
