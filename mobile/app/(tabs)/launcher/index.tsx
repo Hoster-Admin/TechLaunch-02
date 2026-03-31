@@ -1,5 +1,6 @@
 import { Feather } from '@expo/vector-icons';
 import { useInfiniteQuery, useMutation, useQueryClient } from '@tanstack/react-query';
+import * as Haptics from 'expo-haptics';
 import { router } from 'expo-router';
 import React, { useCallback, useEffect, useState } from 'react';
 import {
@@ -13,6 +14,7 @@ import {
   TextInput,
   View,
 } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { AppHeader } from '@/components/AppHeader';
 import { Avatar } from '@/components/Avatar';
 import { EmptyState } from '@/components/EmptyState';
@@ -25,11 +27,10 @@ import { api, getApiError } from '@/lib/api';
 import { adaptPostsPage, adaptUsersPage } from '@/lib/adapters';
 import type { PaginatedResponse, Post, User } from '@/types';
 
-type LauncherTab = 'posts' | 'articles' | 'people';
+type LauncherTab = 'posts' | 'people';
 
 const TABS: { id: LauncherTab; label: string }[] = [
   { id: 'posts', label: 'Posts' },
-  { id: 'articles', label: 'Articles' },
   { id: 'people', label: 'People' },
 ];
 
@@ -139,12 +140,12 @@ function PeopleList({ currentUser }: { currentUser: User | null }) {
 export default function LauncherScreen() {
   const queryClient = useQueryClient();
   const { user } = useAuth();
+  const insets = useSafeAreaInsets();
   const [activeTab, setActiveTab] = useState<LauncherTab>('posts');
   const [drawerOpen, setDrawerOpen] = useState(false);
   const [writeModalOpen, setWriteModalOpen] = useState(false);
 
-  const queryKey = activeTab === 'articles' ? ['launcher-articles'] : ['launcher-posts'];
-  const apiPath = activeTab === 'articles' ? '/launcher?post_type=article' : '/launcher';
+  const queryKey = ['launcher-posts'] as const;
 
   const {
     data,
@@ -158,12 +159,12 @@ export default function LauncherScreen() {
   } = useInfiniteQuery<PaginatedResponse<Post>>({
     queryKey,
     queryFn: async ({ pageParam = 1 }) => {
-      const res = await api.get(apiPath, { params: { page: pageParam, limit: 20 } });
+      const res = await api.get('/launcher', { params: { page: pageParam, limit: 20 } });
       return adaptPostsPage(res.data);
     },
     initialPageParam: 1,
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
-    enabled: activeTab !== 'people',
+    enabled: activeTab === 'posts',
   });
 
   const likeMutation = useMutation({
@@ -216,28 +217,15 @@ export default function LauncherScreen() {
         onSuccess={() => refetch()}
       />
 
-      <View style={styles.header}>
-        <View style={styles.headerTitleRow}>
-          <Feather name="zap" size={20} color={Colors.brand.orange} />
-          <Text style={styles.headerTitle}>Launcher</Text>
-        </View>
-        <Text style={styles.headerSubtitle}>
-          Community activity from founders, investors, and builders across MENA.
-        </Text>
-        <Pressable
-          style={({ pressed }) => [styles.writeBtn, { opacity: pressed ? 0.85 : 1 }]}
-          onPress={() => setWriteModalOpen(true)}
-        >
-          <Text style={styles.writeBtnText}>✏️  Write</Text>
-        </Pressable>
-      </View>
-
       <View style={styles.tabBar}>
         {TABS.map(tab => (
           <Pressable
             key={tab.id}
             style={[styles.tabItem, activeTab === tab.id && styles.tabItemActive]}
-            onPress={() => setActiveTab(tab.id)}
+            onPress={() => {
+              Haptics.selectionAsync();
+              setActiveTab(tab.id);
+            }}
           >
             <Text style={[styles.tabText, activeTab === tab.id && styles.tabTextActive]}>
               {tab.label}
@@ -250,22 +238,10 @@ export default function LauncherScreen() {
         <PeopleList currentUser={user} />
       ) : (
         <>
-          {activeTab === 'posts' && (
-            <Pressable
-              style={styles.quickCompose}
-              onPress={() => setWriteModalOpen(true)}
-            >
-              <Feather name="edit-3" size={14} color={Colors.text.tertiary} style={{ marginRight: 6 }} />
-              <Text style={styles.quickComposeText}>Share something with the community...</Text>
-            </Pressable>
-          )}
-
           {isError ? (
             <View style={styles.errorState}>
               <Feather name="alert-circle" size={28} color={Colors.text.tertiary} />
-              <Text style={styles.errorStateTitle}>
-                {activeTab === 'articles' ? "Couldn't load articles" : "Couldn't load posts"}
-              </Text>
+              <Text style={styles.errorStateTitle}>Couldn't load posts</Text>
               <Text style={styles.errorStateSubtitle}>Pull to refresh and try again</Text>
               <Pressable onPress={() => refetch()} style={styles.retryBtn}>
                 <Text style={styles.retryBtnText}>Retry</Text>
@@ -289,8 +265,8 @@ export default function LauncherScreen() {
               ListEmptyComponent={
                 <EmptyState
                   icon="zap"
-                  title={activeTab === 'articles' ? 'No articles yet' : 'No posts yet'}
-                  subtitle={activeTab === 'articles' ? 'Articles from the community will appear here' : 'Start the conversation in the MENA community'}
+                  title="No posts yet"
+                  subtitle="Start the conversation in the MENA community"
                 />
               }
               ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
@@ -298,35 +274,24 @@ export default function LauncherScreen() {
           )}
         </>
       )}
+
+      {activeTab === 'posts' && (
+        <Pressable
+          style={[styles.fab, { bottom: insets.bottom + 49 + 16 }]}
+          onPress={() => {
+            Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Medium);
+            setWriteModalOpen(true);
+          }}
+        >
+          <Feather name="edit-3" size={22} color="#fff" />
+        </Pressable>
+      )}
     </View>
   );
 }
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg.secondary },
-  header: {
-    backgroundColor: Colors.bg.primary,
-    paddingHorizontal: 16,
-    paddingTop: 16,
-    paddingBottom: 14,
-    gap: 6,
-    borderBottomWidth: 1,
-    borderBottomColor: Colors.border.default,
-  },
-  headerTitleRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
-  headerTitle: { fontSize: 22, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
-  headerSubtitle: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_400Regular', lineHeight: 18 },
-  writeBtn: {
-    backgroundColor: Colors.brand.orange,
-    borderRadius: 10,
-    paddingVertical: 12,
-    alignItems: 'center',
-    flexDirection: 'row',
-    justifyContent: 'center',
-    gap: 8,
-    marginTop: 4,
-  },
-  writeBtnText: { fontSize: 15, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' },
   tabBar: {
     flexDirection: 'row',
     backgroundColor: Colors.bg.primary,
@@ -344,22 +309,9 @@ const styles = StyleSheet.create({
   tabItemActive: { borderBottomColor: Colors.brand.orange },
   tabText: { fontSize: 14, fontWeight: '500', color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   tabTextActive: { color: Colors.brand.orange, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
-  quickCompose: {
-    margin: 16,
-    marginBottom: 0,
-    backgroundColor: Colors.bg.primary,
-    borderRadius: 12,
-    borderWidth: 1,
-    borderColor: Colors.border.default,
-    borderStyle: 'dashed',
-    padding: 14,
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  quickComposeText: { fontSize: 14, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular', flex: 1 },
   skeletonWrap: { padding: 16, gap: 12 },
   skeleton: { height: 140, borderRadius: 14, backgroundColor: Colors.bg.tertiary },
-  listContent: { padding: 16, paddingBottom: 100 },
+  listContent: { padding: 16, paddingBottom: 120 },
   errorState: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 40, gap: 12 },
   errorStateTitle: { fontSize: 16, fontWeight: '600', color: Colors.text.primary, fontFamily: 'Inter_600SemiBold' },
   errorStateSubtitle: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_400Regular' },
@@ -409,4 +361,19 @@ const styles = StyleSheet.create({
   followBtnActive: { borderColor: Colors.brand.orange, backgroundColor: Colors.brand.light },
   followBtnText: { fontSize: 13, fontWeight: '600', color: Colors.text.secondary, fontFamily: 'Inter_600SemiBold' },
   followBtnTextActive: { color: Colors.brand.orange },
+  fab: {
+    position: 'absolute',
+    right: 20,
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: Colors.brand.orange,
+    justifyContent: 'center',
+    alignItems: 'center',
+    shadowColor: Colors.brand.orange,
+    shadowOffset: { width: 0, height: 4 },
+    shadowOpacity: 0.4,
+    shadowRadius: 8,
+    elevation: 8,
+  },
 });

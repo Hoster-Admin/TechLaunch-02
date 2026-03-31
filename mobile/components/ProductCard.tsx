@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
+import { formatCountryTag } from '@/lib/utils';
 import type { Product } from '@/types';
 
 interface Props {
@@ -68,6 +69,10 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
     ? product.logoEmoji!
     : product.name.slice(0, 2).toUpperCase();
 
+  const voteColor = product.upvoted ? Colors.brand.orange : Colors.text.tertiary;
+
+  const countryLabel = product.country ? formatCountryTag(product.country) : null;
+
   return (
     <View style={styles.cardWrapper}>
       <Pressable
@@ -100,6 +105,11 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
                 <Text style={styles.tagText}>{product.industry}</Text>
               </View>
             )}
+            {countryLabel && (
+              <View style={styles.tag}>
+                <Text style={styles.tagText}>{countryLabel}</Text>
+              </View>
+            )}
             {product.commentsCount !== undefined && product.commentsCount > 0 && (
               <View style={styles.commentChip}>
                 <Feather name="message-circle" size={12} color={Colors.text.tertiary} />
@@ -112,14 +122,16 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
         {!compact && (
           <View style={styles.actions}>
             <Pressable
-              style={[styles.upvoteBtn, product.upvoted && styles.upvoteBtnActive, upvotePending && styles.upvoteBtnPending]}
+              style={[styles.upvoteBtn, upvotePending && styles.upvoteBtnPending]}
               onPress={handleUpvote}
               disabled={upvotePending}
             >
-              <Feather name="chevron-up" size={16} color="#fff" />
-              <Text style={styles.upvoteCount}>
-                {product.upvotes}
-              </Text>
+              <Feather name="chevron-up" size={18} color={voteColor} />
+              {product.upvotes > 0 && (
+                <Text style={[styles.upvoteCount, { color: voteColor }]}>
+                  {product.upvotes}
+                </Text>
+              )}
             </Pressable>
             {onBookmark && (
               <Pressable
@@ -129,42 +141,13 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
                 <Feather
                   name="bookmark"
                   size={16}
-                  color={product.bookmarked ? Colors.brand.orange : Colors.text.secondary}
+                  color={product.bookmarked ? Colors.brand.orange : Colors.text.tertiary}
                 />
               </Pressable>
             )}
           </View>
         )}
-
-        {(onEdit || onDelete) && (
-          <Pressable style={styles.menuBtn} onPress={handleMenu} hitSlop={8}>
-            <Feather name="more-vertical" size={16} color={Colors.text.tertiary} />
-          </Pressable>
-        )}
       </Pressable>
-
-      {(onEdit || onDelete) && (
-        <View style={styles.cardFooter}>
-          {onEdit && (
-            <Pressable
-              style={({ pressed }) => [styles.footerBtn, styles.editBtn, { opacity: pressed ? 0.75 : 1 }]}
-              onPress={onEdit}
-            >
-              <Feather name="edit-2" size={14} color={Colors.brand.orange} />
-              <Text style={styles.editBtnText}>Edit</Text>
-            </Pressable>
-          )}
-          {onDelete && (
-            <Pressable
-              style={({ pressed }) => [styles.footerBtn, styles.deleteBtn, { opacity: pressed ? 0.75 : 1 }]}
-              onPress={onDelete}
-            >
-              <Feather name="trash-2" size={14} color={Colors.status.error} />
-              <Text style={styles.deleteBtnText}>Delete</Text>
-            </Pressable>
-          )}
-        </View>
-      )}
     </View>
   );
 }
@@ -172,38 +155,39 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
 const styles = StyleSheet.create({
   cardWrapper: {
     backgroundColor: Colors.bg.primary,
-    borderRadius: 14,
-    borderWidth: 1,
-    borderColor: Colors.border.default,
-    overflow: 'hidden',
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: Colors.border.default,
   },
   card: {
-    paddingHorizontal: 14,
-    paddingVertical: 14,
     flexDirection: 'row',
     alignItems: 'center',
-    gap: 10,
+    gap: 12,
+    paddingHorizontal: 16,
+    paddingVertical: 14,
   },
   logoWrap: {
-    width: 64,
-    height: 64,
-    borderRadius: 14,
+    width: 52,
+    height: 52,
+    borderRadius: 12,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border.light,
     flexShrink: 0,
   },
-  logo: { width: 64, height: 64 },
+  logo: {
+    width: 52,
+    height: 52,
+  },
   logoFallback: {
-    backgroundColor: '#D1FAE5',
+    backgroundColor: Colors.brand.light,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoEmoji: { fontSize: 28 },
+  logoEmoji: { fontSize: 24 },
   logoInitial: {
-    fontSize: 22,
+    fontSize: 18,
     fontWeight: '700',
-    color: '#059669',
+    color: Colors.brand.orange,
     fontFamily: 'Inter_700Bold',
   },
   meta: {
@@ -246,9 +230,11 @@ const styles = StyleSheet.create({
     gap: 3,
     paddingHorizontal: 6,
     paddingVertical: 2,
+    backgroundColor: Colors.bg.tertiary,
+    borderRadius: 6,
   },
   commentCount: {
-    fontSize: 12,
+    fontSize: 11,
     color: Colors.text.tertiary,
     fontFamily: 'Inter_500Medium',
   },
@@ -263,70 +249,20 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 1,
-    paddingVertical: 8,
-    paddingHorizontal: 10,
-    borderRadius: 10,
-    backgroundColor: Colors.brand.orange,
-    minWidth: 48,
-  },
-  upvoteBtnActive: {
-    backgroundColor: '#C94420',
+    paddingVertical: 6,
+    paddingHorizontal: 8,
+    minWidth: 36,
   },
   upvoteBtnPending: {
-    opacity: 0.6,
+    opacity: 0.4,
   },
   upvoteCount: {
     fontSize: 12,
     fontWeight: '700',
-    color: '#fff',
     fontFamily: 'Inter_700Bold',
   },
   bookmarkBtn: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: Colors.border.default,
-    backgroundColor: Colors.bg.secondary,
-    justifyContent: 'center',
-    alignItems: 'center',
+    padding: 4,
   },
-  bookmarkBtnActive: {
-    borderColor: Colors.brand.orange,
-    backgroundColor: Colors.brand.light,
-  },
-  menuBtn: {
-    width: 28,
-    height: 28,
-    justifyContent: 'center',
-    alignItems: 'center',
-    flexShrink: 0,
-  },
-  cardFooter: {
-    flexDirection: 'row',
-    borderTopWidth: 1,
-    borderTopColor: Colors.border.light,
-  },
-  footerBtn: {
-    flex: 1,
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 6,
-    paddingVertical: 10,
-  },
-  editBtn: { borderRightWidth: 0.5, borderRightColor: Colors.border.light },
-  editBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.brand.orange,
-    fontFamily: 'Inter_600SemiBold',
-  },
-  deleteBtn: {},
-  deleteBtnText: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.status.error,
-    fontFamily: 'Inter_600SemiBold',
-  },
+  bookmarkBtnActive: {},
 });

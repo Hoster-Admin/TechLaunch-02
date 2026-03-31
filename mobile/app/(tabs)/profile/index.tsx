@@ -27,10 +27,10 @@ import type { ActivityItem, Post, Product, User } from '@/types';
 type ProfileTab = 'activity' | 'products' | 'posts' | 'articles' | 'interests';
 
 const TABS: { id: ProfileTab; label: string }[] = [
-  { id: 'activity', label: 'Activity' },
-  { id: 'products', label: 'Products' },
   { id: 'posts', label: 'Posts' },
+  { id: 'products', label: 'Products' },
   { id: 'articles', label: 'Articles' },
+  { id: 'activity', label: 'Activity' },
   { id: 'interests', label: 'Interests' },
 ];
 
@@ -85,7 +85,7 @@ export default function ProfileScreen() {
   const { user: me } = useAuth();
   const queryClient = useQueryClient();
   const params = useLocalSearchParams<{ tab?: string }>();
-  const [activeTab, setActiveTab] = useState<ProfileTab>('activity');
+  const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [aboutExpanded, setAboutExpanded] = useState(false);
   const [drawerOpen, setDrawerOpen] = useState(false);
 
@@ -223,7 +223,7 @@ export default function ProfileScreen() {
         {(profile?.bio || year || profile?.country) && (
           <View style={styles.aboutSection}>
             <Pressable style={styles.aboutHeader} onPress={() => setAboutExpanded(v => !v)}>
-              <Text style={styles.aboutLabel}>About {aboutExpanded ? '▲' : '▼'}</Text>
+              <Text style={styles.aboutLabel}>About</Text>
             </Pressable>
             {aboutExpanded && (
               <View style={styles.aboutBox}>
@@ -250,17 +250,17 @@ export default function ProfileScreen() {
         {(profile?.website || profile?.twitter || profile?.linkedin) && (
           <View style={styles.socialRow}>
             {profile?.website && (
-              <Pressable style={styles.socialBtn} onPress={() => Linking.openURL(profile.website!)}>
+              <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.website!)}>
                 <Feather name="globe" size={15} color={Colors.text.secondary} />
               </Pressable>
             )}
             {profile?.twitter && (
-              <Pressable style={styles.socialBtn} onPress={() => Linking.openURL(profile.twitter!.startsWith('http') ? profile.twitter! : `https://x.com/${profile.twitter}`)}>
+              <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.twitter!.startsWith('http') ? profile.twitter! : `https://x.com/${profile.twitter}`)}>
                 <Text style={styles.xIcon}>𝕏</Text>
               </Pressable>
             )}
             {profile?.linkedin && (
-              <Pressable style={styles.socialBtn} onPress={() => Linking.openURL(profile.linkedin!)}>
+              <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.linkedin!)}>
                 <Feather name="linkedin" size={15} color={Colors.text.secondary} />
               </Pressable>
             )}
@@ -269,8 +269,8 @@ export default function ProfileScreen() {
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{activityCount}</Text>
-            <Text style={styles.statLabel}>ACTIVITY</Text>
+            <Text style={styles.statNumber}>{posts.length + articles.length}</Text>
+            <Text style={styles.statLabel}>POSTS</Text>
           </View>
           <View style={styles.statDivider} />
           <Pressable
@@ -324,7 +324,6 @@ export default function ProfileScreen() {
         >
           <Feather name="plus" size={15} color={Colors.brand.orange} />
           <Text style={styles.submitProductText}>Submit a Product</Text>
-          <Feather name="arrow-right" size={14} color={Colors.brand.orange} style={{ marginLeft: 'auto' }} />
         </Pressable>
       )}
     </View>
@@ -556,7 +555,7 @@ const styles = StyleSheet.create({
   headlineText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_400Regular', marginTop: 2 },
   aboutSection: { gap: 6 },
   aboutHeader: { flexDirection: 'row', alignItems: 'center' },
-  aboutLabel: { fontSize: 14, fontWeight: '600', color: Colors.text.secondary, fontFamily: 'Inter_600SemiBold' },
+  aboutLabel: { fontSize: 14, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold', textDecorationLine: 'underline' },
   aboutBox: {
     backgroundColor: Colors.bg.secondary,
     borderRadius: 10,

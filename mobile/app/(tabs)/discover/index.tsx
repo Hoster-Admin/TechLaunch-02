@@ -132,21 +132,21 @@ export default function DiscoverScreen() {
       <AppHeader onMenuPress={() => setDrawerOpen(true)} />
       <SidebarDrawer visible={drawerOpen} onClose={() => setDrawerOpen(false)} />
 
-      <View style={styles.discoverSubHeader}>
-        <Text style={styles.discoverTitle}>Discover</Text>
-        <View style={styles.discoverActions}>
-          <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/discover/ecosystem/')}>
-            <Feather name="layers" size={20} color={Colors.text.primary} />
-          </Pressable>
-          <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/discover/people/')}>
-            <Feather name="users" size={20} color={Colors.text.primary} />
-          </Pressable>
+      <View style={styles.headerSection}>
+        <View style={styles.headerTopRow}>
+          <Text style={styles.discoverTitle}>Discover</Text>
+          <View style={styles.discoverActions}>
+            <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/discover/ecosystem/')}>
+              <Feather name="layers" size={19} color={Colors.text.secondary} />
+            </Pressable>
+            <Pressable style={styles.headerBtn} onPress={() => router.push('/(tabs)/discover/people/')}>
+              <Feather name="users" size={19} color={Colors.text.secondary} />
+            </Pressable>
+          </View>
         </View>
-      </View>
 
-      <View style={styles.searchRow}>
         <View style={styles.searchBar}>
-          <Feather name="search" size={18} color={Colors.text.tertiary} />
+          <Feather name="search" size={16} color={Colors.text.tertiary} />
           <TextInput
             style={styles.searchInput}
             placeholder="Search products..."
@@ -239,6 +239,18 @@ export default function DiscoverScreen() {
           contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
           showsVerticalScrollIndicator={false}
           scrollEnabled={!!allProducts.length}
+          ListHeaderComponent={
+            allProducts.length > 0 ? (
+              <View style={styles.listHeader}>
+                <Text style={styles.listHeaderText}>
+                  {search || country !== 'All' || industry !== 'All'
+                    ? `${allProducts.length} result${allProducts.length !== 1 ? 's' : ''}`
+                    : `Today · ${new Date().toLocaleDateString('en-US', { month: 'long', day: 'numeric' })}`}
+                </Text>
+                <Text style={styles.listHeaderCount}>{allProducts.length} products</Text>
+              </View>
+            ) : null
+          }
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
           onEndReachedThreshold={0.3}
           refreshControl={
@@ -252,7 +264,7 @@ export default function DiscoverScreen() {
               <ActivityIndicator color={Colors.brand.orange} style={{ paddingVertical: 20 }} />
             ) : null
           }
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         />
       )}
     </View>
@@ -261,14 +273,18 @@ export default function DiscoverScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg.secondary },
-  discoverSubHeader: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    paddingHorizontal: 16,
-    paddingVertical: 10,
+  headerSection: {
     backgroundColor: Colors.bg.primary,
+    paddingHorizontal: 16,
+    paddingTop: 10,
+    paddingBottom: 12,
+    gap: 10,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.default,
+  },
+  headerTopRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
   },
   discoverTitle: {
     flex: 1,
@@ -277,30 +293,63 @@ const styles = StyleSheet.create({
     color: Colors.text.primary,
     fontFamily: 'Inter_700Bold',
   },
-  discoverActions: { flexDirection: 'row', gap: 8 },
+  discoverActions: { flexDirection: 'row', gap: 6 },
   headerBtn: {
-    width: 36,
-    height: 36,
+    width: 34,
+    height: 34,
     borderRadius: 10,
-    backgroundColor: Colors.bg.secondary,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  searchRow: { paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.bg.primary },
-  searchBar: { flexDirection: 'row', alignItems: 'center', gap: 10, backgroundColor: Colors.bg.secondary, borderRadius: 12, paddingHorizontal: 12, borderWidth: 1.5, borderColor: Colors.border.default },
-  searchInput: { flex: 1, paddingVertical: 10, fontSize: 15, color: Colors.text.primary, fontFamily: 'Inter_400Regular' },
-  filterRow: { flexDirection: 'row', alignItems: 'center', gap: 8, paddingHorizontal: 16, paddingVertical: 8, backgroundColor: Colors.bg.primary, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
-  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1.5, borderColor: Colors.border.default, backgroundColor: Colors.bg.secondary },
+  searchBar: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    backgroundColor: Colors.bg.secondary,
+    borderRadius: 10,
+    paddingHorizontal: 11,
+    borderWidth: 1,
+    borderColor: Colors.border.default,
+  },
+  searchInput: { flex: 1, paddingVertical: 9, fontSize: 14, color: Colors.text.primary, fontFamily: 'Inter_400Regular' },
+  filterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 8,
+    paddingHorizontal: 16,
+    paddingVertical: 8,
+    backgroundColor: Colors.bg.primary,
+    borderBottomWidth: 1,
+    borderBottomColor: Colors.border.default,
+  },
+  filterChip: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 10, paddingVertical: 6, borderRadius: 20, borderWidth: 1, borderColor: Colors.border.default, backgroundColor: Colors.bg.secondary },
   filterChipActive: { borderColor: Colors.brand.orange, backgroundColor: Colors.brand.light },
   filterChipText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   filterChipTextActive: { color: Colors.brand.orange },
   clearFilter: { fontSize: 13, color: Colors.brand.orange, fontFamily: 'Inter_500Medium' },
   filterDropdown: { backgroundColor: Colors.bg.primary, borderBottomWidth: 1, borderBottomColor: Colors.border.default, paddingVertical: 8 },
   filterOptions: { flexDirection: 'row', gap: 8, paddingHorizontal: 16 },
-  filterOption: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: Colors.bg.secondary, borderWidth: 1.5, borderColor: Colors.border.default },
+  filterOption: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: Colors.bg.secondary, borderWidth: 1, borderColor: Colors.border.default },
   filterOptionActive: { backgroundColor: Colors.brand.orange, borderColor: Colors.brand.orange },
   filterOptionText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   filterOptionTextActive: { color: '#fff' },
-  listContent: { padding: 16, gap: 12 },
-  skeleton: { height: 120, borderRadius: 14, backgroundColor: Colors.bg.tertiary },
+  listHeader: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginBottom: 12,
+  },
+  listHeaderText: {
+    fontSize: 15,
+    fontWeight: '600',
+    color: Colors.text.primary,
+    fontFamily: 'Inter_600SemiBold',
+  },
+  listHeaderCount: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    fontFamily: 'Inter_400Regular',
+  },
+  listContent: { padding: 16 },
+  skeleton: { height: 104, borderRadius: 14, backgroundColor: Colors.bg.tertiary, marginBottom: 12 },
 });

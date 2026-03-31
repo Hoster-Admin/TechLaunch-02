@@ -1,6 +1,7 @@
 import { BlurView } from 'expo-blur';
 import { Redirect, Tabs } from 'expo-router';
 import { Feather } from '@expo/vector-icons';
+import * as Haptics from 'expo-haptics';
 import React from 'react';
 import { Platform, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
@@ -31,6 +32,9 @@ export default function TabLayout() {
 
   return (
     <Tabs
+      screenListeners={{
+        tabPress: () => { Haptics.selectionAsync(); },
+      }}
       screenOptions={{
         headerShown: false,
         tabBarActiveTintColor: Colors.brand.orange,

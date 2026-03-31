@@ -29,7 +29,7 @@ import { useAuth } from '@/contexts/AuthContext';
 import { api, getApiError } from '@/lib/api';
 import { notifyComment, notifyReply, notifyUpvote } from '@/lib/notify';
 import { adaptComment, adaptProduct } from '@/lib/adapters';
-import { timeAgo } from '@/lib/utils';
+import { formatCountryTag, timeAgo } from '@/lib/utils';
 import type { Comment, Product } from '@/types';
 
 const TAB_BAR_HEIGHT = 49;
@@ -235,8 +235,12 @@ export default function ProductDetailScreen() {
         onScrollToIndexFailed={() => {}}
         ListHeaderComponent={
           <View style={styles.productHeader}>
-            {product.coverImage && !coverError && (
+            {product.coverImage && !coverError ? (
               <Image source={{ uri: product.coverImage }} style={styles.coverImage} contentFit="cover" onError={() => setCoverError(true)} />
+            ) : (
+              <View style={[styles.coverImage, styles.coverPlaceholder]}>
+                <Feather name="bar-chart-2" size={28} color="rgba(255,255,255,0.2)" />
+              </View>
             )}
 
             <View style={styles.productInfo}>
@@ -246,7 +250,7 @@ export default function ProductDetailScreen() {
                     <Image source={{ uri: product.logo }} style={styles.logo} contentFit="contain" onError={() => setLogoError(true)} />
                   ) : (
                     <View style={[styles.logo, styles.logoFallback]}>
-                      <Text style={styles.logoFallbackText}>{product.name.charAt(0)}</Text>
+                      <Text style={styles.logoFallbackText}>{product.name.slice(0, 2).toUpperCase()}</Text>
                     </View>
                   )}
                 </View>
@@ -255,30 +259,30 @@ export default function ProductDetailScreen() {
                   <Text style={styles.productTagline}>{product.tagline}</Text>
                   <View style={styles.tagRow}>
                     {product.industry && <View style={styles.tag}><Text style={styles.tagText}>{product.industry}</Text></View>}
-                    {product.country && <View style={styles.tag}><Text style={styles.tagText}>{product.country}</Text></View>}
+                    {product.country && <View style={styles.tag}><Text style={styles.tagText}>{formatCountryTag(product.country)}</Text></View>}
                   </View>
                 </View>
               </View>
 
               <View style={styles.voteRow}>
-                <View style={styles.voteBtnWrap}>
-                  <Animated.View style={{ transform: [{ scale: upvoteScale }] }}>
-                    <Pressable
-                      style={[styles.voteBtn, product.upvoted && styles.voteBtnActive, upvoteMutation.isPending && { opacity: 0.5 }]}
-                      onPress={() => {
-                        Animated.sequence([
-                          Animated.spring(upvoteScale, { toValue: 1.35, useNativeDriver: true, speed: 40, bounciness: 12 }),
-                          Animated.spring(upvoteScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
-                        ]).start();
-                        upvoteMutation.mutate();
-                      }}
-                      disabled={upvoteMutation.isPending}
-                    >
-                      <Feather name="chevron-up" size={18} color="#fff" />
-                      <Text style={styles.voteCount}>{product.upvotes}</Text>
-                    </Pressable>
-                  </Animated.View>
-                </View>
+                <Animated.View style={[{ transform: [{ scale: upvoteScale }] }, { flex: 1 }]}>
+                  <Pressable
+                    style={[styles.voteBtn, product.upvoted && styles.voteBtnActive, upvoteMutation.isPending && { opacity: 0.5 }]}
+                    onPress={() => {
+                      Animated.sequence([
+                        Animated.spring(upvoteScale, { toValue: 1.08, useNativeDriver: true, speed: 40, bounciness: 12 }),
+                        Animated.spring(upvoteScale, { toValue: 1, useNativeDriver: true, speed: 20, bounciness: 6 }),
+                      ]).start();
+                      upvoteMutation.mutate();
+                    }}
+                    disabled={upvoteMutation.isPending}
+                  >
+                    <Feather name="chevron-up" size={20} color="#fff" />
+                    <Text style={styles.voteCount}>
+                      {product.upvoted ? 'Upvoted' : 'Upvote'}{product.upvotes > 0 ? `  ·  ${product.upvotes}` : ''}
+                    </Text>
+                  </Pressable>
+                </Animated.View>
                 {product.website && (
                   <Pressable
                     style={styles.websiteBtn}
@@ -290,29 +294,6 @@ export default function ProductDetailScreen() {
                 )}
               </View>
             </View>
-
-            {product.description && (
-              <View style={styles.descSection}>
-                <Text style={styles.sectionTitle}>About</Text>
-                <Text style={styles.description}>{product.description}</Text>
-              </View>
-            )}
-
-            {product.reasons && product.reasons.length > 0 && (
-              <View style={styles.reasonsSection}>
-                <Text style={styles.sectionTitle}>
-                  Top {product.reasons.length} reasons to use {product.name}
-                </Text>
-                {product.reasons.map((reason, i) => (
-                  <View key={i} style={styles.reasonRow}>
-                    <View style={styles.reasonBadge}>
-                      <Text style={styles.reasonBadgeText}>{i + 1}</Text>
-                    </View>
-                    <Text style={styles.reasonText}>{reason}</Text>
-                  </View>
-                ))}
-              </View>
-            )}
 
             {screenshots.length > 0 && (
               <View style={styles.screenshotsSection}>
@@ -333,6 +314,29 @@ export default function ProductDetailScreen() {
                     ))}
                   </View>
                 </ScrollView>
+              </View>
+            )}
+
+            {product.description && (
+              <View style={styles.descSection}>
+                <Text style={styles.sectionTitle}>About</Text>
+                <Markdown style={markdownStyles}>{product.description}</Markdown>
+              </View>
+            )}
+
+            {product.reasons && product.reasons.length > 0 && (
+              <View style={styles.reasonsSection}>
+                <Text style={styles.sectionTitle}>
+                  Top {product.reasons.length} reasons to use {product.name}
+                </Text>
+                {product.reasons.map((reason, i) => (
+                  <View key={i} style={styles.reasonRow}>
+                    <View style={styles.reasonBadge}>
+                      <Text style={styles.reasonBadgeText}>{i + 1}</Text>
+                    </View>
+                    <Text style={styles.reasonText}>{reason}</Text>
+                  </View>
+                ))}
               </View>
             )}
 
@@ -476,6 +480,18 @@ export default function ProductDetailScreen() {
   );
 }
 
+const markdownStyles = StyleSheet.create({
+  body: { fontSize: 14, color: Colors.text.secondary, lineHeight: 22, fontFamily: 'Inter_400Regular' },
+  strong: { fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
+  em: { fontStyle: 'italic' },
+  link: { color: Colors.brand.orange, textDecorationLine: 'underline' },
+  paragraph: { marginVertical: 2 },
+  bullet_list: { marginVertical: 2 },
+  ordered_list: { marginVertical: 2 },
+  list_item: { flexDirection: 'row', marginVertical: 1 },
+  code_inline: { backgroundColor: Colors.bg.secondary, borderRadius: 4, paddingHorizontal: 4, fontFamily: 'Inter_400Regular', fontSize: 13, color: Colors.text.primary },
+});
+
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg.secondary },
   topBar: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingHorizontal: 16, paddingVertical: 10, backgroundColor: Colors.bg.primary, borderBottomWidth: 1, borderBottomColor: Colors.border.default },
@@ -492,6 +508,7 @@ const styles = StyleSheet.create({
   listContent: { paddingBottom: 120 },
   productHeader: { backgroundColor: Colors.bg.primary, marginBottom: 12 },
   coverImage: { width: '100%', height: 200 },
+  coverPlaceholder: { backgroundColor: '#1A1A2E', justifyContent: 'center', alignItems: 'center' },
   productInfo: { padding: 16, gap: 12 },
   productMeta: { flexDirection: 'row', gap: 12 },
   logoWrap: { width: 60, height: 60, borderRadius: 14, overflow: 'hidden', borderWidth: 1, borderColor: Colors.border.light, flexShrink: 0 },
@@ -504,8 +521,8 @@ const styles = StyleSheet.create({
   tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 6 },
   tag: { backgroundColor: Colors.bg.tertiary, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   tagText: { fontSize: 11, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
-  voteRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  voteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: Colors.brand.orange },
+  voteRow: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  voteBtn: { flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8, paddingVertical: 12, paddingHorizontal: 16, borderRadius: 10, backgroundColor: Colors.brand.orange },
   voteBtnActive: { backgroundColor: '#C94420' },
   voteCount: { fontSize: 15, fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' },
   websiteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: Colors.brand.light, borderWidth: 1.5, borderColor: Colors.brand.orange },

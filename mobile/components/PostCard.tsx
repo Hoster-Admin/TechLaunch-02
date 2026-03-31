@@ -113,15 +113,23 @@ export function PostCard({ post, onPress, onLike, onEdit, onDelete, onReport, is
 
         <View style={styles.actions}>
           <Pressable style={styles.actionBtn} onPress={handleLike}>
-            <Text style={styles.likeEmoji}>🎉</Text>
-            <Text style={[styles.actionCount, post.liked && styles.likedCount]}>
-              {post.likesCount}
-            </Text>
+            <Feather
+              name="heart"
+              size={15}
+              color={post.liked ? Colors.brand.orange : Colors.text.tertiary}
+            />
+            {(post.likesCount ?? 0) > 0 && (
+              <Text style={[styles.actionCount, post.liked && styles.likedCount]}>
+                {post.likesCount}
+              </Text>
+            )}
           </Pressable>
-          <View style={styles.actionBtn}>
+          <Pressable style={styles.actionBtn} onPress={onPress}>
             <Feather name="message-circle" size={15} color={Colors.text.tertiary} />
-            <Text style={styles.actionCount}>{post.commentsCount ?? 0}</Text>
-          </View>
+            {(post.commentsCount ?? 0) > 0 && (
+              <Text style={styles.actionCount}>{post.commentsCount}</Text>
+            )}
+          </Pressable>
         </View>
       </Pressable>
 
@@ -186,9 +194,6 @@ const styles = StyleSheet.create({
   },
   header: { flexDirection: 'row', gap: 10, alignItems: 'center' },
   avatarWrap: { width: 42, height: 42, borderRadius: 21, overflow: 'hidden', flexShrink: 0 },
-  avatar: { width: 42, height: 42 },
-  avatarFallback: { backgroundColor: Colors.brand.light, justifyContent: 'center', alignItems: 'center' },
-  avatarInitial: { fontSize: 16, fontWeight: '700', color: Colors.brand.orange, fontFamily: 'Inter_700Bold' },
   authorMeta: { flex: 1, gap: 2, minWidth: 0 },
   authorName: { fontSize: 14, fontWeight: '600', color: Colors.text.primary, fontFamily: 'Inter_600SemiBold' },
   authorSub: { fontSize: 12, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular' },
@@ -218,7 +223,6 @@ const styles = StyleSheet.create({
     paddingTop: 10,
   },
   actionBtn: { flexDirection: 'row', alignItems: 'center', gap: 5 },
-  likeEmoji: { fontSize: 14 },
   actionCount: { fontSize: 13, fontWeight: '500', color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   likedCount: { color: Colors.brand.orange },
 });

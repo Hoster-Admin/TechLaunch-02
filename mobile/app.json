@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "Tech Launch MENA",
+    "name": "Tech Launch",
     "slug": "mobile",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -18,7 +18,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tlmena.app",
       "appleTeamId": "46DDQPQS6S",
-      "buildNumber": "29",
+      "buildNumber": "30",
       "entitlements": {
         "aps-environment": "production"
       },

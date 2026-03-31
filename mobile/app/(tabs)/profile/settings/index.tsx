@@ -228,7 +228,7 @@ export default function SettingsScreen() {
 
       {sections.slice(2).map((section, si) => (
         <View key={`danger-${si}`} style={styles.section}>
-          <Text style={styles.sectionTitle}>{section.title}</Text>
+          <Text style={[styles.sectionTitle, styles.sectionTitleDanger]}>{section.title}</Text>
           <View style={styles.sectionItems}>
             {section.items.map((item, ii) => (
               <Pressable
@@ -260,7 +260,7 @@ export default function SettingsScreen() {
       ))}
 
       <View style={styles.version}>
-        <Text style={styles.versionText}>Tech Launch MENA</Text>
+        <Text style={styles.versionText}>Tech Launch</Text>
         <Text style={styles.versionText}>Version 1.0.0</Text>
       </View>
 
@@ -275,6 +275,7 @@ const styles = StyleSheet.create({
   loadingText: { fontSize: 15, color: Colors.text.secondary, fontFamily: 'Inter_400Regular' },
   section: { marginTop: 20, marginHorizontal: 16 },
   sectionTitle: { fontSize: 12, fontWeight: '600', color: Colors.text.tertiary, textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 8, fontFamily: 'Inter_600SemiBold' },
+  sectionTitleDanger: { color: Colors.status.error },
   sectionItems: { backgroundColor: Colors.bg.primary, borderRadius: 14, overflow: 'hidden', borderWidth: 1.5, borderColor: Colors.border.default },
   item: { flexDirection: 'row', alignItems: 'center', gap: 14, paddingHorizontal: 16, paddingVertical: 16 },
   itemBorder: { borderBottomWidth: 1, borderBottomColor: Colors.border.light },
@@ -287,7 +288,7 @@ const styles = StyleSheet.create({
   version: { alignItems: 'center', marginTop: 40, gap: 4 },
   versionText: { fontSize: 12, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular' },
   profileLinkCard: { flexDirection: 'row', alignItems: 'center', padding: 14, gap: 12 },
-  profileLinkText: { flex: 1, fontSize: 14, color: Colors.text.secondary, fontFamily: 'Inter_400Regular' },
+  profileLinkText: { flex: 1, fontSize: 14, color: Colors.brand.orange, fontFamily: 'Inter_400Regular', textDecorationLine: 'underline' },
   copyBtn: { flexDirection: 'row', alignItems: 'center', gap: 5, paddingHorizontal: 12, paddingVertical: 7, backgroundColor: Colors.brand.light, borderRadius: 8 },
   copyBtnText: { fontSize: 13, fontWeight: '600', color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
 });
