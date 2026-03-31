@@ -178,7 +178,7 @@ export default function ProfileScreen() {
 
       <View style={styles.profileTopRow}>
         <View style={styles.avatarContainer}>
-          <Avatar uri={profile?.avatar} name={profile?.name ?? '?'} size={80} />
+          <Avatar uri={profile?.avatar} name={profile?.name ?? '?'} size={80} color={profile?.avatarColor} />
         </View>
         <View style={styles.headerBtns}>
           <Pressable

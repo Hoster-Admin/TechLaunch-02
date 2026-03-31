@@ -186,7 +186,7 @@ export default function UserProfileScreen() {
             {/* Avatar + buttons row */}
             <View style={styles.avatarRow}>
               <View style={styles.avatarWrap}>
-                <Avatar uri={user.avatar} name={user.name} size={84} />
+                <Avatar uri={user.avatar} name={user.name} size={84} color={user.avatarColor} />
               </View>
               {!isOwnProfile && (
                 <View style={styles.actionBtns}>

@@ -52,6 +52,9 @@ export default function ProductDetailScreen() {
   const [commentText, setCommentText] = useState('');
   const [replyingTo, setReplyingTo] = useState<ReplyingTo | null>(null);
   const [screenshotIndex, setScreenshotIndex] = useState(0);
+  const [logoError, setLogoError] = useState(false);
+  const [coverError, setCoverError] = useState(false);
+  const [screenshotErrors, setScreenshotErrors] = useState<Record<number, boolean>>({});
   const [showUnsaveModal, setShowUnsaveModal] = useState(false);
   const [deleteCommentModal, setDeleteCommentModal] = useState<string | null>(null);
   const [toastVisible, setToastVisible] = useState(false);
@@ -232,15 +235,15 @@ export default function ProductDetailScreen() {
         onScrollToIndexFailed={() => {}}
         ListHeaderComponent={
           <View style={styles.productHeader}>
-            {product.coverImage && (
-              <Image source={{ uri: product.coverImage }} style={styles.coverImage} contentFit="cover" />
+            {product.coverImage && !coverError && (
+              <Image source={{ uri: product.coverImage }} style={styles.coverImage} contentFit="cover" onError={() => setCoverError(true)} />
             )}
 
             <View style={styles.productInfo}>
               <View style={styles.productMeta}>
                 <View style={styles.logoWrap}>
-                  {product.logo ? (
-                    <Image source={{ uri: product.logo }} style={styles.logo} contentFit="contain" />
+                  {product.logo && !logoError ? (
+                    <Image source={{ uri: product.logo }} style={styles.logo} contentFit="contain" onError={() => setLogoError(true)} />
                   ) : (
                     <View style={[styles.logo, styles.logoFallback]}>
                       <Text style={styles.logoFallbackText}>{product.name.charAt(0)}</Text>
@@ -271,8 +274,8 @@ export default function ProductDetailScreen() {
                       }}
                       disabled={upvoteMutation.isPending}
                     >
-                      <Text style={styles.voteEmoji}>🎉</Text>
-                      <Text style={[styles.voteCount, product.upvoted && styles.voteCountActive]}>{product.upvotes}</Text>
+                      <Feather name="chevron-up" size={18} color="#fff" />
+                      <Text style={styles.voteCount}>{product.upvotes}</Text>
                     </Pressable>
                   </Animated.View>
                 </View>
@@ -317,13 +320,16 @@ export default function ProductDetailScreen() {
                 <ScrollView horizontal showsHorizontalScrollIndicator={false}>
                   <View style={styles.screenshotRow}>
                     {screenshots.map((s, i) => (
-                      <Pressable key={i} onPress={() => setScreenshotIndex(i)}>
-                        <Image
-                          source={{ uri: s }}
-                          style={[styles.screenshot, i === screenshotIndex && styles.screenshotActive]}
-                          contentFit="cover"
-                        />
-                      </Pressable>
+                      !screenshotErrors[i] && (
+                        <Pressable key={i} onPress={() => setScreenshotIndex(i)}>
+                          <Image
+                            source={{ uri: s }}
+                            style={[styles.screenshot, i === screenshotIndex && styles.screenshotActive]}
+                            contentFit="cover"
+                            onError={() => setScreenshotErrors(prev => ({ ...prev, [i]: true }))}
+                          />
+                        </Pressable>
+                      )
                     ))}
                   </View>
                 </ScrollView>
@@ -499,11 +505,9 @@ const styles = StyleSheet.create({
   tag: { backgroundColor: Colors.bg.tertiary, borderRadius: 8, paddingHorizontal: 8, paddingVertical: 3 },
   tagText: { fontSize: 11, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   voteRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  voteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, borderWidth: 1.5, borderColor: Colors.border.default },
-  voteBtnActive: { borderColor: Colors.brand.orange, backgroundColor: Colors.brand.light },
-  voteEmoji: { fontSize: 18 },
-  voteCount: { fontSize: 15, fontWeight: '600', color: Colors.text.secondary, fontFamily: 'Inter_600SemiBold' },
-  voteCountActive: { color: Colors.brand.orange },
+  voteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: Colors.brand.orange },
+  voteBtnActive: { backgroundColor: '#C94420' },
+  voteCount: { fontSize: 15, fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' },
   websiteBtn: { flexDirection: 'row', alignItems: 'center', gap: 6, paddingVertical: 8, paddingHorizontal: 16, borderRadius: 10, backgroundColor: Colors.brand.light, borderWidth: 1.5, borderColor: Colors.brand.orange },
   websiteText: { fontSize: 14, color: Colors.brand.orange, fontWeight: '600', fontFamily: 'Inter_600SemiBold' },
   descSection: { padding: 16, gap: 8, borderTopWidth: 1, borderTopColor: Colors.border.light },

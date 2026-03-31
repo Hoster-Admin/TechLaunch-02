@@ -51,7 +51,7 @@ export default function PeopleScreen() {
         limit: 20,
       };
       if (search.trim()) params.search = search.trim();
-      const res = await api.get('/users', { params });
+      const res = await api.get('/users/people', { params });
       const body = res.data;
       const raw: unknown[] =
         Array.isArray(body) ? body :
@@ -66,7 +66,10 @@ export default function PeopleScreen() {
       const items = (raw as Record<string, unknown>[]).map(adaptUser);
       const pag = body?.pagination ?? body?.meta ?? body?.data?.pagination ?? body?.data?.meta;
       const page = (pag?.current_page ?? pag?.page ?? pageParam) as number;
-      const hasMore = pag ? (pag.current_page ?? pag.page ?? 1) < (pag.last_page ?? pag.pages ?? 1) : false;
+      const perPage = pag?.per_page ?? pag?.limit ?? 20;
+      const total = pag?.total ?? items.length;
+      const lastPage = pag?.last_page ?? pag?.pages ?? Math.ceil(total / perPage);
+      const hasMore = pag ? page < lastPage : false;
       return { items, hasMore, page };
     },
     initialPageParam: 1,

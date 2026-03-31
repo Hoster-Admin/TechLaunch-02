@@ -55,6 +55,7 @@ export default function ConversationScreen() {
         [];
       return raw.map(adaptDirectMessage);
     },
+    staleTime: 30 * 1000,
     refetchInterval: 10000,
   });
 
@@ -74,7 +75,7 @@ export default function ConversationScreen() {
     }
   }, [messages]);
 
-  const goBack = () => router.push('/(tabs)/inbox');
+  const goBack = () => router.back();
 
   const displayName = participant?.name ?? name ?? id;
   const displayHandle = participant?.username ?? id;

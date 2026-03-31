@@ -21,6 +21,20 @@ import { api, getApiError } from '@/lib/api';
 import { adaptEntity } from '@/lib/adapters';
 import type { EcosystemEntity } from '@/types';
 
+function EntityLogoImage({ uri, name }: { uri?: string; name: string }) {
+  const [err, setErr] = useState(false);
+  if (uri && !err) {
+    return (
+      <Image source={{ uri }} style={styles.logo} contentFit="contain" onError={() => setErr(true)} />
+    );
+  }
+  return (
+    <View style={[styles.logo, styles.logoFallback]}>
+      <Text style={styles.logoText}>{name.charAt(0).toUpperCase()}</Text>
+    </View>
+  );
+}
+
 export default function EntityDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const insets = useSafeAreaInsets();
@@ -83,13 +97,7 @@ export default function EntityDetailScreen() {
 
       <ScrollView showsVerticalScrollIndicator={false} contentContainerStyle={{ paddingBottom: 100 }}>
         <View style={styles.hero}>
-          {entity.logo ? (
-            <Image source={{ uri: entity.logo }} style={styles.logo} contentFit="contain" />
-          ) : (
-            <View style={[styles.logo, styles.logoFallback]}>
-              <Text style={styles.logoText}>{entity.name.charAt(0)}</Text>
-            </View>
-          )}
+          <EntityLogoImage uri={entity.logo} name={entity.name} />
           <Text style={styles.entityName}>{entity.name}</Text>
           <Text style={styles.entityDesc}>{entity.description}</Text>
           <View style={styles.tagRow}>

@@ -1,5 +1,5 @@
 import { Feather } from '@expo/vector-icons';
-import { useQuery } from '@tanstack/react-query';
+import { useQuery, useQueryClient } from '@tanstack/react-query';
 import { router } from 'expo-router';
 import React, { useState } from 'react';
 import {
@@ -20,11 +20,12 @@ import { Colors } from '@/constants/Colors';
 import { api } from '@/lib/api';
 import { adaptThread } from '@/lib/adapters';
 import { timeAgo } from '@/lib/utils';
-import type { Conversation } from '@/types';
+import type { Conversation, DirectMessage } from '@/types';
 
 export default function InboxScreen() {
   const [drawerOpen, setDrawerOpen] = useState(false);
   const insets = useSafeAreaInsets();
+  const queryClient = useQueryClient();
 
   const [inboxErrorDetail, setInboxErrorDetail] = useState('');
   const { data, isLoading, isError, refetch, isRefetching } = useQuery<Conversation[]>({
@@ -144,7 +145,15 @@ export default function InboxScreen() {
                   )}
                 </View>
                 <Text style={styles.lastMessage} numberOfLines={1}>
-                  {item.lastMessage?.body ?? 'No messages yet'}
+                  {(() => {
+                    const body = item.lastMessage?.body || '';
+                    if (body) return body;
+                    const cached = queryClient.getQueryData<DirectMessage[]>(['conversation', item.participant.username]);
+                    if (cached && cached.length > 0) {
+                      return cached[cached.length - 1].body || 'No messages yet';
+                    }
+                    return 'No messages yet';
+                  })()}
                 </Text>
               </View>
               <Feather name="chevron-right" size={16} color={Colors.text.tertiary} />

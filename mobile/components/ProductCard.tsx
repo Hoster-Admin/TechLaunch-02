@@ -15,11 +15,10 @@ interface Props {
   onEdit?: () => void;
   onDelete?: () => void;
   compact?: boolean;
-  rank?: number;
   upvotePending?: boolean;
 }
 
-export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, onDelete, compact, rank, upvotePending }: Props) {
+export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, onDelete, compact, upvotePending }: Props) {
   const [imgError, setImgError] = useState(false);
 
   const handleUpvote = () => {
@@ -75,10 +74,6 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
         style={({ pressed }) => [styles.card, { opacity: pressed ? 0.93 : 1 }]}
         onPress={onPress}
       >
-        {rank !== undefined && (
-          <Text style={styles.rank}>#{rank}</Text>
-        )}
-
         <View style={styles.logoWrap}>
           {showImage ? (
             <Image
@@ -121,8 +116,8 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
               onPress={handleUpvote}
               disabled={upvotePending}
             >
-              <Text style={styles.upvoteEmoji}>🎉</Text>
-              <Text style={[styles.upvoteCount, product.upvoted && styles.upvoteCountActive]}>
+              <Feather name="chevron-up" size={16} color="#fff" />
+              <Text style={styles.upvoteCount}>
                 {product.upvotes}
               </Text>
             </Pressable>
@@ -189,33 +184,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     gap: 10,
   },
-  rank: {
-    fontSize: 13,
-    fontWeight: '600',
-    color: Colors.text.tertiary,
-    fontFamily: 'Inter_600SemiBold',
-    width: 26,
-    textAlign: 'center',
-    flexShrink: 0,
-  },
   logoWrap: {
-    width: 52,
-    height: 52,
-    borderRadius: 12,
+    width: 64,
+    height: 64,
+    borderRadius: 14,
     overflow: 'hidden',
     borderWidth: 1,
     borderColor: Colors.border.light,
     flexShrink: 0,
   },
-  logo: { width: 52, height: 52 },
+  logo: { width: 64, height: 64 },
   logoFallback: {
     backgroundColor: '#D1FAE5',
     justifyContent: 'center',
     alignItems: 'center',
   },
-  logoEmoji: { fontSize: 24 },
+  logoEmoji: { fontSize: 28 },
   logoInitial: {
-    fontSize: 18,
+    fontSize: 22,
     fontWeight: '700',
     color: '#059669',
     fontFamily: 'Inter_700Bold',
@@ -277,29 +263,24 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 1,
-    paddingVertical: 6,
+    paddingVertical: 8,
     paddingHorizontal: 10,
     borderRadius: 10,
-    borderWidth: 1.5,
-    borderColor: Colors.border.default,
-    backgroundColor: Colors.bg.secondary,
-    minWidth: 44,
+    backgroundColor: Colors.brand.orange,
+    minWidth: 48,
   },
   upvoteBtnActive: {
-    borderColor: Colors.brand.orange,
-    backgroundColor: Colors.brand.light,
+    backgroundColor: '#C94420',
   },
   upvoteBtnPending: {
-    opacity: 0.5,
+    opacity: 0.6,
   },
-  upvoteEmoji: { fontSize: 14 },
   upvoteCount: {
     fontSize: 12,
-    fontWeight: '600',
-    color: Colors.text.secondary,
-    fontFamily: 'Inter_600SemiBold',
+    fontWeight: '700',
+    color: '#fff',
+    fontFamily: 'Inter_700Bold',
   },
-  upvoteCountActive: { color: Colors.brand.orange },
   bookmarkBtn: {
     width: 36,
     height: 36,

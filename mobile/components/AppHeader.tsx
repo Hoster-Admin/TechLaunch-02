@@ -6,7 +6,6 @@ import {
   Platform,
   Pressable,
   StyleSheet,
-  Text,
   TextInput,
   View,
 } from 'react-native';
@@ -127,7 +126,6 @@ export function AppHeader({ onMenuPress, onSearchChange }: Props) {
 
           <Pressable onPress={onMenuPress} hitSlop={8} style={styles.menuBtn}>
             <Feather name="menu" size={22} color={Colors.text.primary} />
-            <Text style={styles.menuLabel}>Menu</Text>
           </Pressable>
         </View>
       </View>
@@ -191,8 +189,7 @@ const styles = StyleSheet.create({
   iconBtn: {
     position: 'relative',
   },
-  menuBtn: { alignItems: 'center', gap: 1 },
-  menuLabel: { fontSize: 9, color: Colors.text.tertiary, fontFamily: 'Inter_500Medium' },
+  menuBtn: { alignItems: 'center' },
   badge: {
     position: 'absolute',
     top: -5,

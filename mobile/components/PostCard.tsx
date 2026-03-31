@@ -5,6 +5,7 @@ import { Image } from 'expo-image';
 import React, { useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import Markdown from 'react-native-markdown-display';
+import { Avatar } from '@/components/Avatar';
 import { ConfirmModal } from '@/components/ConfirmModal';
 import { Colors } from '@/constants/Colors';
 import type { Post } from '@/types';
@@ -73,13 +74,7 @@ export function PostCard({ post, onPress, onLike, onEdit, onDelete, onReport, is
       >
         <View style={styles.header}>
           <View style={styles.avatarWrap}>
-            {post.user.avatar ? (
-              <Image source={{ uri: post.user.avatar }} style={styles.avatar} contentFit="cover" />
-            ) : (
-              <View style={[styles.avatar, styles.avatarFallback]}>
-                <Text style={styles.avatarInitial}>{post.user.name.charAt(0)}</Text>
-              </View>
-            )}
+            <Avatar uri={post.user.avatar} name={post.user.name} size={42} />
           </View>
           <View style={styles.authorMeta}>
             <Text style={styles.authorName} numberOfLines={1}>{post.user.name}</Text>

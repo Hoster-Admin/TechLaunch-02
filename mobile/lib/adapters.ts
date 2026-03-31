@@ -226,13 +226,15 @@ export function adaptUsersPage(apiResponse: Raw): PaginatedResponse<User> {
     apiResponse?.data?.pagination ??
     apiResponse?.data?.meta ??
     null;
+  const currentPage = pag?.current_page ?? pag?.page ?? 1;
+  const perPage = pag?.per_page ?? pag?.limit ?? 20;
+  const total = pag?.total ?? items.length;
+  const lastPage = pag?.last_page ?? pag?.pages ?? Math.ceil(total / perPage);
   return {
     items,
-    total: pag?.total ?? items.length,
-    page: pag?.current_page ?? pag?.page ?? 1,
-    perPage: pag?.per_page ?? pag?.limit ?? 20,
-    hasMore: pag
-      ? (pag.current_page ?? pag.page ?? 1) < (pag.last_page ?? pag.pages ?? 1)
-      : false,
+    total,
+    page: currentPage,
+    perPage,
+    hasMore: pag ? currentPage < lastPage : false,
   };
 }

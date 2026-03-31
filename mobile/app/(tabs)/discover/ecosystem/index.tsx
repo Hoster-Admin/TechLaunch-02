@@ -34,6 +34,20 @@ interface EntityPage {
   page: number;
 }
 
+function EntityLogoImage({ uri, name }: { uri?: string; name: string }) {
+  const [err, setErr] = useState(false);
+  if (uri && !err) {
+    return (
+      <Image source={{ uri }} style={styles.logo} contentFit="contain" onError={() => setErr(true)} />
+    );
+  }
+  return (
+    <View style={[styles.logo, styles.logoFallback]}>
+      <Text style={styles.logoText}>{name.charAt(0).toUpperCase()}</Text>
+    </View>
+  );
+}
+
 export default function EcosystemScreen() {
   const { type: typeParam } = useLocalSearchParams<{ type?: string }>();
   const insets = useSafeAreaInsets();
@@ -137,13 +151,7 @@ export default function EcosystemScreen() {
               }
             >
               <View style={styles.cardRow}>
-                {item.logo ? (
-                  <Image source={{ uri: item.logo }} style={styles.logo} contentFit="contain" />
-                ) : (
-                  <View style={[styles.logo, styles.logoFallback]}>
-                    <Text style={styles.logoText}>{item.name.charAt(0)}</Text>
-                  </View>
-                )}
+                <EntityLogoImage uri={item.logo} name={item.name} />
                 <View style={styles.cardInfo}>
                   <Text style={styles.entityName} numberOfLines={1}>
                     {item.name}

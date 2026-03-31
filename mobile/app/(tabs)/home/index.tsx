@@ -111,10 +111,9 @@ export default function HomeScreen() {
   const hasActiveFilters = country !== 'All' || industry !== 'All';
 
   const renderProduct = useCallback(
-    ({ item, index }: { item: Product; index: number }) => (
+    ({ item }: { item: Product }) => (
       <ProductCard
         product={item}
-        rank={index + 1}
         onPress={() => router.push({ pathname: '/(tabs)/home/[id]', params: { id: item.id } })}
         onUpvote={() => upvoteMutation.mutate(item.id)}
         upvotePending={upvoteMutation.isPending && upvoteMutation.variables === item.id}

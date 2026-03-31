@@ -49,7 +49,7 @@ function PeopleList({ currentUser }: { currentUser: User | null }) {
       queryFn: async ({ pageParam = 1 }) => {
         const params: Record<string, string | number> = { page: pageParam as number, limit: 20 };
         if (search.trim()) params.search = search.trim();
-        const res = await api.get('/users', { params });
+        const res = await api.get('/users/people', { params });
         return adaptUsersPage(res.data);
       },
       initialPageParam: 1,
@@ -113,7 +113,7 @@ function PeopleList({ currentUser }: { currentUser: User | null }) {
                 {!isMe && (
                   <Pressable
                     style={[styles.followBtn, item.isFollowing && styles.followBtnActive]}
-                    onPress={() => followMutation.mutate(item.username)}
+                    onPress={() => followMutation.mutate(item.username || item.id)}
                   >
                     <Text style={[styles.followBtnText, item.isFollowing && styles.followBtnTextActive]}>
                       {item.isFollowing ? 'Following' : 'Follow'}
