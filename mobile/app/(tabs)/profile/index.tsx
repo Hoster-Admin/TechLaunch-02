@@ -25,12 +25,11 @@ import { adaptActivityItem, adaptPost, adaptProduct, adaptUser } from '@/lib/ada
 import { timeAgo } from '@/lib/utils';
 import type { ActivityItem, Post, Product, User } from '@/types';
 
-type ProfileTab = 'activity' | 'products' | 'posts' | 'articles' | 'interests';
+type ProfileTab = 'activity' | 'products' | 'posts' | 'interests';
 
 const TABS: { id: ProfileTab; label: string }[] = [
   { id: 'posts', label: 'Posts' },
   { id: 'products', label: 'Products' },
-  { id: 'articles', label: 'Articles' },
   { id: 'activity', label: 'Activity' },
   { id: 'interests', label: 'Interests' },
 ];
@@ -77,6 +76,7 @@ export default function ProfileScreen() {
   const params = useLocalSearchParams<{ tab?: string }>();
   const [activeTab, setActiveTab] = useState<ProfileTab>('posts');
   const [drawerOpen, setDrawerOpen] = useState(false);
+  const [aboutExpanded, setAboutExpanded] = useState(false);
 
   useEffect(() => {
     if (params.tab === 'products') {
@@ -140,11 +140,7 @@ export default function ProfileScreen() {
   const activity = data?.activity ?? [];
   const bookmarksCount = data?.bookmarksCount ?? 0;
   const year = sinceYear(profile?.createdAt);
-  const activityCount =
-    products.length +
-    posts.length +
-    activity.filter(a => a.type === 'comment' || a.type === 'upvote' || a.type === 'bookmark').length +
-    bookmarksCount;
+  const activityCount = activity.length;
 
   const upvotedActivity = activity.filter(a => a.type === 'upvote');
 
@@ -152,7 +148,6 @@ export default function ProfileScreen() {
     switch (activeTab) {
       case 'products': return products;
       case 'posts': return posts;
-      case 'articles': return articles;
       case 'activity': return activity;
       case 'interests': return upvotedActivity;
       default: return [];
@@ -160,6 +155,9 @@ export default function ProfileScreen() {
   }
 
   const listData = getListData();
+
+  const hasSocials = !!(profile?.website || profile?.twitter || profile?.linkedin);
+  const hasAbout = !!(profile?.bio || year || profile?.country || hasSocials);
 
   const ProfileHeader = () => (
     <View>
@@ -170,13 +168,6 @@ export default function ProfileScreen() {
           <Avatar uri={profile?.avatar} name={profile?.name ?? '?'} size={80} color={profile?.avatarColor} />
         </View>
         <View style={styles.headerBtns}>
-          <Pressable
-            style={({ pressed }) => [styles.writeBtn, { opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => router.push('/(tabs)/launcher/compose')}
-          >
-            <Feather name="edit-2" size={13} color="#fff" />
-            <Text style={styles.writeBtnText}>Write</Text>
-          </Pressable>
           <Pressable
             style={({ pressed }) => [styles.editBtn, { opacity: pressed ? 0.85 : 1 }]}
             onPress={() => router.push('/(tabs)/profile/settings/edit-profile')}
@@ -191,8 +182,8 @@ export default function ProfileScreen() {
         <View style={styles.nameRow}>
           <Text style={styles.name}>{profile?.name}</Text>
           {profile?.verified && (
-            <View style={styles.verifiedBadge}>
-              <Text style={styles.verifiedText}>✓ Verified</Text>
+            <View style={styles.verifiedIconWrap}>
+              <Feather name="check-circle" size={18} color="#2563EB" />
             </View>
           )}
         </View>
@@ -209,55 +200,61 @@ export default function ProfileScreen() {
           <Text style={styles.headlineText}>{profile.headline}</Text>
         ) : null}
 
-        {(profile?.bio || year || profile?.country) && (
+        {hasAbout && (
           <View style={styles.aboutSection}>
-            <View style={styles.aboutHeader}>
+            <Pressable style={styles.aboutHeader} onPress={() => setAboutExpanded(v => !v)}>
               <Text style={styles.aboutLabel}>About</Text>
-            </View>
-            <View style={styles.aboutBox}>
-              {profile?.bio ? <Text style={styles.aboutText}>{profile.bio}</Text> : null}
-              <View style={styles.metaRow}>
-                {year && (
-                  <View style={styles.sinceChip}>
-                    <Feather name="calendar" size={12} color={Colors.text.secondary} />
-                    <Text style={styles.sinceText}>Since {year}</Text>
-                  </View>
-                )}
-                {profile?.country && (
-                  <View style={styles.sinceChip}>
-                    <Feather name="map-pin" size={12} color={Colors.text.secondary} />
-                    <Text style={styles.sinceText}>{profile.country}</Text>
+              <Feather
+                name={aboutExpanded ? 'chevron-up' : 'chevron-down'}
+                size={16}
+                color={Colors.text.tertiary}
+              />
+            </Pressable>
+            {aboutExpanded && (
+              <View style={styles.aboutBox}>
+                {profile?.bio ? <Text style={styles.aboutText}>{profile.bio}</Text> : null}
+                <View style={styles.metaRow}>
+                  {year && (
+                    <View style={styles.sinceChip}>
+                      <Feather name="calendar" size={12} color={Colors.text.secondary} />
+                      <Text style={styles.sinceText}>Since {year}</Text>
+                    </View>
+                  )}
+                  {profile?.country && (
+                    <View style={styles.sinceChip}>
+                      <Feather name="map-pin" size={12} color={Colors.text.secondary} />
+                      <Text style={styles.sinceText}>{profile.country}</Text>
+                    </View>
+                  )}
+                </View>
+                {hasSocials && (
+                  <View style={styles.socialRow}>
+                    {profile?.website && (
+                      <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.website!)}>
+                        <Feather name="globe" size={15} color={Colors.text.secondary} />
+                      </Pressable>
+                    )}
+                    {profile?.twitter && (
+                      <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.twitter!.startsWith('http') ? profile.twitter! : `https://x.com/${profile.twitter}`)}>
+                        <Text style={styles.xIcon}>𝕏</Text>
+                      </Pressable>
+                    )}
+                    {profile?.linkedin && (
+                      <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.linkedin!)}>
+                        <Feather name="linkedin" size={15} color={Colors.text.secondary} />
+                      </Pressable>
+                    )}
                   </View>
                 )}
               </View>
-            </View>
-          </View>
-        )}
-
-        {(profile?.website || profile?.twitter || profile?.linkedin) && (
-          <View style={styles.socialRow}>
-            {profile?.website && (
-              <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.website!)}>
-                <Feather name="globe" size={15} color={Colors.text.secondary} />
-              </Pressable>
-            )}
-            {profile?.twitter && (
-              <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.twitter!.startsWith('http') ? profile.twitter! : `https://x.com/${profile.twitter}`)}>
-                <Text style={styles.xIcon}>𝕏</Text>
-              </Pressable>
-            )}
-            {profile?.linkedin && (
-              <Pressable hitSlop={12} style={styles.socialBtn} onPress={() => Linking.openURL(profile.linkedin!)}>
-                <Feather name="linkedin" size={15} color={Colors.text.secondary} />
-              </Pressable>
             )}
           </View>
         )}
 
         <View style={styles.statsRow}>
           <View style={styles.statItem}>
-            <Text style={styles.statNumber}>{posts.length + articles.length}</Text>
-            <Text style={styles.statLabel}>POSTS</Text>
+            <Text style={styles.statNumber}>{activityCount}</Text>
+            <Text style={styles.statLabel}>ACTIVITY</Text>
           </View>
           <View style={styles.statDivider} />
           <Pressable
@@ -460,7 +457,6 @@ export default function ProfileScreen() {
               {activeTab === 'activity' ? 'No activity yet' :
                activeTab === 'products' ? 'No products submitted yet' :
                activeTab === 'posts' ? 'No posts yet' :
-               activeTab === 'articles' ? 'No articles yet' :
                '✨ No interests yet'}
             </Text>
           </View>
@@ -473,7 +469,7 @@ export default function ProfileScreen() {
 
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: Colors.bg.secondary },
-  cover: { height: 130, width: '100%' },
+  cover: { height: 95, width: '100%' },
   profileTopRow: {
     flexDirection: 'row',
     alignItems: 'flex-end',
@@ -491,16 +487,6 @@ const styles = StyleSheet.create({
     height: 86,
   },
   headerBtns: { flexDirection: 'row', gap: 8, alignItems: 'center' },
-  writeBtn: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 5,
-    backgroundColor: Colors.brand.orange,
-    borderRadius: 20,
-    paddingHorizontal: 14,
-    paddingVertical: 8,
-  },
-  writeBtnText: { fontSize: 14, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' },
   editBtn: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -521,13 +507,7 @@ const styles = StyleSheet.create({
   },
   nameRow: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   name: { fontSize: 22, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
-  verifiedBadge: {
-    backgroundColor: '#EFF6FF',
-    borderRadius: 20,
-    paddingHorizontal: 8,
-    paddingVertical: 2,
-  },
-  verifiedText: { fontSize: 12, fontWeight: '600', color: '#2563EB', fontFamily: 'Inter_600SemiBold' },
+  verifiedIconWrap: { marginLeft: 2, justifyContent: 'center', alignItems: 'center' },
   handle: { fontSize: 14, color: Colors.text.tertiary, fontFamily: 'Inter_400Regular', marginTop: -4 },
   personaPill: {
     alignSelf: 'flex-start',
@@ -541,14 +521,13 @@ const styles = StyleSheet.create({
   personaText: { fontSize: 13, fontWeight: '600', color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
   headlineText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_400Regular', marginTop: 2 },
   aboutSection: { gap: 6 },
-  aboutHeader: { flexDirection: 'row', alignItems: 'center' },
-  aboutLabel: { fontSize: 14, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold', textDecorationLine: 'underline' },
+  aboutHeader: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', paddingVertical: 4 },
+  aboutLabel: { fontSize: 14, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
   aboutBox: {
     backgroundColor: Colors.bg.secondary,
     borderRadius: 10,
     padding: 12,
-    borderLeftWidth: 3,
-    borderLeftColor: Colors.border.default,
+    gap: 10,
   },
   aboutText: { fontSize: 14, color: Colors.text.secondary, lineHeight: 20, fontFamily: 'Inter_400Regular' },
   metaRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 8 },
@@ -569,7 +548,7 @@ const styles = StyleSheet.create({
     width: 34,
     height: 34,
     borderRadius: 10,
-    backgroundColor: Colors.bg.secondary,
+    backgroundColor: Colors.bg.primary,
     borderWidth: 1,
     borderColor: Colors.border.default,
     justifyContent: 'center',
@@ -584,8 +563,8 @@ const styles = StyleSheet.create({
     marginTop: 4,
   },
   statItem: { flex: 1, alignItems: 'center', gap: 2 },
-  statNumber: { fontSize: 20, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
-  statLabel: { fontSize: 10, color: Colors.text.tertiary, fontFamily: 'Inter_500Medium', letterSpacing: 0.5 },
+  statNumber: { fontSize: 23, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
+  statLabel: { fontSize: 9, color: Colors.text.tertiary, fontFamily: 'Inter_500Medium', letterSpacing: 0.6 },
   statDivider: { width: 1, height: 32, backgroundColor: Colors.border.light },
   tabBarWrap: {
     backgroundColor: Colors.bg.primary,
