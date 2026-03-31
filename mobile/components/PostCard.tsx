@@ -214,7 +214,7 @@ const styles = StyleSheet.create({
   menuBtn: { padding: 4, flexShrink: 0 },
   title: { fontSize: 15, fontWeight: '600', color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
   bodyWrap: { overflow: 'hidden', maxHeight: 120 },
-  image: { width: '100%', height: 180, borderRadius: 10 },
+  image: { width: '100%', height: 180, borderRadius: 10, overflow: 'hidden' },
   actions: {
     flexDirection: 'row',
     gap: 16,

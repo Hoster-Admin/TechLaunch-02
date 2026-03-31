@@ -494,7 +494,7 @@ const styles = StyleSheet.create({
     padding: 14,
   },
   cardRow: { flexDirection: 'row', alignItems: 'center', gap: 12 },
-  logo: { width: 52, height: 52, borderRadius: 12, flexShrink: 0 },
+  logo: { width: 52, height: 52, borderRadius: 12, flexShrink: 0, overflow: 'hidden' },
   logoFallback: { backgroundColor: Colors.brand.light, justifyContent: 'center', alignItems: 'center', borderRadius: 12 },
   logoText: { fontSize: 20, fontWeight: '700', color: Colors.brand.orange, fontFamily: 'Inter_700Bold' },
   cardInfo: { flex: 1, gap: 4 },

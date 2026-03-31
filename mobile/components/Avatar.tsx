@@ -43,7 +43,7 @@ export function Avatar({ uri, name, size = 40, color }: Props) {
     return (
       <Image
         source={{ uri }}
-        style={{ width: size, height: size, borderRadius: radius }}
+        style={{ width: size, height: size, borderRadius: radius, overflow: 'hidden' }}
         contentFit="cover"
         onError={() => setError(true)}
       />
