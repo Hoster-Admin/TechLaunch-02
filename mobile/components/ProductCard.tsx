@@ -3,7 +3,7 @@ import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
 import React, { useEffect, useState } from 'react';
-import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
+import { Alert, GestureResponderEvent, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { formatCountryTag } from '@/lib/utils';
 import type { Product } from '@/types';
@@ -23,11 +23,13 @@ export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, on
   const [imgError, setImgError] = useState(false);
   useEffect(() => { setImgError(false); }, [product.logo]);
 
-  const handleUpvote = () => {
+  const handleUpvote = (e: GestureResponderEvent) => {
+    e.stopPropagation();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onUpvote?.();
   };
-  const handleBookmark = () => {
+  const handleBookmark = (e: GestureResponderEvent) => {
+    e.stopPropagation();
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);
     onBookmark?.();
   };
