@@ -3,7 +3,7 @@ import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-q
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -41,6 +41,7 @@ interface EntityPage {
 
 function EntityLogoImage({ uri, name }: { uri?: string; name: string }) {
   const [err, setErr] = useState(false);
+  useEffect(() => { setErr(false); }, [uri]);
   if (uri && !err) {
     return (
       <Image source={{ uri }} style={styles.logo} contentFit="contain" onError={() => setErr(true)} />

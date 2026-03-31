@@ -2,7 +2,7 @@ import { Feather } from '@expo/vector-icons';
 import * as Clipboard from 'expo-clipboard';
 import * as Haptics from 'expo-haptics';
 import { Image } from 'expo-image';
-import React, { useState } from 'react';
+import React, { useEffect, useState } from 'react';
 import { Alert, Pressable, Share, StyleSheet, Text, View } from 'react-native';
 import { Colors } from '@/constants/Colors';
 import { formatCountryTag } from '@/lib/utils';
@@ -21,6 +21,7 @@ interface Props {
 
 export function ProductCard({ product, onPress, onUpvote, onBookmark, onEdit, onDelete, compact, upvotePending }: Props) {
   const [imgError, setImgError] = useState(false);
+  useEffect(() => { setImgError(false); }, [product.logo]);
 
   const handleUpvote = () => {
     Haptics.impactAsync(Haptics.ImpactFeedbackStyle.Light);

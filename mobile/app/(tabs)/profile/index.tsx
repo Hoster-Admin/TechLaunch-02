@@ -162,22 +162,23 @@ export default function ProfileScreen() {
     <View>
       <View style={[styles.cover, { backgroundColor: profile?.avatarColor ?? '#111827' }]} />
 
-      <View style={styles.profileTopRow}>
-        <View style={styles.avatarContainer}>
-          <Avatar uri={profile?.avatar} name={profile?.name ?? '?'} size={80} color={profile?.avatarColor} />
+      <View style={{ backgroundColor: Colors.bg.primary }}>
+        <View style={styles.profileTopRow}>
+          <View style={styles.avatarContainer}>
+            <Avatar uri={profile?.avatar} name={profile?.name ?? '?'} size={80} color={profile?.avatarColor} />
+          </View>
+          <View style={styles.headerBtns}>
+            <Pressable
+              style={({ pressed }) => [styles.editBtn, { opacity: pressed ? 0.85 : 1 }]}
+              onPress={() => router.push('/(tabs)/profile/settings/edit-profile')}
+            >
+              <Feather name="settings" size={13} color={Colors.text.secondary} />
+              <Text style={styles.editBtnText}>Edit Profile</Text>
+            </Pressable>
+          </View>
         </View>
-        <View style={styles.headerBtns}>
-          <Pressable
-            style={({ pressed }) => [styles.editBtn, { opacity: pressed ? 0.85 : 1 }]}
-            onPress={() => router.push('/(tabs)/profile/settings/edit-profile')}
-          >
-            <Feather name="settings" size={13} color={Colors.text.secondary} />
-            <Text style={styles.editBtnText}>Edit Profile</Text>
-          </Pressable>
-        </View>
-      </View>
 
-      <View style={styles.profileInfo}>
+        <View style={styles.profileInfo}>
         <View style={styles.nameRow}>
           <Text style={styles.name}>{profile?.name}</Text>
           {profile?.verified && (
@@ -278,6 +279,7 @@ export default function ProfileScreen() {
             <Text style={styles.statLabel}>FOLLOWING</Text>
           </Pressable>
         </View>
+      </View>
       </View>
 
       <View style={styles.tabBarWrap}>

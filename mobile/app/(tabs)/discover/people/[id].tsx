@@ -184,6 +184,7 @@ export default function UserProfileScreen() {
             </View>
 
             {/* Avatar + buttons row */}
+            <View style={{ backgroundColor: Colors.bg.primary }}>
             <View style={styles.avatarRow}>
               <View style={styles.avatarWrap}>
                 <Avatar uri={user.avatar} name={user.name} size={84} color={user.avatarColor} />
@@ -306,6 +307,7 @@ export default function UserProfileScreen() {
                   )}
                 </View>
               ) : null}
+            </View>
             </View>
 
             {/* Tabs */}
