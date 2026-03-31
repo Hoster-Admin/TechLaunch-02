@@ -8,7 +8,6 @@ import {
   FlatList,
   Linking,
   Pressable,
-  ScrollView,
   StyleSheet,
   Text,
   View,
@@ -282,11 +281,7 @@ export default function ProfileScreen() {
       </View>
 
       <View style={styles.tabBarWrap}>
-        <ScrollView
-          horizontal
-          showsHorizontalScrollIndicator={false}
-          contentContainerStyle={styles.tabBar}
-        >
+        <View style={styles.tabBar}>
           {TABS.map(tab => (
             <Pressable
               key={tab.id}
@@ -298,7 +293,7 @@ export default function ProfileScreen() {
               </Text>
             </Pressable>
           ))}
-        </ScrollView>
+        </View>
       </View>
 
       {activeTab === 'products' && (
@@ -572,9 +567,10 @@ const styles = StyleSheet.create({
     borderBottomColor: Colors.border.default,
     marginTop: 8,
   },
-  tabBar: { paddingHorizontal: 12, gap: 4, paddingVertical: 2 },
+  tabBar: { flexDirection: 'row', paddingVertical: 2 },
   tabItem: {
-    paddingHorizontal: 14,
+    flex: 1,
+    alignItems: 'center',
     paddingVertical: 10,
     borderBottomWidth: 2,
     borderBottomColor: 'transparent',

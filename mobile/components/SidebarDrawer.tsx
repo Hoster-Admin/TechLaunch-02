@@ -70,13 +70,10 @@ export function SidebarDrawer({ visible, onClose }: Props) {
   }
 
   const communityNav: NavItem[] = [
-    { icon: 'grid',  label: 'All Products',              onPress: () => navigate('/(tabs)/discover') },
-    { icon: 'users', label: 'People',                    onPress: () => navigate('/(tabs)/discover/people') },
-    { icon: 'zap',   label: 'Launcher',                  onPress: () => navigate('/(tabs)/launcher') },
-    { emoji: '🚀',   label: 'Companies',                 onPress: () => navigateEcosystem('company') },
-    { emoji: '🏢',   label: 'Accelerators & Incubators', onPress: () => navigateEcosystem('accelerator') },
-    { emoji: '💰',   label: 'Investment Firms',          onPress: () => navigateEcosystem('investor') },
-    { emoji: '🎯',   label: 'Venture Studios',           onPress: () => navigateEcosystem('venture_studio') },
+    { icon: 'home',   label: 'Products',   onPress: () => navigate('/(tabs)/home') },
+    { icon: 'users',  label: 'People',     onPress: () => navigate('/(tabs)/discover/people') },
+    { icon: 'zap',    label: 'Launcher',   onPress: () => navigate('/(tabs)/launcher') },
+    { icon: 'layers', label: 'Ecosystem',  onPress: () => navigateEcosystem('company') },
   ];
 
   return (
@@ -108,7 +105,7 @@ export function SidebarDrawer({ visible, onClose }: Props) {
               style={styles.logoBadge}
               contentFit="cover"
             />
-            <Text style={styles.drawerTitle}>Tech Launch MENA</Text>
+            <Text style={styles.drawerTitle}>Tech Launch</Text>
             <Pressable onPress={onClose} hitSlop={10} style={styles.closeBtn}>
               <Feather name="x" size={22} color={Colors.text.secondary} />
             </Pressable>
