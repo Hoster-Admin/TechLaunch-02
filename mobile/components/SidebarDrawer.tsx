@@ -56,6 +56,11 @@ export function SidebarDrawer({ visible, onClose }: Props) {
     setTimeout(() => router.replace(path), 240);
   }
 
+  function navigatePush(path: Parameters<typeof router.push>[0]) {
+    onClose();
+    setTimeout(() => router.push(path), 240);
+  }
+
   function navigateEcosystem(type: string) {
     onClose();
     setTimeout(
@@ -131,7 +136,7 @@ export function SidebarDrawer({ visible, onClose }: Props) {
 
             <Pressable
               style={({ pressed }) => [styles.menuLink, { opacity: pressed ? 0.7 : 1 }]}
-              onPress={() => navigate('/(tabs)/profile/settings')}
+              onPress={() => navigatePush('/(tabs)/profile/settings')}
             >
               <Feather name="settings" size={18} color={Colors.text.secondary} />
               <Text style={styles.menuLinkText}>Settings</Text>

@@ -18,7 +18,7 @@ import { EmptyState } from '@/components/EmptyState';
 import { SidebarDrawer } from '@/components/SidebarDrawer';
 import { Colors } from '@/constants/Colors';
 import { api } from '@/lib/api';
-import { adaptThread } from '@/lib/adapters';
+import { adaptThread, adaptDirectMessage } from '@/lib/adapters';
 import { timeAgo } from '@/lib/utils';
 import type { Conversation, DirectMessage } from '@/types';
 
@@ -41,7 +41,39 @@ export default function InboxScreen() {
           : Array.isArray(res.data)
           ? res.data
           : [];
-        return raw.map(adaptThread);
+        const conversations = raw.map(adaptThread);
+
+        const missing = conversations.filter((c) => !c.lastMessage?.body?.trim());
+        if (missing.length > 0) {
+          await Promise.all(
+            missing.map(async (conv) => {
+              const username = conv.participant.username;
+              if (!username) return;
+              try {
+                const msgRes = await api.get(`/messages/${username}`);
+                const msgs = Array.isArray(msgRes.data?.data)
+                  ? msgRes.data.data
+                  : Array.isArray(msgRes.data?.messages)
+                  ? msgRes.data.messages
+                  : Array.isArray(msgRes.data)
+                  ? msgRes.data
+                  : [];
+                if (msgs.length > 0) {
+                  const last = adaptDirectMessage(msgs[msgs.length - 1]);
+                  conv.lastMessage = {
+                    body: last.body,
+                    senderHandle: last.senderHandle,
+                    createdAt: last.createdAt,
+                  };
+                }
+              } catch {
+                // silently ignore per-thread fetch failures
+              }
+            })
+          );
+        }
+
+        return conversations;
       } catch (err: unknown) {
         const status = (err as { response?: { status?: number } })?.response?.status;
         const msg = (err as { response?: { data?: { message?: string } } })?.response?.data?.message;

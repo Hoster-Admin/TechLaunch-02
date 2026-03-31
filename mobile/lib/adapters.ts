@@ -140,14 +140,26 @@ export function adaptThread(raw: Raw): Conversation {
   const hasIdentity = (o: Raw | null) =>
     o && (o.name || o.username || o.handle || o.id);
   const participantRaw: Raw = hasIdentity(nested) ? (nested as Raw) : hasIdentity(raw) ? raw : {};
-  const lastMsg = raw.last_message ?? raw.lastMessage ?? raw.latest_message ?? null;
+  const rawLastMsg = raw.last_message ?? raw.lastMessage ?? raw.latest_message ?? raw.recent_message ?? raw.preview ?? raw.message_preview ?? raw.snippet ?? null;
+  let lastMsgBody: string | undefined;
+  let lastMsgSenderHandle = '';
+  let lastMsgCreatedAt = '';
+  if (rawLastMsg !== null && rawLastMsg !== undefined) {
+    if (typeof rawLastMsg === 'string') {
+      lastMsgBody = rawLastMsg;
+    } else if (typeof rawLastMsg === 'object') {
+      lastMsgBody = rawLastMsg.body ?? rawLastMsg.content ?? rawLastMsg.message ?? undefined;
+      lastMsgSenderHandle = rawLastMsg.sender_handle ?? rawLastMsg.senderHandle ?? rawLastMsg.sender?.handle ?? '';
+      lastMsgCreatedAt = rawLastMsg.created_at ?? rawLastMsg.createdAt ?? '';
+    }
+  }
   return {
     id: String(raw.id ?? raw.thread_id ?? participantRaw.handle ?? participantRaw.username ?? Math.random()),
     participant: adaptUser(participantRaw),
-    lastMessage: lastMsg ? {
-      body: lastMsg.body ?? lastMsg.content ?? lastMsg.message ?? '',
-      senderHandle: lastMsg.sender_handle ?? lastMsg.senderHandle ?? lastMsg.sender?.handle ?? '',
-      createdAt: lastMsg.created_at ?? lastMsg.createdAt ?? '',
+    lastMessage: lastMsgBody ? {
+      body: lastMsgBody,
+      senderHandle: lastMsgSenderHandle,
+      createdAt: lastMsgCreatedAt,
     } : undefined,
     unreadCount: raw.unread_count ?? raw.unreadCount ?? raw.unread ?? 0,
     updatedAt: raw.updated_at ?? raw.updatedAt ?? raw.last_message_at ?? raw.lastMessageAt ?? raw.created_at ?? '',
