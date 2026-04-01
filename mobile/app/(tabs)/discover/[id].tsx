@@ -111,6 +111,8 @@ export default function ProductDetailScreen() {
       return { prev };
     },
     onSuccess: (_data, _vars, ctx) => {
+      queryClient.invalidateQueries({ queryKey: ['home-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
       const product = queryClient.getQueryData<ProductDetailData>(['product', id])?.product ?? ctx?.prev?.product;
       const targetUsername = product?.maker?.username;
       const voterName = user?.username ?? user?.name ?? '';
@@ -130,6 +132,8 @@ export default function ProductDetailScreen() {
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: ['product', id] });
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
+      queryClient.invalidateQueries({ queryKey: ['home-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
     },
     onError: (e) => Alert.alert('Could not bookmark', getApiError(e)),
   });

@@ -100,6 +100,10 @@ export default function HomeScreen() {
       });
       return { prev };
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['home-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(qKey, ctx.prev);
       Alert.alert('Could not upvote', getApiError(_err));

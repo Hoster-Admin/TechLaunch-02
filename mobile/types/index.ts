@@ -99,6 +99,8 @@ export interface EcosystemEntity {
   applicationUrl?: string;
   pitchUrl?: string;
   contactEmail?: string;
+  twitter?: string;
+  foundedYear?: number;
   createdAt: string;
 }
 

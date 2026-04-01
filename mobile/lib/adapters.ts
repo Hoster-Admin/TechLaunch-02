@@ -129,6 +129,8 @@ export function adaptEntity(raw: Raw): EcosystemEntity {
     stage: Array.isArray(raw.stages) ? raw.stages : Array.isArray(raw.stage) ? raw.stage : raw.stage ? [raw.stage] : undefined,
     applicationUrl: raw.application_url ?? raw.applicationUrl ?? undefined,
     contactEmail: raw.contact_email ?? raw.contactEmail ?? undefined,
+    twitter: raw.twitter ?? raw.twitter_handle ?? raw.twitterHandle ?? undefined,
+    foundedYear: raw.founded_year ?? raw.foundedYear ?? raw.founded ?? undefined,
     createdAt: raw.created_at ?? raw.createdAt ?? '',
   };
 }

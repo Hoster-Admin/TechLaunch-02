@@ -79,6 +79,10 @@ export default function DiscoverScreen() {
       });
       return { prev };
     },
+    onSuccess: () => {
+      queryClient.invalidateQueries({ queryKey: ['home-products'] });
+      queryClient.invalidateQueries({ queryKey: ['products'] });
+    },
     onError: (_err, _id, ctx) => {
       if (ctx?.prev) queryClient.setQueryData(qKey, ctx.prev);
     },
@@ -107,6 +111,7 @@ export default function DiscoverScreen() {
       if (ctx?.prev) queryClient.setQueryData(ctx.qKey, ctx.prev);
     },
     onSettled: () => {
+      queryClient.invalidateQueries({ queryKey: ['home-products'] });
       queryClient.invalidateQueries({ queryKey: ['products'] });
       queryClient.invalidateQueries({ queryKey: ['bookmarks'] });
     },

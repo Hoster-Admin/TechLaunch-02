@@ -1,4 +1,5 @@
-import React, { createContext, useCallback, useContext, useEffect, useState } from 'react';
+import React, { createContext, useCallback, useContext, useEffect, useRef, useState } from 'react';
+import { AppState, AppStateStatus } from 'react-native';
 import { api } from '@/lib/api';
 import { authEvents } from '@/lib/authEvents';
 import { adaptUser } from '@/lib/adapters';
@@ -28,6 +29,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
+  const appStateRef = useRef<AppStateStatus>(AppState.currentState);
 
   useEffect(() => {
     (async () => {
@@ -49,6 +51,26 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         setIsLoading(false);
       }
     })();
+  }, []);
+
+  useEffect(() => {
+    const subscription = AppState.addEventListener('change', async (nextState: AppStateStatus) => {
+      const prev = appStateRef.current;
+      appStateRef.current = nextState;
+      if (prev.match(/inactive|background/) && nextState === 'active') {
+        try {
+          const currentToken = await storage.getToken();
+          if (!currentToken) return;
+          const res = await api.get<{ success: boolean; data: Record<string, unknown> }>('/auth/me');
+          const adapted = adaptUser(res.data.data);
+          setUser(adapted);
+          await storage.setUser(adapted);
+        } catch {
+          // Silently ignore — token may have expired; the 401 interceptor handles re-auth
+        }
+      }
+    });
+    return () => subscription.remove();
   }, []);
 
   useEffect(() => {

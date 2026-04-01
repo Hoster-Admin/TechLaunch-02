@@ -2,7 +2,7 @@
   "expo": {
     "name": "Tech Launch",
     "slug": "mobile",
-    "version": "1.1.0",
+    "version": "1.2.0",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "tlmena",
@@ -18,7 +18,7 @@
       "supportsTablet": false,
       "bundleIdentifier": "com.tlmena.app",
       "appleTeamId": "46DDQPQS6S",
-      "buildNumber": "35",
+      "buildNumber": "36",
       "entitlements": {
         "aps-environment": "production"
       },

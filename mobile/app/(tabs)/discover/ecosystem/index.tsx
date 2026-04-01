@@ -3,7 +3,7 @@ import { useMutation, useInfiniteQuery, useQueryClient } from '@tanstack/react-q
 import { Image } from 'expo-image';
 import * as Haptics from 'expo-haptics';
 import { router, useLocalSearchParams } from 'expo-router';
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useMemo, useState } from 'react';
 import {
   ActivityIndicator,
   Alert,
@@ -27,10 +27,10 @@ import { adaptEntity } from '@/lib/adapters';
 import type { EcosystemEntity } from '@/types';
 
 const TYPES = [
-  { key: 'company',        label: 'Companies',       singular: 'Company',        icon: 'briefcase' as const },
-  { key: 'accelerator',    label: 'Accelerators',    singular: 'Accelerator',    icon: 'trending-up' as const },
-  { key: 'investor',       label: 'Investors',       singular: 'Investment Firm', icon: 'dollar-sign' as const },
-  { key: 'venture_studio', label: 'Venture Studios', singular: 'Venture Studio', icon: 'layers' as const },
+  { key: 'company',        label: 'Companies',       singular: 'Company',         icon: 'briefcase' as const },
+  { key: 'accelerator',    label: 'Accelerators',    singular: 'Accelerator',     icon: 'trending-up' as const },
+  { key: 'investor',       label: 'Investors',        singular: 'Investment Firm', icon: 'dollar-sign' as const },
+  { key: 'venture_studio', label: 'Venture Studios', singular: 'Venture Studio',  icon: 'layers' as const },
 ];
 
 const TYPE_API_ALIASES: Record<string, string[]> = {
@@ -302,6 +302,7 @@ export default function EcosystemScreen() {
   const initial = typeParam && validKeys.includes(typeParam) ? typeParam : 'company';
   const [activeType, setActiveType] = useState<string>(initial);
   const [showSubmit, setShowSubmit] = useState(false);
+  const [search, setSearch] = useState('');
 
   const {
     data,
@@ -318,11 +319,15 @@ export default function EcosystemScreen() {
         const res = await api.get('/entities', {
           params: { page: pageParam, limit: 100 },
         });
-        const raw = Array.isArray(res.data?.data) ? res.data.data : [];
-        const items = raw.map(adaptEntity);
-        const pag = res.data?.pagination;
+        const raw = Array.isArray(res.data?.data)
+          ? res.data.data
+          : Array.isArray(res.data)
+          ? res.data
+          : [];
+        const items = raw.map(adaptEntity).filter((e: EcosystemEntity) => !!e.name);
+        const pag = res.data?.pagination ?? res.data?.meta;
         const page = (pag?.page ?? pageParam) as number;
-        const hasMore = pag ? pag.page < pag.pages : false;
+        const hasMore = pag ? (pag.page ?? 1) < (pag.pages ?? pag.total_pages ?? 1) : false;
         return { items, hasMore, page };
       } catch {
         return { items: [], hasMore: false, page: 1 };
@@ -332,11 +337,35 @@ export default function EcosystemScreen() {
     getNextPageParam: (last) => (last.hasMore ? last.page + 1 : undefined),
   });
 
-  const allEntities = data?.pages.flatMap((p) => p.items) ?? [];
-  const aliases = TYPE_API_ALIASES[activeType] ?? [activeType];
-  const entities = allEntities.filter(
-    (e) => !e.type || aliases.includes((e.type as string).toLowerCase()),
-  );
+  const allEntities = useMemo(() => data?.pages.flatMap((p) => p.items) ?? [], [data]);
+
+  const countByType = useMemo(() => {
+    const counts: Record<string, number> = {};
+    for (const t of TYPES) {
+      const a = TYPE_API_ALIASES[t.key] ?? [t.key];
+      counts[t.key] = allEntities.filter(
+        (e) => !e.type || a.includes((e.type as string).toLowerCase()),
+      ).length;
+    }
+    return counts;
+  }, [allEntities]);
+
+  const entities = useMemo(() => {
+    const aliases = TYPE_API_ALIASES[activeType] ?? [activeType];
+    const byType = allEntities.filter(
+      (e) => !e.type || aliases.includes((e.type as string).toLowerCase()),
+    );
+    if (!search.trim()) return byType;
+    const q = search.trim().toLowerCase();
+    return byType.filter(
+      (e) =>
+        e.name.toLowerCase().includes(q) ||
+        e.country?.toLowerCase().includes(q) ||
+        e.description.toLowerCase().includes(q) ||
+        e.focus?.some((f) => f.toLowerCase().includes(q)),
+    );
+  }, [allEntities, activeType, search]);
+
   const topPad = Platform.OS === 'web' ? 67 : insets.top;
 
   return (
@@ -364,36 +393,69 @@ export default function EcosystemScreen() {
         contentContainerStyle={styles.tabs}
         style={styles.tabsScroll}
       >
-        {TYPES.map((t) => (
-          <Pressable
-            key={t.key}
-            style={[styles.tab, activeType === t.key && styles.tabActive]}
-            onPress={() => setActiveType(t.key)}
-          >
-            <Feather
-              name={t.icon}
-              size={14}
-              color={activeType === t.key ? Colors.brand.orange : Colors.text.secondary}
-            />
-            <Text style={[styles.tabText, activeType === t.key && styles.tabTextActive]}>
-              {t.label}
-            </Text>
-          </Pressable>
-        ))}
+        {TYPES.map((t) => {
+          const count = countByType[t.key] ?? 0;
+          const isActive = activeType === t.key;
+          return (
+            <Pressable
+              key={t.key}
+              style={[styles.tab, isActive && styles.tabActive]}
+              onPress={() => {
+                if (activeType !== t.key) {
+                  Haptics.selectionAsync();
+                  setActiveType(t.key);
+                  setSearch('');
+                }
+              }}
+            >
+              <Feather
+                name={t.icon}
+                size={14}
+                color={isActive ? Colors.brand.orange : Colors.text.secondary}
+              />
+              <Text style={[styles.tabText, isActive && styles.tabTextActive]}>
+                {t.label}
+              </Text>
+              {count > 0 && (
+                <View style={[styles.countBadge, isActive && styles.countBadgeActive]}>
+                  <Text style={[styles.countBadgeText, isActive && styles.countBadgeTextActive]}>
+                    {count}
+                  </Text>
+                </View>
+              )}
+            </Pressable>
+          );
+        })}
       </ScrollView>
 
+      <View style={styles.searchWrap}>
+        <Feather name="search" size={15} color={Colors.text.tertiary} style={styles.searchIcon} />
+        <TextInput
+          style={styles.searchInput}
+          value={search}
+          onChangeText={setSearch}
+          placeholder={`Search ${TYPES.find(t => t.key === activeType)?.label ?? ''}…`}
+          placeholderTextColor={Colors.text.tertiary}
+          autoCorrect={false}
+          returnKeyType="search"
+          clearButtonMode="while-editing"
+        />
+      </View>
+
       {isLoading ? (
-        <View style={styles.listContent}>
-          {[1, 2, 3].map((i) => <View key={i} style={styles.skeleton} />)}
+        <View style={[styles.listContent, { gap: 12 }]}>
+          {[1, 2, 3, 4].map((i) => <View key={i} style={styles.skeleton} />)}
         </View>
       ) : (
         <FlatList
+          style={{ flex: 1 }}
           data={entities}
           keyExtractor={(item) => item.id}
           contentContainerStyle={[styles.listContent, { paddingBottom: 100 }]}
           showsVerticalScrollIndicator={false}
           onEndReached={() => { if (hasNextPage) fetchNextPage(); }}
           onEndReachedThreshold={0.3}
+          keyboardShouldPersistTaps="handled"
           refreshControl={
             <RefreshControl
               refreshing={isRefetching}
@@ -403,13 +465,14 @@ export default function EcosystemScreen() {
           }
           renderItem={({ item }) => (
             <Pressable
-              style={({ pressed }) => [styles.card, { opacity: pressed ? 0.95 : 1 }]}
-              onPress={() =>
+              style={({ pressed }) => [styles.card, { opacity: pressed ? 0.93 : 1 }]}
+              onPress={() => {
+                Haptics.selectionAsync();
                 router.push({
                   pathname: '/(tabs)/discover/ecosystem/[id]',
                   params: { id: item.slug ?? item.id },
-                })
-              }
+                });
+              }}
             >
               <View style={styles.cardRow}>
                 <EntityLogoImage uri={item.logo} name={item.name} />
@@ -422,28 +485,51 @@ export default function EcosystemScreen() {
                       {item.description}
                     </Text>
                   )}
-                  <View style={styles.tagRow}>
-                    {item.country && (
-                      <View style={styles.tag}>
-                        <Text style={styles.tagText}>{item.country}</Text>
-                      </View>
-                    )}
-                    {item.stage?.slice(0, 2).map((s) => (
-                      <View key={s} style={styles.tag}>
-                        <Text style={styles.tagText}>{s}</Text>
-                      </View>
-                    ))}
-                  </View>
+                  {(item.country || (item.focus && item.focus.length > 0) || (item.stage && item.stage.length > 0)) && (
+                    <View style={styles.tagRow}>
+                      {item.country && (
+                        <View style={styles.tag}>
+                          <Feather name="map-pin" size={10} color={Colors.text.tertiary} />
+                          <Text style={styles.tagText}>{item.country}</Text>
+                        </View>
+                      )}
+                      {item.focus?.slice(0, 2).map((f) => (
+                        <View key={f} style={styles.tagFocus}>
+                          <Text style={styles.tagFocusText}>{f}</Text>
+                        </View>
+                      ))}
+                      {item.stage?.slice(0, 1).map((s) => (
+                        <View key={s} style={styles.tag}>
+                          <Text style={styles.tagText}>{s}</Text>
+                        </View>
+                      ))}
+                    </View>
+                  )}
                 </View>
                 <Feather name="chevron-right" size={16} color={Colors.text.tertiary} />
               </View>
             </Pressable>
           )}
+          ListHeaderComponent={
+            entities.length > 0 && !search ? (
+              <Text style={styles.listCount}>
+                {entities.length} {TYPES.find(t => t.key === activeType)?.label ?? 'results'}
+              </Text>
+            ) : search && entities.length > 0 ? (
+              <Text style={styles.listCount}>
+                {entities.length} result{entities.length !== 1 ? 's' : ''} for "{search}"
+              </Text>
+            ) : null
+          }
           ListEmptyComponent={
             <EmptyState
               icon="layers"
-              title="No results found"
-              subtitle="None listed for this category yet"
+              title={search ? 'No matches found' : 'Nothing here yet'}
+              subtitle={
+                search
+                  ? `No results for "${search}" in this category`
+                  : 'None listed for this category yet'
+              }
             />
           }
           ListFooterComponent={
@@ -451,7 +537,7 @@ export default function EcosystemScreen() {
               <ActivityIndicator color={Colors.brand.orange} style={{ paddingVertical: 16 }} />
             ) : null
           }
-          ItemSeparatorComponent={() => <View style={{ height: 12 }} />}
+          ItemSeparatorComponent={() => <View style={{ height: 10 }} />}
         />
       )}
 
@@ -507,6 +593,7 @@ const styles = StyleSheet.create({
     backgroundColor: Colors.bg.primary,
     borderBottomWidth: 1,
     borderBottomColor: Colors.border.default,
+    flexGrow: 0,
   },
   tabs: {
     flexDirection: 'row',
@@ -522,7 +609,7 @@ const styles = StyleSheet.create({
     alignSelf: 'center',
     gap: 5,
     paddingVertical: 6,
-    paddingHorizontal: 14,
+    paddingHorizontal: 12,
     borderRadius: 20,
     backgroundColor: Colors.bg.secondary,
     borderWidth: 1.5,
@@ -531,8 +618,46 @@ const styles = StyleSheet.create({
   tabActive: { backgroundColor: Colors.brand.light, borderColor: Colors.brand.orange },
   tabText: { fontSize: 13, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
   tabTextActive: { color: Colors.brand.orange, fontFamily: 'Inter_600SemiBold' },
-  listContent: { paddingTop: 8, paddingHorizontal: 16 },
-  skeleton: { height: 100, borderRadius: 14, backgroundColor: Colors.bg.tertiary },
+  countBadge: {
+    backgroundColor: Colors.border.default,
+    borderRadius: 10,
+    paddingHorizontal: 6,
+    paddingVertical: 1,
+    minWidth: 20,
+    alignItems: 'center',
+  },
+  countBadgeActive: { backgroundColor: Colors.brand.orange },
+  countBadgeText: { fontSize: 10, color: Colors.text.secondary, fontFamily: 'Inter_600SemiBold' },
+  countBadgeTextActive: { color: '#fff' },
+  searchWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    backgroundColor: Colors.bg.primary,
+    marginHorizontal: 16,
+    marginTop: 12,
+    marginBottom: 4,
+    borderRadius: 12,
+    borderWidth: 1.5,
+    borderColor: Colors.border.default,
+    paddingHorizontal: 12,
+    paddingVertical: Platform.OS === 'ios' ? 10 : 8,
+  },
+  searchIcon: { marginRight: 8 },
+  searchInput: {
+    flex: 1,
+    fontSize: 14,
+    color: Colors.text.primary,
+    fontFamily: 'Inter_400Regular',
+    padding: 0,
+  },
+  listContent: { paddingTop: 12, paddingHorizontal: 16 },
+  listCount: {
+    fontSize: 12,
+    color: Colors.text.tertiary,
+    fontFamily: 'Inter_500Medium',
+    marginBottom: 10,
+  },
+  skeleton: { height: 80, borderRadius: 14, backgroundColor: Colors.border.default },
   card: {
     backgroundColor: Colors.bg.primary,
     borderRadius: 14,
@@ -547,9 +672,24 @@ const styles = StyleSheet.create({
   cardInfo: { flex: 1, gap: 4 },
   entityName: { fontSize: 15, fontWeight: '600', color: Colors.text.primary, fontFamily: 'Inter_600SemiBold' },
   entityDesc: { fontSize: 13, color: Colors.text.secondary, lineHeight: 18, fontFamily: 'Inter_400Regular' },
-  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5 },
-  tag: { backgroundColor: Colors.bg.tertiary, borderRadius: 8, paddingHorizontal: 7, paddingVertical: 2 },
+  tagRow: { flexDirection: 'row', flexWrap: 'wrap', gap: 5, alignItems: 'center' },
+  tag: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 3,
+    backgroundColor: Colors.bg.tertiary,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
   tagText: { fontSize: 11, color: Colors.text.secondary, fontFamily: 'Inter_500Medium' },
+  tagFocus: {
+    backgroundColor: Colors.brand.light,
+    borderRadius: 8,
+    paddingHorizontal: 7,
+    paddingVertical: 2,
+  },
+  tagFocusText: { fontSize: 11, color: Colors.brand.orange, fontFamily: 'Inter_500Medium' },
   modalContainer: { flex: 1, backgroundColor: Colors.bg.primary },
   modalHeader: {
     flexDirection: 'row',
@@ -607,21 +747,21 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     justifyContent: 'center',
     gap: 8,
-    backgroundColor: Colors.brand.orange,
-    borderRadius: 14,
     paddingVertical: 15,
+    borderRadius: 14,
+    backgroundColor: Colors.brand.orange,
     marginTop: 4,
   },
-  submitBtnText: { fontSize: 16, fontWeight: '700', color: '#fff', fontFamily: 'Inter_700Bold' },
-  successWrap: { alignItems: 'center', gap: 16, paddingTop: 40 },
+  submitBtnText: { fontSize: 16, fontWeight: '600', color: '#fff', fontFamily: 'Inter_600SemiBold' },
+  successWrap: { alignItems: 'center', gap: 16, paddingVertical: 40 },
   successIcon: {
-    width: 90,
-    height: 90,
-    borderRadius: 45,
+    width: 80,
+    height: 80,
+    borderRadius: 40,
     backgroundColor: Colors.brand.light,
     justifyContent: 'center',
     alignItems: 'center',
   },
-  successTitle: { fontSize: 24, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
-  successSubtitle: { fontSize: 15, color: Colors.text.secondary, fontFamily: 'Inter_400Regular', textAlign: 'center', lineHeight: 22 },
+  successTitle: { fontSize: 22, fontWeight: '700', color: Colors.text.primary, fontFamily: 'Inter_700Bold' },
+  successSubtitle: { fontSize: 14, color: Colors.text.secondary, textAlign: 'center', lineHeight: 20, fontFamily: 'Inter_400Regular', paddingHorizontal: 20 },
 });
